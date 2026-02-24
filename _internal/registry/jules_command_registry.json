@@ -3,13 +3,28 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-LABOR-MARKET-THAW": {
-      "key": "WO-IMPL-LABOR-MARKET-THAW",
-      "title": "Phase 22.3-C: Labor Market Desperation & Talent Signal",
+    "WO-IMPL-CONFIG-SCALING": {
+      "key": "WO-IMPL-CONFIG-SCALING",
+      "title": "Phase 23 Wave 1: 100M Economy Constant Realignment",
       "type": "jules",
-      "instruction_raw": "MISSION_WO-SPEC-LABOR-MARKET-THAW_SPEC.md\uc758 \uba85\uc138\ub97c \uc815\ud655\ud788 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.\n\n1. **JobSeekerDTO**: `talent_score: float = 1.0` \ud544\ub4dc \ucd94\uac00.\n2. **JobOfferDTO**: `is_liquidity_verified: bool = False` \ud544\ub4dc \ucd94\uac00.\n3. **LaborMarket.match_market**: base_score \uc784\uacc4\uac12 1.0\u21920.9, talent_multiplier \ucd94\uac00.\n4. **Desperation Decay**: Household engine\uc5d0\uc11c \uc2e4\uc5c5 N\ud2f1 \ucd08\uacfc \uc2dc reservation_wage 5% \uac10\uc1e0.\n5. **Firm Pre-flight**: \uae30\uc5c5 \uc608\uc0b0 \uc5d4\uc9c4\uc5d0\uc11c \ud604\uae08 < \uae09\uc5ec \uc2dc \ucc44\uc6a9 \ucc28\ub2e8.\n6. **DTO \uc804\uc218\uc870\uc0ac**: JobSeekerDTO/JobOfferDTO \uc0dd\uc131\ud558\ub294 \ubaa8\ub4e0 call site \uc5c5\ub370\uc774\ud2b8.\n7. **\ud14c\uc2a4\ud2b8**: `test_desperation_wage_decay`, `test_talent_overrides_wage_gap`, `test_firm_liquidity_block` \uc791\uc131.\n",
+      "instruction_raw": "MISSION_WO-SPEC-CONFIG-SCALING_SPEC.md\uc758 \uba85\uc138\ub97c \uc815\ud655\ud788 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.\n\n1. **Deduplication**: `defaults.py`\uc758 \uc911\ubcf5 \uc0c1\uc218\ub97c \uc81c\uac70\ud558\uace0 \uc2a4\ucf00\uc77c\ub9c1\uc744 \uc801\uc6a9\ud558\uc2ed\uc2dc\uc624.\n2. **DTO Purity**: `FiscalEngine`\uc5d0 `FiscalConfigDTO`\ub97c \ub3c4\uc785\ud558\uc5ec \ud558\ub4dc\ucf54\ub529\uc744 \uc81c\uac70\ud558\uc2ed\uc2dc\uc624.\n3. **Dimensional Consistency**: `AgingSystem` \ub4f1\uc5d0\uc11c \ub2e8\uc704(Unit vs Penny) \ud63c\uc6a9\uc744 \uc81c\uac70\ud558\uc2ed\uc2dc\uc624.",
       "command": "create",
-      "file_path": "gemini-output/spec/MISSION_WO-SPEC-LABOR-MARKET-THAW_SPEC.md",
+      "file_path": "gemini-output/spec/MISSION_WO-SPEC-CONFIG-SCALING_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-IMPL-LEDGER-HARDENING": {
+      "key": "WO-IMPL-LEDGER-HARDENING",
+      "title": "Phase 23 Wave 1: Penny Hardening & Shadow Transaction Elimination",
+      "type": "jules",
+      "instruction_raw": "MISSION_WO-SPEC-LEDGER-HARDENING_SPEC.md\uc758 \uba85\uc138\ub97c \uc815\ud655\ud788 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.\n\n1. **Integer Only**: `TickOrchestrator`, `MonetaryLedger`, `Initializer`\uc5d0\uc11c \ubaa8\ub4e0 `/ 100.0` \ub85c\uc9c1\uc744 \uc81c\uac70\ud558\uace0 Penny \uc815\uc218\ub85c \ud1b5\uc77c\ud558\uc2ed\uc2dc\uc624.\n2. **Shadow Transaction Removal**: \uc774\uc790, \uc138\uae08, \uccad\uc0b0 \ub85c\uc9c1\uc5d0\uc11c `balance_pennies`\ub97c \uc9c1\uc811 \uc218\uc815\ud558\ub294 \ub300\uc2e0 `Transaction`\uc744 \ubc1c\ud589\ud558\ub3c4\ub85d \ubcc0\uacbd\ud558\uc2ed\uc2dc\uc624.\n3. **Zero Delta**: 60\ud2f1 \uc2dc\ubbac\ub808\uc774\uc158 \ud6c4 M2 Delta\uac00 0.00\uc774 \ub098\uc624\ub3c4\ub85d \ubb34\uacb0\uc131\uc744 \ud655\ubcf4\ud558\uc2ed\uc2dc\uc624.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_WO-SPEC-LEDGER-HARDENING_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,

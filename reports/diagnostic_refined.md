@@ -1,98 +1,143 @@
 # Refined Diagnostic Logs
 Critical events extracted for Gemini analysis.
 
-- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1546697.63, Expected: 2015916.17, Delta: -469218.5400
-- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1969325.55, Expected: 2227230.13, Delta: -257904.5800
-- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2546124.25, Expected: 2515629.48, Delta: 30494.7700
-- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2968527.03, Expected: 2726830.87, Delta: 241696.1600
-- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3544817.19, Expected: 3014975.95, Delta: 529841.2400
-- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3951658.01, Expected: 3218396.36, Delta: 733261.6500
-- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4543073.09, Expected: 3514103.90, Delta: 1028969.1900
-- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4949593.95, Expected: 3717364.33, Delta: 1232229.6200
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 31774.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1127075, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1127075, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1127075, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1127075, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1127075, Req: 5000000.
-- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4949593.95, Expected: 3717364.33, Delta: 1232229.6200
-- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5925767.79, Expected: 4205451.25, Delta: 1720316.5400
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3822472, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3822472, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3822472, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3822472, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3822472, Req: 5000000.
-- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5925767.79, Expected: 4205451.25, Delta: 1720316.5400
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1796295, Req: 5000000.
-- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5925767.79, Expected: 4205451.25, Delta: 1720316.5400
-- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6888105.43, Expected: 4686620.07, Delta: 2201485.3600
-- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6922020.89, Expected: 4703577.80, Delta: 2218443.0900
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2730908, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2730908, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2730908, Req: 5000000.
-- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6922020.89, Expected: 4703577.80, Delta: 2218443.0900
-- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7865240.55, Expected: 5175187.63, Delta: 2690052.9200
-- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7917505.41, Expected: 5201320.06, Delta: 2716185.3500
-- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8860412.21, Expected: 5672773.46, Delta: 3187638.7500
-- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8912378.59, Expected: 5698756.65, Delta: 3213621.9400
-- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9854974.85, Expected: 6170054.78, Delta: 3684920.0700
-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9905594.95, Expected: 6195364.83, Delta: 3710230.1200
-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10848993.07, Expected: 6667063.89, Delta: 4181929.1800
-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10899347.23, Expected: 6692240.97, Delta: 4207106.2600
-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11842437.93, Expected: 7163786.32, Delta: 4678651.6100
-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11892512.89, Expected: 7188823.80, Delta: 4703689.0900
-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 12835283.49, Expected: 7660209.10, Delta: 5175074.3900
-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 12885077.19, Expected: 7685105.95, Delta: 5199971.2400
-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 13827539.31, Expected: 8156337.01, Delta: 5671202.3000
-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 13848451.67, Expected: 8181093.19, Delta: 5667358.4800
-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14790584.73, Expected: 8652159.72, Delta: 6138425.0100
-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 121 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
-  - Details: agent_id=121
-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14915563.13, Expected: 8722655.23, Delta: 6192907.9000
-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15866583.87, Expected: 9198165.60, Delta: 6668418.2700
+- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1612081.73, Expected: 1990995.15, Delta: -378913.4200
+- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2558513.85, Expected: 2464211.21, Delta: 94302.6400
+- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2611640.33, Expected: 2490774.45, Delta: 120865.8800
+- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3558046.27, Expected: 2963977.42, Delta: 594068.8500
+- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3610867.71, Expected: 2990388.14, Delta: 620479.5700
+- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4541896.41, Expected: 3455902.49, Delta: 1085993.9200
+- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4610049.17, Expected: 3489978.87, Delta: 1120070.3000
+- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5540962.83, Expected: 3955435.70, Delta: 1585527.1300
+- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5609001.03, Expected: 3989454.80, Delta: 1619546.2300
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5609001.03, Expected: 3989454.80, Delta: 1619546.2300
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6557845.39, Expected: 4463876.98, Delta: 2093968.4100
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6607602.79, Expected: 4488755.68, Delta: 2118847.1100
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7556337.87, Expected: 4963123.22, Delta: 2593214.6500
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3632629, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3632629, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3632629, Req: 5000000.
+- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7556337.87, Expected: 4963123.22, Delta: 2593214.6500
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8483795.47, Expected: 5426852.02, Delta: 3056943.4500
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8483795.47, Expected: 5426852.02, Delta: 3056943.4500
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9394685.29, Expected: 5882296.93, Delta: 3512388.3600
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9481190.43, Expected: 5925549.50, Delta: 3555640.9300
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10391839.87, Expected: 6380874.22, Delta: 4010965.6500
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1031.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10391839.87, Expected: 6380874.22, Delta: 4010965.6500
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10618027.35, Expected: 6493967.96, Delta: 4124059.3900
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11388133.05, Expected: 6879020.81, Delta: 4509112.2400
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11614092.81, Expected: 6992000.69, Delta: 4622092.1200
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 12383918.03, Expected: 7376913.30, Delta: 5007004.7300
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 12609623.43, Expected: 7489766.00, Delta: 5119857.4300
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 13379161.35, Expected: 7874534.96, Delta: 5504626.3900
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 13604590.89, Expected: 7987249.73, Delta: 5617341.1600
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14373816.25, Expected: 8371862.41, Delta: 6001953.8400
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14598986.17, Expected: 8484447.37, Delta: 6114538.8000
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 117 (Inactive=True), Seller: 1 (Inactive=False) for Transaction: emergency_buy
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14570436.17, Expected: 8484447.37, Delta: 6085988.8000
 - **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 122 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
   - Details: agent_id=122
-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15989073.95, Expected: 9268476.26, Delta: 6720597.6900
-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16940793.87, Expected: 9744336.22, Delta: 7196457.6500
-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 17081037.85, Expected: 9814458.21, Delta: 7266579.6400
-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 18032505.93, Expected: 10290192.25, Delta: 7742313.6800
-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 18172478.09, Expected: 10360178.33, Delta: 7812299.7600
-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 19123680.87, Expected: 10835779.72, Delta: 8287901.1500
-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 19263365.49, Expected: 10905622.03, Delta: 8357743.4600
-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 20214308.09, Expected: 11381093.33, Delta: 8833214.7600
-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 123 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
-  - Details: agent_id=123
-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 20347596.56, Expected: 11450797.27, Delta: 8896799.2900
-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21298267.40, Expected: 11926132.69, Delta: 9372134.7100
-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21438358.08, Expected: 11996178.03, Delta: 9442180.0500
-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22388782.14, Expected: 12471390.06, Delta: 9917392.0800
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14542901.08, Expected: 8484447.37, Delta: 6058453.7100
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14542901.08, Expected: 8484447.37, Delta: 6058453.7100
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14551950.70, Expected: 8488972.18, Delta: 6062978.5200
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15537148.70, Expected: 8981571.18, Delta: 6555577.5200
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15545930.58, Expected: 8985962.12, Delta: 6559968.4600
+- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 121 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+  - Details: agent_id=121
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16522336.00, Expected: 9477911.21, Delta: 7044424.7900
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16522336.00, Expected: 9477911.21, Delta: 7044424.7900
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16522336.00, Expected: 9477911.21, Delta: 7044424.7900
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16522336.00, Expected: 9477911.21, Delta: 7044424.7900
 - **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 120 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
   - Details: agent_id=120
-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22386834.16, Expected: 12471390.06, Delta: 9915444.1000
-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22386834.16, Expected: 12471390.06, Delta: 9915444.1000
-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22386834.16, Expected: 12471390.06, Delta: 9915444.1000
-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22386834.16, Expected: 12471390.06, Delta: 9915444.1000
-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22386834.16, Expected: 12471390.06, Delta: 9915444.1000
-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22386834.16, Expected: 12471390.06, Delta: 9915444.1000
-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 23362000.54, Expected: 12958973.25, Delta: 10403027.2900
-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 23477833.64, Expected: 13016889.80, Delta: 10460943.8400
-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 24452781.76, Expected: 13504363.86, Delta: 10948417.9000
-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 24567368.94, Expected: 13561657.45, Delta: 11005711.4900
-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 25543126.82, Expected: 14049536.39, Delta: 11493590.4300
-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 25652357.30, Expected: 14104151.63, Delta: 11548205.6700
-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 26632008.94, Expected: 14593977.45, Delta: 12038031.4900
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 516323, Req: 5000000.
-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 26742049.34, Expected: 14648997.65, Delta: 12093051.6900
-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 27721482.98, Expected: 15138714.47, Delta: 12582768.5100
-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 27721482.98, Expected: 15138714.47, Delta: 12582768.5100
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16521736.57, Expected: 9477911.21, Delta: 7043825.3600
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16823186.03, Expected: 9628635.94, Delta: 7194550.0900
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 17516556.43, Expected: 9975321.14, Delta: 7541235.2900
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 17817857.13, Expected: 10125971.49, Delta: 7691885.6400
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 18511008.53, Expected: 10472547.19, Delta: 8038461.3400
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 18811089.27, Expected: 10622587.56, Delta: 8188501.7100
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 19505077.51, Expected: 10969581.68, Delta: 8535495.8300
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 19804953.59, Expected: 11119519.72, Delta: 8685433.8700
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 20497708.73, Expected: 11465897.29, Delta: 9031811.4400
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 20898392.23, Expected: 11666239.04, Delta: 9232153.1900
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21590894.95, Expected: 12012490.40, Delta: 9578404.5500
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21991353.33, Expected: 12212719.59, Delta: 9778633.7400
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22683617.79, Expected: 12558851.82, Delta: 10124765.9700
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 23083838.47, Expected: 12758962.16, Delta: 10324876.3100
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 23775870.07, Expected: 13104977.96, Delta: 10670892.1100
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 24175843.81, Expected: 13304964.83, Delta: 10870878.9800
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 24863536.79, Expected: 13648811.32, Delta: 11214725.4700
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 25265322.51, Expected: 13849704.18, Delta: 11415618.3300
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 25953819.47, Expected: 14193952.66, Delta: 11759866.8100
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 26356403.53, Expected: 14395244.69, Delta: 11961158.8400
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 27016154.47, Expected: 14739370.16, Delta: 12276784.3100
