@@ -83,7 +83,7 @@ class TestMetricsHardening(unittest.TestCase):
         # 10000 firm assets
         self.assertAlmostEqual(latest["total_firm_assets"], 10000.0)
         self.assertAlmostEqual(latest["unemployment_rate"], 50.0)
-        self.assertEqual(latest["total_consumption"], 600.0)
+        self.assertEqual(latest["total_consumption"], 6.0) # 600 pennies / 100 = 6.0
         self.assertEqual(latest["total_inventory"], 50.0)
 
     def test_stock_tracker_arithmetic(self):

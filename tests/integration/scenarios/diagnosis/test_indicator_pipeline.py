@@ -32,4 +32,4 @@ def test_indicator_aggregation(simple_household, mock_config_module):
     print(f"Latest metrics: {latest_metrics}")
 
     assert "total_consumption" in latest_metrics
-    assert latest_metrics["total_consumption"] == 1000
+    assert latest_metrics["total_consumption"] == 10.0 # 1000 pennies / 100

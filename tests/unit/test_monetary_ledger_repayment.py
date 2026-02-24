@@ -7,7 +7,8 @@ from modules.system.constants import ID_CENTRAL_BANK
 class TestMonetaryLedgerRepayment:
     def test_bond_repayment_split(self):
         """
-        Verify that bond repayment only destroys principal, not interest.
+        Verify that bond repayment uses SSoT (total_pennies) and destroys full amount.
+        Split logic removed for Zero-Sum Integrity.
         """
         ledger = MonetaryLedger()
         ledger.reset_tick_flow()
@@ -22,6 +23,7 @@ class TestMonetaryLedgerRepayment:
         tx.buyer_id = "government"
         tx.price = 1050.0
         tx.quantity = 1.0
+        tx.total_pennies = 105000 # 1050.00 USD
         tx.currency = "USD"
         tx.metadata = {
             "repayment_details": {
@@ -34,9 +36,9 @@ class TestMonetaryLedgerRepayment:
         ledger.process_transactions([tx])
 
         # Check destroyed amount
-        # Only 1000 should be destroyed.
-        assert ledger.total_money_destroyed["USD"] == 1000.0
-        assert ledger.credit_delta_this_tick["USD"] == -1000.0
+        # Full amount (105000 pennies) destroyed.
+        assert ledger.total_money_destroyed["USD"] == 105000.0
+        assert ledger.credit_delta_this_tick["USD"] == -105000.0
 
     def test_bond_repayment_legacy_fallback(self):
         """
@@ -52,19 +54,21 @@ class TestMonetaryLedgerRepayment:
         tx.buyer_id = "government"
         tx.price = 1050.0
         tx.quantity = 1.0
+        tx.total_pennies = 105000 # 1050.00 USD
         tx.currency = "USD"
         # No metadata or missing repayment_details
         tx.metadata = {}
 
         ledger.process_transactions([tx])
 
-        # Full amount destroyed (Legacy behavior)
-        assert ledger.total_money_destroyed["USD"] == 1050.0
-        assert ledger.credit_delta_this_tick["USD"] == -1050.0
+        # Full amount destroyed
+        assert ledger.total_money_destroyed["USD"] == 105000.0
+        assert ledger.credit_delta_this_tick["USD"] == -105000.0
 
     def test_interest_is_not_destroyed(self):
         """
-        Explicitly check that interest portion is ignored in destruction.
+        Verify that interest portion (if part of total_pennies) IS destroyed now,
+        as it represents money leaving circulation to System Agent.
         """
         ledger = MonetaryLedger()
         ledger.reset_tick_flow()
@@ -75,10 +79,11 @@ class TestMonetaryLedgerRepayment:
         tx.buyer_id = "government"
         tx.price = 100.0 # Total payment
         tx.quantity = 1.0
+        tx.total_pennies = 10000 # 100.00 USD
         tx.currency = "USD"
         tx.metadata = {
             "repayment_details": {
-                "principal": 0.0, # Pure interest payment? Unlikely for bond repayment but good for boundary test
+                "principal": 0.0,
                 "interest": 100.0,
                 "bond_id": "BOND_X"
             }
@@ -86,6 +91,6 @@ class TestMonetaryLedgerRepayment:
 
         ledger.process_transactions([tx])
 
-        # 0 destroyed
-        assert ledger.total_money_destroyed.get("USD", 0.0) == 0.0
-        assert ledger.credit_delta_this_tick.get("USD", 0.0) == 0.0
+        # Full amount destroyed
+        assert ledger.total_money_destroyed.get("USD", 0.0) == 10000.0
+        assert ledger.credit_delta_this_tick.get("USD", 0.0) == -10000.0

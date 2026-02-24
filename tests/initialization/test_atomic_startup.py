@@ -88,6 +88,7 @@ class TestAtomicStartup:
             # Configure System Agent IDs to be integers (fixes TypeError in Phase 4 max() check)
             patches['Bank'].return_value.id = ID_BANK
             patches['Bank'].return_value.base_rate = 0.05 # Phase 5 access
+            patches['Bank'].return_value.get_balance.return_value = 1000
             patches['Government'].return_value.id = ID_GOVERNMENT
             patches['CentralBank'].return_value.id = ID_CENTRAL_BANK
             patches['EscrowAgent'].return_value.id = ID_ESCROW

@@ -14,6 +14,7 @@ class TestMonetaryLedgerExpansion(unittest.TestCase):
         tx.transaction_type = "lender_of_last_resort"
         tx.price = 5000
         tx.quantity = 1
+        tx.total_pennies = 5000 # Pennies (matches expectation of 5000 units)
         tx.currency = DEFAULT_CURRENCY
         tx.buyer_id = "some_buyer"
         tx.seller_id = "some_seller"
@@ -28,6 +29,7 @@ class TestMonetaryLedgerExpansion(unittest.TestCase):
         tx.transaction_type = "asset_liquidation"
         tx.price = 10000
         tx.quantity = 1
+        tx.total_pennies = 10000 # Pennies (matches expectation of 10000 units)
         tx.currency = DEFAULT_CURRENCY
         tx.buyer_id = "4" # ID_PUBLIC_MANAGER
         tx.seller_id = "some_seller"
@@ -42,6 +44,7 @@ class TestMonetaryLedgerExpansion(unittest.TestCase):
         tx.transaction_type = "goods"
         tx.price = 100
         tx.quantity = 1
+        tx.total_pennies = 100
         tx.currency = DEFAULT_CURRENCY
         tx.buyer_id = "some_buyer"
         tx.seller_id = "some_seller"

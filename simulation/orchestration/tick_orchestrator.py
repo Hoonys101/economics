@@ -70,7 +70,7 @@ class TickOrchestrator:
             # TD-030: Removed _rebuild_currency_holders. Initializer populates this.
             # self._rebuild_currency_holders(state)
             money_dto = state.calculate_total_money()
-            state.baseline_money_supply = float(money_dto.total_m2_pennies)
+            state.baseline_money_supply = float(money_dto.total_m2_pennies) / 100.0
 
             state.logger.info(
                 f"MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: {state.baseline_money_supply:.2f}",
@@ -255,7 +255,7 @@ class TickOrchestrator:
             state.logger.debug(f"M2_BREAKDOWN | HH: {total_hh:.2f}, Firms: {total_firm:.2f}, Gov: {gov_assets:.2f}, CB: {cb_assets:.2f}, Bank: {bank_assets:.2f}")
 
             supply_dto = state.calculate_total_money()
-            current_money = float(supply_dto.total_m2_pennies)
+            current_money = float(supply_dto.total_m2_pennies) / 100.0
             expected_money = state.baseline_money_supply
             if hasattr(state.government, "get_monetary_delta"):
                 expected_money += state.government.get_monetary_delta(DEFAULT_CURRENCY)

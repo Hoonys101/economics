@@ -69,7 +69,7 @@ class MonetaryLedger:
                     is_contraction = True
 
             if is_expansion:
-                amount = tx.price * tx.quantity
+                amount = float(tx.total_pennies)
                 if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
                 if cur not in self.total_money_issued: self.total_money_issued[cur] = 0.0
 
@@ -78,13 +78,7 @@ class MonetaryLedger:
                 logger.debug(f"MONETARY_EXPANSION | {tx.transaction_type} (from {tx.buyer_id}): {amount:.2f}")
 
             elif is_contraction:
-                amount = tx.price * tx.quantity
-
-                # WO-WAVE5-MONETARY-FIX: Support for Split Repayment (Principal vs Interest)
-                if tx.transaction_type == "bond_repayment" and tx.metadata:
-                    repayment_details = tx.metadata.get("repayment_details")
-                    if repayment_details and "principal" in repayment_details:
-                        amount = float(repayment_details["principal"])
+                amount = float(tx.total_pennies)
 
                 if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
                 if cur not in self.total_money_destroyed: self.total_money_destroyed[cur] = 0.0
@@ -99,4 +93,4 @@ class MonetaryLedger:
         """
         issued_delta = self.total_money_issued.get(currency, 0.0) - self.start_tick_money_issued.get(currency, 0.0)
         destroyed_delta = self.total_money_destroyed.get(currency, 0.0) - self.start_tick_money_destroyed.get(currency, 0.0)
-        return issued_delta - destroyed_delta
+        return (issued_delta - destroyed_delta) / 100.0

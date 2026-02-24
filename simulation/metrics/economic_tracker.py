@@ -335,14 +335,14 @@ class EconomicIndicatorTracker:
 
         total_consumption = sum(
             h._econ_state.consumption_expenditure_this_tick_pennies for h in households if h._bio_state.is_active
-        )
+        ) / 100.0
         record["total_consumption"] = total_consumption
 
         total_food_consumption = sum(
             h._econ_state.food_expenditure_this_tick_pennies
             for h in households
             if isinstance(h, Household) and h._bio_state.is_active
-        )
+        ) / 100.0
         record["total_food_consumption"] = total_food_consumption
 
         total_inventory = sum(
