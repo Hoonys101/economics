@@ -103,7 +103,7 @@ class EconomicIndicatorData:
     total_capital_income: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)
     # Phase 23: Education & Opportunity Metrics
     avg_education_level: Optional[float] = None
-    education_spending: Optional[float] = None
+    education_spending: Optional[int] = None
     education_coverage: Optional[float] = None
     brain_waste_count: Optional[int] = None
 

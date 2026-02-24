@@ -125,13 +125,18 @@ class LiquidationManager:
                 remaining_cash -= total_tier_claim
                 logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} fully paid. Remaining cash: {remaining_cash}")
             else:
-                # Pay pro-rata
-                factor = remaining_cash / total_tier_claim
-                for claim in tier_claims:
-                    payment = int(claim.amount_pennies * factor)
+                # Pay pro-rata (Dust-Aware Distribution)
+                current_remaining = int(remaining_cash)
+                for i, claim in enumerate(tier_claims):
+                    if i == len(tier_claims) - 1:
+                        payment = current_remaining
+                    else:
+                        payment = int((claim.amount_pennies * remaining_cash) // total_tier_claim)
                     self._pay_claim(agent, claim, payment, state, partial=True)
+                    current_remaining -= payment
+
                 remaining_cash = 0.0
-                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} partially paid (Factor: {factor:.2f}). Cash exhausted.")
+                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} partially paid (Pro-Rata). Cash exhausted.")
 
         # --- Tier 5: Equity ---
         # TD-033: Check if there is ANY value to distribute (Cash or Foreign Assets)
