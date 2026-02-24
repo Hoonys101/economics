@@ -300,9 +300,19 @@ class IHousingTransactionParticipant(IPropertyOwner, IFinancialAgent, Protocol):
         """ID of the property where the agent currently resides."""
         ...
 
+    @residing_property_id.setter
+    def residing_property_id(self, value: Optional[int]) -> None:
+        """Sets the property where the agent currently resides."""
+        ...
+
     @property
     def is_homeless(self) -> bool:
         """Indicates if the agent is currently homeless."""
+        ...
+
+    @is_homeless.setter
+    def is_homeless(self, value: bool) -> None:
+        """Sets the homeless status of the agent."""
         ...
 
 @runtime_checkable
