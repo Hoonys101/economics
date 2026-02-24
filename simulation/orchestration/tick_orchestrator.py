@@ -152,8 +152,8 @@ class TickOrchestrator:
             agents=state.agents,
             markets=state.markets,
             primary_government=state.government, # Renamed to primary_government
-            bank=getattr(state, "bank", None),
-            central_bank=getattr(state, "central_bank", None),
+            bank=state.bank,
+            central_bank=state.central_bank,
             escrow_agent=getattr(state, "escrow_agent", None),
             stock_market=getattr(state, "stock_market", None),
             stock_tracker=getattr(state, "stock_tracker", None),

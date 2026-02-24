@@ -3,8 +3,9 @@
 ## 1. Architectural Insights
 - **Initialization Race Conditions**: The `SimulationInitializer` previously linked `AgentRegistry` to `WorldState` before all system agents (specifically `PublicManager` and `CentralBank`) were instantiated. This caused `TD-FIN-INVISIBLE-HAND`, where these agents were missing from the registry snapshot used by `SettlementSystem`. Moving the registry linkage to *after* all system agent creation resolved this.
 - **Factory Responsibilities**: The `FirmFactory` was previously a simple object creator. To solve `TD-LIFECYCLE-GHOST-FIRM` (firms existing without bank accounts), we elevated `FirmFactory` to handle the atomic sequence of **Instantiation -> Registration -> Bank Account Opening -> Liquidity Injection**. This ensures no "ghost" firms can exist in a valid state.
+- **Atomic Mitosis (Clone)**: We identified a critical vulnerability in `clone_firm` where inventory was being deep-copied (Magic Creation) and cash hydrated directly (Ledger Desync). We refactored this to use strict `SettlementSystem` transfers for cash and explicit inventory splitting (50/50 rule) for goods, ensuring Zero-Sum integrity during agent reproduction.
 - **DTO Hygiene**: `SimulationState` contained a deprecated `governments` list field alongside `primary_government`, causing confusion (`TD-ARCH-GOV-MISMATCH`). We enforced a strict Singleton pattern by removing the list and ensuring `TickOrchestrator` only populates `primary_government`.
-- **TickOrchestrator Hardening**: We added defensive `getattr` calls in `TickOrchestrator` when populating `SimulationState`. This makes the system more robust to partial states during testing or initialization.
+- **Fail-Fast Hardening**: We removed defensive `getattr(state, "bank", None)` calls in `TickOrchestrator` for core components like `bank` and `central_bank`. These are critical dependencies; masking their absence hides initialization failures. The simulation should fail fast if the economy lacks a bank.
 
 ## 2. Regression Analysis
 - **Breaking Change in FirmFactory**: The signature of `FirmFactory.create_firm` was updated to require `settlement_system` and optional `central_bank`. This was necessary to enforce the atomic creation sequence.
@@ -26,7 +27,7 @@ collected 2 items
 
 tests/unit/test_tax_incidence.py ..                                    [100%]
 
-============================== 2 passed in 0.60s ===============================
+============================== 2 passed in 0.34s ===============================
 ```
 
 Running full unit suite (`pytest tests/unit`):

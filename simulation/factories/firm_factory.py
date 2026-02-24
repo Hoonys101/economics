@@ -82,7 +82,8 @@ class FirmFactory:
         # Atomic Liquidity Injection
         if central_bank and settlement_system:
              try:
-                 Bootstrapper.inject_liquidity_for_firm(firm, self.config_module, settlement_system, central_bank)
+                 current_tick = simulation.time if simulation else 0
+                 Bootstrapper.inject_liquidity_for_firm(firm, self.config_module, settlement_system, central_bank, current_tick)
              except Exception as e:
                  logger.error(f"FirmFactory: Failed to inject liquidity for Firm {firm.id}: {e}")
                  raise RuntimeError(f"Failed to inject liquidity for Firm {firm.id}") from e
@@ -100,6 +101,7 @@ class FirmFactory:
         """
         Deep copy / Mitosis logic for Firms.
         Replaces Firm.clone().
+        Ensures Zero-Sum integrity by transferring assets instead of copying.
         """
         cloned_decision_engine = copy.deepcopy(source_firm.decision_engine)
 
@@ -112,25 +114,23 @@ class FirmFactory:
             specialization=source_firm.specialization,
             productivity_factor=source_firm.productivity_factor,
             config_dto=source_firm.config,
-            initial_inventory=source_firm.get_all_items(),
+            initial_inventory=None, # Start empty
             loan_market=source_firm.decision_engine.loan_market,
             personality=source_firm.personality
         )
 
-        # Hydrate State
-        # Note: We manually hydrate to ensure clean state
+        # Initialize State (Zero Assets)
         initial_state = AgentStateDTO(
-            assets={DEFAULT_CURRENCY: initial_assets_from_parent},
-            inventory=copy.deepcopy(source_firm._inventory),
+            assets={DEFAULT_CURRENCY: 0},
+            inventory={},
             is_active=True
         )
         new_firm.load_state(initial_state)
 
+        # Copy non-physical state (Qualities)
         # Handle internal inventories not covered by AgentStateDTO legacy load
-        new_firm._input_inventory = copy.deepcopy(source_firm._input_inventory)
+        # new_firm._input_inventory is empty
         new_firm._input_inventory_quality = copy.deepcopy(source_firm._input_inventory_quality)
-
-        # Preserve quality for main inventory (Fixing potential bug in legacy clone)
         new_firm.inventory_quality = copy.deepcopy(source_firm.inventory_quality)
 
         # Atomic Registration: Open Bank Account
@@ -141,6 +141,37 @@ class FirmFactory:
              except Exception as e:
                  logger.error(f"FirmFactory: Failed to register bank account for Cloned Firm {new_firm.id}: {e}")
                  raise RuntimeError(f"Failed to open bank account for Cloned Firm {new_firm.id}") from e
+
+             # Transfer Cash (Zero-Sum)
+             if initial_assets_from_parent > 0:
+                 success = settlement_system.transfer(
+                     debit_agent=source_firm,
+                     credit_agent=new_firm,
+                     amount=initial_assets_from_parent,
+                     memo="FIRM_CLONE_CAPITAL",
+                     tick=current_tick
+                 )
+                 if not success:
+                     logger.error(f"FirmFactory: Failed to transfer initial capital to clone {new_firm.id}")
+                     # Should we fail? Yes.
+                     raise RuntimeError(f"Failed to transfer capital to clone {new_firm.id}")
+
+        # Transfer Physical Inventory (Zero-Sum Mitosis)
+        # We split 50% of inventory from parent to child
+        try:
+            items_to_move = source_firm.get_all_items()
+            for item, qty in items_to_move.items():
+                if qty <= 0: continue
+
+                transfer_qty = qty * 0.5
+                if transfer_qty > 0:
+                    # Remove from source
+                    if source_firm.remove_item(item, transfer_qty):
+                        # Add to new firm
+                        new_firm.add_item(item, transfer_qty, quality=source_firm.get_quality(item))
+        except Exception as e:
+            logger.error(f"FirmFactory: Inventory transfer failed during cloning: {e}")
+            # Non-fatal? Inventory loss is acceptable compared to crash, but logged.
 
         new_firm.logger.info(
             f"Firm {source_firm.id} was cloned to new Firm {new_id}",

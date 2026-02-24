@@ -58,40 +58,45 @@ class Bootstrapper:
         return assigned_count
 
     @staticmethod
-    def inject_liquidity_for_firm(firm: 'Firm', config: Any, settlement_system: Any, central_bank: Any) -> bool:
+    def inject_liquidity_for_firm(firm: 'Firm', config: Any, settlement_system: Any, central_bank: Any, current_tick: int = 0) -> bool:
         """
         Injects liquidity (inputs and capital) for a single firm.
         Returns True if any resource was injected.
+
+        Zero-Sum Compliance:
+        - Capital is transferred from Central Bank.
+        - Physical Goods (Inputs) are only magically created at Tick 0 (Genesis).
         """
         BUFFER_DAYS = 30.0
         injected = False
 
-        # 1. Input Injection (Supply Side)
-        if firm.specialization in config.GOODS:
-            item_config = config.GOODS[firm.specialization]
+        # 1. Input Injection (Supply Side) - ONLY AT GENESIS
+        if current_tick == 0:
+            if firm.specialization in config.GOODS:
+                item_config = config.GOODS[firm.specialization]
 
-            # Check if this good requires inputs
-            if 'inputs' in item_config and item_config['inputs']:
-                for mat, qty_per_unit in item_config['inputs'].items():
-                    # Calculate needed amount: Qty * Target * Days
-                    needed = qty_per_unit * firm.production_target * BUFFER_DAYS
+                # Check if this good requires inputs
+                if 'inputs' in item_config and item_config['inputs']:
+                    for mat, qty_per_unit in item_config['inputs'].items():
+                        # Calculate needed amount: Qty * Target * Days
+                        needed = qty_per_unit * firm.production_target * BUFFER_DAYS
 
-                    # Update Inventory
-                    current = firm.get_quantity(mat, slot=InventorySlot.INPUT)
-                    if current < needed:
-                        firm.add_item(mat, needed - current, slot=InventorySlot.INPUT)
-                        injected = True
+                        # Update Inventory
+                        current = firm.get_quantity(mat, slot=InventorySlot.INPUT)
+                        if current < needed:
+                            firm.add_item(mat, needed - current, slot=InventorySlot.INPUT)
+                            injected = True
 
-            # After existing logic, add:
-            current_inv = firm.get_quantity(firm.specialization)
-            if current_inv < Bootstrapper.INITIAL_INVENTORY:
-                needed = Bootstrapper.INITIAL_INVENTORY - current_inv
-                firm.add_item(firm.specialization, needed)
-                injected = True
-                logger.info(f'BOOTSTRAPPER | Injected {needed} units to Firm {firm.id}')
+                # After existing logic, add:
+                current_inv = firm.get_quantity(firm.specialization)
+                if current_inv < Bootstrapper.INITIAL_INVENTORY:
+                    needed = Bootstrapper.INITIAL_INVENTORY - current_inv
+                    firm.add_item(firm.specialization, needed)
+                    injected = True
+                    logger.info(f'BOOTSTRAPPER | Injected {needed} units to Firm {firm.id} (Genesis)')
 
 
-        # 2. Capital Injection (Demand Side)
+        # 2. Capital Injection (Demand Side) - ALWAYS ALLOWED (via Transfer)
         # Refactor: Use wallet directly
         current_balance = firm.wallet.get_balance(DEFAULT_CURRENCY)
         if current_balance < Bootstrapper.MIN_CAPITAL:
@@ -121,7 +126,8 @@ class Bootstrapper:
         injected_count = 0
 
         for firm in firms:
-            if Bootstrapper.inject_liquidity_for_firm(firm, config, settlement_system, central_bank):
+            # Assume Genesis for batch injection
+            if Bootstrapper.inject_liquidity_for_firm(firm, config, settlement_system, central_bank, current_tick=0):
                 injected_count += 1
 
         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")
