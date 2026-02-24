@@ -129,12 +129,7 @@ class TaxationSystem:
         Does NOT execute any transfer.
         """
         intents: List[TaxIntent] = []
-        # SSoT Enforcement: Use total_pennies if available
-        if hasattr(transaction, 'total_pennies') and transaction.total_pennies > 0:
-            trade_value = transaction.total_pennies
-        else:
-            # Fallback: Assume price is float dollars
-            trade_value = int(transaction.quantity * transaction.price * 100)
+        trade_value = transaction.total_pennies
 
         # 1. Sales Tax (Goods)
         if transaction.transaction_type == "goods":

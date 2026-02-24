@@ -183,7 +183,8 @@ class TestTaxIncidence(unittest.TestCase):
         
         # Based on current system behavior:
         # Transaction price is 10000.0 (Dollars).
-        # SSoT Fix: Tax calculated on 1,000,000 pennies.
+        # SSoT Fix: Tax calculated on the full penny amount (1,000,000).
+        # Expected Tax: 199,625 pennies.
         tax_pennies = 199625
 
         # Household: Initial 100,000 + Wage 1,000,000 - Tax 199,625 = 900,375
@@ -215,7 +216,7 @@ class TestTaxIncidence(unittest.TestCase):
         )
         sim._process_transactions([tx])
         
-        # Tax Calculation on 1,000,000 pennies.
+        # Tax Calculation results in 199,625 pennies.
         tax_pennies = 199625
 
         # Household: Initial 100,000 + Wage 1,000,000 = 1,100,000 (No tax withheld)

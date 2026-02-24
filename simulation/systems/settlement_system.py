@@ -609,9 +609,9 @@ class SettlementSystem(IMonetaryAuthority):
             buyer_id=buyer_id,
             seller_id=seller_id,
             item_id="currency",
-            quantity=1.0,
-            price=amount / 100.0,
-            total_pennies=amount,
+            quantity=1.0, # Treat transfer as 1 unit of currency transfer
+            price=amount / 100.0, # Display price in dollars
+            total_pennies=amount, # SSoT
             market_id="settlement",
             transaction_type="transfer",
             time=tick,

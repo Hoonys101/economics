@@ -499,6 +499,7 @@ class TestSimulation:
         # Assets include tax considerations
         # Note: Government uses FiscalPolicyManager which applies Progressive Tax Brackets defined in config.
         # SSoT Fix: Tax calculation is now correct (10% of 2000 = 200).
+        # In this test environment with mocked config (FLAT TAX 10%), the effective tax calculation yields 200 pennies.
         tax_pennies = 200
         
         assert buyer_firm.get_balance(DEFAULT_CURRENCY) == initial_buyer_assets - trade_value_pennies
