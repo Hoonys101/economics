@@ -3,13 +3,28 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-FINAL-MACRO-REPAIR": {
-      "key": "WO-FINAL-MACRO-REPAIR",
-      "title": "Phase 22.3: Integrated Macro-Financial Recovery",
+    "WO-IMPL-HOUSEHOLD-SAFETY-NET": {
+      "key": "WO-IMPL-HOUSEHOLD-SAFETY-NET",
+      "title": "Phase 22.3-B: Safety Net & Liquidity Bootstrap",
       "type": "jules",
-      "instruction_raw": "MISSION_WO-MACRO-RECOVERY-REPAIR_SPEC.md\uc5d0 \uc815\uc758\ub41c \uac70\uc2dc \ubcf5\uad6c \uc791\uc5c5\uc744 \uc218\ud589\ud558\uc2ed\uc2dc\uc624.\\n\\n1. **OMO \uc218\ub7c9 \uad50\uc815**: `central_bank_system.py`\uc5d0\uc11c `quantity = amount // price`\ub85c \uc218\uc815.\\n2. **\uc720\ub3d9\uc131 \uc8fc\uc785**: `defaults.py`\uc5d0\uc11c \ucd08\uae30 \ud1b5\ud654\ub7c9\uc744 $1M, \uae30\uc5c5 \ucd08\uae30\uc790\ubcf8\uc744 $100K\ub85c \uc0c1\ud5a5.\\n3. **\ud3d0\uc5c5 \ub85c\uc9c1 \uac1c\ud3b8**: `aging_system.py`\uc5d0\uc11c \uc790\uc0b0\uc774 \ud48d\ubd80\ud55c \uae30\uc5c5\uc744 \ub2e8\uc21c\ud788 '\uc5f0\uc18d \uc190\uc2e4'\ub9cc\uc73c\ub85c \ud3d0\uc5c5\ud558\uc9c0 \uc54a\ub3c4\ub85d \uc218\uc815.\\n4. **\uc139\ud130\ubcc4 \uc815\ud569\uc131**: \uac00\uacc4\uc758 \uc544\uc0ac \ud2b8\ub7a9\uacfc \ub178\ub3d9 \uc2dc\uc7a5\uc758 \uc784\uae08 \ubbf8\uc2a4\ub9e4\uce58\uac00 \uc644\ud654\ub418\ub3c4\ub85d \uad00\ub828 \ud30c\ub77c\ubbf8\ud130 \ubc0f \ud14c\uc2a4\ud2b8\ub97c \uc5c5\ub370\uc774\ud2b8\ud558\uc2ed\uc2dc\uc624.\\n\\n*\uc0b0\ucd9c\ubb3c*: `communications/insights/WO-MACRO-RECOVERY-STRATEGY.md`.",
+      "instruction_raw": "MISSION_WO-SPEC-HOUSEHOLD-SAFETY-NET_SPEC.md\uc758 \uba85\uc138\ub97c \uc815\ud655\ud788 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.\n\n1. **defaults.py \uc0c1\uc218 \ud655\uc778 \ubc0f \ubcf4\uc815**: \uc774\ubbf8 \uc77c\ubd80 \uc0c1\uc218\uac00 \uc870\uc815\ub418\uc5c8\uc744 \uc218 \uc788\uc73c\ub2c8 \ud604\uc7ac \uac12\uc744 \ud655\uc778 \ud6c4 \uba85\uc138\uc640 \uc77c\uce58\uc2dc\ud0a4\uc2ed\uc2dc\uc624.\n   - INCOME_TAX_RATE: 0.05, CORPORATE_TAX_RATE: 0.05\n   - INITIAL_MONEY_SUPPLY: 100M, INITIAL_FIRM_CAPITAL_MEAN: 10M\n   - INITIAL_HOUSEHOLD_ASSETS_MEAN: 1M, WEALTH_TAX_THRESHOLD: 50M\n2. **Solvency Gate**: `aging_system.py`\uc5d0\uc11c \uc790\uc0b0 > \uc784\uacc4\uac12*2\uc778 \uae30\uc5c5\uc740 \uc5f0\uc18d \uc190\uc2e4\uacfc \ubb34\uad00\ud558\uac8c \ud3d0\uc5c5 \uba74\uc81c.\n3. **Protocol Purity**: `getattr`/`hasattr` \u2192 `isinstance(firm.finance_engine, IFinanceEngine)` \uc804\ud658.\n4. **\ud14c\uc2a4\ud2b8**: `test_solvency_gate_active`, `test_safety_net_tax_collection` \uc791\uc131.\n",
       "command": "create",
-      "file_path": "gemini-output/spec/MISSION_WO-MACRO-RECOVERY-REPAIR_SPEC.md",
+      "file_path": "gemini-output/spec/MISSION_WO-SPEC-HOUSEHOLD-SAFETY-NET_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-IMPL-LABOR-MARKET-THAW": {
+      "key": "WO-IMPL-LABOR-MARKET-THAW",
+      "title": "Phase 22.3-C: Labor Market Desperation & Talent Signal",
+      "type": "jules",
+      "instruction_raw": "MISSION_WO-SPEC-LABOR-MARKET-THAW_SPEC.md\uc758 \uba85\uc138\ub97c \uc815\ud655\ud788 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.\n\n1. **JobSeekerDTO**: `talent_score: float = 1.0` \ud544\ub4dc \ucd94\uac00.\n2. **JobOfferDTO**: `is_liquidity_verified: bool = False` \ud544\ub4dc \ucd94\uac00.\n3. **LaborMarket.match_market**: base_score \uc784\uacc4\uac12 1.0\u21920.9, talent_multiplier \ucd94\uac00.\n4. **Desperation Decay**: Household engine\uc5d0\uc11c \uc2e4\uc5c5 N\ud2f1 \ucd08\uacfc \uc2dc reservation_wage 5% \uac10\uc1e0.\n5. **Firm Pre-flight**: \uae30\uc5c5 \uc608\uc0b0 \uc5d4\uc9c4\uc5d0\uc11c \ud604\uae08 < \uae09\uc5ec \uc2dc \ucc44\uc6a9 \ucc28\ub2e8.\n6. **DTO \uc804\uc218\uc870\uc0ac**: JobSeekerDTO/JobOfferDTO \uc0dd\uc131\ud558\ub294 \ubaa8\ub4e0 call site \uc5c5\ub370\uc774\ud2b8.\n7. **\ud14c\uc2a4\ud2b8**: `test_desperation_wage_decay`, `test_talent_overrides_wage_gap`, `test_firm_liquidity_block` \uc791\uc131.\n",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_WO-SPEC-LABOR-MARKET-THAW_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,

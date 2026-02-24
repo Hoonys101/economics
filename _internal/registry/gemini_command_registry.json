@@ -2,21 +2,5 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {
-    "WO-FINAL-MACRO-REPAIR": {
-      "key": "WO-FINAL-MACRO-REPAIR",
-      "title": "Phase 22.3: Systemic Macro-Financial Repair (OMO & Liquidity)",
-      "type": "jules",
-      "instruction_raw": "MISSION_RECOVERY_STRATEGY_SPEC.md\uc5d0 \uc815\uc758\ub41c \uac70\uc2dc \uacbd\uc81c \ubcf5\uad6c \uc791\uc5c5\uc744 \uc218\ud589\ud558\uc2ed\uc2dc\uc624.\\n\\n1. **OMO \uc218\ub7c9 \uacc4\uc0b0 \uc218\uc815**: `central_bank_system.py`\uc5d0\uc11c `quantity = amount_pennies // price_pennies`\ub85c \uad50\uc815\ud558\uc5ec \ud1b5\ud654 \ud3ed\ubc1c\uc744 \ubc29\uc9c0\ud558\uc2ed\uc2dc\uc624.\\n2. **\uc2dc\uc2a4\ud15c \uc720\ub3d9\uc131 CPR**: `defaults.py`\uc5d0\uc11c `INITIAL_MONEY_SUPPLY`\ub97c $1M(1\uc5b5 \ud398\ub2c8), `INITIAL_FIRM_CAPITAL_MEAN`\uc744 $100K(1,000\ub9cc \ud398\ub2c8)\ub85c \uc0c1\ud5a5\ud558\uc2ed\uc2dc\uc624.\\n3. **\uae30\uc5c5 \ud3d0\uc5c5 \ub85c\uc9c1 \uad50\uc815**: `aging_system.py`\uc5d0\uc11c `closure_turns_threshold` \ub3c4\ub2ec \uc2dc\uc5d0\ub3c4 `current_assets_pennies > assets_threshold_pennies`\ub77c\uba74 \ud3d0\uc5c5\ud558\uc9c0 \uc54a\ub3c4\ub85d \uc218\uc815\ud558\uc5ec 'Timer Kill'\uc744 \ubc29\uc9c0\ud558\uc2ed\uc2dc\uc624.\\n4. **\ud14c\uc2a4\ud2b8 \uc5c5\ub370\uc774\ud2b8**: `test_firm_survival.py` \ubc0f `test_monetary_policy.py` \ub4f1 \ubcc0\uacbd\ub41c \uc784\uacc4\uac12 \ubc0f \ub85c\uc9c1\uc5d0 \ub530\ub77c \uc2e4\ud328\ud558\ub294 \uae30\uc874 \ud14c\uc2a4\ud2b8\ub4e4\uc744 \uc5c5\ub370\uc774\ud2b8\ud558\uc2ed\uc2dc\uc624.\\n\\n*\ud544\uc218 \uc0b0\ucd9c\ubb3c*: `communications/insights/WO-MACRO-RECOVERY-STRATEGY.md` (\ud14c\uc2a4\ud2b8 \uacb0\uacfc \ud3ec\ud568).",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_WO-MACRO-RECOVERY-STRATEGY_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    }
-  }
+  "missions": {}
 }
