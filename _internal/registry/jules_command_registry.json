@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-WAVE-B-3-SAGA": {
-      "key": "WO-WAVE-B-3-SAGA",
-      "title": "Wave B.3: Saga Recovery & Cleanup",
-      "type": "jules",
-      "instruction_raw": "\uba85\uc138\uc11c(MISSION_WAVE_B_3_SAGA_CLEANUP_SPEC.md)\uc5d0 \ub530\ub77c SagaOrchestrator\uc758 \ube44\ud65c\uc131 \uc5d0\uc774\uc804\ud2b8 \uc790\ub3d9 \uc815\ub9ac \ub85c\uc9c1\uc744 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_WAVE_B_3_SAGA_CLEANUP_SPEC.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-WAVE-B-4-TEST": {
       "key": "WO-WAVE-B-4-TEST",
       "title": "Wave B.4: Mock Integrity & Test Hardening",
