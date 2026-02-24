@@ -1,6 +1,7 @@
 """
 DTOs and Protocols for the Labor Market Domain.
 Phase 4.1: Transition to Major-Based Matching.
+Phase 4.2: Labor Market Thaw (Desperation & Talent Signal)
 """
 from __future__ import annotations
 from typing import List, Optional, Protocol, runtime_checkable, Dict, Any
@@ -25,6 +26,7 @@ class LaborMatchDTO:
     secondary_majors: List[IndustryDomain] = field(default_factory=list)
     years_experience: float = 0.0
     min_match_score: float = 0.0
+    talent_score: float = 1.0  # Phase 4.2: Talent Signal
 
     def to_metadata(self) -> Dict[str, Any]:
         return {
@@ -33,6 +35,7 @@ class LaborMatchDTO:
             "secondary_majors": self.secondary_majors,
             "years_experience": self.years_experience,
             "min_match_score": self.min_match_score,
+            "talent_score": self.talent_score,
             "__type": "LaborMatchDTO"
         }
 
@@ -53,7 +56,8 @@ class LaborMatchDTO:
             education_level=int(edu_level),
             secondary_majors=metadata.get("secondary_majors", []),
             years_experience=float(metadata.get("years_experience", 0.0)),
-            min_match_score=float(metadata.get("min_match_score", 0.0))
+            min_match_score=float(metadata.get("min_match_score", 0.0)),
+            talent_score=float(metadata.get("talent_score", 1.0))
         )
 
 @dataclass(frozen=True)
@@ -76,6 +80,9 @@ class JobOfferDTO:
     # Wave 3: Hiring Preferences
     min_experience: float = 0.0
 
+    # Phase 4.2: Pre-flight check flag
+    is_liquidity_verified: bool = False
+
 @dataclass(frozen=True)
 class JobSeekerDTO:
     """
@@ -93,6 +100,9 @@ class JobSeekerDTO:
     
     # Wave 3: Labor Supply Signals
     experience: float = 0.0 # Years of experience in this major
+
+    # Phase 4.2: Talent Signal
+    talent_score: float = 1.0
 
 @dataclass(frozen=True)
 class LaborMarketMatchResultDTO:

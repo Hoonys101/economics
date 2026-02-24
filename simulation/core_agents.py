@@ -1013,7 +1013,9 @@ class Household(
             social_rank=self._social_state.social_rank,
             approval_rating=self._social_state.approval_rating,
             optimism=self._social_state.optimism,
-            ambition=self._social_state.ambition
+            ambition=self._social_state.ambition,
+            talent_score=self._econ_state.talent.base_learning_rate,
+            shadow_reservation_wage_pennies=self._econ_state.shadow_reservation_wage_pennies
         )
 
 

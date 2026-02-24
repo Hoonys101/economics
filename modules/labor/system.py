@@ -94,8 +94,8 @@ class LaborMarket(ILaborMarket, IMarket):
                     else:
                         base_score = offer.offer_wage_pennies / seeker.reservation_wage_pennies
 
-                    # Filter: Must meet reservation wage
-                    if base_score < 1.0:
+                    # Filter: Must meet reservation wage (Relaxed to 0.9 for Market Thaw)
+                    if base_score < 0.9:
                         continue
 
                     # 2. Major Matching (Dynamic Config)
@@ -136,7 +136,13 @@ class LaborMarket(ILaborMarket, IMarket):
                         # Let's say slight bonus.
                         edu_multiplier = 1.05
 
-                    final_score = base_score * major_multiplier * edu_multiplier
+                    # 4. Talent Signal (Phase 4.2)
+                    # Talent score 1.0 is neutral. Higher is better.
+                    # Multiplier = 1.0 + (talent - 1.0) * 0.5
+                    # e.g. Talent 1.2 -> 1.0 + 0.1 = 1.1 multiplier
+                    talent_multiplier = 1.0 + (seeker.talent_score - 1.0) * 0.5
+
+                    final_score = base_score * major_multiplier * edu_multiplier * talent_multiplier
 
                     if final_score > best_score:
                         best_score = final_score
@@ -238,7 +244,8 @@ class LaborMarket(ILaborMarket, IMarket):
                 offer_wage_pennies=int(order_dto.price_pennies),
                 required_education=metadata.get("required_education", 0),
                 quantity=order_dto.quantity,
-                major=major_enum
+                major=major_enum,
+                is_liquidity_verified=metadata.get("is_liquidity_verified", False)
             )
             self.post_job_offer(offer)
 
@@ -247,7 +254,7 @@ class LaborMarket(ILaborMarket, IMarket):
             self._sell_orders_cache["labor"].append(order_dto)
 
             # Convert to JobSeeker
-            metadata = order_dto.brand_info or {} # Household uses brand_info for metadata
+            metadata = order_dto.metadata or order_dto.brand_info or {} # Household uses brand_info for metadata, but metadata is also checked
             major_str = metadata.get("major", "GENERAL")
             try:
                 major_enum = IndustryDomain(major_str)
@@ -259,7 +266,8 @@ class LaborMarket(ILaborMarket, IMarket):
                 reservation_wage_pennies=int(order_dto.price_pennies),
                 education_level=metadata.get("education_level", 0),
                 quantity=order_dto.quantity,
-                major=major_enum
+                major=major_enum,
+                talent_score=float(metadata.get("talent_score", 1.0))
             )
             self.post_job_seeker(seeker)
 

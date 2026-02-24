@@ -285,6 +285,12 @@ class HouseholdStateDTO:
     monthly_income_pennies: int = 0
     monthly_debt_payments_pennies: int = 0
 
+    # Phase 4.2: Talent Signal
+    talent_score: float = 1.0
+
+    # Phase 4.2: Reservation Wage Tracking
+    shadow_reservation_wage_pennies: int = 0
+
 @dataclass
 class CloningRequestDTO:
     """Data required to clone a household."""
