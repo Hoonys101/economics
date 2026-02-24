@@ -42,7 +42,10 @@ class DebtServicingEngine(IDebtServicingEngine):
                     if current_balance >= interest_pennies:
                         current_balance -= interest_pennies
 
-                        # [Double-Entry] Credit Bank Equity (Retained Earnings) - Accounting Only
+                        # [Double-Entry] Debit Liability (Deposit)
+                        deposit.balance_pennies -= interest_pennies
+
+                        # [Double-Entry] Credit Bank Equity (Retained Earnings)
                         bank.retained_earnings_pennies += interest_pennies
 
                         payment_made = interest_pennies
@@ -64,6 +67,8 @@ class DebtServicingEngine(IDebtServicingEngine):
                             if current_balance >= principal_due:
                                 # Full Repayment
                                 current_balance -= principal_due
+                                deposit.balance_pennies -= principal_due
+
                                 # DO NOT update loan.remaining_principal_pennies (Handler does it)
                                 payment_made += principal_due
 
@@ -81,6 +86,8 @@ class DebtServicingEngine(IDebtServicingEngine):
                                 # Partial pay?
                                 pay = current_balance
                                 current_balance = 0
+                                deposit.balance_pennies -= pay
+
                                 # DO NOT update loan.remaining_principal_pennies (Handler does it)
 
                                 if pay > 0:
@@ -110,13 +117,17 @@ class DebtServicingEngine(IDebtServicingEngine):
             # If receiver is a Bank, update its reserves.
             if receiver_id in ledger.banks:
                 bank = ledger.banks[receiver_id]
-                # WO-IMPL-LEDGER-HARDENING: Do not modify reserves directly (Shadow Transaction).
-                # The emitted Transaction will update the SSoT.
+                # Update reserves
+                curr = "USD" # Default
+                if curr not in bank.reserves: bank.reserves[curr] = 0
+                bank.reserves[curr] += interest_pennies
 
-                # [Double-Entry] Credit Equity (Interest Income) - Accounting Only
+                # [Double-Entry] Credit Equity (Interest Income)
                 bank.retained_earnings_pennies += interest_pennies
 
-                # Do not modify treasury.balance directly.
+                # Treasury pays
+                if curr not in treasury.balance: treasury.balance[curr] = 0
+                treasury.balance[curr] -= interest_pennies
 
                 txs.append(Transaction(
                     buyer_id=treasury.government_id,

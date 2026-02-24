@@ -148,7 +148,8 @@ class TransactionProcessor(SystemInterface):
         tx_list = transactions if transactions is not None else state.transactions
 
         for tx in tx_list:
-            # 0. Skip Executed Transactions (TD-160: Atomic Inheritance)
+            # 0. Skip Executed Transactions (TD-160: Atomic Inheritance & WO-IMPL-LEDGER-HARDENING: Receipt Log)
+            # Safeguard: Do not re-process transactions that are purely for audit/ledger visibility.
             if (
                 hasattr(tx, "metadata")
                 and tx.metadata

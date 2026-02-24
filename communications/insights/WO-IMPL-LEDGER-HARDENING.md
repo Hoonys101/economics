@@ -6,19 +6,16 @@ The transition to a strict Integer-based Penny Standard revealed several areas w
 - **Decision**: We enforced `int` types for all monetary values (`baseline_money_supply`, `total_money_issued`, etc.) to eliminate floating-point drift.
 - **Impact**: M2 verification is now exact. Tolerance is defined in pennies (1000 pennies = $10.00) rather than a ratio of floats that might suffer from precision errors.
 
-### Shadow Transaction Elimination
+### Shadow Transaction Elimination & Liability Drift
 "Shadow Transactions" were identified where balances were modified directly without a corresponding `Transaction` object being emitted or processed.
-- **Debt Servicing**: The `DebtServicingEngine` was modifying `deposit.balance_pennies` directly to simulate payment. This was redundant because `FinancialTransactionHandler` also executes the transfer.
-    - **Fix**: We removed the direct modification and replaced it with local variable tracking to prevent overdrafts during batch processing, while relying solely on the emitted `Transaction` for the actual system update.
-- **Taxation**: Sales and Income taxes were handled via "Atomic Settlement" (`settle_atomic`) which moved money but did not generate a distinct `Transaction` object for the tax component.
-    - **Fix**: We added logic to `GoodsTransactionHandler` and `LaborTransactionHandler` to emit a `Transaction` (metadata `executed=True`) for every tax intent settled. This ensures the Ledger can track tax flows explicitly.
-- **Liquidation**: Liquidation payouts were using `settlement_system.transfer` without emitting a `Transaction` object for the record.
-    - **Fix**: We instrumented `LiquidationManager` and `DeathSystem` to emit transactions for every asset recovery and claim payout.
+- **Problem**: Initially, we removed *all* direct updates in `DebtServicingEngine` to rely on the `FinancialTransactionHandler`.
+- **Critical Finding**: This caused "Liability Drift". The Handler updates the *Cash Wallet* (Assets), but the Engine updates the *Accounting Ledger* (DTOs). If the Engine stops updating the DTO (Deposit Balance), the Bank's liability to the customer remains unchanged while the customer's cash decreases (via Settlement), creating an infinite liability glitch.
+- **Solution**: We restored the `deposit.balance_pennies -= ...` logic in the Engine. The Engine updates the *Internal Ledger* (DTO), while the emitted Transaction drives the *Settlement System* (Real Cash). Both must happen to maintain Double-Entry integrity across the distinct Accounting and Cash domains.
 
-### Architectural Safeguards (Code Review Validation)
-The introduction of `Transaction` objects for actions that were previously implicit raised concerns about potential "Double Spending" or "Double Counting".
-- **Double-Spend Protection**: Transactions emitted for audit purposes (e.g., Taxes) are marked with `metadata={"executed": True}`. We verified via `tests/unit/test_ledger_safety.py` that `TransactionProcessor` explicitly skips these transactions, ensuring funds are not moved twice.
-- **Double-Counting Protection**: `DebtServicingEngine` updates the accounting ledger (DTO), while `FinancialTransactionHandler` updates the cash wallet (Agent). We verified that the Handler does *not* write back to the Ledger DTO, confirming that the Engine's manual update is required and does not duplicate the Handler's work.
+### Receipt Transaction Safeguards
+New transactions emitted for Taxes and Liquidation are effectively "Receipts" for actions already settled atomically.
+- **Risk**: Double-Counting or Double-Spending if these receipts are re-processed by handlers.
+- **Safeguard**: These transactions are marked with `metadata={"executed": True}`. We explicitly verified and documented that `TransactionProcessor` skips these transactions, ensuring they serve as audit records only.
 
 ## 2. Regression Analysis
 - **`tests/unit/government/test_monetary_ledger_units.py`**:
