@@ -4,8 +4,11 @@ from simulation.firms import Firm
 from modules.firm.api import (
     FinanceDecisionInputDTO, BudgetPlanDTO,
     HRDecisionInputDTO, HRDecisionOutputDTO,
-    FirmSnapshotDTO, HRIntentDTO, SalesIntentDTO
+    FirmSnapshotDTO, HRIntentDTO, SalesIntentDTO,
+    IFinanceEngine, IHREngine, IProductionEngine, ISalesEngine, IPricingEngine,
+    IAssetManagementEngine, IRDEngine, IBrandEngine
 )
+from simulation.components.engines.hr_engine import HREngine
 from simulation.models import Order
 from simulation.dtos import DecisionInputDTO
 from modules.simulation.dtos.api import FirmConfigDTO
@@ -43,14 +46,14 @@ class TestFirmSurgicalSeparation:
         )
 
         # Inject Mock Engines
-        firm.finance_engine = MagicMock()
-        firm.hr_engine = MagicMock()
-        firm.production_engine = MagicMock()
-        firm.sales_engine = MagicMock()
-        firm.pricing_engine = MagicMock()
-        firm.asset_management_engine = MagicMock()
-        firm.rd_engine = MagicMock()
-        firm.brand_engine = MagicMock()
+        firm.finance_engine = MagicMock(spec=IFinanceEngine)
+        firm.hr_engine = MagicMock(spec=HREngine)
+        firm.production_engine = MagicMock(spec=IProductionEngine)
+        firm.sales_engine = MagicMock(spec=ISalesEngine)
+        firm.pricing_engine = MagicMock(spec=IPricingEngine)
+        firm.asset_management_engine = MagicMock(spec=IAssetManagementEngine)
+        firm.rd_engine = MagicMock(spec=IRDEngine)
+        firm.brand_engine = MagicMock(spec=IBrandEngine)
 
         firm.action_executor = MagicMock() # Mock execute_internal_orders delegate
 

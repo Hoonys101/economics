@@ -6,6 +6,9 @@ from simulation.systems.bootstrapper import Bootstrapper
 from modules.system.constants import ID_BANK
 from modules.simulation.api import AgentID
 from modules.system.api import DEFAULT_CURRENCY
+from simulation.core_agents import Household
+from simulation.firms import Firm
+from simulation.systems.demographic_manager import DemographicManager
 
 class TestGhostFirmPrevention:
 
@@ -21,6 +24,10 @@ class TestGhostFirmPrevention:
         sim.bank.id = AgentID(ID_BANK)
         sim.world_state = MagicMock()
         sim.world_state.agents = sim.agents
+
+        # WO-WAVE-B-4-TEST: Fix regression by initializing demographic_manager
+        sim.demographic_manager = MagicMock(spec=DemographicManager)
+
         return sim
 
     def test_init_phase4_population_registers_agents_atomically(self, mock_sim):
@@ -36,9 +43,9 @@ class TestGhostFirmPrevention:
             ai_trainer=MagicMock()
         )
 
-        hh = MagicMock()
+        hh = MagicMock(spec=Household)
         hh.id = 101
-        firm = MagicMock()
+        firm = MagicMock(spec=Firm)
         firm.id = 201
 
         mock_sim.households = [hh]
@@ -48,7 +55,8 @@ class TestGhostFirmPrevention:
         initializer.firms = [firm]
 
         mock_sim.agents = {} # Initially empty or None
-        mock_sim.demographic_manager = MagicMock()
+
+        # WO-WAVE-B-4-TEST: demographic_manager is now mocked in fixture
 
         # Execute
         initializer._init_phase4_population(mock_sim)
@@ -68,8 +76,9 @@ class TestGhostFirmPrevention:
     def test_bootstrapper_raises_key_error_on_unregistered_agent(self):
         # Setup
         central_bank = MagicMock()
-        firm = MagicMock()
+        firm = MagicMock(spec=Firm)
         firm.id = 301
+        firm.wallet = MagicMock()
         firm.wallet.get_balance.return_value = 0
         settlement_system = MagicMock()
 
@@ -91,7 +100,7 @@ class TestGhostFirmPrevention:
     def test_bootstrapper_raises_key_error_on_distribute_wealth_failure(self):
         # Setup
         central_bank = MagicMock()
-        agent = MagicMock()
+        agent = MagicMock() # Could be any agent, using generic
         agent.id = 401
         settlement_system = MagicMock()
 

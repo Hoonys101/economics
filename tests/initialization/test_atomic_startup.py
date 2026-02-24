@@ -6,11 +6,12 @@ from modules.system.constants import ID_GOVERNMENT, ID_CENTRAL_BANK, ID_BANK, ID
 
 class TestAtomicStartup:
 
-    @patch('simulation.initialization.initializer.PlatformLockManager')
-    @patch('simulation.initialization.initializer.Simulation')
-    @patch('simulation.initialization.initializer.SettlementSystem')
-    @patch('simulation.initialization.initializer.Bootstrapper')
-    @patch('simulation.initialization.initializer.AgentRegistry')
+    @pytest.mark.no_lock_mock
+    @patch('simulation.initialization.initializer.PlatformLockManager', autospec=True)
+    @patch('simulation.initialization.initializer.Simulation', autospec=True)
+    @patch('simulation.initialization.initializer.SettlementSystem', autospec=True)
+    @patch('simulation.initialization.initializer.Bootstrapper', autospec=True)
+    @patch('simulation.initialization.initializer.AgentRegistry', autospec=True)
     def test_atomic_startup_phase_validation(self, MockAgentRegistry, MockBootstrapper, MockSettlementSystem, MockSimulation, MockLockManager):
         """
         Verifies that the 5-phase initialization sequence executes without error
@@ -46,6 +47,14 @@ class TestAtomicStartup:
 
         mock_sim_instance = MockSimulation.return_value
         mock_sim_instance.agents = {1: MagicMock()}
+        mock_sim_instance.world_state = MagicMock()
+        mock_sim_instance.world_state.global_registry = MagicMock()
+        mock_sim_instance.world_state.transactions = MagicMock()
+        mock_sim_instance.settlement_system = MockSettlementSystem.return_value
+        mock_sim_instance.government = MagicMock() # Required to pass hasattr check in Phase 2
+        mock_sim_instance.firms = [] # Required for Phase 3 if Stock Market enabled
+        mock_sim_instance.households = []
+        mock_sim_instance.run_id = "test_run_id" # Required for Phase 3
         mock_registry_instance = MockAgentRegistry.return_value
         mock_sim_instance.agent_registry = mock_registry_instance
 
@@ -74,19 +83,22 @@ class TestAtomicStartup:
         with ExitStack() as stack:
             patches = {}
             for component in components_to_mock:
-                patches[component] = stack.enter_context(patch(f'simulation.initialization.initializer.{component}'))
+                patches[component] = stack.enter_context(patch(f'simulation.initialization.initializer.{component}', autospec=True))
 
             # Configure System Agent IDs to be integers (fixes TypeError in Phase 4 max() check)
             patches['Bank'].return_value.id = ID_BANK
+            patches['Bank'].return_value.base_rate = 0.05 # Phase 5 access
             patches['Government'].return_value.id = ID_GOVERNMENT
             patches['CentralBank'].return_value.id = ID_CENTRAL_BANK
             patches['EscrowAgent'].return_value.id = ID_ESCROW
             patches['PublicManager'].return_value.id = ID_PUBLIC_MANAGER
 
-            stack.enter_context(patch('modules.system.services.command_service.CommandService'))
-            stack.enter_context(patch('modules.system.telemetry.TelemetryCollector'))
-            stack.enter_context(patch('simulation.dtos.strategy.ScenarioStrategy'))
-            stack.enter_context(patch('modules.analysis.scenario_verifier.engine.ScenarioVerifier'))
+            patches['HouseholdFactory'].return_value.context = MagicMock()
+
+            stack.enter_context(patch('modules.system.services.command_service.CommandService', autospec=True))
+            stack.enter_context(patch('modules.system.telemetry.TelemetryCollector', autospec=True))
+            stack.enter_context(patch('simulation.dtos.strategy.ScenarioStrategy', autospec=True))
+            stack.enter_context(patch('modules.analysis.scenario_verifier.engine.ScenarioVerifier', autospec=True))
 
             # Execute
             sim = initializer.build_simulation()
