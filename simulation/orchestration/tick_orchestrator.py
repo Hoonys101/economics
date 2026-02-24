@@ -267,7 +267,7 @@ class TickOrchestrator:
 
             # Tight Tolerance: 0.1% to detect leaks early (Wave 5 Hardening)
             # Tolerance is in pennies. 1000 pennies = 10.00 dollars.
-            tolerance = max(1000, expected_money * 0.001)
+            tolerance = int(max(1000, expected_money * 0.001))
             if abs(m2_leak_delta) > tolerance:
                  state.logger.warning(msg, extra=extra_data)
             else:

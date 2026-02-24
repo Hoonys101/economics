@@ -35,8 +35,8 @@ class DebtServicingEngine(IDebtServicingEngine):
                 payment_made = 0
 
                 if deposit and deposit.balance_pennies >= interest_pennies:
-                    # WO-IMPL-LEDGER-HARDENING: Use local tracking to prevent shadow transactions
-                    # We do NOT modify deposit.balance_pennies directly. The emitted Transaction will update the SSoT.
+                    # [Double-Entry Accounting] Update Accounting Ledger (DTO) immediately. 
+                    # FinancialTransactionHandler will update the Cash Ledger (SSoT) via emitted Transaction.
                     current_balance = deposit.balance_pennies
 
                     if current_balance >= interest_pennies:

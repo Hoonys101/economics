@@ -22,14 +22,14 @@
 | **TD-ECON-M2-INV-BUG** | Economic | **M2 Audit Logic**: `audit_total_m2` naively sums negative balances. | **CRITICAL**: Integrity. | **RESOLVED** |
 | **TD-SYS-BATCH-RACE** | Finance | **Atomic Batch Race**: Multiple withdrawals in a batch bypass balance checks. | **High**: Soundness. | **RESOLVED** |
 | **TD-TEST-TX-MOCK-LAG** | Testing | **Transaction Test Lag**: `test_transaction_engine.py` mocks are out of sync. | **Low**: Flakiness. | Identified |
-| **TD-TEST-TAX-DEPR** | Testing | **Deprecated Tax API in Tests**: `test_transaction_handlers.py` still uses `collect_tax`. | **Medium**: Tech Debt. | Identified |
+| **TD-TEST-TAX-DEPR** | Testing | **Deprecated Tax API in Tests**: `test_transaction_handlers.py` still uses `collect_tax`. | **Medium**: Tech Debt. | **IDENTIFIED (WV6)** |
 | **TD-ECON-INSTABILITY-V2** | Economic | **Rapid Collapse**: Sudden Zombie/Fire Sale clusters despite high initial assets. | **High**: Logic Drift. | **IDENTIFIED** |
 | **TD-ARCH-ORCH-HARD** | Architecture | **Orchestrator Fragility**: `TickOrchestrator` lacks hardening against missing DTO attributes in mocks. | **Medium**: Resilience. | **NEW (PH21)** |
 | **TD-ARCH-SETTLEMENT-BLOAT** | Architecture | **Settlement Overload**: `SettlementSystem` handles orchestration, ledgers, metrics, and indices. | **High**: Maintainability. | **RESOLVED (PH4.1)** |
 | **TD-CONFIG-HARDCODED-MAJORS** | Configuration | **Hardcoded Majors**: `MAJORS` list hardcoded in `labor/constants.py` instead of yaml. | **Low**: Flexibility. | **RESOLVED (PH4.1)** |
-| **TD-ECON-M2-REGRESSION** | Economic | **M2 Negative Inversion**: `calculate_total_money()` sums negative balances. | **CRITICAL**: Integrity. | **SPECCED (PH22)** |
-| **TD-FIN-SAGA-REGRESSION** | Finance | **Saga Drift**: Sagas skipped due to missing/dead participant IDs. | **High**: Protocol. | **SPECCED (PH22)** |
-| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firm Bug**: Transactions precede registration during startup. | **CRITICAL**: Integrity. | **SPECCED (PH22)** |
+| **TD-ECON-M2-REGRESSION** | Economic | **M2 Negative Inversion**: `calculate_total_money()` sums negative balances. | **CRITICAL**: Integrity. | **RESOLVED (PH23)** |
+| **TD-FIN-SAGA-REGRESSION** | Finance | **Saga Drift**: Sagas skipped due to missing/dead participant IDs. | **High**: Protocol. | **RESOLVED (PH23)** |
+| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firm Bug**: Transactions precede registration during startup. | **CRITICAL**: Integrity. | **RESOLVED (PH23)** |
 | **TD-BANK-RESERVE-CRUNCH** | Finance | **Reserve Constraint**: Bank 2 lacks reserves (1M) to fund infrastructure bonds (8M+). | **Medium**: Logic. | **NEW** |
 | **TD-ECON-ZOMBIE-FIRM** | Economic | **Firm Extinction**: Rapid collapse of basic_food firms causing FIRE_SALE spam. | **High**: Balance. | **NEW** |
 | **TD-ARCH-SEO-LEGACY** | Firm | **Legacy SEO Gap**: `brain_scan` skips legacy decision logic unless mocked. | **Medium**: AI Integrity. | **NEW (PH4.1)** |
@@ -40,12 +40,13 @@
 | **TD-WAVE3-DTO-SWAP** | DTO | **IndustryDomain Shift**: Replace `major` with `IndustryDomain` enum. | **Medium**: Structure. | **SPECCED** |
 | **TD-WAVE3-TALENT-VEIL** | Agent | **Hidden Talent**: `EconStateDTO` missing `hidden_talent`. | **High**: Intent. | **SPECCED** |
 | **TD-WAVE3-MATCH-REWRITE** | Market | **Bargaining vs OrderBook**: Existing LaborMarket assumes sorting. | **High**: Economy. | **SPECCED** |
-| **TD-FIN-INVISIBLE-HAND** | Finance | **Initialization Order**: CB/PublicManager registered after AgentRegistry snapshot. | **CRITICAL**: Runtime failure. | **NEW (AUDIT)** |
-| **TD-MARKET-FLOAT-TRUNC** | Market | **Wealth Destruction**: `MatchingEngine` truncates fractional pennies via `int()`. | **High**: Deflationary bias. | **NEW (AUDIT)** |
-| **TD-SYS-ANALYTICS-DIRECT** | Systems | **Stateless Bypass**: `AnalyticsSystem` calls agent methods instead of using DTO snapshots. | **Medium**: Pattern violation. | **NEW (AUDIT)** |
-| **TD-DX-CONTEXT-BLOAT** | DX / Infra | **Context Bloat**: `git-go` review injects full `.py` source files. | **Medium**: Token waste. | **RESOLVED (WV6)** |
-| **TD-DX-RECORD-REVENUE-DICT** | DTO Hygiene | **Dict→DTO Migration**: `record_revenue` called with raw `dict`. | **High**: Runtime crash. | **RESOLVED** |
-| **TD-SYS-TRANSFER-HANDLER-GAP** | Systems | **Handler Omission**: Simple "transfer" type transactions lack a handler. | **CRITICAL**: Accounting Invisibility. | **RESOLVED (WV6)** |
+| **TD-FIN-INVISIBLE-HAND** | Finance | **Initialization Order**: CB/PublicManager registered after AgentRegistry snapshot. | **CRITICAL**: Runtime failure. | **RESOLVED (PH23)** |
+| **TD-MARKET-FLOAT-TRUNC** | Market | **Wealth Destruction**: `MatchingEngine` truncates fractional pennies via `int()`. | **High**: Deflationary bias. | **RESOLVED (PH23)** |
+| **TD-SYS-ANALYTICS-DIRECT** | Systems | **Stateless Bypass**: `AnalyticsSystem` calls agent methods instead of using DTO snapshots. | **Medium**: Pattern violation. | Open |
+| **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks instead of `system_commands`. | **High**: Testing Gap. | **NEW (AUDIT)** |
+| **TD-ARCH-ESTATE-REGISTRY** | Lifecycle | **Post-Mortem Integrity**: Missing graveyard registry for dead agents' transactions. | **High**: Financial soundness. | **SPECCED (PH33)** |
+| **TD-SPEC-DTO-INT-MIGRATION** | DTO | **Telemetry Precision**: `SettlementResultDTO` still uses floats for reporting. | **Medium**: Consistency. | **SPECCED (PH33)** |
+| **TD-FIN-LIQUIDATION-DUST** | Finance | **Wealth Orphanage**: Pro-rata liquidation truncates dust pennies. | **Low**: Accuracy. | **SPECCED (PH33)** |
 
 ---
 
@@ -79,7 +80,7 @@
 - **Symptom**: Massive spam of `SAGA_SKIP` logs with missing participant IDs. Sagas persist references to dead/failed agents.
 - **Risk**: Transactions fail to complete; orphaned processes consume compute cycles.
 - **Solution**: Re-verify ID propagation in `TickOrchestrator`. Implement saga cleanup for dead participants.
-- **Status**: SPECCED (Phase 22)
+- **Status**: RESOLVED (Phase 23)
 
 ### ID: TD-BANK-RESERVE-CRUNCH
 - **Title**: Bank Reserve Structural Constraint
@@ -109,7 +110,7 @@
 - **Symptom**: Aggregate money supply goes negative (`Current: -153521427.00`).
 - **Risk**: Deflationary spiral, math errors in interest calculation.
 - **Solution**: Update `calculate_total_money()` to `Sum(max(0, balance_i))`. Track negative balances as `SystemDebt`, not M2 deduction.
-- **Status**: SPECCED (Phase 22)
+- **Status**: RESOLVED (Phase 23)
 
 ### ID: TD-ECON-ZOMBIE-FIRM
 - **Title**: Rapid Extinction of basic_food Firms
@@ -140,12 +141,19 @@
 
 ## Lifecycle & Configuration
 ---
+### ID: TD-ARCH-ESTATE-REGISTRY
+- **Title**: Estate/Graveyard Registry for Dead Agents
+- **Symptom**: SettlementSystem currently uses a "Resurrection Hack" to handle post-mortem transactions.
+- **Risk**: Data corruption and lifecycle violations if dead agents are partially re-injected.
+- **Solution**: Implement a formal `EstateRegistry` to manage financial finalization for liquidated agents without re-registration.
+- **Status**: SPECCED (Phase 33)
+
 ### ID: TD-LIFECYCLE-GHOST-FIRM
 - **Title**: Atomic Startup Failure (Ghost Firm Bug)
 - **Symptom**: `SETTLEMENT_FAIL | Engine Error: Destination account does not exist: [IDs]`.
 - **Risk**: Capital injections fail silently, leaving firms in "Zombie" states. Investor funds may be debited without corresponding credit.
 - **Solution**: Implement `FirmFactory` to ensure Registration -> Bank Account Opening -> Injection sequence is atomic and blocking.
-- **Status**: SPECCED (Phase 22)
+- **Status**: RESOLVED (Phase 23)
 
 ### ID: TD-CONFIG-HARDCODED-MAJORS
 - **Title**: Hardcoded Labor Majors
