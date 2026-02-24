@@ -812,7 +812,6 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
         agents=sim.agents,
         markets=sim.markets,
         primary_government=sim.government, # Renamed
-        governments=[sim.government], # Added for TD-ARCH-GOV-MISMATCH
         bank=sim.bank,
         central_bank=sim.central_bank, # Direct access
         escrow_agent=getattr(sim, 'escrow_agent', None), # Keep getattr for optional/dynamic
@@ -903,7 +902,6 @@ def test_death_system_executes_asset_buyout(setup_simulation_for_lifecycle):
         agents=sim.agents,
         markets=sim.markets,
         primary_government=sim.government,
-        governments=[sim.government],
         bank=sim.bank,
         central_bank=sim.central_bank,
         stock_market=sim.stock_market,

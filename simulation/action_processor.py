@@ -50,7 +50,6 @@ class ActionProcessor:
                 agents=self.world_state.agents,
                 markets=self.world_state.markets,
                 primary_government=self.world_state.government,
-                governments=[self.world_state.government] if self.world_state.government else [], # TD-ARCH-GOV-MISMATCH: Populate list
                 bank=self.world_state.bank,
                 central_bank=self.world_state.central_bank,
                 escrow_agent=getattr(self.world_state, "escrow_agent", None),
