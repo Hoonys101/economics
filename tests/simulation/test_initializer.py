@@ -16,6 +16,8 @@ class TestSimulationInitializer:
         mock_config = MagicMock()
         mock_config.INITIAL_MONEY_SUPPLY = 1000
         mock_config.INITIAL_BANK_ASSETS = 1000
+        # WO-STABILIZE-POST-MERGE: Ensure initial_bank_assets retrieved from config manager is an int, not a Mock
+        mock_config.get.return_value = 1000
         mock_config.NUM_HOUSING_UNITS = 10
         mock_config.GOODS = ['food']
         mock_config.INITIAL_PROPERTY_VALUE = 100
@@ -24,8 +26,12 @@ class TestSimulationInitializer:
         mock_repo = MagicMock()
         mock_logger = MagicMock()
 
+        config_manager = MagicMock()
+        # WO-STABILIZE-POST-MERGE: Ensure config_manager.get returns an int for 'initial_bank_assets'
+        config_manager.get.return_value = 1000
+
         initializer = SimulationInitializer(
-            config_manager=MagicMock(),
+            config_manager=config_manager,
             config_module=mock_config,
             goods_data=[],
             repository=mock_repo,
@@ -38,7 +44,7 @@ class TestSimulationInitializer:
 
         mock_sim_instance = MockSimulation.return_value
         # Ensure sim.agents is a dict so update/assignment works
-        mock_sim_instance.agents = {}
+        mock_sim_instance.agents = {1: MagicMock()}
 
         mock_registry_instance = MockAgentRegistry.return_value
         # IMPORTANT: Link the registry mock to the simulation mock so calls to sim.agent_registry are tracked on the same object
