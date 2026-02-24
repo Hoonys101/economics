@@ -18,21 +18,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-MYPY-LOGIC-B3-SIM-CORE": {
-      "key": "WO-MYPY-LOGIC-B3-SIM-CORE",
-      "title": "Mypy Stage B3: Logic Hardening (Sim Core)",
-      "type": "jules",
-      "instruction_raw": "Core \ubaa8\ub4c8(`simulation/orchestration`, `simulation/agents`)\uc758 \ud568\uc218 \ub0b4\ubd80 \ub85c\uc9c1 \ubc0f \ud504\ub85c\ud1a0\ucf5c \uc815\ud569\uc131\uc744 \uc218\uc815\ud558\uc2ed\uc2dc\uc624.",
-      "command": "create",
-      "file_path": "communications/audit/MYPY_AUDIT_REPORT.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-MYPY-LOGIC-B4-MARKETS": {
       "key": "WO-MYPY-LOGIC-B4-MARKETS",
       "title": "Mypy Stage B4: Logic Hardening (Markets)",
