@@ -3,12 +3,12 @@
 ## 1. Architectural Insights
 - **Solvency-First Lifecycle**: The `AgingSystem` was refactored to prioritize Solvency (Assets > 0) over the "Zombie Timer" (Consecutive Losses). This prevents "Institutional Suicide" where solvent firms were killed prematurely.
 - **Dimensional Correction in OMO**: The `CentralBankSystem` previously calculated OMO quantity as `amount`, leading to hyperinflation (assuming Price=1). The fix introduces `quantity = amount // par_value` (where par_value=10000 pennies), ensuring correct monetary injection scaling.
-- **Protocol Purity Enforcement**: Fixed `AttributeError` in `CentralBankSystem` by enforcing attribute access on `OMOInstructionDTO` (frozen dataclass), rejecting dictionary access.
-- **Automated M2 Tracking**: `MonetaryTransactionHandler` was updated to automatically track `total_money_issued` and `total_money_destroyed` on the Central Bank agent during OMO, closing a significant M2 leak in audit logs.
+- **Settle-then-Record Compliance**: Reverted initial attempt to mutate agent state in `MonetaryTransactionHandler` (which violated Stateless Architecture). Confirmed that `Phase3_Transaction` correctly invokes `MonetaryLedger.process_transactions` to track M2 changes post-settlement, respecting the separation of concerns.
+- **Magic Number Elimination**: Extracted OMO pricing constants (`BOND_PAR_VALUE_PENNIES`, etc.) into `CentralBankSystem` class attributes.
 
 ## 2. Regression Analysis
 - **`tests/test_firm_survival.py`**: New test suite confirmed the fix for "Solvent Firm Death" and OMO quantity calculation.
-- **`tests/integration/test_omo_system.py`**: Updated to reflect the new DTO usage and automated M2 tracking. Manual counter updates were removed, validating the handler's automation.
+- **`tests/integration/test_omo_system.py`**: Updated to test `MonetaryLedger` integration without handler mutation. Manual updates were removed, validating that the ledger logic correctly interprets OMO transactions.
 - **Full Suite**: 100% Pass Rate achieved across all 1054 tests.
 
 ## 3. Test Evidence
@@ -748,7 +748,7 @@ tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_success
 tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_no_handler PASSED [ 69%]
 tests/unit/sagas/test_saga_cleanup.py::test_saga_cleanup_inactive_buyer
 -------------------------------- live log call ---------------------------------
-INFO     modules.finance.sagas.orchestrator:orchestrator.py:142 SAGA_CLEANUP | Saga 64ff2b35-010e-4d82-b566-b952758210a7 cancelled due to inactive participant. Buyer Active: False, Seller Active: True
+INFO     modules.finance.sagas.orchestrator:orchestrator.py:142 SAGA_CLEANUP | Saga 47f3d1a6-0ee4-4c8d-a91a-96ecf231f566 cancelled due to inactive participant. Buyer Active: False, Seller Active: True
 PASSED                                                                   [ 69%]
 tests/unit/sagas/test_saga_cleanup.py::test_saga_cleanup_and_compensate PASSED [ 69%]
 tests/unit/sagas/test_saga_cleanup.py::test_saga_compensate_failure_resilience
@@ -1084,5 +1084,5 @@ SKIPPED [1] tests/security/test_websocket_auth.py:13: websockets is mocked
 SKIPPED [1] tests/system/test_server_auth.py:11: websockets is mocked, skipping server auth tests
 SKIPPED [1] tests/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
 SKIPPED [1] tests/test_ws.py:11: fastapi is mocked
-======================= 1054 passed, 7 skipped in 15.90s =======================
+======================= 1054 passed, 7 skipped in 15.95s =======================
 ```

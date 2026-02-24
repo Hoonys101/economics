@@ -13,6 +13,13 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
     Also handles Open Market Operations (OMO).
     """
 
+    # OMO Configuration Constants
+    BOND_PAR_VALUE_PENNIES = 10000
+    OMO_BUY_LIMIT_PRICE_PENNIES = 11000
+    OMO_BUY_LIMIT_PRICE = 110.0
+    OMO_SELL_LIMIT_PRICE_PENNIES = 9000
+    OMO_SELL_LIMIT_PRICE = 90.0
+
     def __init__(self, central_bank_agent: Any, settlement_system: SettlementSystem, transactions: List[Any], security_market_id: str='security_market', logger: Optional[logging.Logger]=None):
         self.central_bank = central_bank_agent
         self.settlement = settlement_system
@@ -35,12 +42,12 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
         amount = instruction.target_amount
 
         # Bond Par Value (100.00 currency units) used for quantity calculation
-        par_value_pennies = 10000
+        par_value_pennies = self.BOND_PAR_VALUE_PENNIES
 
         if op_type == 'purchase':
             # Buy Limit: 110.00 (10% premium over Par)
-            limit_price_pennies = 11000
-            limit_price = 110.0
+            limit_price_pennies = self.OMO_BUY_LIMIT_PRICE_PENNIES
+            limit_price = self.OMO_BUY_LIMIT_PRICE
 
             # Dimensional Correction: Calculate quantity based on par value
             quantity = amount // par_value_pennies
@@ -52,8 +59,8 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
 
         elif op_type == 'sale':
             # Sell Limit: 90.00 (10% discount under Par)
-            limit_price_pennies = 9000
-            limit_price = 90.0
+            limit_price_pennies = self.OMO_SELL_LIMIT_PRICE_PENNIES
+            limit_price = self.OMO_SELL_LIMIT_PRICE
 
             # Dimensional Correction: Calculate quantity based on par value
             quantity = amount // par_value_pennies
@@ -71,19 +78,8 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
         """
         if transaction.transaction_type == 'omo_purchase':
             self.logger.info(f'OMO_PURCHASE_SETTLED | CB Bought {transaction.quantity} bonds for {transaction.price}. Money Injected (Minted).')
-            # FIX: Update Money Supply Tracker
-            if hasattr(self.central_bank, 'total_money_issued'):
-                # Handle potential attribute types (int/float)
-                # transaction.total_pennies is int.
-                current = self.central_bank.total_money_issued
-                self.central_bank.total_money_issued = current + transaction.total_pennies
-
         elif transaction.transaction_type == 'omo_sale':
             self.logger.info(f'OMO_SALE_SETTLED | CB Sold {transaction.quantity} bonds for {transaction.price}. Money Drained (Burned).')
-            # FIX: Update Money Supply Tracker
-            if hasattr(self.central_bank, 'total_money_destroyed'):
-                current = self.central_bank.total_money_destroyed
-                self.central_bank.total_money_destroyed = current + transaction.total_pennies
 
     def mint_and_transfer(self, target_agent: Any, amount: float, memo: str) -> bool:
         """
