@@ -187,7 +187,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Initialize System Agents with Fixed IDs
         sim.bank = Bank(id=ID_BANK, initial_assets=0, config_manager=self.config_manager, settlement_system=sim.settlement_system, credit_scoring_service=credit_scoring_service, event_bus=sim.event_bus)
         sim.settlement_system.bank = sim.bank
-        self.initial_balances[sim.bank.id] = self.config.INITIAL_BANK_ASSETS
+        # TD-BANK-RESERVE-CRUNCH: Use tunable initial assets from config
+        initial_bank_assets = self.config_manager.get("economy_params.bank.initial_bank_assets", self.config.INITIAL_BANK_ASSETS)
+        self.initial_balances[sim.bank.id] = initial_bank_assets
         sim.bank.settlement_system = sim.settlement_system
         sim.agents[sim.bank.id] = sim.bank
 
