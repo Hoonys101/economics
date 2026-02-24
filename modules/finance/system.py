@@ -314,7 +314,7 @@ class FinanceSystem(IFinanceSystem):
 
         # Updates self.ledger.treasury.bonds
 
-        base_rate = 0.03
+        base_rate = self.config_module.get("economy_params.bank.base_rate", 0.03)
         all_banks = self.bank_registry.get_all_banks()
         if all_banks:
             base_rate = all_banks[0].base_rate
@@ -488,7 +488,7 @@ class FinanceSystem(IFinanceSystem):
             logger.warning(f"BAILOUT_DENIED | Government insufficient funds: {gov_bal} < {amount}")
             return None
 
-        base_rate = 0.03 # Default
+        base_rate = self.config_module.get("economy_params.bank.base_rate", 0.03)
         all_banks = self.bank_registry.get_all_banks()
         if all_banks:
             base_rate = all_banks[0].base_rate

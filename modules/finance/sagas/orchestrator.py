@@ -90,11 +90,15 @@ class SagaOrchestrator(ISagaOrchestrator):
                 try:
                     buyer_id = int(buyer_id_raw)
                 except (ValueError, TypeError):
-                    logger.error(f"SAGA_SKIP | Saga {saga_id} has invalid buyer ID: {buyer_id_raw}")
+                    logger.error(f"SAGA_CANCELLED | Saga {saga_id} has invalid buyer ID: {buyer_id_raw}")
+                    if saga_id in self.active_sagas:
+                        del self.active_sagas[saga_id]
                     continue
 
                 if seller_id is None:
-                    logger.warning(f"SAGA_SKIP | Saga {saga_id} missing seller ID.")
+                    logger.warning(f"SAGA_CANCELLED | Saga {saga_id} missing seller ID.")
+                    if saga_id in self.active_sagas:
+                        del self.active_sagas[saga_id]
                     continue
 
                 buyer = sim_state.agents.get(buyer_id)

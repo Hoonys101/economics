@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from modules.common.config_manager.api import ConfigManager
     from simulation.dtos.scenario import StressScenarioConfig
     from modules.government.politics_system import PoliticsSystem
-from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry # Added for Phase 33
+from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry, DEFAULT_CURRENCY # Added for Phase 33
 from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
 from modules.finance.api import IShareholderRegistry
@@ -178,37 +178,43 @@ class WorldState:
                 totals[cur] = totals.get(cur, 0) + max(0, int(amount))
         return totals
 
-    def calculate_total_money(self) -> Dict[CurrencyCode, int]:
+    def calculate_total_money(self) -> Dict[str, int]:
         """
-        Calculates M2 (Total Money Supply).
-        M2 = Currency in Circulation + Deposits.
-        In this simulation, Non-Bank Agent Wallets represent their liquidity.
-        MIGRATION: Returns int (pennies).
+        Calculates M2 (Total Money Supply) and System Debt.
+        M2 = Sum(max(0, balance)) for all non-system agents.
+        SystemDebt = Sum(abs(balance)) where balance < 0.
+        Returns: {DEFAULT_CURRENCY: total_m2, "SYSTEM_DEBT": total_debt}
         """
-        totals: Dict[CurrencyCode, int] = {}
-        for holder in self.currency_holders:
-            # Exclude CentralBank (Source) and Commercial Bank (Reserves) from M2 summation.
-            # M2 is money in the hands of the public (Households, Firms, Gov).
-                if hasattr(holder, 'id'):
-                    # WO-WAVE5-MONETARY-FIX: Harmonize M2 Perimeter
-                    # Exclude System Sinks (Central Bank, Public Manager, System)
-                    holder_id_str = str(holder.id)
-                    if holder_id_str == str(ID_CENTRAL_BANK) or holder_id_str == str(ID_PUBLIC_MANAGER) or holder_id_str == str(ID_SYSTEM):
-                        continue
-                    
-                    # Note: We include the Bank in the audit to track Bank Reserves (M0).
-                    # This ensures LLR injections are captured immediately in the total money sum.
-                    # M2 is usually Public Circulation, but for a strict Zero-Sum audit, we check M0 + M2.
+        total_money = 0
+        system_debt = 0
 
-                    # Dead Agent Guard (Strict)
-                    if hasattr(holder, 'is_active') and not holder.is_active:
-                        continue
+        for holder in self.currency_holders:
+            if hasattr(holder, 'id'):
+                # WO-WAVE5-MONETARY-FIX: Harmonize M2 Perimeter
+                # Exclude System Sinks (Central Bank, Public Manager, System)
+                holder_id_str = str(holder.id)
+                if holder_id_str == str(ID_CENTRAL_BANK) or holder_id_str == str(ID_PUBLIC_MANAGER) or holder_id_str == str(ID_SYSTEM):
+                    continue
+
+                # Note: We include the Bank in the audit to track Bank Reserves (M0).
+                # This ensures LLR injections are captured immediately in the total money sum.
+                # M2 is usually Public Circulation, but for a strict Zero-Sum audit, we check M0 + M2.
+
+                # Dead Agent Guard (Strict)
+                if hasattr(holder, 'is_active') and not holder.is_active:
+                    continue
+
+            # Retrieve assets safely
+            # We assume DEFAULT_CURRENCY primarily for the M2 audit per spec.
+            assets_dict = holder.get_assets_by_currency()
+            val = int(assets_dict.get(DEFAULT_CURRENCY, 0))
             
-                # Retrieve assets safely
-                assets_dict = holder.get_assets_by_currency()
-                for cur, amount in assets_dict.items():
-                    totals[cur] = totals.get(cur, 0) + max(0, int(amount))
-        return totals
+            if val >= 0:
+                total_money += val
+            else:
+                system_debt += abs(val)
+
+        return {DEFAULT_CURRENCY: total_money, "SYSTEM_DEBT": system_debt}
 
     def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = "USD") -> float:
         """
@@ -221,6 +227,7 @@ class WorldState:
         if self.tracker and hasattr(self.tracker, "exchange_engine"):
             total = 0.0
             for cur, amount in all_money.items():
+                if cur == "SYSTEM_DEBT": continue
                 converted = self.tracker.exchange_engine.convert(amount, cur, target_currency)
                 total += converted
             return total

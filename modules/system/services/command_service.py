@@ -320,48 +320,26 @@ class CommandService:
             return True # Nothing to rollback is a success? Or implies failure to find batch?
                         # If called when nothing happened, it's fine.
 
+        if not isinstance(self.registry, IRestorableRegistry):
+             logger.critical("ROLLBACK_FAIL: Registry does not implement IRestorableRegistry.")
+             return False
+
         success = True
         # Reverse order for rollback
         for record in reversed(records):
             try:
                 if record.command_type == "SET_PARAM":
-                     # 1. Remove the layer added by the command (if we tracked the origin)
-                     layer_removed = False
-                     if record.origin is not None and hasattr(self.registry, 'delete_layer'):
-                         self.registry.delete_layer(record.parameter_key, record.origin)
-                         layer_removed = True
-
-                     # 2. Restore previous entry state if needed
-                     # If previous_entry is None, delete_layer might have been enough if it was a new key.
-                     # But if the key didn't exist at all, delete_layer logic (which only deletes one layer)
-                     # implies we might need to be sure no other layers exist if it was truly new?
-                     # No, if it was new, set() added one layer. delete_layer removes it. Done.
-
-                     # However, for robustness, we restore previous_entry if available.
-                     if isinstance(self.registry, IRestorableRegistry):
-                         if record.previous_entry is None:
-                             # If we deleted the layer, we are good.
-                             # But if delete_layer didn't happen (e.g. no origin recorded), fallback to delete_entry?
-                             if not layer_removed:
-                                 self.registry.delete_entry(record.parameter_key)
-                                 logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
-                         else:
-                             # Restore entry (re-writes the previous layer)
-                             self.registry.restore_entry(record.parameter_key, record.previous_entry)
-                             logger.info(f"ROLLBACK: Restored {record.parameter_key} to {record.previous_entry.value} (Origin: {record.previous_entry.origin})")
+                     if record.previous_entry is None:
+                         # Creation -> Delete
+                         self.registry.delete_entry(record.parameter_key)
+                         logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
                      else:
-                         # Fallback if registry does not support IRestorableRegistry
-                         if record.previous_entry is not None:
-                             self.registry.set(
-                                 record.parameter_key,
-                                 record.previous_entry.value,
-                                 origin=record.previous_entry.origin
-                             )
-                             logger.warning(f"ROLLBACK: Used set() fallback for {record.parameter_key} (Registry not IRestorableRegistry). Lock state might be incorrect.")
-                         else:
-                             # If it was new and we can't delete...
-                             if record.origin is None:
-                                  logger.warning(f"ROLLBACK_FAIL: Cannot delete {record.parameter_key} because registry is not IRestorableRegistry")
+                         # Modification -> Restore
+                         # Explicitly delete entry first to remove the layer added by the command (e.g. GOD_MODE override)
+                         # Then restore the previous state (e.g. SYSTEM layer)
+                         self.registry.delete_entry(record.parameter_key)
+                         self.registry.restore_entry(record.parameter_key, record.previous_entry)
+                         logger.info(f"ROLLBACK: Restored {record.parameter_key} to {record.previous_entry.value} (Origin: {record.previous_entry.origin})")
 
                 elif record.command_type in ["INJECT_ASSET", "INJECT_MONEY"]:
                      self._rollback_injection(record)

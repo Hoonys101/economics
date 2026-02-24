@@ -48,9 +48,9 @@ class AccountingSystem(IAccountingSystem):
             elif tx_type == "interest_payment":
                  buyer.record_expense(amount, transaction.currency)
             # What about goods (raw materials)?
-            # TransactionProcessor didn't explicitly record expense for raw materials in _handle_goods_transaction
-            # It only updated inventory.
-            # Wait, let's check TransactionProcessor again.
+            # TD-SYS-ACCOUNTING-GAP: Raw material purchases are Asset Swaps (Cash -> Inventory).
+            # Expense is recorded upon usage (COGS) in Firm.produce -> FinanceEngine.record_expense.
+            # Therefore, we do NOT record expense here for raw materials to avoid double counting.
             pass
 
         # 3. Dividend Income

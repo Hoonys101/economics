@@ -134,7 +134,16 @@ class GoodsTransactionHandler(ITransactionHandler):
             seller.record_sale(tx.item_id, tx.quantity, context.time)
 
         # 3. Buyer Financial Records (Expense) - WO-124 Fix
-        if isinstance(buyer, IExpenseTracker):
+        # TD-SYS-ACCOUNTING-GAP: Skip expense recording for raw materials (Inventory Asset Swap)
+        # Expense is recorded upon usage (COGS) in ProductionEngine/FinanceEngine.
+        is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
+        should_record_expense = True
+
+        # Check if buyer is a Firm (has sector) and item is raw material
+        if is_raw_material and hasattr(buyer, "sector"):
+             should_record_expense = False
+
+        if should_record_expense and isinstance(buyer, IExpenseTracker):
             buyer.record_expense(buyer_total_cost)
 
         # 4. Household Consumption Tracking
