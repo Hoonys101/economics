@@ -1,27 +1,13 @@
 from __future__ import annotations
 from typing import List, Any, Dict, Protocol, runtime_checkable, Optional
 import logging
-from simulation.systems.lifecycle.api import IAgingSystem
+from simulation.systems.lifecycle.api import IAgingSystem, IAgingFirm, IFinanceEngine
 from simulation.dtos.api import SimulationState
 from simulation.models import Transaction
 from simulation.systems.demographic_manager import DemographicManager
 from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
 from simulation.interfaces.market_interface import IMarket
 from modules.finance.api import IFinancialEntity
-
-@runtime_checkable
-class IAgingFirm(Protocol):
-    """Protocol for firms processed by AgingSystem."""
-    id: Any
-    is_active: bool
-    age: int
-    needs: Dict[str, float]
-    wallet: IFinancialEntity
-    finance_state: Any  # Mutable state required for updates
-    config: Any
-    finance_engine: Any # Required for check_bankruptcy
-
-    def get_all_items(self) -> Dict[str, Any]: ...
 
 class AgingSystem(IAgingSystem):
     """
@@ -54,8 +40,8 @@ class AgingSystem(IAgingSystem):
     def _process_firm_lifecycle(self, state: SimulationState) -> None:
         """
         Handles lifecycle updates for all active firms.
-        Includes WO-167 Grace Protocol for distressed firms.
-        Refactored for Integer Math and Protocol Safety.
+        Includes Solvency Gate and WO-167 Grace Protocol.
+        Refactored for Protocol Purity.
         """
         # Config values (converted to pennies where applicable)
         assets_threshold_pennies = int(getattr(self.config, "ASSETS_CLOSURE_THRESHOLD", 0.0) * 100)
@@ -73,11 +59,9 @@ class AgingSystem(IAgingSystem):
             current_need = firm.needs.get("liquidity_need", 0.0)
             firm.needs["liquidity_need"] = min(100.0, current_need + liquidity_inc_rate)
 
-            # Check bankruptcy status (logic from FinanceDepartment)
-            # Use getattr for safer access if protocol doesn't guarantee implementation details of engine
-            finance_engine = getattr(firm, 'finance_engine', None)
-            if finance_engine and hasattr(finance_engine, 'check_bankruptcy'):
-                finance_engine.check_bankruptcy(firm.finance_state, firm.config)
+            # Check bankruptcy status (Protocol Purity)
+            if isinstance(firm.finance_engine, IFinanceEngine):
+                firm.finance_engine.check_bankruptcy(firm.finance_state, firm.config)
 
             # WO-167: Grace Protocol
             # Check for Cash Crunch (Integer Math)
@@ -87,14 +71,7 @@ class AgingSystem(IAgingSystem):
             elif isinstance(firm.wallet, IFinancialEntity): # Fallback via wallet
                  current_assets_pennies = firm.wallet.balance_pennies
 
-            # Need is usually a normalized value 0-100, but here it seems to represent something else?
-            # Assuming liquidity_need is a ratio or similar.
-            # If it's a monetary need, it should be in pennies.
-            # But the original code compared `current_assets < firm.needs["liquidity_need"]`.
-            # If `current_assets` was float dollars, then `liquidity_need` was float dollars.
-            # So `liquidity_need` * 100 gives pennies.
             liquidity_need_pennies = int(firm.needs.get("liquidity_need", 0.0) * 100)
-
             is_crunch = current_assets_pennies < liquidity_need_pennies
 
             # Inventory Value Calculation (Integer Pennies)
@@ -107,39 +84,30 @@ class AgingSystem(IAgingSystem):
 
                 # If within grace period
                 if firm.finance_state.distress_tick_counter <= grace_period:
-                    # Trigger Emergency Liquidation logic would go here
-                    # SKIP standard closure check
                     continue
             else:
                 # Recovery or No Crunch
                 firm.finance_state.is_distressed = False
                 firm.finance_state.distress_tick_counter = 0
 
-            # Standard Closure Check
-            # WO-FINAL-MACRO-REPAIR: Solvency Bypass
-            # If firm has assets above threshold, do NOT kill it based on loss turns.
-            if current_assets_pennies > assets_threshold_pennies:
-                continue
+            # Solvency Gate: Prevent Zombie Timer from killing solvent firms
+            # Solvent if assets > 2x threshold
+            is_solvent = current_assets_pennies > (assets_threshold_pennies * 2)
+            is_bankrupt_by_loss = getattr(firm.finance_state, "consecutive_loss_turns", 0) >= closure_turns_threshold
 
-            if (current_assets_pennies <= assets_threshold_pennies or
-                    firm.finance_state.consecutive_loss_turns >= closure_turns_threshold):
+            # Close if assets depleted OR (bankrupt by loss AND not solvent)
+            if current_assets_pennies <= assets_threshold_pennies or (is_bankrupt_by_loss and not is_solvent):
 
-                # Double check grace period (if we fell through but counter is high)
+                # Grace Period Check
                 if getattr(firm.finance_state, "distress_tick_counter", 0) > grace_period:
                     pass # Allow closure
                 elif getattr(firm.finance_state, "is_distressed", False):
-                    continue # Should have been caught above, but safety check
+                    continue # Safety check: still in grace period
 
                 firm.is_active = False
                 self.logger.warning(
-                    f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {current_assets_pennies/100:.2f}, Consecutive Loss Turns: {firm.finance_state.consecutive_loss_turns}",
-                    extra={
-                        "tick": state.time,
-                        "agent_id": firm.id,
-                        "assets": current_assets_pennies / 100, # Log in dollars for readability
-                        "consecutive_loss_turns": firm.finance_state.consecutive_loss_turns,
-                        "tags": ["firm_closure"],
-                    }
+                    f"FIRM_INACTIVE | Firm {firm.id} closed. Assets: {current_assets_pennies/100:.2f}, "
+                    f"Loss Turns: {getattr(firm.finance_state, 'consecutive_loss_turns', 0)}, Solvent: {is_solvent}"
                 )
 
     def _process_household_lifecycle(self, state: SimulationState) -> None:

@@ -8,7 +8,7 @@ NUM_FIRMS = 10
 NUM_HOUSING_UNITS = 60
 INITIAL_PROPERTY_VALUE = 2000000
 INITIAL_RENT_PRICE = 10000
-INITIAL_HOUSEHOLD_ASSETS_MEAN = 500000
+INITIAL_HOUSEHOLD_ASSETS_MEAN = 1000000
 INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 0.5
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.1
@@ -455,7 +455,7 @@ AI_GROWTH_REWARD_WEIGHT = 7.0
 AI_WEALTH_REWARD_WEIGHT = 3.0
 
 # --- Genesis: Activation Energy (WO-047: Capital Injection) ---
-INITIAL_HOUSEHOLD_ASSETS_MEAN = 500000  # 50.0 -> 5000.0 (100x Booster) -> Pennies
+INITIAL_HOUSEHOLD_ASSETS_MEAN = 1000000  # 50.0 -> 5000.0 (100x Booster) -> Pennies
 INITIAL_FIRM_CAPITAL_MEAN = 10000000   # 1000.0 -> 50000.0 (50x Runway for Regulations) -> Pennies (10M)
 
 # --- Genesis: Market Flexibility Multipliers ---
@@ -679,9 +679,9 @@ SEO_TRIGGER_RATIO = 0.5              # Trigger SEO when assets < STARTUP_COST * 
 SEO_MAX_SELL_RATIO = 0.10            # Max 10% of treasury per tick
 
 # --- Phase 3.1: Government & Taxation ---
-INCOME_TAX_RATE = 0.0                 # Laissez-Faire: Zero Tax
+INCOME_TAX_RATE = 0.05                 # Laissez-Faire: Zero Tax
 INCOME_TAX_PAYER = "HOUSEHOLD"
-CORPORATE_TAX_RATE = 0.0              # Laissez-Faire: Zero Tax
+CORPORATE_TAX_RATE = 0.05              # Laissez-Faire: Zero Tax
 SALES_TAX_RATE = 0.0                 # Laissez-Faire: Zero Tax
 INHERITANCE_TAX_RATE = 0.0            # Laissez-Faire: Zero Tax
 
@@ -736,7 +736,7 @@ TAX_BRACKETS = [
 
 # 2. Wealth Tax
 # WEALTH_TAX_THRESHOLD is defined below
-WEALTH_TAX_THRESHOLD = 5000000
+WEALTH_TAX_THRESHOLD = 50000000
 ANNUAL_WEALTH_TAX_RATE = 0.02   # Annual 2% wealth tax
 
 # 3. Welfare
@@ -778,7 +778,7 @@ QUALITY_PREF_MISER_MAX = 0.3      # Threshold for Miser behavior
 MIN_FIRMS_THRESHOLD = 5          # 최소 기업 수 (이하로 떨어지면 창업 유도)
 STARTUP_COST = 3000000           # 창업 비용 (30,000으로 상향)
 FIRM_MAINTENANCE_FEE = 5000       # WO-021: 1/4 of legacy 200.0
-CORPORATE_TAX_RATE = 0.0         # Laissez-Faire: Zero Tax
+CORPORATE_TAX_RATE = 0.05         # Laissez-Faire: Zero Tax
 ENTREPRENEURSHIP_SPIRIT = 0.05   # 자격 있는 가계의 창업 확률 (5%)
 STARTUP_CAPITAL_MULTIPLIER = 1.2 # 창업 자격: cash > STARTUP_COST * 이 값 (자격: 3600)
 

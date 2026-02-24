@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Protocol, List, Any, runtime_checkable, TYPE_CHECKING
+from typing import Protocol, List, Any, Dict, runtime_checkable, TYPE_CHECKING
 from simulation.dtos.api import SimulationState
 from simulation.models import Transaction
+from modules.finance.api import IFinancialEntity
 
 @runtime_checkable
 class ILifecycleSubsystem(Protocol):
@@ -39,3 +40,20 @@ class IDeathSystem(ILifecycleSubsystem, Protocol):
     and inheritance processing.
     """
     ...
+
+@runtime_checkable
+class IFinanceEngine(Protocol):
+    def check_bankruptcy(self, finance_state: Any, config: Any) -> None: ...
+
+@runtime_checkable
+class IAgingFirm(Protocol):
+    id: Any
+    is_active: bool
+    age: int
+    needs: Dict[str, float]
+    wallet: IFinancialEntity
+    finance_state: Any
+    config: Any
+    finance_engine: IFinanceEngine
+
+    def get_all_items(self) -> Dict[str, Any]: ...
