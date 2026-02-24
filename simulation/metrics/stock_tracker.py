@@ -4,11 +4,14 @@
 기업별 주가, 거래량, 성과 지표를 추적합니다.
 """
 
-from typing import Dict, List, Any, Optional, TYPE_CHECKING
+from typing import Dict, List, Any, Optional, TYPE_CHECKING, Mapping
 import logging
 from statistics import median
 from collections import deque
 import numpy as np
+
+from modules.finance.exchange.engine import CurrencyExchangeEngine
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -23,10 +26,28 @@ class StockMarketTracker:
 
     def __init__(self, config_module: Any):
         self.config_module = config_module
+        self.exchange_engine = CurrencyExchangeEngine(config_module)
         
         # 이전 틱의 기업 데이터 (수익률 계산용)
         self.previous_firm_data: Dict[int, Dict[str, float]] = {}
         self.market_price_history: deque[float] = deque(maxlen=30)
+
+    def _calculate_total_wallet_value(self, wallet_dict: Mapping[CurrencyCode, float | int]) -> float:
+        """
+        Calculates total value of a wallet in DEFAULT_CURRENCY.
+        """
+        total = 0.0
+        if not wallet_dict:
+            return 0.0
+
+        # Optimize: if only DEFAULT_CURRENCY exists
+        if len(wallet_dict) == 1 and DEFAULT_CURRENCY in wallet_dict:
+            return float(wallet_dict[DEFAULT_CURRENCY])
+
+        for currency, amount in wallet_dict.items():
+            if amount == 0: continue
+            total += self.exchange_engine.convert(float(amount), currency, DEFAULT_CURRENCY)
+        return total
         
     def get_market_volatility(self) -> float:
         """
@@ -66,7 +87,7 @@ class StockMarketTracker:
         
         # 기업 실적
         # Refactor: Use finance component
-        firm_assets = sum(firm.wallet.get_all_balances().values())
+        firm_assets = self._calculate_total_wallet_value(firm.wallet.get_all_balances())
         firm_profit = firm.finance_state.current_profit
         if hasattr(firm.finance_state, "dividends_paid_last_tick"):
             dividend_paid = firm.finance_state.dividends_paid_last_tick

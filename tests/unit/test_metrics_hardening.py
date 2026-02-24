@@ -151,5 +151,44 @@ class TestMetricsHardening(unittest.TestCase):
         self.assertAlmostEqual(wealth_dist["mean_household_assets"], 3000.0)
         self.assertIsInstance(wealth_dist["gini_total_assets"], float)
 
+    def test_stock_tracker_currency_conversion(self):
+        tracker = StockMarketTracker(self.config_module)
+        # Mock exchange engine
+        tracker.exchange_engine = MagicMock()
+
+        # Define mock conversion: 1 EUR = 1.2 USD (approx)
+        def mock_convert(amount, from_curr, to_curr):
+            if from_curr == "EUR" and to_curr == DEFAULT_CURRENCY:
+                return amount * 1.2
+            return amount
+
+        tracker.exchange_engine.convert.side_effect = mock_convert
+
+        # Mock Firm
+        f1 = MagicMock()
+        f1.__class__ = Firm
+        f1.id = 1
+        f1.is_active = True
+        f1.wallet.get_all_balances.return_value = {
+            DEFAULT_CURRENCY: 1000,
+            "EUR": 1000
+        }
+        f1.get_book_value_per_share.return_value = 1.0
+        f1.finance_state.current_profit = 0.0
+        f1.finance_state.dividends_paid_last_tick = 0.0
+        f1.get_market_cap.return_value = 5000
+
+        # Mock Market
+        stock_market = MagicMock(spec=StockMarket)
+        stock_market.get_stock_price.return_value = 10.0
+        stock_market.get_market_summary.return_value = {}
+
+        # Execute
+        data = tracker.track_firm_stock_data(f1, stock_market)
+
+        # Verify
+        # Total assets = 1000 (USD) + 1000 * 1.2 (EUR converted) = 2200
+        self.assertAlmostEqual(data["firm_assets"], 2200.0)
+
 if __name__ == '__main__':
     unittest.main()
