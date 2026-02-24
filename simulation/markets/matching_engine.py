@@ -67,7 +67,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
         general_buys.sort(key=lambda o: o.price_pennies, reverse=True)
 
         # 3. Sort Sells by Utility Desc (Best Value Workers First)
-        sell_map: Dict[int, List[CanonicalOrderDTO]] = {}
+        sell_map: Dict[Any, List[CanonicalOrderDTO]] = {}
         for s_order in sell_orders:
             agent_id = int(s_order.agent_id) if isinstance(s_order.agent_id, (int, float)) else s_order.agent_id
             if agent_id not in sell_map:
@@ -207,7 +207,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
         targeted_buys = [o for o in buy_orders if o.target_agent_id is not None]
         general_buys = [o for o in buy_orders if o.target_agent_id is None]
         general_buys.sort(key=lambda o: o.price_pennies, reverse=True)
-        sell_map: Dict[int, List[CanonicalOrderDTO]] = {}
+        sell_map: Dict[Any, List[CanonicalOrderDTO]] = {}
         for s_order in sell_orders:
             agent_id = int(s_order.agent_id) if isinstance(s_order.agent_id, (int, float)) else s_order.agent_id
             if agent_id not in sell_map:

@@ -1,4 +1,4 @@
-from typing import Dict, Any, Deque, TYPE_CHECKING, Optional
+from typing import Dict, Any, Deque, Optional, TYPE_CHECKING
 from collections import deque
 from simulation.interfaces.policy_interface import IGovernmentPolicy
 from modules.common.utils.shadow_logger import log_shadow

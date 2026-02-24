@@ -348,14 +348,21 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
         if instruction.operation_type == 'purchase':
             # QE: Buy Bonds
             # We need to determine quantity based on target amount (pennies) and market price.
-            current_price = 1000 # Default fallback
+            current_price = 1000.0 # Default fallback (Dollars)
             if self.bond_market:
                 market_price = self.bond_market.get_daily_avg_price()
                 if market_price and market_price > 0:
                     current_price = market_price
 
-            qty = int(instruction.target_amount / current_price)
-            bid_price = int(current_price * 1.05) # 5% Premium to ensure fill
+            # Convert price to pennies for calculation
+            current_price_pennies = int(current_price * 100)
+
+            # Avoid division by zero
+            if current_price_pennies <= 0:
+                current_price_pennies = 100000 # Default to $1000
+
+            qty = int(instruction.target_amount / current_price_pennies)
+            bid_price = int(current_price_pennies * 1.05) # 5% Premium to ensure fill (Pennies)
 
             if qty > 0:
                 orders.append(Order(
@@ -381,8 +388,12 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
             # Sort bonds? or LIFO?
             # Just take first.
             if self.bond_market:
-                current_price = self.bond_market.get_daily_avg_price() or 1000
-                qty_needed = int(remaining_drain / current_price)
+                current_price = self.bond_market.get_daily_avg_price() or 1000.0
+                current_price_pennies = int(current_price * 100)
+                if current_price_pennies <= 0:
+                    current_price_pennies = 100000
+
+                qty_needed = int(remaining_drain / current_price_pennies)
 
                 # Check portfolio holdings
                 # self.bonds is List[Any] (Bond objects).
@@ -399,7 +410,7 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
                     orders.append(Order(
                         agent_id=self.id,
                         item_id=bond_item_id,
-                        price_pennies=int(current_price * 0.95), # 5% Discount
+                        price_pennies=int(current_price_pennies * 0.95), # 5% Discount
                         quantity=qty_to_sell,
                         market_id="security_market",
                         side="SELL"

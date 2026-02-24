@@ -68,9 +68,9 @@ class TransactionProcessor(SystemInterface):
                     amount = 0
                     if success:
                         if getattr(tx, 'total_pennies', 0) > 0:
-                            amount = tx.total_pennies
+                            amount = int(tx.total_pennies)
                         else:
-                            amount = round_to_pennies(tx.quantity * tx.price * 100)
+                            amount = int(round_to_pennies(tx.quantity * tx.price * 100))
 
                     return SettlementResultDTO(
                         original_transaction=tx,
@@ -82,7 +82,7 @@ class TransactionProcessor(SystemInterface):
                     return SettlementResultDTO(
                         original_transaction=tx,
                         success=False,
-                        amount_settled=0
+                        amount_settled=0,
                     )
         return None
 

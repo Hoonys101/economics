@@ -66,7 +66,7 @@ def test_central_bank_omo_execution(mock_tracker, mock_config, mock_strategy_log
 
     # Mock Bond Market
     mock_market = MagicMock()
-    mock_market.get_daily_avg_price.return_value = 100
+    mock_market.get_daily_avg_price.return_value = 1.0 # 1 Dollar
     cb.set_bond_market(mock_market)
 
     # Decision: BUY BONDS (QE)

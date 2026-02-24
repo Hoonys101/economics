@@ -722,7 +722,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             if asset.asset_type == "stock":
                 try:
                     firm_id = int(asset.asset_id)
-                    self.portfolio.add(firm_id, asset.quantity, 0.0)
+                    self.portfolio.add(firm_id, asset.quantity, 0)
                 except ValueError:
                     logger.error(f"Invalid firm_id in portfolio receive: {asset.asset_id}")
             else:
