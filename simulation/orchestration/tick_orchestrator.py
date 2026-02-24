@@ -155,8 +155,8 @@ class TickOrchestrator:
             bank=state.bank,
             central_bank=state.central_bank,
             escrow_agent=getattr(state, "escrow_agent", None),
-            stock_market=state.stock_market,
-            stock_tracker=state.stock_tracker,
+            stock_market=getattr(state, "stock_market", None),
+            stock_tracker=getattr(state, "stock_tracker", None),
             goods_data=state.goods_data,
             market_data={}, # Will be populated in Phase 1 (and 0 for Gov)
             config_module=state.config_module,

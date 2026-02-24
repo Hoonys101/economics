@@ -210,7 +210,6 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # TD-FIN-INVISIBLE-HAND: PublicManager must be registered BEFORE AgentRegistry snapshot
         sim.public_manager = PublicManager(config=self.config)
-        # Verify and Register PublicManager
         if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
             sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
         sim.world_state.public_manager = sim.public_manager
@@ -220,9 +219,8 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.agent_registry.set_state(sim.world_state)
 
         # TD-LIFECYCLE-GHOST-FIRM: Atomic Account Registration for Initial Firms
-        # Must happen after Bank is initialized and Registry is linked
         for firm in sim.firms:
-             sim.settlement_system.register_account(sim.bank.id, firm.id)
+            sim.settlement_system.register_account(sim.bank.id, firm.id)
 
         sim.central_bank_system = CentralBankSystem(
             central_bank_agent=sim.central_bank,
@@ -328,8 +326,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.registry = Registry(housing_service=sim.housing_service, logger=self.logger)
         sim.accounting_system = AccountingSystem(logger=self.logger)
 
-        # sim.escrow_agent and sim.judicial_system were moved up before PublicManager logic in previous block copy-paste
-        # because I pasted the whole file.
+        # JudicialSystem and PublicManager already initialized above (TD-FIN-INVISIBLE-HAND)
 
         sim.transaction_processor = TransactionProcessor(config_module=self.config)
         from simulation.systems.handlers.transfer_handler import DefaultTransferHandler

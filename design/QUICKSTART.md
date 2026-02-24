@@ -62,6 +62,10 @@ Any task that exceeds the following thresholds MUST be delegated to Jules (Imple
 - **설계형 부채 상환 (Spec-as-Repayment)**: 기술 부채는 코드 수정으로만 갚는 것이 아닙니다. 상세 명세(Spec)를 작성하고, 영역을 분리(Domain Segregation)하여 실행 시점을 확정하는 것만으로도 부채의 상당 부분은 이미 상환(SPECCED 상태)된 것으로 간주합니다. 충돌 위험으로 코딩(Jules)이 지연되더라도 명세 작성(Gemini)은 멈추지 않습니다.
 
 ### 5.5. Sprint Execution Methodology (Agile × Waterfall Hybrid)
+> **"의도는 실행에 앞섭니다."**
+>
+> 스프린트에 대한 기획안은 문서(기술부채 및 아키텍처)에 **선행 작성**됩니다.
+
 > **"우리는 애자일을 따라 스프린트를 수행하지만, 각 스프린트는 폭포수 기법을 따릅니다."**
 
 각 스프린트(Wave/Phase) 내부는 아래의 **엄격한 순차적 단계**를 따릅니다:
