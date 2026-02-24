@@ -3,28 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-MYPY-CONTRACT-ALIGNMENT": {
-      "key": "WO-MYPY-CONTRACT-ALIGNMENT",
-      "title": "Mypy Stage A: Contract Alignment (DTO & API)",
+    "WO-INFRA-MYPY-CLEANUP": {
+      "key": "WO-INFRA-MYPY-CLEANUP",
+      "title": "Final MyPy Infra Cleanup & Zero-Error Target",
       "type": "jules",
-      "instruction_raw": "[\uacc4\uc57d \ud655\uc815 \ub2e8\uacc4]\n\uc804\uccb4 \uc2dc\uc2a4\ud15c\uc758 \uc778\ud130\ud398\uc774\uc2a4\uc640 \ub370\uc774\ud130 \uad6c\uc870(SSoT)\ub97c \uba3c\uc800 \ub9de\ucda5\ub2c8\ub2e4. \ub85c\uc9c1(Function body)\uc740 \uc218\uc815\ud558\uc9c0 \ub9c8\uc2ed\uc2dc\uc624.\n\n1. **DTO Penny Standard Hardening**: \ubaa8\ub4e0 \ud1b5\ud654/\uc790\uc0b0 \ud544\ub4dc\ub97c `int`\ub85c \ud1b5\uc77c.\n2. **Protocol & Interface Sync**: `IAgent`, `IFinancialAgent` \ub4f1 \ub204\ub77d\ub418\uac70\ub098 \uc798\ubabb\ub41c \ud0c0\uc785 \ucc38\uc870 \ud574\uacb0.\n3. **Liskov Substitution (LSP) Alignment**: \uc0c1\uc18d \uad00\uacc4(Override) \uba54\uc11c\ub4dc \uc2dc\uadf8\ub2c8\ucc98 \uc77c\uce58.",
+      "instruction_raw": "\uba85\uc138\uc11c(spec_mypy_infra_cleanup.md)\uc5d0 \ub530\ub77c \uc22b\uc790\ub85c \uc2dc\uc791\ud558\ub294 \ud3f4\ub354\uc758 __init__.py\ub97c \uc81c\uac70\ud558\uace0 \uc804\uc5ed MyPy \uc5d0\ub7ec 0\uac74\uc744 \ub2ec\uc131\ud558\uc2ed\uc2dc\uc624.",
       "command": "create",
-      "file_path": "communications/audit/MYPY_AUDIT_REPORT.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
-    "WO-MYPY-LOGIC-B5-ANALYTICS": {
-      "key": "WO-MYPY-LOGIC-B5-ANALYTICS",
-      "title": "Mypy Stage B5: Logic Hardening (Analytics/DB)",
-      "type": "jules",
-      "instruction_raw": "Analytics \ubaa8\ub4c8(`simulation/metrics`, `simulation/db`)\uc758 \ub370\uc774\ud130 \uc218\uc9d1 \ubc0f \ucffc\ub9ac \uad00\ub828 \ud0c0\uc785 \uc624\ub958\ub97c \uc218\uc815\ud558\uc2ed\uc2dc\uc624.",
-      "command": "create",
-      "file_path": "communications/audit/MYPY_AUDIT_REPORT.md",
+      "file_path": "design/3_work_artifacts/specs/spec_mypy_infra_cleanup.md",
       "wait": true,
       "session_id": null,
       "worker": null,
