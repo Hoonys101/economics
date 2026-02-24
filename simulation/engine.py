@@ -212,11 +212,15 @@ class Simulation:
         # Log macro snapshot for ThoughtStream analysis
         snapshot = self.get_economic_indicators()
         system_state = self.get_system_state()
+
+        # Calculate M2 DTO and extract pennies for logging
+        m2_dto = self.world_state.calculate_total_money()
+
         self.simulation_logger.log_snapshot(
             tick=self.world_state.time,
             snapshot_data={
                 "gdp": snapshot.gdp,
-                "m2": self.world_state.calculate_total_money(),
+                "m2": m2_dto.total_m2_pennies,
                 "cpi": snapshot.cpi,
                 "transaction_count": len(self.world_state.transactions)
             }
@@ -305,8 +309,8 @@ class Simulation:
 
     def _calculate_total_money(self) -> float:
         """Legacy wrapper for WorldState.calculate_total_money"""
-        money_dict = self.world_state.calculate_total_money()
-        return float(money_dict.get(DEFAULT_CURRENCY, 0))
+        supply_dto = self.world_state.calculate_total_money()
+        return float(supply_dto.total_m2_pennies)
 
     def _process_transactions(self, transactions: List[Transaction]) -> None:
         """Legacy wrapper for ActionProcessor.process_transactions"""
