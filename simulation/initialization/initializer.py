@@ -11,6 +11,7 @@ from modules.platform.infrastructure.lock_manager import PlatformLockManager, Lo
 from modules.common.config_manager.api import ConfigManager
 from simulation.initialization.api import SimulationInitializerInterface
 from simulation.models import Order, RealEstateUnit
+from modules.simulation.api import AgentID
 from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder, OriginType
 from modules.system.constants import ID_CENTRAL_BANK, ID_GOVERNMENT, ID_BANK, ID_ESCROW, ID_PUBLIC_MANAGER
 from simulation.core_agents import Household
@@ -172,7 +173,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.households = self.households
         sim.firms = self.firms
         sim.goods_data = self.goods_data
-        sim.agents: Dict[int, Any] = {h.id: h for h in self.households}
+        sim.agents = {h.id: h for h in self.households}
         sim.agents.update({f.id: f for f in self.firms})
 
         # Determine next available ID (assuming user agents start > 100)
@@ -184,11 +185,11 @@ class SimulationInitializer(SimulationInitializerInterface):
         for agent in sim.agents.values():
             agent.settlement_system = sim.settlement_system
         sim.ai_trainer = self.ai_trainer
-        sim.time: int = 0
+        sim.time = 0
         credit_scoring_service = CreditScoringService(config_module=self.config)
 
         # Initialize System Agents with Fixed IDs
-        sim.bank = Bank(id=ID_BANK, initial_assets=0, config_manager=self.config_manager, settlement_system=sim.settlement_system, credit_scoring_service=credit_scoring_service, event_bus=sim.event_bus)
+        sim.bank = Bank(id=AgentID(ID_BANK), initial_assets=0, config_manager=self.config_manager, settlement_system=sim.settlement_system, credit_scoring_service=credit_scoring_service, event_bus=sim.event_bus)
         sim.settlement_system.bank = sim.bank
         # TD-BANK-RESERVE-CRUNCH: Use tunable initial assets from config
         initial_bank_assets = self.config_manager.get("economy_params.bank.initial_bank_assets", self.config.INITIAL_BANK_ASSETS)
@@ -239,7 +240,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system, monetary_authority=sim.central_bank_system)
         sim.government.finance_system = sim.finance_system
         sim.bank.set_finance_system(sim.finance_system)
-        sim.real_estate_units: List[RealEstateUnit] = [RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE, rent_price=self.config.INITIAL_RENT_PRICE) for i in range(self.config.NUM_HOUSING_UNITS)]
+        sim.real_estate_units = [RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE, rent_price=self.config.INITIAL_RENT_PRICE) for i in range(self.config.NUM_HOUSING_UNITS)]
         top_20_count = len(sim.households) // 5
         top_households = sorted(sim.households, key=lambda h: h.get_balance(DEFAULT_CURRENCY), reverse=True)[:top_20_count]
         for i, hh in enumerate(top_households):
@@ -250,7 +251,7 @@ class SimulationInitializer(SimulationInitializerInterface):
                 unit.occupant_id = hh.id
                 hh._econ_state.residing_property_id = unit.id
                 hh._econ_state.is_homeless = False
-        sim.markets: Dict[str, Market] = {good_name: OrderBookMarket(market_id=good_name, config_module=self.config) for good_name in self.config.GOODS}
+        sim.markets = {good_name: OrderBookMarket(market_id=good_name, config_module=self.config) for good_name in self.config.GOODS}
         sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
         sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config)
         if sim.central_bank:
@@ -284,7 +285,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         self.logger.info('GENESIS | Starting initial wealth distribution...')
         distributed_count = 0
         for agent_id, amount in self.initial_balances.items():
-            if agent_id in sim.agents and amount > 0:
+            if agent_id in sim.agents and isinstance(amount, (int, float)) and amount > 0:
                 Bootstrapper.distribute_initial_wealth(central_bank=sim.central_bank, target_agent=sim.agents[agent_id], amount=int(amount), settlement_system=sim.settlement_system)
                 distributed_count += 1
         self.logger.info(f'GENESIS | Distributed wealth to {distributed_count} agents.')
@@ -382,7 +383,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.commerce_system = CommerceSystem(self.config)
         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
         sim.crisis_monitor = CrisisMonitor(logger=self.logger, run_id=sim.run_id)
-        sim.household_time_allocation: Dict[int, float] = {}
+        sim.household_time_allocation = {}
         if isinstance(sim.central_bank, ICurrencyHolder):
             sim.world_state.register_currency_holder(sim.central_bank)
         for agent in sim.agents.values():

@@ -65,7 +65,7 @@ class TransactionProcessor(SystemInterface):
                         tx, buyer, None, context
                     )
 
-                    amount = 0.0
+                    amount = 0
                     if success:
                         if getattr(tx, 'total_pennies', 0) > 0:
                             amount = tx.total_pennies
@@ -82,7 +82,7 @@ class TransactionProcessor(SystemInterface):
                     return SettlementResultDTO(
                         original_transaction=tx,
                         success=False,
-                        amount_settled=0.0
+                        amount_settled=0
                     )
         return None
 
@@ -209,7 +209,7 @@ class TransactionProcessor(SystemInterface):
                 )
                 results.append(
                     SettlementResultDTO(
-                        original_transaction=tx, success=False, amount_settled=0.0
+                        original_transaction=tx, success=False, amount_settled=0
                     )
                 )
                 continue
@@ -222,7 +222,7 @@ class TransactionProcessor(SystemInterface):
                 )
                 results.append(
                     SettlementResultDTO(
-                        original_transaction=tx, success=False, amount_settled=0.0
+                        original_transaction=tx, success=False, amount_settled=0
                     )
                 )
                 continue
@@ -232,13 +232,13 @@ class TransactionProcessor(SystemInterface):
                 success = handler.handle(tx, buyer, seller, context)
 
                 # Record Result
-                amount = 0.0
+                amount = 0
                 if success:
                     # TD-MKT-FLOAT-MATCH: total_pennies is the SSoT for settlement
                     if getattr(tx, 'total_pennies', 0) > 0:
-                        amount = float(tx.total_pennies)
+                        amount = int(tx.total_pennies)
                     else:
-                        amount = float(round_to_pennies(tx.quantity * tx.price * 100))
+                        amount = int(round_to_pennies(tx.quantity * tx.price * 100))
 
                 results.append(
                     SettlementResultDTO(
@@ -255,7 +255,7 @@ class TransactionProcessor(SystemInterface):
                 state.logger.error(f"Transaction Handler Failed for {tx.transaction_type} (ID: {getattr(tx, 'id', 'unknown')}): {e}", exc_info=True)
                 results.append(
                     SettlementResultDTO(
-                        original_transaction=tx, success=False, amount_settled=0.0
+                        original_transaction=tx, success=False, amount_settled=0
                     )
                 )
 

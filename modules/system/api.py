@@ -10,8 +10,10 @@ CurrencyCode = str
 DEFAULT_CURRENCY: CurrencyCode = "USD"
 AgentID = int
 
-# Import IAgent from simulation api
-from modules.simulation.api import IAgent
+@runtime_checkable
+class IAgent(Protocol):
+    id: AgentID
+    is_active: bool
 
 @runtime_checkable
 class IWorldState(Protocol):

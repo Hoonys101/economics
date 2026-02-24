@@ -36,8 +36,9 @@ if TYPE_CHECKING:
     from simulation.interfaces.market_interface import IMarket
     from modules.housing.api import IHousingService
     from modules.memory.api import MemoryV2Interface
-    from modules.system.api import CurrencyCode
     from modules.finance.kernel.api import IMonetaryLedger
+
+from modules.system.api import CurrencyCode, IAgent
 
 # --- DTOs ---
 
@@ -167,11 +168,6 @@ class IInventoryHandler(Protocol):
 class IDecisionEngine(Protocol):
     """Interface for the 'brain' of an agent."""
     def make_decision(self, state: AgentStateDTO, world_context: Any) -> DecisionDTO | Any: ...
-
-@runtime_checkable
-class IAgent(Protocol):
-    id: AgentID
-    is_active: bool
 
 @runtime_checkable
 class IOrchestratorAgent(IAgent, Protocol):
