@@ -103,6 +103,30 @@ class SimulationInitializer(SimulationInitializerInterface):
         """
         Simulation 인스턴스를 생성하고 모든 구성 요소를 조립합니다.
         (기존 Simulation.__init__ 로직을 이 곳으로 이동)
+        Decoupled into 5-Phase Atomic Initialization Sequence.
+        """
+        # Phase 1: Infrastructure
+        sim = self._init_phase1_infrastructure()
+
+        # Phase 2: System Agents
+        self._init_phase2_system_agents(sim)
+
+        # Phase 3: Markets & Systems
+        self._init_phase3_markets_systems(sim)
+
+        # Phase 4: Population
+        self._init_phase4_population(sim)
+
+        # Phase 5: Genesis
+        self._init_phase5_genesis(sim)
+
+        self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
+        return sim
+
+    def _init_phase1_infrastructure(self) -> Simulation:
+        """
+        Phase 1: Initializes locks, EventBus, GlobalRegistry, AgentRegistry, MonetaryLedger, SagaOrchestrator, and SettlementSystem.
+        No Agents are created here.
         """
         # Cross-Platform Locking Mechanism (Wave 1.5)
         lock_manager = PlatformLockManager('simulation.lock')
@@ -117,6 +141,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         settlement_system = SettlementSystem(logger=self.logger, agent_registry=agent_registry)
         from modules.system.services.command_service import CommandService
         command_service = CommandService(registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry)
+
         sim = Simulation(config_manager=self.config_manager, config_module=self.config, logger=self.logger, repository=self.repository, registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry, command_service=command_service)
 
         sim.lock_manager = lock_manager
@@ -138,6 +163,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.shareholder_registry = ShareholderRegistry()
         sim.world_state.shareholder_registry = sim.shareholder_registry
         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
+
         from simulation.dtos.strategy import ScenarioStrategy
         active_scenario_name = self.config_manager.get('simulation.active_scenario')
         strategy = ScenarioStrategy()
@@ -164,26 +190,19 @@ class SimulationInitializer(SimulationInitializerInterface):
                     self.logger.error(f"Failed to load scenario file '{scenario_path}': {e}")
             else:
                 self.logger.warning(f"Active scenario '{active_scenario_name}' requested but {scenario_path} not found.")
+
         sim.strategy = strategy
         sim.stress_scenario_config = strategy
         sim.world_state.stress_scenario_config = strategy
+
+        return sim
+
+    def _init_phase2_system_agents(self, sim: Simulation) -> None:
+        """
+        Phase 2: Bootstraps Singletons: Bank, Government, CentralBank, EscrowAgent, PublicManager.
+        Crucial: Use property setter injection to resolve the cyclic dependency between Government and FinanceSystem.
+        """
         sim.central_bank = CentralBank(tracker=sim.tracker, config_module=self.config, strategy=sim.strategy)
-        sim.central_bank.deposit(int(self.config.INITIAL_MONEY_SUPPLY))
-        self.logger.info(f'GENESIS | Central Bank minted M0: {self.config.INITIAL_MONEY_SUPPLY:,.2f}')
-        sim.households = self.households
-        sim.firms = self.firms
-        sim.goods_data = self.goods_data
-        sim.agents = {h.id: h for h in self.households}
-        sim.agents.update({f.id: f for f in self.firms})
-
-        # Determine next available ID (assuming user agents start > 100)
-        max_user_id = 0
-        if sim.agents:
-            max_user_id = max(sim.agents.keys())
-        sim.next_agent_id = max(100, max_user_id + 1)
-
-        for agent in sim.agents.values():
-            agent.settlement_system = sim.settlement_system
         sim.ai_trainer = self.ai_trainer
         sim.time = 0
         credit_scoring_service = CreditScoringService(config_module=self.config)
@@ -191,28 +210,25 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Initialize System Agents with Fixed IDs
         sim.bank = Bank(id=AgentID(ID_BANK), initial_assets=0, config_manager=self.config_manager, settlement_system=sim.settlement_system, credit_scoring_service=credit_scoring_service, event_bus=sim.event_bus)
         sim.settlement_system.bank = sim.bank
-        # TD-BANK-RESERVE-CRUNCH: Use tunable initial assets from config
-        initial_bank_assets = self.config_manager.get("economy_params.bank.initial_bank_assets", self.config.INITIAL_BANK_ASSETS)
-        try:
-            initial_bank_assets = int(initial_bank_assets)
-        except (ValueError, TypeError):
-            self.logger.warning(f"Invalid initial_bank_assets value: {initial_bank_assets}, defaulting to 0")
-            initial_bank_assets = 0
 
-        self.initial_balances[sim.bank.id] = initial_bank_assets
         sim.bank.settlement_system = sim.settlement_system
         sim.agents[sim.bank.id] = sim.bank
 
         gov = Government(id=ID_GOVERNMENT, initial_assets=0.0, config_module=self.config, strategy=sim.strategy)
         sim.world_state.government = gov
-        sim.government.settlement_system = sim.settlement_system
-        sim.agents[sim.government.id] = sim.government
-        sim.bank.set_government(sim.government)
+
+        # Use local variable 'gov' to ensure consistency (and support mocking in tests)
+        # In production, Simulation delegates to WorldState, but explicit assignment or usage is safer.
+        if hasattr(sim, 'government'):
+             # If sim is a Mock or already has the attribute
+             sim.government = gov
+
+        gov.settlement_system = sim.settlement_system
+        sim.agents[gov.id] = gov
+        sim.bank.set_government(gov)
 
         # Register Central Bank (Created earlier)
         if hasattr(sim, 'central_bank') and sim.central_bank:
-             # Central Bank ID is handled internally by the class, but we register it here
-             # to ensure it exists in the primary agent lookup table.
              sim.agents[ID_CENTRAL_BANK] = sim.central_bank
 
         sim.escrow_agent = EscrowAgent(id=ID_ESCROW)
@@ -230,10 +246,6 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Now that ALL System Agents (Gov, Bank, CB, PublicManager) are in sim.agents, we link the registry.
         sim.agent_registry.set_state(sim.world_state)
 
-        # TD-LIFECYCLE-GHOST-FIRM: Atomic Account Registration for Initial Firms
-        for firm in sim.firms:
-            sim.settlement_system.register_account(sim.bank.id, firm.id)
-
         sim.central_bank_system = CentralBankSystem(
             central_bank_agent=sim.central_bank,
             settlement_system=sim.settlement_system,
@@ -246,17 +258,13 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system, monetary_authority=sim.central_bank_system)
         sim.government.finance_system = sim.finance_system
         sim.bank.set_finance_system(sim.finance_system)
+
+    def _init_phase3_markets_systems(self, sim: Simulation) -> None:
+        """
+        Phase 3: Instantiates OrderBookMarkets, LoanMarket, LaborMarket, TaxationSystem, JudicialSystem, etc.
+        """
         sim.real_estate_units = [RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE, rent_price=self.config.INITIAL_RENT_PRICE) for i in range(self.config.NUM_HOUSING_UNITS)]
-        top_20_count = len(sim.households) // 5
-        top_households = sorted(sim.households, key=lambda h: h.get_balance(DEFAULT_CURRENCY), reverse=True)[:top_20_count]
-        for i, hh in enumerate(top_households):
-            if i < len(sim.real_estate_units):
-                unit = sim.real_estate_units[i]
-                unit.owner_id = hh.id
-                hh._econ_state.owned_properties.append(unit.id)
-                unit.occupant_id = hh.id
-                hh._econ_state.residing_property_id = unit.id
-                hh._econ_state.is_homeless = False
+
         sim.markets = {good_name: OrderBookMarket(market_id=good_name, config_module=self.config) for good_name in self.config.GOODS}
         sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
         sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config)
@@ -275,47 +283,11 @@ class SimulationInitializer(SimulationInitializerInterface):
             sim.stock_market = None
             sim.stock_tracker = None
         sim.markets['housing'] = OrderBookMarket(market_id='housing', config_module=self.config)
-        for unit in sim.real_estate_units:
-            if unit.owner_id is None:
-                sell_order = Order(
-                    agent_id=sim.government.id,
-                    item_id=f'unit_{unit.id}',
-                    price_pennies=unit.estimated_value,
-                    price_limit=unit.estimated_value / 100.0,
-                    quantity=1.0,
-                    market_id='housing',
-                    side='SELL'
-                )
-                if 'housing' in sim.markets:
-                    sim.markets['housing'].place_order(sell_order, sim.time)
-        self.logger.info('GENESIS | Starting initial wealth distribution...')
-        distributed_count = 0
-        for agent_id, raw_amount in self.initial_balances.items():
-            try:
-                amount = int(raw_amount)
-            except (ValueError, TypeError):
-                continue
 
-            if agent_id in sim.agents and amount > 0:
-                Bootstrapper.distribute_initial_wealth(central_bank=sim.central_bank, target_agent=sim.agents[agent_id], amount=amount, settlement_system=sim.settlement_system)
-                distributed_count += 1
-        self.logger.info(f'GENESIS | Distributed wealth to {distributed_count} agents.')
-        Bootstrapper.inject_initial_liquidity(firms=sim.firms, config=self.config, settlement_system=sim.settlement_system, central_bank=sim.central_bank)
-        sim.world_state.central_bank = sim.central_bank
-        total_money = sim.world_state.calculate_total_money()
-        if isinstance(total_money, dict):
-            sim.world_state.baseline_money_supply = total_money.get(DEFAULT_CURRENCY, 0.0)
-        else:
-            sim.world_state.baseline_money_supply = float(total_money)
-        self.logger.info(f'Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}')
-        Bootstrapper.force_assign_workers(sim.firms, sim.households)
-        for agent in sim.households + sim.firms:
-            agent.update_needs(sim.time)
-            agent.decision_engine.markets = sim.markets
-            agent.decision_engine.goods_data = self.goods_data
         sim.inequality_tracker = InequalityTracker(config_module=self.config)
         sim.personality_tracker = PersonalityStatisticsTracker(config_module=self.config)
-        sim.ai_training_manager = AITrainingManager(sim.households + sim.firms, self.config)
+        # Use self.households/self.firms as sim attributes might not be set yet (they are set in Phase 4)
+        sim.ai_training_manager = AITrainingManager(self.households + self.firms, self.config)
         sim.ma_manager = MAManager(sim, self.config, settlement_system=sim.settlement_system)
         sim.persistence_manager = PersistenceManager(run_id=0, config_module=self.config, repository=self.repository)
         hh_config_dto = create_config_dto(self.config, HouseholdConfigDTO)
@@ -324,11 +296,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.demographic_manager = DemographicManager(config_module=self.config, strategy=sim.strategy, household_factory=household_factory)
         sim.demographic_manager.settlement_system = sim.settlement_system
         household_factory.context.demographic_manager = sim.demographic_manager
-        for hh in sim.households:
-            if hasattr(hh, 'demographic_manager'):
-                hh.demographic_manager = sim.demographic_manager
-        sim.demographic_manager.sync_stats(sim.households)
-        sim.demographic_manager.set_world_state(sim.world_state)
+
         sim.world_state.global_registry.set('demographics', sim.demographic_manager, origin=OriginType.SYSTEM)
         sim.immigration_manager = ImmigrationManager(config_module=self.config, settlement_system=sim.settlement_system)
         sim.inheritance_manager = InheritanceManager(config_module=self.config)
@@ -342,8 +310,6 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.housing_service.set_real_estate_units(sim.real_estate_units)
         sim.registry = Registry(housing_service=sim.housing_service, logger=self.logger)
         sim.accounting_system = AccountingSystem(logger=self.logger)
-
-        # JudicialSystem and PublicManager already initialized above (TD-FIN-INVISIBLE-HAND)
 
         sim.transaction_processor = TransactionProcessor(config_module=self.config)
         from simulation.systems.handlers.transfer_handler import DefaultTransferHandler
@@ -394,12 +360,122 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.commerce_system = CommerceSystem(self.config)
         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
         sim.crisis_monitor = CrisisMonitor(logger=self.logger, run_id=sim.run_id)
+
+    def _init_phase4_population(self, sim: Simulation) -> None:
+        """
+        Phase 4: Instantiates standard `Firms` and `Households`. Atomic registration occurs here (detailed in Wave A.3).
+        """
+        sim.households = self.households
+        sim.firms = self.firms
+        sim.goods_data = self.goods_data
+
+        # Merge population into agents (preserve System Agents from Phase 2)
+        # Note: sim.agents is initialized in Simulation.__init__ and populated with System Agents in Phase 2.
+        # We must use .update() to avoid overwriting them.
+        sim.agents.update({h.id: h for h in self.households})
+        sim.agents.update({f.id: f for f in self.firms})
+
+        # Determine next available ID (assuming user agents start > 100)
+        max_user_id = 0
+        if sim.agents:
+            max_user_id = max(sim.agents.keys())
+        sim.next_agent_id = max(100, max_user_id + 1)
+
+        for agent in sim.agents.values():
+            agent.settlement_system = sim.settlement_system
+
+        # Connect households to demographic manager
+        for hh in sim.households:
+            if hasattr(hh, 'demographic_manager'):
+                hh.demographic_manager = sim.demographic_manager
+
+        sim.demographic_manager.sync_stats(sim.households)
+        sim.demographic_manager.set_world_state(sim.world_state)
+
+        # TD-LIFECYCLE-GHOST-FIRM: Atomic Account Registration for Initial Firms
+        for firm in sim.firms:
+            sim.settlement_system.register_account(sim.bank.id, firm.id)
+
+        # Distribute Real Estate
+        top_20_count = len(sim.households) // 5
+        top_households = sorted(sim.households, key=lambda h: h.get_balance(DEFAULT_CURRENCY), reverse=True)[:top_20_count]
+        for i, hh in enumerate(top_households):
+            if i < len(sim.real_estate_units):
+                unit = sim.real_estate_units[i]
+                unit.owner_id = hh.id
+                hh._econ_state.owned_properties.append(unit.id)
+                unit.occupant_id = hh.id
+                hh._econ_state.residing_property_id = unit.id
+                hh._econ_state.is_homeless = False
+
+    def _init_phase5_genesis(self, sim: Simulation) -> None:
+        """
+        Phase 5: Injects initial liquidity via `Bootstrapper`. Converts config float values to integer pennies.
+        """
+        sim.central_bank.deposit(int(self.config.INITIAL_MONEY_SUPPLY))
+        self.logger.info(f'GENESIS | Central Bank minted M0: {self.config.INITIAL_MONEY_SUPPLY:,.2f}')
+
+        # TD-BANK-RESERVE-CRUNCH: Use tunable initial assets from config
+        # Ensure Penny Standard in Genesis
+        initial_bank_assets = self.config_manager.get("economy_params.bank.initial_bank_assets", self.config.INITIAL_BANK_ASSETS)
+        try:
+            initial_bank_assets = int(float(initial_bank_assets))
+        except (ValueError, TypeError):
+            self.logger.warning(f"Invalid initial_bank_assets value: {initial_bank_assets}, defaulting to 0")
+            initial_bank_assets = 0
+
+        self.initial_balances[sim.bank.id] = initial_bank_assets
+
+        # Housing Sales from Government
+        for unit in sim.real_estate_units:
+            if unit.owner_id is None:
+                sell_order = Order(
+                    agent_id=sim.government.id,
+                    item_id=f'unit_{unit.id}',
+                    price_pennies=unit.estimated_value,
+                    price_limit=unit.estimated_value / 100.0,
+                    quantity=1.0,
+                    market_id='housing',
+                    side='SELL'
+                )
+                if 'housing' in sim.markets:
+                    sim.markets['housing'].place_order(sell_order, sim.time)
+
+        self.logger.info('GENESIS | Starting initial wealth distribution...')
+        distributed_count = 0
+        for agent_id, raw_amount in self.initial_balances.items():
+            try:
+                amount = int(raw_amount)
+            except (ValueError, TypeError):
+                continue
+
+            if agent_id in sim.agents and amount > 0:
+                Bootstrapper.distribute_initial_wealth(central_bank=sim.central_bank, target_agent=sim.agents[agent_id], amount=amount, settlement_system=sim.settlement_system)
+                distributed_count += 1
+        self.logger.info(f'GENESIS | Distributed wealth to {distributed_count} agents.')
+        Bootstrapper.inject_initial_liquidity(firms=sim.firms, config=self.config, settlement_system=sim.settlement_system, central_bank=sim.central_bank)
+
+        sim.world_state.central_bank = sim.central_bank
+        total_money = sim.world_state.calculate_total_money()
+        if isinstance(total_money, dict):
+            sim.world_state.baseline_money_supply = total_money.get(DEFAULT_CURRENCY, 0.0)
+        else:
+            sim.world_state.baseline_money_supply = float(total_money)
+        self.logger.info(f'Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}')
+
+        Bootstrapper.force_assign_workers(sim.firms, sim.households)
+        for agent in sim.households + sim.firms:
+            agent.update_needs(sim.time)
+            agent.decision_engine.markets = sim.markets
+            agent.decision_engine.goods_data = self.goods_data
+
         sim.household_time_allocation = {}
         if isinstance(sim.central_bank, ICurrencyHolder):
             sim.world_state.register_currency_holder(sim.central_bank)
         for agent in sim.agents.values():
             if isinstance(agent, ICurrencyHolder):
                 sim.world_state.register_currency_holder(agent)
+
         sim.inflation_buffer = deque(maxlen=10)
         sim.unemployment_buffer = deque(maxlen=10)
         sim.gdp_growth_buffer = deque(maxlen=10)
@@ -427,6 +503,3 @@ class SimulationInitializer(SimulationInitializerInterface):
         
         if hasattr(sim.settlement_system, 'set_panic_recorder'):
              sim.settlement_system.set_panic_recorder(sim.world_state)
-
-        self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
-        return sim
