@@ -43,9 +43,9 @@
 | **TD-FIN-INVISIBLE-HAND** | Finance | **Initialization Order**: CB/PublicManager registered after AgentRegistry snapshot. | **CRITICAL**: Runtime failure. | **NEW (AUDIT)** |
 | **TD-MARKET-FLOAT-TRUNC** | Market | **Wealth Destruction**: `MatchingEngine` truncates fractional pennies via `int()`. | **High**: Deflationary bias. | **NEW (AUDIT)** |
 | **TD-SYS-ANALYTICS-DIRECT** | Systems | **Stateless Bypass**: `AnalyticsSystem` calls agent methods instead of using DTO snapshots. | **Medium**: Pattern violation. | **NEW (AUDIT)** |
-| **TD-DX-CONTEXT-BLOAT** | DX / Infra | **Context Bloat**: `git-go` review injects full `.py` source files (~30 files) instead of lightweight `.pyi` stubs. | **Medium**: Token waste / Review quality. | **NEW** |
-| **TD-DX-RECORD-REVENUE-DICT** | DTO Hygiene | **Dict→DTO Migration**: `record_revenue` called with raw `dict` instead of `TaxCollectionResult` DTO. | **High**: Runtime crash. | **RESOLVED** |
-| **TD-SYS-TRANSFER-HANDLER-GAP** | Systems | **Handler Omission**: Simple "transfer" type transactions lack a handler in `TransactionProcessor`. | **CRITICAL**: Accounting Invisibility. | **NEW (WV5)** |
+| **TD-DX-CONTEXT-BLOAT** | DX / Infra | **Context Bloat**: `git-go` review injects full `.py` source files. | **Medium**: Token waste. | **RESOLVED (WV6)** |
+| **TD-DX-RECORD-REVENUE-DICT** | DTO Hygiene | **Dict→DTO Migration**: `record_revenue` called with raw `dict`. | **High**: Runtime crash. | **RESOLVED** |
+| **TD-SYS-TRANSFER-HANDLER-GAP** | Systems | **Handler Omission**: Simple "transfer" type transactions lack a handler. | **CRITICAL**: Accounting Invisibility. | **RESOLVED (WV6)** |
 
 ---
 
@@ -158,24 +158,14 @@
 
 ## DX & Cockpit Operations
 ---
-### ID: TD-DX-CONTEXT-BLOAT
-- **Title**: Git-Review Context Injection Bloat (`.pyi` Stub Migration)
-- **Symptom**: `git-go.bat` 리뷰 시 `get_core_contract_paths()`가 전체 `.py` 소스 파일(예: `modules/finance/api.py` 1046줄)을 컨텍스트로 주입. 도메인 횡단 PR의 경우 30개 이상의 전체 파일이 주입되어 토큰 비용 급증 및 리뷰 품질 저하.
-- **Root Cause**: `.pyi` 스텁 파일이 존재하지 않으며, `context.py`가 경량 대안 없이 전체 소스를 직접 읽음.
-- **Solution**:
-  1. **스텁 자동 생성**: 각 `api.py` / `dtos.py`에서 클래스/메서드 시그니처만 추출한 `.pyi` 스텁 파일 자동 생성.
-  2. **Mtime 기반 무효화**: 스텁 파일이 없거나, 스텁 파일의 수정 시간(mtime)이 원본 소스보다 오래된 경우에만 스텁을 재생성.
-  3. **`get_core_contract_paths()` 수정**: `.py` 대신 `.pyi`를 우선 탐색하여 컨텍스트에 주입.
-- **Impact**: 컨텍스트 토큰 사용량 ~90% 감소 예상, 리뷰 정확도 향상.
-- **Priority**: Medium
-- **Status**: NEW
+- **Status**: RESOLVED (Wave 6) - Restored lazy imports and optimized dispatcher context.
 
 ### ID: TD-SYS-TRANSFER-HANDLER-GAP
 - **Title**: Generic Transfer Handler Omission
 - **Symptom**: `SettlementSystem._create_transaction_record` hardcodes `transaction_type="transfer"`. The `TransactionProcessor` lacks a handler for this type, causing P2P transfers to be silently skipped during ledger processing.
 - **Risk**: Absolute accounting failure for non-market transfers. The `MonetaryLedger` only sees transactions with specialized handlers (LLR, Tax, Goods), creating a massive "dark pool" of money movement.
 - **Solution**: Register a `DefaultTransferHandler` in `initializer.py` or update `SettlementSystem` to use specific types for all operations.
-- **Status**: NEW (Wave 5 Audit)
+- **Status**: RESOLVED (Wave 6) - `DefaultTransferHandler` implemented and registered.
 
 ---
 > [!NOTE]

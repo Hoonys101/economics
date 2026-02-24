@@ -46,4 +46,24 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "instruction": "Transaction 레코드의 단위 정합성(Penny Standard)을 강제하십시오.\n\n1. **SettlementSystem 수정**: `settlement_system.py`의 `_create_transaction_record()`에서 Transaction 생성 시:\n   - `quantity`를 `1.0`으로 변경 (현재 `amount` 즉 페니 값이 들어가 있음)\n   - `price`를 `amount / 100.0`으로 변경 (달러 단위 표시가격)\n   - `total_pennies`는 그대로 `amount` 유지 (SSoT)\n\n2. **LaborTransactionHandler 감사**: `labor_handler.py`에서 `TaxationSystem.calculate_tax_intents()`에 전달되는 값이 `tx.total_pennies`(SSoT)를 기반으로 하는지 확인하십시오. 만약 TaxationSystem이 `tx.price * tx.quantity`를 사용한다면, `tx.total_pennies`를 사용하도록 수정하십시오.\n\n3. **Mock 업데이트**: Transaction을 Mock하는 모든 테스트에서 `total_pennies`가 명시적으로 설정되어 있는지 전수조사하십시오. 누락된 경우 추가하십시오.\n\n4. **검증**: `pytest tests/` 전체 실행하여 100% 통과를 확인하십시오. 보고서에 pytest 전체 출력을 포함하십시오.",
         "file": "c:/coding/economics/gemini-output/spec/MISSION_wave6_restoration_SPEC.md"
     },
+    "WO-LIQUID-W1-STARTUP": {
+        "title": "Phase 22 [W1]: Startup Foundation & FirmFactory",
+        "instruction": "MISSION_grand_liquidation_SPEC.md의 Wave 1 항목 중 초기화 및 생성 로직을 해결하십시오.\n\n1. **TD-FIN-INVISIBLE-HAND (Init Order)**: `initializer.py`에서 `AgentRegistry` 스냅샷 이전에 `CentralBank`, `PublicManager`, `Government` 등 시스템 에이전트가 완전히 등록되도록 `build_simulation` 시퀀스를 조정하십시오.\n2. **TD-LIFECYCLE-GHOST-FIRM (FirmFactory)**: `FirmFactory` 클래스를 도입(또는 `Firm` 모듈 내 구현)하여 [생성 -> 계좌 개설 -> 유동성 주입]이 원자적으로 수행되도록 `initializer.py`의 `_setup_starting_firms`를 리팩토링하십시오.\n3. **TD-LIFECYCLE-NAMING**: `capital_stock_pennies`와 같이 단위가 모호한 변수들을 `capital_stock_pennies` (명시적) 또는 DTO를 통한 타입 안정성 확보로 정리하십시오.\n\n검증: `pytest tests/unit/lifecycle/` 및 `tests/system/test_engine.py` 통과 확인.",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_grand_liquidation_SPEC.md"
+    },
+    "WO-LIQUID-W1-GOV-FIX": {
+        "title": "Phase 22 [W1]: Gov Singleton & Orchestrator Hardening",
+        "instruction": "MISSION_grand_liquidation_SPEC.md의 Wave 1 항목 중 아키텍처 불일치를 해결하십시오.\n\n1. **TD-ARCH-GOV-MISMATCH (Gov Singleton)**: `WorldState`에서 `governments` 리스트를 제거하고 단일 `government` 속성으로 통합하십시오. 모든 참조(Analytics, Taxation 등)를 이 단일 속성으로 전환하십시오.\n2. **TD-ARCH-ORCH-HARD (Orchestrator Hardening)**: `TickOrchestrator`에서 Mock 객체 사용 시 속성 누락으로 인한 에러를 방지하기 위해 `getattr(obj, 'attr', default)` 패턴 또는 명시적 프로토콜 체크를 강화하십시오.\n\n검증: `pytest tests/unit/systems/` 및 `tests/unit/test_analytics.py` 등 관련 테스트 통과 확인.",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_grand_liquidation_SPEC.md"
+    },
+    "WO-LIQUID-W2-FINANCE": {
+        "title": "Phase 22 [W2]: Financial Integrity & Saga Recovery",
+        "instruction": "MISSION_grand_liquidation_SPEC.md의 Wave 2 금융/회계 항목을 해결하십시오.\n\n1. **TD-ECON-M2-REGRESSION (M2 Calculation)**: `calculate_total_money()`에서 음수 잔액을 합산하지 않고 `SystemDebt`로 분리하십시오.\n2. **TD-FIN-SAGA-REGRESSION (Saga Cleanup)**: `SagaOrchestrator`에 자동 정리 로직을 추가하여 죽은 에이전트 참조로 인한 `SAGA_SKIP` 스팸을 방지하십시오.\n3. **TD-INT-BANK-ROLLBACK (Strict Protocols)**: `hasattr` 체크 대신 `isinstance(agent, ITransactionRollback)` 프로토콜 체크를 적용하십시오.\n4. **TD-MARKET-FLOAT-TRUNC (Match Rounding)**: `MatchingEngine` 내 `int()` 절삭을 `round_to_pennies()`로 교체하십시오.\n\n검증: `pytest tests/unit/systems/` 및 `tests/unit/finance/` 통과 확인.",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_grand_liquidation_SPEC.md"
+    },
+    "WO-LIQUID-W3-EVOLUTION": {
+        "title": "Phase 22 [W3]: Domain Evolution & Test Hardening",
+        "instruction": "MISSION_grand_liquidation_SPEC.md의 Wave 3 항목을 해결하십시오.\n\n1. **TD-WAVE3-DTO-SWAP (IndustryDomain Enum)**: 모든 DTO/Model에서 `major` 문자열을 `IndustryDomain` Enum으로 전면 교체하십시오.\n2. **TD-ECON-ZOMBIE-FIRM (Balance Tuning)**: `economy_params.yaml`의 필수재(basic_food) 관련 파라미터를 조정하여 초기 고사 현상을 방지하십시오.\n3. **TD-TEST-TX-MOCK-LAG (Test Debt)**: 레거시 Tax API 및 Mock 불일치를 전수 조사하여 수정하십시오.\n\n검증: `pytest tests/` 전체 통과 확인.",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_grand_liquidation_SPEC.md"
+    }
 }
