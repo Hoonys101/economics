@@ -18,21 +18,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-MYPY-LOGIC-B1-FOUNDATION": {
-      "key": "WO-MYPY-LOGIC-B1-FOUNDATION",
-      "title": "Mypy Stage B1: Logic Hardening (System/Common)",
-      "type": "jules",
-      "instruction_raw": "Foundation \ubaa8\ub4c8(`modules/system`, `modules/common`)\uc758 \ud568\uc218 \ub0b4\ubd80 \ub85c\uc9c1\uc744 \ud655\uc815\ub41c \uacc4\uc57d\uc5d0 \ub9de\ucdb0 \uc218\uc815\ud558\uc2ed\uc2dc\uc624.",
-      "command": "create",
-      "file_path": "communications/audit/MYPY_AUDIT_REPORT.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-MYPY-LOGIC-B2-FINANCE": {
       "key": "WO-MYPY-LOGIC-B2-FINANCE",
       "title": "Mypy Stage B2: Logic Hardening (Finance)",
