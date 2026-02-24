@@ -1,87 +1,114 @@
 # Refined Diagnostic Logs
 Critical events extracted for Gemini analysis.
 
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 155210235.00, Expected: 52250235.00, Delta: 102960000.0000
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1600, Req: 33036.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1025226, Req: 5000000.
-- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 155210235.00, Expected: 52250235.00, Delta: 102960000.0000
-- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 253171805.00, Expected: 52740042.85, Delta: 200431762.1500
-- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 255138635.00, Expected: 52749877.00, Delta: 202388758.0000
-- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 353051827.00, Expected: 53239442.96, Delta: 299812384.0400
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1656945, Req: 5000000.
-- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 353051827.00, Expected: 53239442.96, Delta: 299812384.0400
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 921782, Req: 5000000.
-- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 374783947.00, Expected: 53348103.56, Delta: 321435843.4400
-- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 472860173.00, Expected: 53838484.69, Delta: 419021688.3100
-- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 474460023.00, Expected: 53846483.94, Delta: 420613539.0600
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 930370, Req: 5000000.
-- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 474460023.00, Expected: 53846483.94, Delta: 420613539.0600
+- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 152499853.00, Expected: 51720001.30, Delta: 100779851.7000
+- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 194569679.00, Expected: 51930350.43, Delta: 142639328.5700
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 751952, Req: 5000000.
+- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 194569679.00, Expected: 51930350.43, Delta: 142639328.5700
+- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 293056523.00, Expected: 52422784.65, Delta: 240633738.3500
+- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 294446525.00, Expected: 52429734.66, Delta: 242016790.3400
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4765564, Req: 5000000.
+- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 333874909.00, Expected: 52626876.58, Delta: 281248032.4200
+- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 424277743.00, Expected: 53078890.75, Delta: 371198852.2500
+- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 433470033.00, Expected: 53124852.20, Delta: 380345180.8000
+- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 524047381.00, Expected: 53577738.94, Delta: 470469642.0600
+- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 533207939.00, Expected: 53623541.73, Delta: 479584397.2700
+- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 623753933.00, Expected: 54076271.70, Delta: 569677661.3000
+- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 632882945.00, Expected: 54121916.76, Delta: 578761028.2400
+- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 723398027.00, Expected: 54574492.17, Delta: 668823534.8300
+- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 732495711.00, Expected: 54619980.59, Delta: 677875730.4100
+- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 822979817.00, Expected: 55072401.12, Delta: 767907415.8800
+- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 832046365.00, Expected: 55117733.86, Delta: 776928631.1400
+- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 922498973.00, Expected: 55569996.90, Delta: 866928976.1000
+- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 931535629.00, Expected: 55615180.18, Delta: 875920448.8200
+- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1021957733.00, Expected: 56067290.70, Delta: 965890442.3000
+- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1021957733.00, Expected: 56067290.70, Delta: 965890442.3000
+- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 95277.46, Consecutive Loss Turns: 20
+  - Details: agent_id=121
+- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 95072.94, Consecutive Loss Turns: 20
+  - Details: agent_id=122
+- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1002922693.00, Expected: 56067290.70, Delta: 946855402.3000
+- **Tick 22** | **WARNING** | FIRM_INACTIVE | Firm 124 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
+  - Details: agent_id=124
+- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1005517369.00, Expected: 56094764.08, Delta: 949422604.9200
+- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1099541851.00, Expected: 56564886.49, Delta: 1042976964.5100
+- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1105002733.00, Expected: 56592190.90, Delta: 1048410542.1000
+- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1199001687.00, Expected: 57062185.67, Delta: 1141939501.3300
+- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1204437321.00, Expected: 57089363.84, Delta: 1147347957.1600
+- **Tick 27** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 91682.05, Consecutive Loss Turns: 20
+  - Details: agent_id=120
+- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1289247140.00, Expected: 57559253.96, Delta: 1231687886.0400
+- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1294735548.00, Expected: 57586696.00, Delta: 1237148852.0000
+- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1388693158.00, Expected: 58056484.05, Delta: 1330636673.9500
+- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1394159848.00, Expected: 58083817.50, Delta: 1336076030.5000
+- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1487473592.00, Expected: 58550386.22, Delta: 1428923205.7800
+- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1503330874.00, Expected: 58629672.63, Delta: 1444701201.3700
+- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1596827442.00, Expected: 59097155.47, Delta: 1537730286.5300
+- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1596827442.00, Expected: 59097155.47, Delta: 1537730286.5300
+- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 123 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+  - Details: agent_id=123
+- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1596466190.00, Expected: 59097155.47, Delta: 1537369034.5300
+- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1596466190.00, Expected: 59097155.47, Delta: 1537369034.5300
+- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1596466190.00, Expected: 59097155.47, Delta: 1537369034.5300
+- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1596466190.00, Expected: 59097155.47, Delta: 1537369034.5300
+- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1596466190.00, Expected: 59097155.47, Delta: 1537369034.5300
+- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1596466190.00, Expected: 59097155.47, Delta: 1537369034.5300
+- **Tick 41** | **WARNING** | FIRM_INACTIVE | Firm 125 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
+  - Details: agent_id=125
+- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1593566190.00, Expected: 59097155.47, Delta: 1534469034.5300
+- **Tick 42** | **WARNING** | FIRM_INACTIVE | Firm 126 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
+  - Details: agent_id=126
+- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1590666190.00, Expected: 59097155.47, Delta: 1531569034.5300
+- **Tick 43** | **WARNING** | FIRM_INACTIVE | Firm 127 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
+  - Details: agent_id=127
+- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1587766190.00, Expected: 59097155.47, Delta: 1528669034.5300
+- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1587766190.00, Expected: 59097155.47, Delta: 1528669034.5300
+- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1587766190.00, Expected: 59097155.47, Delta: 1528669034.5300
+- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1587766190.00, Expected: 59097155.47, Delta: 1528669034.5300
+- **Tick 47** | **WARNING** | FIRM_INACTIVE | Firm 128 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
+  - Details: agent_id=128
+- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1584866190.00, Expected: 59097155.47, Delta: 1525769034.5300
+- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1584866190.00, Expected: 59097155.47, Delta: 1525769034.5300
+- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1584866190.00, Expected: 59097155.47, Delta: 1525769034.5300
+- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1584866190.00, Expected: 59097155.47, Delta: 1525769034.5300
+- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1584866190.00, Expected: 59097155.47, Delta: 1525769034.5300
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3078800, Req: 5000000.
+- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1584866190.00, Expected: 59097155.47, Delta: 1525769034.5300
+- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1678116718.00, Expected: 59563408.11, Delta: 1618553309.8900
+- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1694223896.00, Expected: 59643944.00, Delta: 1634579952.0000
+- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1787452548.00, Expected: 60110087.26, Delta: 1727342460.7400
+- **Tick 56** | **WARNING** | FIRM_INACTIVE | Firm 129 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
+  - Details: agent_id=129
+- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1800639054.00, Expected: 60190519.79, Delta: 1740448534.2100
+- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1893845836.00, Expected: 60656553.70, Delta: 1833189282.3000
+- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1909910478.00, Expected: 60736876.91, Delta: 1849173601.0900
+- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2002888626.00, Expected: 61201767.65, Delta: 1941686858.3500
+- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2019138230.00, Expected: 61283015.67, Delta: 1957855214.3300

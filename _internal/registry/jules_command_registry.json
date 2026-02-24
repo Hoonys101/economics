@@ -3,14 +3,14 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-WAVE-B-5-CONFIG": {
-      "key": "WO-WAVE-B-5-CONFIG",
-      "title": "Wave B.5: Fractional Reserve & Config Tuning",
+    "WO-INTEGRATED-RECOVERY-B": {
+      "key": "WO-INTEGRATED-RECOVERY-B",
+      "title": "Wave B Stabilization & Macro-Financial Recovery",
       "type": "jules",
-      "instruction_raw": "\uba85\uc138\uc11c(MISSION_WAVE_B_5_CONFIG_SPEC.md)\uc5d0 \ub530\ub77c \ucd08\uae30 \uc720\ub3d9\uc131 \uc124\uc815 \ubc0f \uc81c\ub124\uc2dc\uc2a4 \ub2e8\uacc4\uc758 \uc548\uc815\uc131 \uac80\uc99d \ub85c\uc9c1\uc744 \ucd94\uac00\ud558\uc2ed\uc2dc\uc624.",
+      "instruction_raw": "[Wave B \ud1b5\ud569 \uc548\uc815\ud654 \ubc0f \uac70\uc2dc \uae08\uc735 \ubcf5\uad6c]\n\nWave B \uba38\uc9c0 \ud6c4 \ubc1c\uc0dd\ud55c MyPy/\ub2e8\uc704 \ud14c\uc2a4\ud2b8 \uc2e4\ud328\ub97c \ud574\uacb0\ud558\uace0, $1.9B \uaddc\ubaa8\uc758 M2 \uc9c0\ud45c \uc624\ub958\ub97c \uc720\ubc1c\ud558\ub294 'Penny vs Dollar' \ub2e8\uc704 \ud63c\uc120\uc744 \uc804\uc218 \ubcf5\uad6c\ud558\uc2ed\uc2dc\uc624.\n\n### 1. Stabilization (Config & Tests)\n- **mypy.ini**: \ud558\ub2e8 \uc911\ubcf5\ub41c `[mypy-verify_*]` \uc139\uc158 \uc81c\uac70. `exclude` \ud328\ud134\uc5d0 `^artifacts/`, `^communications/`, `^data/`, `^frontend/`, `^results/`, `^simulation_results/`, `^static/`, `^templates/` \ucd94\uac00.\n- **tests/initialization/test_atomic_startup.py**: `patches['Bank'].return_value.get_balance.return_value = 1000` \ucd94\uac00\ud558\uc5ec MagicMock \ube44\uad50 \uc5d0\ub7ec \ud574\uacb0.\n\n### 2. Macro-Financial Recovery (Normalization Barrier)\n- **simulation/metrics/economic_tracker.py**: `total_consumption`, `total_food_consumption` \ub4f1 `_pennies` \uc18d\uc131 \uc218\uc9d1 \uc2dc \ubc18\ub4dc\uc2dc `100.0`\uc73c\ub85c \ub098\ub204\uc5b4 \ub2ec\ub7ec \ub2e8\uc704\ub85c \uc800\uc7a5\ud558\uc2ed\uc2dc\uc624.\n- **simulation/orchestration/tick_orchestrator.py**: \n    - `baseline_money_supply` \ucd08\uae30\ud654 \uc2dc `total_m2_pennies / 100.0` \uc801\uc6a9.\n    - `_finalize_tick`\uc758 M2 \uac80\uc99d \ub85c\uc9c1\uc5d0\uc11c `current_money`\ub97c `total_m2_pennies / 100.0`\uc73c\ub85c \ud658\uc0b0\ud558\uc5ec \ube44\uad50.\n- **modules/government/components/monetary_ledger.py**:\n    - `tx.total_pennies`\ub97c \uc18c\uc2a4\ub85c \uc0ac\uc6a9\ud558\uc5ec `total_money_issued/destroyed` \uae30\ub85d.\n    - `get_monetary_delta` \ubc18\ud658 \uc2dc \ub2ec\ub7ec \ub2e8\uc704\ub85c \ubcc0\ud658\ud558\uc5ec \ubc18\ud658 (\ub610\ub294 \uc5d4\uc9c4 \uce21\uc5d0\uc11c \ubcc0\ud658 \ud655\uc778).\n\n### 3. Verification\n- `pytest tests/initialization/test_atomic_startup.py` \ud1b5\uacfc \ud655\uc778.\n- `tests/unit/government/test_monetary_ledger_units.py` \uc2e4\ud589\ud558\uc5ec \ub378\ud0c0 \uc815\ud569\uc131 \ud655\uc778.\n- `diagnostic_refined.md`\uc5d0\uc11c M2 \ub378\ud0c0 \uacbd\uace0\uac00 \uc815\uc0c1\ud654\ub418\uc5c8\ub294\uc9c0 \ud655\uc778.\n\n*\ud544\uc218 \ubcf4\uace0\uc11c*: `communications/insights/WO-INTEGRATED-RECOVERY-B.md` \uc0dd\uc131 (\uc544\ud0a4\ud14d\ucc98 \ubd80\ucc44 \ubc0f \ud14c\uc2a4\ud2b8 \ub85c\uadf8 \ud3ec\ud568).",
       "command": "create",
-      "file_path": "gemini-output/spec/MISSION_WAVE_B_5_CONFIG_SPEC.md",
-      "wait": true,
+      "file_path": null,
+      "wait": false,
       "session_id": null,
       "worker": null,
       "context_files": [],

@@ -407,9 +407,11 @@ class SimulationInitializer(SimulationInitializerInterface):
             firm.settlement_system = sim.settlement_system
 
         # Determine next available ID (assuming user agents start > 100)
+        # TD-INIT-MOCK-LEAK: Filter for integer keys to avoid TypeError during Mock testing.
         max_user_id = 0
         if sim.agents:
-            max_user_id = max(sim.agents.keys())
+            int_keys = [k for k in sim.agents.keys() if isinstance(k, int)]
+            max_user_id = max(int_keys) if int_keys else 0
         sim.next_agent_id = max(100, max_user_id + 1)
 
         sim.demographic_manager.sync_stats(sim.households)
