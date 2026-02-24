@@ -20,7 +20,6 @@ class SimulationStateBuilder:
             "agents": {},
             "markets": {},
             "primary_government": MagicMock(),
-            "governments": [],
             "bank": MagicMock(),
             "central_bank": MagicMock(),
             "escrow_agent": None,
@@ -58,6 +57,8 @@ class SimulationStateBuilder:
             "household_leisure_effects": {},
             "injectable_sensory_dto": None,
             "currency_registry_handler": None,
+            "public_manager": None,
+            "politics_system": None,
         }
 
     def with_time(self, tick: int) -> 'SimulationStateBuilder':
@@ -84,8 +85,6 @@ class SimulationStateBuilder:
 
     def with_primary_government(self, government: Any) -> 'SimulationStateBuilder':
         self._state_data["primary_government"] = government
-        # Automatically sync with governments list to ensure consistency
-        self._state_data["governments"] = [government]
         return self
 
     def build(self) -> SimulationState:

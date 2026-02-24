@@ -9,6 +9,9 @@ from modules.simulation.dtos.api import FirmConfigDTO
 from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.ai.enums import Personality
+from modules.finance.api import ISettlementSystem, ICentralBank
+from modules.system.constants import ID_BANK
+from simulation.systems.bootstrapper import Bootstrapper
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -31,6 +34,8 @@ class FirmFactory:
         config_dto: FirmConfigDTO,
         specialization: str,
         productivity_factor: float,
+        settlement_system: ISettlementSystem,
+        central_bank: ICentralBank,
         sector: str = "FOOD",
         personality: Optional[Personality] = None,
         initial_inventory: Optional[Dict[str, float]] = None,
@@ -62,6 +67,20 @@ class FirmFactory:
             sector=sector,
             personality=personality
         )
+
+        # Inject Settlement System dependency
+        firm.settlement_system = settlement_system
+
+        # Atomic Initialization: Register Account & Inject Liquidity
+        if settlement_system:
+            # 1. Register Account
+            settlement_system.register_account(ID_BANK, firm.id)
+
+            # 2. Inject Initial Liquidity (if Central Bank provided)
+            # This ensures the firm starts with the minimum required capital/inventory
+            if central_bank:
+                # Bootstrapper expects the full config module (with GOODS constant), not the DTO
+                Bootstrapper.inject_liquidity_for_firm(firm, self.config_module, settlement_system, central_bank)
 
         return firm
 
@@ -101,6 +120,13 @@ class FirmFactory:
 
         # Preserve quality for main inventory (Fixing potential bug in legacy clone)
         new_firm.inventory_quality = copy.deepcopy(source_firm.inventory_quality)
+
+        # Transfer Settlement System dependency
+        if hasattr(source_firm, 'settlement_system'):
+            new_firm.settlement_system = source_firm.settlement_system
+            # Register Bank Account for the new firm
+            if new_firm.settlement_system:
+                new_firm.settlement_system.register_account(ID_BANK, new_firm.id)
 
         new_firm.logger.info(
             f"Firm {source_firm.id} was cloned to new Firm {new_id}",

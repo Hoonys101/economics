@@ -152,7 +152,6 @@ class TickOrchestrator:
             agents=state.agents,
             markets=state.markets,
             primary_government=state.government, # Renamed to primary_government
-            governments=[state.government] if state.government else [], # TD-ARCH-GOV-MISMATCH: Populate list
             bank=state.bank,
             central_bank=state.central_bank,
             escrow_agent=getattr(state, "escrow_agent", None),

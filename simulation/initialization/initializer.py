@@ -118,8 +118,6 @@ class SimulationInitializer(SimulationInitializerInterface):
         command_service = CommandService(registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry)
         sim = Simulation(config_manager=self.config_manager, config_module=self.config, logger=self.logger, repository=self.repository, registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry, command_service=command_service)
 
-        # sim.agent_registry.set_state(sim.world_state) # DEFERRED to end of build_simulation
-
         sim.lock_manager = lock_manager
         sim.event_bus = EventBus()
         sim.world_state.taxation_system = TaxationSystem(config_module=self.config)
@@ -203,9 +201,26 @@ class SimulationInitializer(SimulationInitializerInterface):
              # to ensure it exists in the primary agent lookup table.
              sim.agents[ID_CENTRAL_BANK] = sim.central_bank
 
+        sim.escrow_agent = EscrowAgent(id=ID_ESCROW)
+        sim.agents[sim.escrow_agent.id] = sim.escrow_agent
+
+        sim.judicial_system = JudicialSystem(event_bus=sim.event_bus, settlement_system=sim.settlement_system, agent_registry=sim.agent_registry, shareholder_registry=sim.shareholder_registry, config_manager=self.config_manager)
+
+        # TD-FIN-INVISIBLE-HAND: PublicManager must be registered BEFORE AgentRegistry snapshot
+        sim.public_manager = PublicManager(config=self.config)
+        # Verify and Register PublicManager
+        if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
+            sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
+        sim.world_state.public_manager = sim.public_manager
+
         # TD-INIT-RACE: Registry must be linked BEFORE Bootstrapper runs.
-        # Now that System Agents (Gov, Bank, CB) are in sim.agents, we link the registry.
+        # Now that ALL System Agents (Gov, Bank, CB, PublicManager) are in sim.agents, we link the registry.
         sim.agent_registry.set_state(sim.world_state)
+
+        # TD-LIFECYCLE-GHOST-FIRM: Atomic Account Registration for Initial Firms
+        # Must happen after Bank is initialized and Registry is linked
+        for firm in sim.firms:
+             sim.settlement_system.register_account(sim.bank.id, firm.id)
 
         sim.central_bank_system = CentralBankSystem(
             central_bank_agent=sim.central_bank,
@@ -311,16 +326,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.registry = Registry(housing_service=sim.housing_service, logger=self.logger)
         sim.accounting_system = AccountingSystem(logger=self.logger)
 
-        sim.escrow_agent = EscrowAgent(id=ID_ESCROW)
-        sim.agents[sim.escrow_agent.id] = sim.escrow_agent
+        # sim.escrow_agent and sim.judicial_system were moved up before PublicManager logic in previous block copy-paste
+        # because I pasted the whole file.
 
-        sim.judicial_system = JudicialSystem(event_bus=sim.event_bus, settlement_system=sim.settlement_system, agent_registry=sim.agent_registry, shareholder_registry=sim.shareholder_registry, config_manager=self.config_manager)
-        sim.public_manager = PublicManager(config=self.config)
-        # Verify and Register PublicManager
-        if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
-            sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
-
-        sim.world_state.public_manager = sim.public_manager
         sim.transaction_processor = TransactionProcessor(config_module=self.config)
         from simulation.systems.handlers.transfer_handler import DefaultTransferHandler
         sim.transaction_processor.register_handler('transfer', DefaultTransferHandler())
@@ -403,10 +411,6 @@ class SimulationInitializer(SimulationInitializerInterface):
         
         if hasattr(sim.settlement_system, 'set_panic_recorder'):
              sim.settlement_system.set_panic_recorder(sim.world_state)
-
-        # TD-FIN-INVISIBLE-HAND: Ensure system agents are registered before Snapshot
-        self.logger.info("LATE_INITIALIZATION | Finalizing AgentRegistry state snapshot.")
-        # sim.agent_registry.set_state(sim.world_state) # MOVED up before Bootstrapper
 
         self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
         return sim
