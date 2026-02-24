@@ -32,6 +32,7 @@ class TestGoodsTransactionHandler(unittest.TestCase):
         self.state.time = 100
         self.state.market_data = {}
         self.state.taxation_system = self.taxation_system
+        self.state.transaction_queue = []
 
         # Mock Buyer with IFinancialAgent protocol
         self.buyer = MagicMock(spec=IFinancialAgent)
@@ -89,6 +90,13 @@ class TestGoodsTransactionHandler(unittest.TestCase):
 
         # Verify Gov Record Revenue
         self.government.record_revenue.assert_called()
+
+        # WO-IMPL-LEDGER-HARDENING: Verify Tax Transaction Generation
+        self.assertEqual(len(self.state.transaction_queue), 1)
+        tax_tx = self.state.transaction_queue[0]
+        self.assertEqual(tax_tx.transaction_type, "tax")
+        self.assertEqual(tax_tx.total_pennies, 100)
+        self.assertEqual(tax_tx.metadata["executed"], True)
 
     def test_goods_settle_fail(self):
         tx = Transaction(

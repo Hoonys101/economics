@@ -483,8 +483,8 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         sim.world_state.central_bank = sim.central_bank
         supply_dto = sim.world_state.calculate_total_money()
-        sim.world_state.baseline_money_supply = float(supply_dto.total_m2_pennies)
-        self.logger.info(f'Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}')
+        sim.world_state.baseline_money_supply = int(supply_dto.total_m2_pennies)
+        self.logger.info(f'Initial baseline money supply established: {sim.world_state.baseline_money_supply}')
 
         Bootstrapper.force_assign_workers(sim.firms, sim.households)
         for agent in sim.households + sim.firms:

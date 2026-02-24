@@ -35,57 +35,65 @@ class DebtServicingEngine(IDebtServicingEngine):
                 payment_made = 0
 
                 if deposit and deposit.balance_pennies >= interest_pennies:
-                    deposit.balance_pennies -= interest_pennies
-                    # [Double-Entry] Credit Bank Equity (Retained Earnings)
-                    bank.retained_earnings_pennies += interest_pennies
+                    # WO-IMPL-LEDGER-HARDENING: Use local tracking to prevent shadow transactions
+                    # We do NOT modify deposit.balance_pennies directly. The emitted Transaction will update the SSoT.
+                    current_balance = deposit.balance_pennies
 
-                    payment_made = interest_pennies
+                    if current_balance >= interest_pennies:
+                        current_balance -= interest_pennies
 
-                    txs.append(Transaction(
-                        buyer_id=loan.borrower_id,
-                        seller_id=bank_id, # Pay to Bank (Replenish Reserves)
-                        item_id=loan_id,
-                        quantity=1,
-                        price=interest_pennies / 100.0,
-                        market_id="financial",
-                        transaction_type="loan_interest",
-                        time=ledger.current_tick
-                    , total_pennies=interest_pennies))
+                        # [Double-Entry] Credit Bank Equity (Retained Earnings) - Accounting Only
+                        bank.retained_earnings_pennies += interest_pennies
 
-                    # Principal repayment
-                    if ledger.current_tick >= loan.due_tick:
-                        principal_due = loan.remaining_principal_pennies
-                        if deposit.balance_pennies >= principal_due:
-                            deposit.balance_pennies -= principal_due
-                            loan.remaining_principal_pennies = 0
-                            payment_made += principal_due
+                        payment_made = interest_pennies
 
-                            txs.append(Transaction(
-                                buyer_id=loan.borrower_id,
-                                seller_id=bank_id, # Pay to Bank
-                                item_id=loan_id,
-                                quantity=1,
-                                price=principal_due / 100.0,
-                                market_id="financial",
-                                transaction_type="loan_repayment",
-                                time=ledger.current_tick
-                            , total_pennies=principal_due))
-                        else:
-                            # Partial pay?
-                            pay = deposit.balance_pennies
-                            deposit.balance_pennies = 0
-                            loan.remaining_principal_pennies -= pay
+                        txs.append(Transaction(
+                            buyer_id=loan.borrower_id,
+                            seller_id=bank_id, # Pay to Bank (Replenish Reserves)
+                            item_id=loan_id,
+                            quantity=1,
+                            price=interest_pennies / 100.0,
+                            market_id="financial",
+                            transaction_type="loan_interest",
+                            time=ledger.current_tick
+                        , total_pennies=interest_pennies))
 
-                            txs.append(Transaction(
-                                buyer_id=loan.borrower_id,
-                                seller_id=bank_id, # Pay to Bank
-                                item_id=loan_id,
-                                quantity=1,
-                                price=pay / 100.0,
-                                market_id="financial",
-                                transaction_type="loan_repayment",
-                                time=ledger.current_tick
-                            , total_pennies=pay))
+                        # Principal repayment
+                        if ledger.current_tick >= loan.due_tick:
+                            principal_due = loan.remaining_principal_pennies
+                            if current_balance >= principal_due:
+                                # Full Repayment
+                                current_balance -= principal_due
+                                # DO NOT update loan.remaining_principal_pennies (Handler does it)
+                                payment_made += principal_due
+
+                                txs.append(Transaction(
+                                    buyer_id=loan.borrower_id,
+                                    seller_id=bank_id, # Pay to Bank
+                                    item_id=loan_id,
+                                    quantity=1,
+                                    price=principal_due / 100.0,
+                                    market_id="financial",
+                                    transaction_type="loan_repayment",
+                                    time=ledger.current_tick
+                                , total_pennies=principal_due))
+                            else:
+                                # Partial pay?
+                                pay = current_balance
+                                current_balance = 0
+                                # DO NOT update loan.remaining_principal_pennies (Handler does it)
+
+                                if pay > 0:
+                                    txs.append(Transaction(
+                                        buyer_id=loan.borrower_id,
+                                        seller_id=bank_id, # Pay to Bank
+                                        item_id=loan_id,
+                                        quantity=1,
+                                        price=pay / 100.0,
+                                        market_id="financial",
+                                        transaction_type="loan_repayment",
+                                        time=ledger.current_tick
+                                    , total_pennies=pay))
 
         # 2. Service Treasury Bonds
         treasury = ledger.treasury
@@ -102,17 +110,13 @@ class DebtServicingEngine(IDebtServicingEngine):
             # If receiver is a Bank, update its reserves.
             if receiver_id in ledger.banks:
                 bank = ledger.banks[receiver_id]
-                # Update reserves
-                curr = "USD" # Default
-                if curr not in bank.reserves: bank.reserves[curr] = 0
-                bank.reserves[curr] += interest_pennies
+                # WO-IMPL-LEDGER-HARDENING: Do not modify reserves directly (Shadow Transaction).
+                # The emitted Transaction will update the SSoT.
 
-                # [Double-Entry] Credit Equity (Interest Income)
+                # [Double-Entry] Credit Equity (Interest Income) - Accounting Only
                 bank.retained_earnings_pennies += interest_pennies
 
-                # Treasury pays
-                if curr not in treasury.balance: treasury.balance[curr] = 0
-                treasury.balance[curr] -= interest_pennies
+                # Do not modify treasury.balance directly.
 
                 txs.append(Transaction(
                     buyer_id=treasury.government_id,

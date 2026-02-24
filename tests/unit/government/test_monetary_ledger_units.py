@@ -3,10 +3,10 @@ from simulation.models import Transaction
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.system.api import DEFAULT_CURRENCY
 
-def test_monetary_ledger_uses_pennies_source_and_returns_dollars():
+def test_monetary_ledger_uses_pennies_source_and_returns_pennies():
     """
     Verifies that MonetaryLedger uses tx.total_pennies (SSoT) as source
-    and returns the delta in Dollars (dividing by 100.0).
+    and returns the delta in Pennies.
     """
     ledger = MonetaryLedger()
     ledger.reset_tick_flow()
@@ -30,5 +30,5 @@ def test_monetary_ledger_uses_pennies_source_and_returns_dollars():
     
     delta = ledger.get_monetary_delta(DEFAULT_CURRENCY)
     
-    # Expected: 1.00 USD (100 pennies / 100.0)
-    assert delta == 1.0, f"Unit Mismatch! Expected 1.0 dollar, got {delta}"
+    # Expected: 100 pennies
+    assert delta == 100, f"Unit Mismatch! Expected 100 pennies, got {delta}"

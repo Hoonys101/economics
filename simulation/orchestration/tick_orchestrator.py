@@ -70,10 +70,10 @@ class TickOrchestrator:
             # TD-030: Removed _rebuild_currency_holders. Initializer populates this.
             # self._rebuild_currency_holders(state)
             money_dto = state.calculate_total_money()
-            state.baseline_money_supply = float(money_dto.total_m2_pennies) / 100.0
+            state.baseline_money_supply = int(money_dto.total_m2_pennies)
 
             state.logger.info(
-                f"MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: {state.baseline_money_supply:.2f}",
+                f"MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: {state.baseline_money_supply}",
                 extra={"tick": state.time, "money_supply": state.baseline_money_supply}
             )
 
@@ -252,21 +252,22 @@ class TickOrchestrator:
             cb_assets = state.central_bank.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) if state.central_bank else 0.0
             bank_assets = state.bank.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) if state.bank else 0.0
 
-            state.logger.debug(f"M2_BREAKDOWN | HH: {total_hh:.2f}, Firms: {total_firm:.2f}, Gov: {gov_assets:.2f}, CB: {cb_assets:.2f}, Bank: {bank_assets:.2f}")
+            state.logger.debug(f"M2_BREAKDOWN | HH: {total_hh}, Firms: {total_firm}, Gov: {gov_assets}, CB: {cb_assets}, Bank: {bank_assets}")
 
             supply_dto = state.calculate_total_money()
-            current_money = float(supply_dto.total_m2_pennies) / 100.0
-            expected_money = state.baseline_money_supply
+            current_money = int(supply_dto.total_m2_pennies)
+            expected_money = int(state.baseline_money_supply)
             if hasattr(state.government, "get_monetary_delta"):
-                expected_money += state.government.get_monetary_delta(DEFAULT_CURRENCY)
+                expected_money += int(state.government.get_monetary_delta(DEFAULT_CURRENCY))
 
             m2_leak_delta = current_money - expected_money
 
-            msg = f"MONEY_SUPPLY_CHECK | Current: {current_money:.2f}, Expected: {expected_money:.2f}, Delta: {m2_leak_delta:.4f}"
+            msg = f"MONEY_SUPPLY_CHECK | Current: {current_money}, Expected: {expected_money}, Delta: {m2_leak_delta}"
             extra_data = {"tick": state.time, "current": current_money, "expected": expected_money, "delta": m2_leak_delta, "tags": ["money_supply"]}
 
             # Tight Tolerance: 0.1% to detect leaks early (Wave 5 Hardening)
-            tolerance = max(10.0, expected_money * 0.001) # Min 0.10 USD
+            # Tolerance is in pennies. 1000 pennies = 10.00 dollars.
+            tolerance = max(1000, expected_money * 0.001)
             if abs(m2_leak_delta) > tolerance:
                  state.logger.warning(msg, extra=extra_data)
             else:
@@ -275,7 +276,7 @@ class TickOrchestrator:
             # Update baseline for next tick to accumulate authorized changes
             # This ensures 'Expected' follows the authorized expansion path
             if hasattr(state.government, "get_monetary_delta"):
-                authorized_delta = state.government.get_monetary_delta(DEFAULT_CURRENCY)
+                authorized_delta = int(state.government.get_monetary_delta(DEFAULT_CURRENCY))
                 state.baseline_money_supply += authorized_delta
 
             # Track Economics
@@ -284,13 +285,18 @@ class TickOrchestrator:
                 m0_dict = state.calculate_base_money()
                 m0_pennies = m0_dict.get(DEFAULT_CURRENCY, 0)
 
+                # Tracker expects float dollars usually, let's keep it as float dollars for the tracker interface
+                # or check if tracker handles pennies. Assuming tracker expects dollars for now based on previous code.
+                current_money_dollars = current_money / 100.0
+                m2_leak_dollars = m2_leak_delta / 100.0
+
                 state.tracker.track(
                     time=state.time,
                     households=state.households,
                     firms=state.firms,
                     markets=state.markets,
-                    money_supply=current_money,
-                    m2_leak=m2_leak_delta,
+                    money_supply=current_money_dollars,
+                    m2_leak=m2_leak_dollars,
                     monetary_base=float(m0_pennies)
                 )
 

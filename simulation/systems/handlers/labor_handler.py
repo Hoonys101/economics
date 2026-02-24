@@ -83,6 +83,23 @@ class LaborTransactionHandler(ITransactionHandler):
                          error_message=None
                     ))
 
+                # WO-IMPL-LEDGER-HARDENING: Generate Tax Transactions for visibility/exhaustion
+                if hasattr(context, "transaction_queue"):
+                    for intent in intents:
+                        tax_tx = Transaction(
+                            buyer_id=intent.payer_id,
+                            seller_id=intent.payee_id,
+                            item_id=f"tax_{intent.reason}",
+                            quantity=1,
+                            price=intent.amount / 100.0, # Just for display/compat
+                            market_id="system",
+                            transaction_type="tax",
+                            time=context.time,
+                            total_pennies=int(intent.amount),
+                            metadata={"executed": True, "tax_type": intent.reason}
+                        )
+                        context.transaction_queue.append(tax_tx)
+
                 self._apply_labor_effects(tx, buyer, seller, seller_net_amount, buyer_total_cost, context)
 
             return settlement_success

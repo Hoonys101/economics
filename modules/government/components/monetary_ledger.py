@@ -12,15 +12,15 @@ class MonetaryLedger:
     """
     def __init__(self):
         # Money Tracking (Gold Standard & Fractional Reserve)
-        self.total_money_issued: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
-        self.total_money_destroyed: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.total_money_issued: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
+        self.total_money_destroyed: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
 
         # Snapshots for Tick Delta
-        self.start_tick_money_issued: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
-        self.start_tick_money_destroyed: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.start_tick_money_issued: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
+        self.start_tick_money_destroyed: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
 
         # WO-024: Fractional Reserve Credit Tracking
-        self.credit_delta_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.credit_delta_this_tick: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
 
     def reset_tick_flow(self):
         """
@@ -69,28 +69,28 @@ class MonetaryLedger:
                     is_contraction = True
 
             if is_expansion:
-                amount = float(tx.total_pennies)
-                if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
-                if cur not in self.total_money_issued: self.total_money_issued[cur] = 0.0
+                amount = int(tx.total_pennies)
+                if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0
+                if cur not in self.total_money_issued: self.total_money_issued[cur] = 0
 
                 self.credit_delta_this_tick[cur] += amount
                 self.total_money_issued[cur] += amount
-                logger.debug(f"MONETARY_EXPANSION | {tx.transaction_type} (from {tx.buyer_id}): {amount:.2f}")
+                logger.debug(f"MONETARY_EXPANSION | {tx.transaction_type} (from {tx.buyer_id}): {amount}")
 
             elif is_contraction:
-                amount = float(tx.total_pennies)
+                amount = int(tx.total_pennies)
 
-                if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
-                if cur not in self.total_money_destroyed: self.total_money_destroyed[cur] = 0.0
+                if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0
+                if cur not in self.total_money_destroyed: self.total_money_destroyed[cur] = 0
 
                 self.credit_delta_this_tick[cur] -= amount
                 self.total_money_destroyed[cur] += amount
-                logger.debug(f"MONETARY_CONTRACTION | {tx.transaction_type} (to {tx.seller_id}): {amount:.2f}")
+                logger.debug(f"MONETARY_CONTRACTION | {tx.transaction_type} (to {tx.seller_id}): {amount}")
 
-    def get_monetary_delta(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+    def get_monetary_delta(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         """
-        Returns the net change in the money supply authorized this tick for a specific currency.
+        Returns the net change in the money supply authorized this tick for a specific currency (in pennies).
         """
-        issued_delta = self.total_money_issued.get(currency, 0.0) - self.start_tick_money_issued.get(currency, 0.0)
-        destroyed_delta = self.total_money_destroyed.get(currency, 0.0) - self.start_tick_money_destroyed.get(currency, 0.0)
-        return (issued_delta - destroyed_delta) / 100.0
+        issued_delta = self.total_money_issued.get(currency, 0) - self.start_tick_money_issued.get(currency, 0)
+        destroyed_delta = self.total_money_destroyed.get(currency, 0) - self.start_tick_money_destroyed.get(currency, 0)
+        return issued_delta - destroyed_delta

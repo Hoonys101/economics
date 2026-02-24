@@ -49,7 +49,7 @@ class DeathSystem(IDeathSystem):
             self._cancel_agent_orders(firm.id, state)
 
             # 0.5 Recover External Assets (Bank Deposits)
-            self._recover_external_assets(firm.id, state)
+            self._recover_external_assets(firm.id, state, transactions)
 
             # Delegate strictly to LiquidationManager
             if isinstance(firm, ILiquidatable):
@@ -84,7 +84,7 @@ class DeathSystem(IDeathSystem):
              self._cancel_agent_orders(household.id, state)
 
              # 0.5 Recover External Assets (Bank Deposits)
-             self._recover_external_assets(household.id, state)
+             self._recover_external_assets(household.id, state, transactions)
 
              # Preserve for history/logging if needed
              if state.inactive_agents is not None:
@@ -92,7 +92,7 @@ class DeathSystem(IDeathSystem):
 
              # Inventory Liquidation (Asset Buyout) via Public Manager
              # Must occur BEFORE inheritance so cash is available for heirs/tax.
-             self._liquidate_agent_inventory(household, state)
+             self._liquidate_agent_inventory(household, state, transactions)
 
              # Inheritance Manager (Executes transactions via side-effects)
              if state.primary_government:
@@ -123,7 +123,7 @@ class DeathSystem(IDeathSystem):
 
         return transactions
 
-    def _recover_external_assets(self, agent_id: int, state: SimulationState) -> None:
+    def _recover_external_assets(self, agent_id: int, state: SimulationState, transactions: List[Transaction]) -> None:
         """
         Recovers assets from external accounts (Banks) before liquidation.
         """
@@ -160,6 +160,22 @@ class DeathSystem(IDeathSystem):
                     if success:
                         # 4. Close the Ledger Account (Remove Liability)
                         bank.close_account(agent_id)
+
+                        # WO-IMPL-LEDGER-HARDENING: Emit Transaction
+                        tx = Transaction(
+                            buyer_id=bank.id,
+                            seller_id=agent.id,
+                            item_id=f"deposit_recovery_{agent_id}",
+                            quantity=1,
+                            price=amount / 100.0,
+                            market_id="financial",
+                            transaction_type="withdrawal", # Or 'asset_recovery'
+                            time=state.time,
+                            total_pennies=amount,
+                            metadata={"executed": True, "reason": "liquidation_recovery"}
+                        )
+                        transactions.append(tx)
+
                         self.logger.info(f"RECOVER_ASSETS | Recovered {amount} from Bank {bank_id} for Agent {agent_id}")
                     else:
                         self.logger.error(f"RECOVER_FAIL | Bank {bank_id} insolvent? Could not return {amount} to {agent_id}")
@@ -181,7 +197,7 @@ class DeathSystem(IDeathSystem):
                         f"ORDER_SCRUB_FAIL | Failed to cancel orders for agent {agent_id} in market {getattr(market, 'id', 'unknown')}: {e}"
                     )
 
-    def _liquidate_agent_inventory(self, agent: Any, state: SimulationState) -> None:
+    def _liquidate_agent_inventory(self, agent: Any, state: SimulationState, transactions: List[Transaction]) -> None:
         """
         Liquidates agent inventory by selling to Public Manager (Asset Buyout).
         Transfers cash to the agent and clears inventory.
@@ -246,6 +262,21 @@ class DeathSystem(IDeathSystem):
             )
 
             if success:
+                # WO-IMPL-LEDGER-HARDENING: Emit Transaction
+                tx = Transaction(
+                    buyer_id=self.public_manager.id if hasattr(self.public_manager, 'id') else "PUBLIC_MANAGER",
+                    seller_id=agent.id,
+                    item_id=f"asset_buyout_{agent.id}",
+                    quantity=1,
+                    price=result.total_paid_pennies / 100.0,
+                    market_id="financial",
+                    transaction_type="asset_buyout",
+                    time=state.time,
+                    total_pennies=result.total_paid_pennies,
+                    metadata={"executed": True}
+                )
+                transactions.append(tx)
+
                 self.logger.info(f"ASSET_BUYOUT_SUCCESS | Agent {agent.id} sold inventory for {result.total_paid_pennies} pennies.")
                 # Clear Inventory
                 if hasattr(agent, 'clear_inventory'):

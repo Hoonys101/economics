@@ -5,6 +5,7 @@ from modules.common.financial.dtos import Claim
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from simulation.systems.liquidation_handlers import InventoryLiquidationHandler, ILiquidationHandler
 from modules.finance.api import ILiquidatable, LiquidationContext
+from simulation.models import Transaction
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -120,7 +121,7 @@ class LiquidationManager:
             if remaining_cash >= total_tier_claim:
                 # Pay all fully
                 for claim in tier_claims:
-                    self._pay_claim(agent, claim, claim.amount_pennies)
+                    self._pay_claim(agent, claim, claim.amount_pennies, state)
                 remaining_cash -= total_tier_claim
                 logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} fully paid. Remaining cash: {remaining_cash}")
             else:
@@ -128,7 +129,7 @@ class LiquidationManager:
                 factor = remaining_cash / total_tier_claim
                 for claim in tier_claims:
                     payment = int(claim.amount_pennies * factor)
-                    self._pay_claim(agent, claim, payment, partial=True)
+                    self._pay_claim(agent, claim, payment, state, partial=True)
                 remaining_cash = 0.0
                 logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} partially paid (Factor: {factor:.2f}). Cash exhausted.")
 
@@ -154,6 +155,21 @@ class LiquidationManager:
                             self.settlement_system.transfer(agent, shareholder, distribution, "Liquidation Dividend (Tier 5)", currency=DEFAULT_CURRENCY)
                             total_distributed_cash += distribution
 
+                            # WO-IMPL-LEDGER-HARDENING: Emit Transaction
+                            tx = Transaction(
+                                buyer_id=agent.id,
+                                seller_id=shareholder.id,
+                                item_id=f"liquidation_dividend_{agent.id}",
+                                quantity=1,
+                                price=distribution / 100.0,
+                                market_id="financial",
+                                transaction_type="liquidation_dividend",
+                                time=state.time,
+                                total_pennies=int(distribution),
+                                metadata={"executed": True}
+                            )
+                            state.transactions.append(tx)
+
                         # 2. Distribute Foreign Currencies (TD-033)
                         for cur, amount in other_assets.items():
                             if amount > 0:
@@ -163,7 +179,7 @@ class LiquidationManager:
 
                 logger.info(f"LIQUIDATION_WATERFALL | Tier 5 (Equity) distributed {total_distributed_cash:.2f} {DEFAULT_CURRENCY} and foreign assets: {total_distributed_foreign} to shareholders.")
 
-    def _pay_claim(self, agent: ILiquidatable, claim: Claim, amount_pennies: int, partial: bool = False):
+    def _pay_claim(self, agent: ILiquidatable, claim: Claim, amount_pennies: int, state: SimulationState, partial: bool = False):
         """Helper to execute transfer using AgentRegistry."""
         if amount_pennies <= 0:
             return
@@ -176,6 +192,21 @@ class LiquidationManager:
             success = self.settlement_system.transfer(agent, creditor, amount_pennies, memo, currency=DEFAULT_CURRENCY)
 
             if success:
+                # WO-IMPL-LEDGER-HARDENING: Emit Transaction
+                tx = Transaction(
+                    buyer_id=agent.id,
+                    seller_id=creditor_id,
+                    item_id=f"liquidation_claim_{claim.description}",
+                    quantity=1,
+                    price=amount_pennies / 100.0,
+                    market_id="financial",
+                    transaction_type="liquidation",
+                    time=state.time,
+                    total_pennies=amount_pennies,
+                    metadata={"executed": True, "claim_tier": claim.tier}
+                )
+                state.transactions.append(tx)
+
                 # Phase 4.1: If creditor is a Bank, apply generic repayment to update ledger
                 if hasattr(creditor, 'receive_repayment'):
                     creditor.receive_repayment(agent.id, amount_pennies)
