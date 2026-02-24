@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-WAVE-B-2-M2": {
-      "key": "WO-WAVE-B-2-M2",
-      "title": "Wave B.2: Monetary Ledger & M2 Implementation",
-      "type": "jules",
-      "instruction_raw": "\uba85\uc138\uc11c(MISSION_WAVE_B_2_M2_FIX_SPEC.md)\uc5d0 \ub530\ub77c calculate_total_money() \ub85c\uc9c1 \ubc0f \ud154\ub808\uba54\ud2b8\ub9ac \uc5f0\ub3d9\uc744 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_WAVE_B_2_M2_FIX_SPEC.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-WAVE-B-3-SAGA": {
       "key": "WO-WAVE-B-3-SAGA",
       "title": "Wave B.3: Saga Recovery & Cleanup",
