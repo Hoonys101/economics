@@ -232,13 +232,13 @@ class TransactionProcessor(SystemInterface):
                 success = handler.handle(tx, buyer, seller, context)
 
                 # Record Result
-                amount = 0.0
+                amount = 0
                 if success:
                     # TD-MKT-FLOAT-MATCH: total_pennies is the SSoT for settlement
                     if getattr(tx, 'total_pennies', 0) > 0:
-                        amount = float(tx.total_pennies)
+                        amount = int(tx.total_pennies)
                     else:
-                        amount = float(round_to_pennies(tx.quantity * tx.price * 100))
+                        amount = int(round_to_pennies(tx.quantity * tx.price * 100))
 
                 results.append(
                     SettlementResultDTO(
