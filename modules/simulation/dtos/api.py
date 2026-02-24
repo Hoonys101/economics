@@ -353,3 +353,9 @@ class ServerConfigDTO:
     god_mode_token: str
     host: str = "127.0.0.1"
     port: int = 8000
+
+@dataclass(frozen=True)
+class MoneySupplyDTO:
+    total_m2_pennies: int
+    system_debt_pennies: int
+    currency: str = "PENNIES"

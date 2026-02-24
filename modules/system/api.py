@@ -292,6 +292,10 @@ class IAgentRegistry(Protocol):
     def get_all_agents(self) -> List[Any]:
         ...
 
+    def is_agent_active(self, agent_id: int) -> bool:
+        """Returns True if the agent exists and has not been marked INACTIVE/DEAD."""
+        ...
+
 @runtime_checkable
 class ICurrencyHolder(Protocol):
     """

@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from modules.finance.kernel.api import IMonetaryLedger
 
 from modules.system.api import CurrencyCode, IAgent
+from modules.simulation.dtos.api import MoneySupplyDTO
 
 # --- DTOs ---
 
@@ -291,6 +292,13 @@ class ISimulationState(Protocol):
     def get_system_state(self) -> SystemStateDTO:
         """
         Retrieves internal system state for phenomena analysis.
+        """
+        ...
+
+    def calculate_total_money(self) -> MoneySupplyDTO:
+        """
+        Calculates M2 (Total Money Supply) and System Debt.
+        Returns the new MoneySupplyDTO as the single source of truth.
         """
         ...
 

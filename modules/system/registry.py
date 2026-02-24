@@ -40,6 +40,15 @@ class AgentRegistry(IAgentRegistry):
             return []
         return list(self._state.agents.values())
 
+    def is_agent_active(self, agent_id: int) -> bool:
+        """Returns True if the agent exists and has not been marked INACTIVE/DEAD."""
+        if self._state is None:
+            return False
+        agent = self._state.agents.get(agent_id)
+        if not agent:
+            return False
+        return getattr(agent, "is_active", False)
+
 class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
     """
     Central repository for simulation parameters with priority and locking mechanisms.

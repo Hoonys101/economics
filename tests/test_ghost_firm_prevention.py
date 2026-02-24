@@ -43,7 +43,12 @@ class TestGhostFirmPrevention:
 
         mock_sim.households = [hh]
         mock_sim.firms = [firm]
+        # FIX: update initializer attributes because _init_phase4_population uses them
+        initializer.households = [hh]
+        initializer.firms = [firm]
+
         mock_sim.agents = {} # Initially empty or None
+        mock_sim.demographic_manager = MagicMock()
 
         # Execute
         initializer._init_phase4_population(mock_sim)
