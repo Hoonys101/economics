@@ -94,10 +94,31 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             logger.info(f"HOUSING | Buyer {buyer.id} insufficient funds for down payment {down_payment:.2f}")
             return False
 
-        # 2. Saga Step A: Secure Down Payment (Buyer -> Escrow)
-        memo_down = f"escrow_hold:down_payment:{tx.item_id}"
-        if not context.settlement_system.transfer(buyer, escrow_agent, down_payment, memo_down, tick=context.time, currency=tx_currency):
-            logger.warning(f"HOUSING | Failed to secure down payment from {buyer.id}")
+        # 1.5 Calculate Taxes (Sales/Transfer Tax)
+        tax_intents = []
+        total_tax = 0
+        if context.taxation_system and context.government:
+            # Ensure transaction type is set for tax calculation
+            # Create a temporary clone/proxy if we need to enforce 'housing' type without mutating original immediately
+            # But changing tx.transaction_type here is likely safe/intended as we are processing it.
+            tx.transaction_type = "housing"
+
+            tax_intents = context.taxation_system.calculate_tax_intents(
+                tx, buyer, seller, context.government, market_data={}
+            )
+            total_tax = sum(intent.amount for intent in tax_intents)
+
+        # Check Buyer Funds for Down Payment + Tax
+        required_upfront = down_payment + total_tax
+        if buyer_assets < required_upfront:
+            logger.info(f"HOUSING | Buyer {buyer.id} insufficient funds for down payment + tax. Required: {required_upfront}, Has: {buyer_assets}")
+            return False
+
+        # 2. Saga Step A: Secure Down Payment + Tax (Buyer -> Escrow)
+        # We hold the tax in escrow until final settlement to ensure atomicity.
+        memo_down = f"escrow_hold:down_payment_tax:{tx.item_id}"
+        if not context.settlement_system.transfer(buyer, escrow_agent, required_upfront, memo_down, tick=context.time, currency=tx_currency):
+            logger.warning(f"HOUSING | Failed to secure down payment + tax from {buyer.id}")
             return False
 
         loan_id = None
@@ -139,28 +160,53 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                     if not withdrawal_success:
                         logger.critical(f"HOUSING | Failed to withdraw loan deposit from Buyer {buyer.id}. Aborting.")
                         self._void_loan_safely(context, loan_id)
-                        context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
+                        context.settlement_system.transfer(escrow_agent, buyer, required_upfront, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
                         return False
                 except Exception as e:
                     logger.critical(f"HOUSING | Error withdrawing loan deposit: {e}")
                     self._void_loan_safely(context, loan_id)
-                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
+                    context.settlement_system.transfer(escrow_agent, buyer, required_upfront, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
                     return False
 
                 memo_disburse = f"escrow_hold:loan_proceeds:{tx.item_id}"
                 # Transfer from BANK (Reserves) to Escrow
                 if not context.settlement_system.transfer(context.bank, escrow_agent, loan_amount, memo_disburse, tick=context.time, currency=tx_currency):
                     logger.critical(f"HOUSING | Failed to move loan proceeds from Bank to Escrow for {buyer.id}")
-                    # Compensate: Terminate Loan (Asset), Return Down Payment
+                    # Compensate: Terminate Loan (Asset), Return Down Payment + Tax
                     self._terminate_loan_safely(context, loan_id)
-                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
+                    context.settlement_system.transfer(escrow_agent, buyer, required_upfront, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
                     return False
 
-            # 5. Saga Step D: Final Settlement (Escrow -> Seller)
-            memo_settle = f"final_settlement:{tx.item_id}"
+            # 5. Saga Step D: Final Settlement (Escrow -> Seller & Government)
+            # Use settle_atomic to ensure both Seller and Government get paid, or neither.
 
-            if not context.settlement_system.transfer(escrow_agent, seller, sale_price, memo_settle, tick=context.time, currency=tx_currency):
-                logger.critical(f"HOUSING | CRITICAL: Failed to pay seller {seller.id} from escrow.")
+            credits = []
+
+            # Seller Credit
+            memo_settle = f"final_settlement:{tx.item_id}"
+            credits.append((seller, int(sale_price), memo_settle))
+
+            # Tax Credit
+            if total_tax > 0 and context.government:
+                for intent in tax_intents:
+                    memo_tax = f"tax_payment:{intent.reason}:{tx.item_id}"
+                    credits.append((context.government, int(intent.amount), memo_tax))
+
+            # Execute Atomic Settlement
+            if hasattr(context.settlement_system, 'settle_atomic'):
+                success = context.settlement_system.settle_atomic(escrow_agent, credits, context.time)
+            else:
+                # Fallback for mock systems without settle_atomic (though they should have it)
+                # This fallback mimics atomic behavior by attempting sequential transfers
+                success = True
+                for credit_agent, amount, memo in credits:
+                    if not context.settlement_system.transfer(escrow_agent, credit_agent, amount, memo, tick=context.time, currency=tx_currency):
+                        success = False
+                        break
+
+            if not success:
+                logger.critical(f"HOUSING | CRITICAL: Final settlement failed. Rolling back.")
+
                 # Compensate:
                 # 1. Return Loan Proceeds to BANK
                 if use_mortgage and context.bank:
@@ -168,8 +214,8 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                     if loan_id:
                         self._terminate_loan_safely(context, loan_id)
 
-                # 2. Return Down Payment to Buyer
-                context.settlement_system.transfer(escrow_agent, buyer, down_payment, "reversal:down_payment_return", tick=context.time, currency=tx_currency)
+                # 2. Return Down Payment + Tax to Buyer
+                context.settlement_system.transfer(escrow_agent, buyer, required_upfront, "reversal:down_payment_return", tick=context.time, currency=tx_currency)
                 return False
 
             # Success!
@@ -200,7 +246,8 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             agents=getattr(state, 'agents', {}),
             config_module=getattr(state, 'config_module', None),
             time=getattr(state, 'time', 0),
-            transaction_queue=getattr(state, 'transaction_queue', [])
+            transaction_queue=getattr(state, 'transaction_queue', []),
+            taxation_system=getattr(state, 'taxation_system', None)
         )
 
     def _create_borrower_profile(self, buyer: Any, trade_value: int, context: HousingTransactionContextDTO, currency: str = DEFAULT_CURRENCY) -> BorrowerProfileDTO:

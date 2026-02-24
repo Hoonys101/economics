@@ -51,11 +51,18 @@ class TestHousingTransactionHandler(unittest.TestCase):
         self.state.config_module.ESTIMATED_DEBT_PAYMENT_RATIO = 0.01
 
         self.state.settlement_system = MagicMock()
+        # Mock settle_atomic to succeed by default
+        self.state.settlement_system.settle_atomic.return_value = True
+
         self.state.bank = MagicMock()
         self.state.government = MagicMock(spec=Government)
         self.state.government.id = ID_GOVERNMENT
         self.state.transactions = []
         self.state.transaction_queue = []
+
+        # Mock TaxationSystem
+        self.state.taxation_system = MagicMock()
+        self.state.taxation_system.calculate_tax_intents.return_value = [] # No tax by default
 
         # Mock Agents
         self.buyer = create_autospec(DummyHousingParticipant, instance=True)
@@ -124,9 +131,10 @@ class TestHousingTransactionHandler(unittest.TestCase):
         loan_amount = 800000 # 80% LTV of 1,000,000
         down_payment = 200000 # 20%
 
-        # 1. Down Payment (Buyer -> Escrow)
+        # 1. Down Payment + Tax (Buyer -> Escrow)
+        # Tax is 0 in default mock
         self.state.settlement_system.transfer.assert_any_call(
-            self.buyer, self.escrow_agent, down_payment, f"escrow_hold:down_payment:unit_101", tick=100, currency=DEFAULT_CURRENCY
+            self.buyer, self.escrow_agent, down_payment, f"escrow_hold:down_payment_tax:unit_101", tick=100, currency=DEFAULT_CURRENCY
         )
 
         # 2. Deposit Cleanup (Withdrawal)
@@ -137,9 +145,11 @@ class TestHousingTransactionHandler(unittest.TestCase):
             self.state.bank, self.escrow_agent, loan_amount, f"escrow_hold:loan_proceeds:unit_101", tick=100, currency=DEFAULT_CURRENCY
         )
 
-        # 4. Final Settlement (Escrow -> Seller)
-        self.state.settlement_system.transfer.assert_any_call(
-            self.escrow_agent, self.seller, 1000000, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
+        # 4. Final Settlement (Atomic)
+        # Should call settle_atomic with Seller credit
+        expected_credits = [(self.seller, 1000000, f"final_settlement:unit_101")]
+        self.state.settlement_system.settle_atomic.assert_called_with(
+            self.escrow_agent, expected_credits, 100
         )
 
         # 5. Mortgage Update
@@ -182,7 +192,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
         self.assertIsNone(self.unit.mortgage_id)
 
     def test_handle_payment_failure(self):
-        # Testing failure at Final Settlement (Escrow -> Seller)
+        # Testing failure at Final Settlement (Atomic)
         tx = Transaction(
             buyer_id=3,
             seller_id=4,
@@ -195,37 +205,40 @@ class TestHousingTransactionHandler(unittest.TestCase):
             total_pennies=1000000
         )
 
-        # Sequence:
-        # 1. Down Payment (Buyer->Escrow): True
-        # 2. Disbursement (Bank->Escrow): True
-        # 3. Final Settlement (Escrow->Seller): False
-        # 4. Compensation 1 (Escrow->Bank, Loan): True
-        # 5. Compensation 2 (Escrow->Buyer, Down): True
-        self.state.settlement_system.transfer.side_effect = [True, True, False, True, True]
+        # 1. Down Payment: True
+        # 2. Disbursement: True
+        self.state.settlement_system.transfer.side_effect = [True, True, True, True]
+        # Compensation calls will follow if atomic fails.
+
+        # 3. Atomic Settlement: False
+        self.state.settlement_system.settle_atomic.return_value = False
 
         success = self.handler.handle(tx, self.buyer, self.seller, self.state)
 
         self.assertFalse(success)
 
+        # Verify settle_atomic called
+        self.state.settlement_system.settle_atomic.assert_called()
+
         # Verify loan termination
         self.state.bank.terminate_loan.assert_called_with("loan_123")
 
-        # Verify call arguments for compensation
+        # Verify compensation transfers (Escrow->Bank, Escrow->Buyer)
+        # Note: settle_atomic failure triggers 2 compensation transfers.
+        # Down Payment (1) + Disbursement (1) + Compensation (2) = 4 transfer calls
+        self.assertEqual(self.state.settlement_system.transfer.call_count, 4)
+
         calls = self.state.settlement_system.transfer.call_args_list
-        # Note: 'calls' contains all calls.
-        # 0: Down Payment
-        # 1: Disbursement (Bank->Escrow)
-        # 2: Final Settlement (Failed)
-        # 3: Compensation 1 (Escrow->Bank)
-        # 4: Compensation 2 (Escrow->Buyer)
+        # 2: Compensation 1 (Escrow->Bank)
+        # 3: Compensation 2 (Escrow->Buyer)
+
+        self.assertEqual(calls[2][0][0], self.escrow_agent)
+        self.assertEqual(calls[2][0][1], self.state.bank)
+        self.assertEqual(calls[2][0][2], 800000)
 
         self.assertEqual(calls[3][0][0], self.escrow_agent)
-        self.assertEqual(calls[3][0][1], self.state.bank)
-        self.assertEqual(calls[3][0][2], 800000)
-
-        self.assertEqual(calls[4][0][0], self.escrow_agent)
-        self.assertEqual(calls[4][0][1], self.buyer)
-        self.assertEqual(calls[4][0][2], 200000)
+        self.assertEqual(calls[3][0][1], self.buyer)
+        self.assertEqual(calls[3][0][2], 200000) # Down payment (tax is 0)
 
         self.assertIsNone(self.unit.mortgage_id)
 
@@ -247,7 +260,8 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         self.assertTrue(success)
 
-        # Verify transfer to Government
-        self.state.settlement_system.transfer.assert_any_call(
-            self.escrow_agent, self.state.government, 1000000, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
+        # Verify atomic settlement with Gov as Seller
+        expected_credits = [(self.state.government, 1000000, f"final_settlement:unit_101")]
+        self.state.settlement_system.settle_atomic.assert_called_with(
+            self.escrow_agent, expected_credits, 100
         )

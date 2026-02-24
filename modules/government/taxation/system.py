@@ -20,6 +20,7 @@ class ITaxConfig(Protocol):
     TAX_BRACKETS: List[Tuple[float, float]]
     TAX_RATE_BASE: float
     SALES_TAX_RATE: float
+    PROPERTY_TRANSFER_TAX_RATE: float
     GOODS_INITIAL_PRICE: Dict[str, float]
     HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK: float
     TAX_MODE: str
@@ -143,6 +144,19 @@ class TaxationSystem:
                     payee_id=government.id,
                     amount=tax_amount,
                     reason=f"sales_tax_{transaction.transaction_type}"
+                ))
+
+        # 1.5 Property Transfer Tax (Housing)
+        elif transaction.transaction_type == "housing":
+            transfer_tax_rate = getattr(self.config_module, "PROPERTY_TRANSFER_TAX_RATE", 0.05)
+            tax_amount = self._round_currency(trade_value * transfer_tax_rate)
+
+            if tax_amount > 0:
+                intents.append(TaxIntent(
+                    payer_id=buyer.id,
+                    payee_id=government.id,
+                    amount=tax_amount,
+                    reason="property_transfer_tax"
                 ))
 
         # 2. Income Tax (Labor)

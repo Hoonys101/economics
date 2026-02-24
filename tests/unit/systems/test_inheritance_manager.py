@@ -125,4 +125,5 @@ class TestInheritanceManager:
 
         tax_tx = next((t for t in txs if t.transaction_type == "tax"), None)
         assert tax_tx is not None
-        assert tax_tx.price == 500.0 # 50% of 1000
+        # Assets 1000 pennies ($10.00). Tax Rate 0.5. Tax = 500 pennies ($5.00).
+        assert tax_tx.price == 5.0

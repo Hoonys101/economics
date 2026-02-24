@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from modules.finance.api import IBank, ISettlementSystem
     from modules.simulation.api import IAgent
     from modules.government.api import IGovernment
+    from modules.government.taxation.system import TaxationSystem
 
 class MarketSide(str, Enum):
     BUY = "BUY"
@@ -219,6 +220,7 @@ class HousingTransactionContextDTO:
     config_module: Any # Should be MarketConfigDTO in strict future
     time: int
     transaction_queue: List[Any] # For side-effect transactions (credit creation)
+    taxation_system: Optional["TaxationSystem"] = None
 
 class TransactionType(Enum):
     HOUSING = "housing"
