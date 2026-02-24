@@ -2,7 +2,7 @@ from typing import TypedDict, List, Optional, Literal, Union, Dict, Any
 from abc import ABC, abstractmethod
 from modules.household.dtos import HouseholdStateDTO
 from modules.system.api import HousingMarketSnapshotDTO
-from modules.finance.api import LoanInfoDTO as LoanDTO
+from modules.finance.api import LoanDTO
 from modules.finance.api import MortgageApplicationDTO
 
 # Pre-existing DTOs (Aliases if needed, or imported elsewhere)
