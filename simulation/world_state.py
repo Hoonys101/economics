@@ -50,6 +50,7 @@ from modules.finance.api import IShareholderRegistry
 from modules.simulation.api import AgentID
 from modules.governance.api import SystemCommand
 from simulation.dtos.commands import GodCommandDTO
+from modules.simulation.dtos.api import MoneySupplyDTO
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 from simulation.orchestration.dashboard_service import DashboardService
 
@@ -181,62 +182,50 @@ class WorldState:
                 totals[cur] = totals.get(cur, 0) + max(0, int(amount))
         return totals
 
-    def calculate_total_money(self) -> Dict[str, int]:
+    def calculate_total_money(self) -> MoneySupplyDTO:
         """
         Calculates M2 (Total Money Supply) and System Debt.
-        M2 = Sum(max(0, balance)) for all non-system agents.
+        M2 = Sum(max(0, balance)) for all agents (including System Agents).
         SystemDebt = Sum(abs(balance)) where balance < 0.
-        Returns: {DEFAULT_CURRENCY: total_m2, "SYSTEM_DEBT": total_debt}
+        Returns: MoneySupplyDTO with strict penny values.
         """
-        total_money = 0
-        system_debt = 0
+        total_m2_pennies = 0
+        system_debt_pennies = 0
 
-        for holder in self.currency_holders:
-            if hasattr(holder, 'id'):
-                # WO-WAVE5-MONETARY-FIX: Harmonize M2 Perimeter
-                # Exclude System Sinks (Central Bank, Public Manager, System)
-                holder_id_str = str(holder.id)
-                if holder_id_str == str(ID_CENTRAL_BANK) or holder_id_str == str(ID_PUBLIC_MANAGER) or holder_id_str == str(ID_SYSTEM):
-                    continue
+        # Use self.agents as the primary source of truth to avoid missing agents
+        # that were not registered in currency_holders (Fix for Current: 0.00 bug)
+        for agent in self.agents.values():
+            # Dead Agent Guard (Strict)
+            if hasattr(agent, 'is_active') and not agent.is_active:
+                continue
 
-                # Note: We include the Bank in the audit to track Bank Reserves (M0).
-                # This ensures LLR injections are captured immediately in the total money sum.
-                # M2 is usually Public Circulation, but for a strict Zero-Sum audit, we check M0 + M2.
+            # Check if agent holds currency
+            if not hasattr(agent, 'get_assets_by_currency'):
+                continue
 
-                # Dead Agent Guard (Strict)
-                if hasattr(holder, 'is_active') and not holder.is_active:
-                    continue
-
-            # Retrieve assets safely
-            # We assume DEFAULT_CURRENCY primarily for the M2 audit per spec.
-            assets_dict = holder.get_assets_by_currency()
+            # Retrieve assets safely (strictly in pennies)
+            assets_dict = agent.get_assets_by_currency()
             val = int(assets_dict.get(DEFAULT_CURRENCY, 0))
             
             if val >= 0:
-                total_money += val
+                total_m2_pennies += val
             else:
-                system_debt += abs(val)
+                system_debt_pennies += abs(val)
 
-        return {DEFAULT_CURRENCY: total_money, "SYSTEM_DEBT": system_debt}
+        return MoneySupplyDTO(
+            total_m2_pennies=total_m2_pennies,
+            system_debt_pennies=system_debt_pennies,
+            currency=DEFAULT_CURRENCY
+        )
 
     def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = "USD") -> float:
         """
         Provides a single float value for total system money for backward compatibility
-        with diagnostic tools. Converts all currencies to the target currency.
+        with diagnostic tools. Converts M2 (pennies) to float.
         """
-        all_money = self.calculate_total_money()
-
-        # Use tracker's exchange engine if available
-        if self.tracker and hasattr(self.tracker, "exchange_engine"):
-            total = 0.0
-            for cur, amount in all_money.items():
-                if cur == "SYSTEM_DEBT": continue
-                converted = self.tracker.exchange_engine.convert(amount, cur, target_currency)
-                total += converted
-            return total
-
-        # Fallback if no exchange engine: just return the target currency balance
-        return float(all_money.get(target_currency, 0))
+        supply_dto = self.calculate_total_money()
+        # Strictly return M2 in pennies as float for legacy diagnostics
+        return float(supply_dto.total_m2_pennies)
 
     def resolve_agent_id(self, role: str) -> Optional[AgentID]:
         """

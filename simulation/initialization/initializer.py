@@ -477,11 +477,8 @@ class SimulationInitializer(SimulationInitializerInterface):
         Bootstrapper.inject_initial_liquidity(firms=sim.firms, config=self.config, settlement_system=sim.settlement_system, central_bank=sim.central_bank)
 
         sim.world_state.central_bank = sim.central_bank
-        total_money = sim.world_state.calculate_total_money()
-        if isinstance(total_money, dict):
-            sim.world_state.baseline_money_supply = total_money.get(DEFAULT_CURRENCY, 0.0)
-        else:
-            sim.world_state.baseline_money_supply = float(total_money)
+        supply_dto = sim.world_state.calculate_total_money()
+        sim.world_state.baseline_money_supply = float(supply_dto.total_m2_pennies)
         self.logger.info(f'Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}')
 
         Bootstrapper.force_assign_workers(sim.firms, sim.households)

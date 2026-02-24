@@ -102,7 +102,8 @@ class TestTickNormalization:
         state.registry = None
 
         # Fix format issue
-        state.calculate_total_money = MagicMock(return_value={DEFAULT_CURRENCY: 1000.0})
+        from modules.simulation.dtos.api import MoneySupplyDTO
+        state.calculate_total_money = MagicMock(return_value=MoneySupplyDTO(1000, 0))
         state.baseline_money_supply = 1000.0
 
         return state

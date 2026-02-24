@@ -39,7 +39,8 @@ class TestLifecycleCycle:
         state.tracker = MagicMock()
         state.tracker.get_latest_indicators.return_value = {}
 
-        state.calculate_total_money.return_value = {DEFAULT_CURRENCY: 1000}
+        from modules.simulation.dtos.api import MoneySupplyDTO
+        state.calculate_total_money.return_value = MoneySupplyDTO(1000, 0)
         state.baseline_money_supply = 1000.0
 
         state.inactive_agents = {}

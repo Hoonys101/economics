@@ -476,7 +476,8 @@ class EconomicIndicatorTracker:
         Delegates to WorldState for precise Penny Standard calculation.
         """
         m0_pennies = world_state.calculate_base_money().get(DEFAULT_CURRENCY, 0)
-        m2_pennies = world_state.calculate_total_money().get(DEFAULT_CURRENCY, 0)
+        supply_dto = world_state.calculate_total_money()
+        m2_pennies = supply_dto.total_m2_pennies
         
         return {
             "m0": float(m0_pennies) / 100.0,
