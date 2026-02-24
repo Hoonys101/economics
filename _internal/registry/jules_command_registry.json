@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-WAVE-B-4-TEST": {
-      "key": "WO-WAVE-B-4-TEST",
-      "title": "Wave B.4: Mock Integrity & Test Hardening",
-      "type": "jules",
-      "instruction_raw": "\uba85\uc138\uc11c(MISSION_WAVE_B_4_TEST_SPEC.md)\uc5d0 \ub530\ub77c test_ghost_firm_prevention.py \ud68c\uadc0 \ud574\uacb0 \ubc0f \uc804\uc5ed Mock Spec \uac15\uc81c\ub97c \uc218\ud589\ud558\uc2ed\uc2dc\uc624.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_WAVE_B_4_TEST_SPEC.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-WAVE-B-5-CONFIG": {
       "key": "WO-WAVE-B-5-CONFIG",
       "title": "Wave B.5: Fractional Reserve & Config Tuning",
