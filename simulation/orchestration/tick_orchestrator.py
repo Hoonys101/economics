@@ -152,12 +152,11 @@ class TickOrchestrator:
             agents=state.agents,
             markets=state.markets,
             primary_government=state.government, # Renamed to primary_government
-            governments=[state.government] if state.government else [], # TD-ARCH-GOV-MISMATCH: Populate list
-            bank=state.bank,
-            central_bank=state.central_bank,
+            bank=getattr(state, "bank", None),
+            central_bank=getattr(state, "central_bank", None),
             escrow_agent=getattr(state, "escrow_agent", None),
-            stock_market=state.stock_market,
-            stock_tracker=state.stock_tracker,
+            stock_market=getattr(state, "stock_market", None),
+            stock_tracker=getattr(state, "stock_tracker", None),
             goods_data=state.goods_data,
             market_data={}, # Will be populated in Phase 1 (and 0 for Gov)
             config_module=state.config_module,

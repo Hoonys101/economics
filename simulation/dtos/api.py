@@ -253,7 +253,6 @@ class SimulationState:
     agents: Dict[AgentID, Any]
     markets: Dict[str, Any]
     primary_government: Any  # Renamed from government for clarity
-    governments: List[Any] # TD-ARCH-GOV-MISMATCH: Added for alignment
     bank: Any        # Bank
     central_bank: Any # CentralBank
     escrow_agent: Optional[Any] # EscrowAgent

@@ -9,6 +9,9 @@ from modules.simulation.dtos.api import FirmConfigDTO
 from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.ai.enums import Personality
+from modules.finance.api import ISettlementSystem, ICentralBank
+from modules.system.constants import ID_BANK
+from simulation.systems.bootstrapper import Bootstrapper
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -29,8 +32,10 @@ class FirmFactory:
         agent_id: int,
         name: str,
         config_dto: FirmConfigDTO,
+        settlement_system: ISettlementSystem,
         specialization: str,
         productivity_factor: float,
+        central_bank: Optional[ICentralBank] = None,
         sector: str = "FOOD",
         personality: Optional[Personality] = None,
         initial_inventory: Optional[Dict[str, float]] = None,
@@ -63,9 +68,35 @@ class FirmFactory:
             personality=personality
         )
 
+        # Atomic Registration: Open Bank Account
+        if settlement_system:
+            try:
+                settlement_system.register_account(ID_BANK, firm.id)
+                logger.info(f"FirmFactory: Registered bank account for Firm {firm.id} at Bank {ID_BANK}")
+            except Exception as e:
+                logger.error(f"FirmFactory: Failed to register bank account for Firm {firm.id}: {e}")
+                # We log but proceed? Or fail? Requirement says "guarantee atomic Sequence".
+                # If account creation fails, firm is useless financially.
+                raise RuntimeError(f"Failed to open bank account for Firm {firm.id}") from e
+
+        # Atomic Liquidity Injection
+        if central_bank and settlement_system:
+             try:
+                 Bootstrapper.inject_liquidity_for_firm(firm, self.config_module, settlement_system, central_bank)
+             except Exception as e:
+                 logger.error(f"FirmFactory: Failed to inject liquidity for Firm {firm.id}: {e}")
+                 raise RuntimeError(f"Failed to inject liquidity for Firm {firm.id}") from e
+
         return firm
 
-    def clone_firm(self, source_firm: Firm, new_id: int, initial_assets_from_parent: int, current_tick: int) -> Firm:
+    def clone_firm(
+        self,
+        source_firm: Firm,
+        new_id: int,
+        initial_assets_from_parent: int,
+        current_tick: int,
+        settlement_system: ISettlementSystem
+    ) -> Firm:
         """
         Deep copy / Mitosis logic for Firms.
         Replaces Firm.clone().
@@ -101,6 +132,15 @@ class FirmFactory:
 
         # Preserve quality for main inventory (Fixing potential bug in legacy clone)
         new_firm.inventory_quality = copy.deepcopy(source_firm.inventory_quality)
+
+        # Atomic Registration: Open Bank Account
+        if settlement_system:
+             try:
+                 settlement_system.register_account(ID_BANK, new_firm.id)
+                 logger.info(f"FirmFactory: Registered bank account for Cloned Firm {new_firm.id}")
+             except Exception as e:
+                 logger.error(f"FirmFactory: Failed to register bank account for Cloned Firm {new_firm.id}: {e}")
+                 raise RuntimeError(f"Failed to open bank account for Cloned Firm {new_firm.id}") from e
 
         new_firm.logger.info(
             f"Firm {source_firm.id} was cloned to new Firm {new_id}",

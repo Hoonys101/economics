@@ -203,9 +203,22 @@ class SimulationInitializer(SimulationInitializerInterface):
              # to ensure it exists in the primary agent lookup table.
              sim.agents[ID_CENTRAL_BANK] = sim.central_bank
 
+        sim.escrow_agent = EscrowAgent(id=ID_ESCROW)
+        sim.agents[sim.escrow_agent.id] = sim.escrow_agent
+
+        # TD-FIN-INVISIBLE-HAND: Public Manager must be registered BEFORE snapshot
+        sim.public_manager = PublicManager(config=self.config)
+        if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
+            sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
+        sim.world_state.public_manager = sim.public_manager
+
         # TD-INIT-RACE: Registry must be linked BEFORE Bootstrapper runs.
-        # Now that System Agents (Gov, Bank, CB) are in sim.agents, we link the registry.
+        # Now that System Agents (Gov, Bank, CB, PublicManager) are in sim.agents, we link the registry.
         sim.agent_registry.set_state(sim.world_state)
+
+        # TD-LIFECYCLE-GHOST-FIRM: Register Firm Accounts
+        for firm in sim.firms:
+            sim.settlement_system.register_account(sim.bank.id, firm.id)
 
         sim.central_bank_system = CentralBankSystem(
             central_bank_agent=sim.central_bank,
@@ -311,16 +324,10 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.registry = Registry(housing_service=sim.housing_service, logger=self.logger)
         sim.accounting_system = AccountingSystem(logger=self.logger)
 
-        sim.escrow_agent = EscrowAgent(id=ID_ESCROW)
-        sim.agents[sim.escrow_agent.id] = sim.escrow_agent
-
         sim.judicial_system = JudicialSystem(event_bus=sim.event_bus, settlement_system=sim.settlement_system, agent_registry=sim.agent_registry, shareholder_registry=sim.shareholder_registry, config_manager=self.config_manager)
-        sim.public_manager = PublicManager(config=self.config)
-        # Verify and Register PublicManager
-        if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
-            sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
 
-        sim.world_state.public_manager = sim.public_manager
+        # PublicManager instantiation removed from here (Moved Up)
+
         sim.transaction_processor = TransactionProcessor(config_module=self.config)
         from simulation.systems.handlers.transfer_handler import DefaultTransferHandler
         sim.transaction_processor.register_handler('transfer', DefaultTransferHandler())
