@@ -7,6 +7,7 @@ from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO
 from modules.finance.saga_handler import HousingTransactionSagaHandler
 from modules.simulation.api import ISimulationState, IAgent, HouseholdSnapshotDTO
 from modules.government.api import IGovernment
+from modules.system.api import IAgentRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +18,10 @@ class SagaOrchestrator(ISagaOrchestrator):
     Strictly enforces HousingTransactionSagaStateDTO usage.
     """
 
-    def __init__(self, monetary_ledger: Optional[IMonetaryLedger] = None):
+    def __init__(self, monetary_ledger: Optional[IMonetaryLedger] = None, agent_registry: Optional[IAgentRegistry] = None):
         self.active_sagas: Dict[UUID, HousingTransactionSagaStateDTO] = {}
         self.monetary_ledger = monetary_ledger
+        self.agent_registry = agent_registry
         self._simulation_state: Optional[ISimulationState] = None
 
     @property
@@ -102,21 +104,34 @@ class SagaOrchestrator(ISagaOrchestrator):
                         del self.active_sagas[saga_id]
                     continue
 
-                buyer = sim_state.agents.get(buyer_id)
-                seller = sim_state.agents.get(seller_id)
+                is_buyer_inactive = False
+                is_seller_inactive = False
 
-                is_buyer_inactive = not buyer or not getattr(buyer, 'is_active', False)
-                is_seller_inactive = not seller or not getattr(seller, 'is_active', False)
+                if self.agent_registry:
+                    is_buyer_inactive = not self.agent_registry.is_agent_active(buyer_id)
 
-                # Special handling for System/Government agents
-                if seller_id == -1:
-                    is_seller_inactive = False
-                elif seller and isinstance(seller, IGovernment):
-                    is_seller_inactive = False
+                    # Special handling for System Agents or Genesis (-1)
+                    if seller_id == -1:
+                        is_seller_inactive = False
+                    else:
+                        is_seller_inactive = not self.agent_registry.is_agent_active(seller_id)
+                else:
+                    # Fallback Logic (Legacy)
+                    buyer = sim_state.agents.get(buyer_id)
+                    seller = sim_state.agents.get(seller_id)
 
-                # Fallback check for Government singleton via simulation state
-                if not seller and sim_state.government and hasattr(sim_state.government, 'id') and sim_state.government.id == seller_id:
-                    is_seller_inactive = False
+                    is_buyer_inactive = not buyer or not getattr(buyer, 'is_active', False)
+                    is_seller_inactive = not seller or not getattr(seller, 'is_active', False)
+
+                    # Special handling for System/Government agents
+                    if seller_id == -1:
+                        is_seller_inactive = False
+                    elif seller and isinstance(seller, IGovernment):
+                        is_seller_inactive = False
+
+                    # Fallback check for Government singleton via simulation state
+                    if not seller and sim_state.government and hasattr(sim_state.government, 'id') and sim_state.government.id == seller_id:
+                        is_seller_inactive = False
 
                 if is_buyer_inactive or is_seller_inactive:
                     saga.status = "CANCELLED"
@@ -124,9 +139,8 @@ class SagaOrchestrator(ISagaOrchestrator):
                         saga.logs = []
                     saga.logs.append("Cancelled due to inactive participant.")
 
-                    # Wave 5 Phase 3: Reduce log level to INFO for inactive agent events
                     logger.info(
-                         f"SAGA_CANCELLED | Saga {saga_id} cancelled due to inactive participant. "
+                         f"SAGA_CLEANUP | Saga {saga_id} cancelled due to inactive participant. "
                          f"Buyer Active: {not is_buyer_inactive}, Seller Active: {not is_seller_inactive}",
                          extra={"saga_id": str(saga_id)}
                     )
@@ -136,9 +150,10 @@ class SagaOrchestrator(ISagaOrchestrator):
                          try:
                              handler.compensate_step(saga)
                          except Exception as comp_err:
-                             logger.error(f"SAGA_COMPENSATE_FAIL | {comp_err}")
+                             logger.error(f"SAGA_COMPENSATE_FAIL | {comp_err}", extra={"saga_id": str(saga_id)})
 
-                    del self.active_sagas[saga_id]
+                    if saga_id in self.active_sagas:
+                        del self.active_sagas[saga_id]
                     continue
 
                 # 2. Execute Step

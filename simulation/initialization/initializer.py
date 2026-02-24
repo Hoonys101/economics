@@ -157,7 +157,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.world_state.telemetry_collector = sim.telemetry_collector
         sim.world_state.global_registry.set('system.telemetry_collector', sim.telemetry_collector, origin=OriginType.SYSTEM)
         sim.monetary_ledger = MonetaryLedger(sim.world_state.transactions, sim)
-        sim.saga_orchestrator = SagaOrchestrator(monetary_ledger=sim.monetary_ledger)
+        sim.saga_orchestrator = SagaOrchestrator(monetary_ledger=sim.monetary_ledger, agent_registry=agent_registry)
         sim.world_state.monetary_ledger = sim.monetary_ledger
         sim.world_state.saga_orchestrator = sim.saga_orchestrator
         sim.shareholder_registry = ShareholderRegistry()
