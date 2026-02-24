@@ -53,7 +53,7 @@ class TestM2Integrity(unittest.TestCase):
         self.ledger.process_transactions([tx_create])
 
         delta = self.ledger.get_monetary_delta()
-        self.assertEqual(delta, 100000, "Credit Creation should be Expansion")
+        self.assertEqual(delta, 100000, "Credit Creation should be Expansion (Pennies)")
 
     def test_credit_destruction_contraction(self):
         """Verify credit destruction is still contraction."""
@@ -64,7 +64,7 @@ class TestM2Integrity(unittest.TestCase):
         self.ledger.process_transactions([tx_destroy])
 
         delta = self.ledger.get_monetary_delta()
-        self.assertEqual(delta, -50000, "Credit Destruction should be Contraction")
+        self.assertEqual(delta, -50000, "Credit Destruction should be Contraction (Pennies)")
 
 if __name__ == '__main__':
     unittest.main()

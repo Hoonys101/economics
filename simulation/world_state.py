@@ -47,7 +47,7 @@ from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCo
 from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
 from modules.finance.api import IShareholderRegistry
-from modules.simulation.api import AgentID
+from modules.simulation.api import AgentID, IEstateRegistry
 from modules.governance.api import SystemCommand
 from simulation.dtos.commands import GodCommandDTO
 from modules.simulation.dtos.api import MoneySupplyDTO
@@ -138,6 +138,7 @@ class WorldState:
         self.politics_system: Optional[PoliticsSystem] = None # Phase 4.4: Political Orchestrator
         self.currency_holders: List[ICurrencyHolder] = [] # Added for Phase 33
         self._currency_holders_set: set = set()
+        self.estate_registry: Optional[IEstateRegistry] = None
         # FOUND-03: Global Registry - Initialized via Dependency Injection (simulation.lock via initializer)
         self.global_registry: Optional[IGlobalRegistry] = None
         self.telemetry_collector: Optional[Any] = None
@@ -192,16 +193,12 @@ class WorldState:
         total_m2_pennies = 0
         system_debt_pennies = 0
 
-        # Use self.agents as the primary source of truth to avoid missing agents
-        # that were not registered in currency_holders (Fix for Current: 0.00 bug)
-        for agent in self.agents.values():
-            # Dead Agent Guard (Strict)
-            if hasattr(agent, 'is_active') and not agent.is_active:
-                continue
-
+        # Helper to process an agent
+        def process_agent(agent):
+            nonlocal total_m2_pennies, system_debt_pennies
             # Check if agent holds currency
             if not hasattr(agent, 'get_assets_by_currency'):
-                continue
+                return
 
             # Retrieve assets safely (strictly in pennies)
             assets_dict = agent.get_assets_by_currency()
@@ -211,6 +208,20 @@ class WorldState:
                 total_m2_pennies += val
             else:
                 system_debt_pennies += abs(val)
+
+        # 1. Active Agents in Registry
+        # Use self.agents as the primary source of truth to avoid missing agents
+        # that were not registered in currency_holders (Fix for Current: 0.00 bug)
+        for agent in self.agents.values():
+            # Dead Agent Guard (Strict)
+            if hasattr(agent, 'is_active') and not agent.is_active:
+                continue
+            process_agent(agent)
+
+        # 2. Estate Agents (Always Inactive, but holding funds)
+        if self.estate_registry:
+            for agent in self.estate_registry.get_all_estate_agents():
+                process_agent(agent)
 
         return MoneySupplyDTO(
             total_m2_pennies=total_m2_pennies,

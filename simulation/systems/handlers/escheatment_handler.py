@@ -51,18 +51,8 @@ class EscheatmentHandler(ITransactionHandler):
 
         credits = [(gov, balance, "escheatment")]
 
-        # Resurrection Hack: Ensure buyer is in context agents so SettlementSystem can find it
-        # even if it was removed from registry.
-        original_buyer_ref = context.agents.get(buyer.id)
-        if not original_buyer_ref:
-            context.agents[buyer.id] = buyer
-
-        try:
-            success = context.settlement_system.settle_atomic(buyer, credits, context.time)
-        finally:
-            # Clean up if we injected it
-            if not original_buyer_ref and buyer.id in context.agents:
-                del context.agents[buyer.id]
+        # Rely on SettlementSystem -> AgentRegistry -> EstateRegistry to find the dead agent
+        success = context.settlement_system.settle_atomic(buyer, credits, context.time)
 
         if success:
             gov.record_revenue(TaxCollectionResult(

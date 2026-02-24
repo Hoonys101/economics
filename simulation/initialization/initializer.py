@@ -80,6 +80,7 @@ from modules.finance.shareholder_registry import ShareholderRegistry
 from modules.system.event_bus.event_bus import EventBus
 from modules.governance.judicial.system import JudicialSystem
 from modules.system.registry import AgentRegistry, GlobalRegistry
+from simulation.registries.estate_registry import EstateRegistry
 from modules.household.api import HouseholdFactoryContext
 from simulation.factories.household_factory import HouseholdFactory
 from simulation.utils.config_factory import create_config_dto
@@ -138,6 +139,7 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         global_registry = GlobalRegistry()
         agent_registry = AgentRegistry()
+        estate_registry = EstateRegistry()
         settlement_system = SettlementSystem(logger=self.logger, agent_registry=agent_registry)
         from modules.system.services.command_service import CommandService
         command_service = CommandService(registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry)
@@ -162,6 +164,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.world_state.saga_orchestrator = sim.saga_orchestrator
         sim.shareholder_registry = ShareholderRegistry()
         sim.world_state.shareholder_registry = sim.shareholder_registry
+        sim.world_state.estate_registry = estate_registry
 
         # TD-INIT-RACE: Registry must be linked EARLY (Phase 1)
         # Guarantees AgentRegistry.register() works during Population Phase
@@ -358,7 +361,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.transaction_processor.register_handler('education_spending', spending_handler)
         sim.transaction_processor.register_handler('emergency_buy', EmergencyTransactionHandler())
         sim.transaction_processor.register_public_manager_handler(PublicManagerTransactionHandler())
-        sim.lifecycle_manager = AgentLifecycleManager(config_module=self.config, demographic_manager=sim.demographic_manager, inheritance_manager=sim.inheritance_manager, firm_system=sim.firm_system, settlement_system=sim.settlement_system, public_manager=sim.public_manager, logger=self.logger, shareholder_registry=sim.shareholder_registry, household_factory=household_factory)
+        sim.lifecycle_manager = AgentLifecycleManager(config_module=self.config, demographic_manager=sim.demographic_manager, inheritance_manager=sim.inheritance_manager, firm_system=sim.firm_system, settlement_system=sim.settlement_system, public_manager=sim.public_manager, logger=self.logger, shareholder_registry=sim.shareholder_registry, household_factory=household_factory, estate_registry=sim.world_state.estate_registry)
         sim.social_system = SocialSystem(self.config)
         sim.event_system = EventSystem(self.config, settlement_system=sim.settlement_system)
         sim.sensory_system = SensorySystem(self.config)

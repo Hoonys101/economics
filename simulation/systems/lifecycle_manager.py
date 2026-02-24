@@ -22,6 +22,7 @@ from modules.system.registry import AgentRegistry
 from modules.hr.service import HRService
 from modules.finance.service import TaxService
 from modules.finance.api import IShareholderRegistry
+from modules.simulation.api import IEstateRegistry
 
 # New Imports
 from simulation.systems.lifecycle.aging_system import AgingSystem
@@ -43,7 +44,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                  household_factory: Optional[IHouseholdFactory] = None,
                  hr_service: Optional[IHRService] = None,
                  tax_service: Optional[ITaxService] = None,
-                 agent_registry: Optional[IAgentRegistry] = None):
+                 agent_registry: Optional[IAgentRegistry] = None,
+                 estate_registry: Optional[IEstateRegistry] = None):
 
         self.config = config_module
         self.logger = logger
@@ -86,7 +88,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             self.liquidation_manager,
             settlement_system,
             public_manager,
-            logger
+            logger,
+            estate_registry=estate_registry
         )
 
         self.marriage_system = MarriageSystem(settlement_system, logger)
