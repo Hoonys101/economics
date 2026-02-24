@@ -150,7 +150,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
     # --- IBank Implementation ---
 
-    def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanDTO, Transaction]]:
+    def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int = 0, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanDTO, Transaction]]:
         if isinstance(amount, float):
              raise FloatIncursionError(f"Bank.grant_loan requires integer amount (pennies). Got float: {amount}")
         if not isinstance(amount, int):

@@ -153,7 +153,9 @@ class Registry(IRegistry):
 
         # 2. Buyer Holdings
         if isinstance(buyer, IInvestor):
-            buyer.portfolio.add(firm_id, tx.quantity, tx.price)
+            # MIGRATION: Portfolio expects price in pennies (int)
+            acquisition_price_pennies = int(round(tx.price * 100))
+            buyer.portfolio.add(firm_id, tx.quantity, acquisition_price_pennies)
         elif isinstance(buyer, Firm) and buyer.id == firm_id:
             buyer.treasury_shares += tx.quantity
             buyer.total_shares -= tx.quantity

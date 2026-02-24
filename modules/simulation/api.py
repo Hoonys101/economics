@@ -172,6 +172,7 @@ class IDecisionEngine(Protocol):
 class IAgent(Protocol):
     id: AgentID
     is_active: bool
+    name: str
 
 @runtime_checkable
 class IOrchestratorAgent(IAgent, Protocol):

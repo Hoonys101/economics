@@ -192,6 +192,12 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.settlement_system.bank = sim.bank
         # TD-BANK-RESERVE-CRUNCH: Use tunable initial assets from config
         initial_bank_assets = self.config_manager.get("economy_params.bank.initial_bank_assets", self.config.INITIAL_BANK_ASSETS)
+        try:
+            initial_bank_assets = int(initial_bank_assets)
+        except (ValueError, TypeError):
+            self.logger.warning(f"Invalid initial_bank_assets value: {initial_bank_assets}, defaulting to 0")
+            initial_bank_assets = 0
+
         self.initial_balances[sim.bank.id] = initial_bank_assets
         sim.bank.settlement_system = sim.settlement_system
         sim.agents[sim.bank.id] = sim.bank
@@ -283,9 +289,14 @@ class SimulationInitializer(SimulationInitializerInterface):
                     sim.markets['housing'].place_order(sell_order, sim.time)
         self.logger.info('GENESIS | Starting initial wealth distribution...')
         distributed_count = 0
-        for agent_id, amount in self.initial_balances.items():
+        for agent_id, raw_amount in self.initial_balances.items():
+            try:
+                amount = int(raw_amount)
+            except (ValueError, TypeError):
+                continue
+
             if agent_id in sim.agents and amount > 0:
-                Bootstrapper.distribute_initial_wealth(central_bank=sim.central_bank, target_agent=sim.agents[agent_id], amount=int(amount), settlement_system=sim.settlement_system)
+                Bootstrapper.distribute_initial_wealth(central_bank=sim.central_bank, target_agent=sim.agents[agent_id], amount=amount, settlement_system=sim.settlement_system)
                 distributed_count += 1
         self.logger.info(f'GENESIS | Distributed wealth to {distributed_count} agents.')
         Bootstrapper.inject_initial_liquidity(firms=sim.firms, config=self.config, settlement_system=sim.settlement_system, central_bank=sim.central_bank)

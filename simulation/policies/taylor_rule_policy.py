@@ -1,4 +1,4 @@
-from typing import Dict, Any, Deque, TYPE_CHECKING
+from typing import Dict, Any, Deque, Optional, TYPE_CHECKING
 from collections import deque
 from simulation.interfaces.policy_interface import IGovernmentPolicy
 from modules.common.utils.shadow_logger import log_shadow
@@ -18,7 +18,7 @@ class TaylorRulePolicy(IGovernmentPolicy):
         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
         self.potential_gdp = 0.0
 
-    def decide(self, government: Any, sensory_data: "GovernmentSensoryDTO", current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
+    def decide(self, government: Any, sensory_data: Optional["GovernmentSensoryDTO"], current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
         # Refactored to use sensory DTO instead of raw market_data
         if not sensory_data:
             return {"status": "NO_DATA"}

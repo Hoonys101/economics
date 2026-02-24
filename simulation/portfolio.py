@@ -11,26 +11,30 @@ class Portfolio:
         self.owner_id = owner_id
         self.holdings: Dict[int, Share] = {}  # firm_id -> Share
 
-    def add(self, firm_id: int, quantity: float, price: float):
+    def add(self, firm_id: int, quantity: float, acquisition_price_pennies: int):
         """
         Adds shares to the portfolio, updating Weighted Average Cost (WAC).
+        acquisition_price_pennies: Cost per share in pennies.
         """
         if quantity <= 0:
             return
 
         if firm_id in self.holdings:
             share = self.holdings[firm_id]
-            total_cost = (share.quantity * share.acquisition_price) + (quantity * price)
+            # Calculate total cost in pennies (may be float due to fractional shares)
+            total_cost_pennies = (share.quantity * share.acquisition_price) + (quantity * acquisition_price_pennies)
             total_qty = share.quantity + quantity
 
             share.quantity = total_qty
-            share.acquisition_price = total_cost / total_qty
+            # Update WAC (pennies per share), cast to int
+            if total_qty > 0:
+                share.acquisition_price = int(total_cost_pennies / total_qty)
         else:
             self.holdings[firm_id] = Share(
                 firm_id=firm_id,
                 holder_id=self.owner_id,
                 quantity=quantity,
-                acquisition_price=price
+                acquisition_price=acquisition_price_pennies
             )
 
     def get_stock_quantity(self, firm_id: int) -> float:
@@ -81,10 +85,10 @@ class Portfolio:
         """
         return {fid: share.quantity for fid, share in self.holdings.items()}
 
-    def sync_from_legacy(self, legacy_dict: Dict[int, float], default_price: float = 1.0):
+    def sync_from_legacy(self, legacy_dict: Dict[int, float], default_price_pennies: int = 100):
         """
         One-time sync from legacy dict (lossy: assumes default price if missing).
         """
         self.holdings.clear()
         for firm_id, qty in legacy_dict.items():
-            self.add(firm_id, qty, default_price)
+            self.add(firm_id, qty, default_price_pennies)
