@@ -7,7 +7,7 @@ from simulation.systems.lifecycle_manager import AgentLifecycleManager
 from simulation.systems.lifecycle.aging_system import IAgingFirm
 from simulation.interfaces.market_interface import IMarket
 from simulation.dtos.api import SimulationState
-from simulation.models import Order
+from simulation.models import Order, Transaction
 from modules.market.api import OrderDTO
 from tests.utils.factories import create_firm_config_dto, create_household_config_dto
 from modules.system.api import ICurrencyHolder, DEFAULT_CURRENCY
@@ -49,10 +49,22 @@ class DummyFirm(IAgingFirm, ICurrencyHolder):
 class DummyMarket(IMarket):
     def __init__(self):
         self.id = "wood"
-        self.buy_orders: Dict[str, List[Order]] = {}
-        self.sell_orders: Dict[str, List[Order]] = {}
-        self.matched_transactions = []
+        self._buy_orders: Dict[str, List[Order]] = {}
+        self._sell_orders: Dict[str, List[Order]] = {}
+        self._matched_transactions = []
         self.avg_price = 10.0 # Used by tests
+
+    @property
+    def buy_orders(self) -> Dict[str, List[Order]]:
+        return self._buy_orders
+
+    @property
+    def sell_orders(self) -> Dict[str, List[Order]]:
+        return self._sell_orders
+
+    @property
+    def matched_transactions(self) -> List[Transaction]:
+        return self._matched_transactions
 
     def get_daily_avg_price(self) -> float:
         return self.avg_price

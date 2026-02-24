@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict, Any, Optional
 import logging
-from modules.labor.api import ILaborMarket, JobOfferDTO, JobSeekerDTO, LaborMarketMatchResultDTO
+from modules.labor.api import ILaborMarket, JobOfferDTO, JobSeekerDTO, LaborMarketMatchResultDTO, LaborConfigDTO
 from modules.market.api import CanonicalOrderDTO, OrderTelemetrySchema
 from simulation.models import Transaction
 from simulation.interfaces.market_interface import IMarket
@@ -24,6 +24,13 @@ class LaborMarket(ILaborMarket, IMarket):
         # IMarket compatibility
         self._buy_orders_cache: Dict[str, List[CanonicalOrderDTO]] = {}
         self._sell_orders_cache: Dict[str, List[CanonicalOrderDTO]] = {}
+
+    def configure(self, config: LaborConfigDTO) -> None:
+        """
+        Injects configuration into the Labor Market.
+        """
+        # Logic to apply config if needed
+        pass
 
     def post_job_offer(self, offer: JobOfferDTO) -> None:
         self._job_offers.append(offer)

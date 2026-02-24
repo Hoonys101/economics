@@ -1,6 +1,6 @@
 from typing import Dict, Optional, TYPE_CHECKING
 import logging
-from modules.simulation.api import IInventoryHandler
+from modules.simulation.api import IInventoryHandler, InventorySlot
 from modules.common.protocol import enforce_purity
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,12 @@ class InventoryManager(IInventoryHandler):
         self._inventory_quality: Dict[str, float] = quality if quality is not None else {} # Weighted average quality
 
     @enforce_purity()
-    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
+    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0, slot: InventorySlot = InventorySlot.MAIN) -> bool:
+        if slot != InventorySlot.MAIN:
+            # TODO: Support other slots if needed, for now just log warning or ignore
+            # logger.warning(f"InventoryManager only supports MAIN slot currently. Requested: {slot}")
+            pass
+
         if quantity < 0:
             logger.warning(f"INVENTORY_FAIL | Agent {self.owner_id} attempt to add negative quantity {quantity} of {item_id}")
             return False
@@ -35,7 +40,10 @@ class InventoryManager(IInventoryHandler):
         return True
 
     @enforce_purity()
-    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
+    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, slot: InventorySlot = InventorySlot.MAIN) -> bool:
+        if slot != InventorySlot.MAIN:
+             return False
+
         if quantity < 0:
             logger.warning(f"INVENTORY_FAIL | Agent {self.owner_id} attempt to remove negative quantity {quantity} of {item_id}")
             return False
@@ -52,15 +60,22 @@ class InventoryManager(IInventoryHandler):
 
         return True
 
-    def get_quantity(self, item_id: str) -> float:
+    def get_quantity(self, item_id: str, slot: InventorySlot = InventorySlot.MAIN) -> float:
+        if slot != InventorySlot.MAIN:
+            return 0.0
         return self._inventory.get(item_id, 0.0)
 
-    def get_quality(self, item_id: str) -> float:
+    def get_quality(self, item_id: str, slot: InventorySlot = InventorySlot.MAIN) -> float:
+        if slot != InventorySlot.MAIN:
+            return 1.0
         return self._inventory_quality.get(item_id, 1.0)
 
-    def get_all_items(self) -> Dict[str, float]:
+    def get_all_items(self, slot: InventorySlot = InventorySlot.MAIN) -> Dict[str, float]:
+        if slot != InventorySlot.MAIN:
+            return {}
         return self._inventory.copy()
 
-    def clear_inventory(self) -> None:
-        self._inventory.clear()
-        self._inventory_quality.clear()
+    def clear_inventory(self, slot: InventorySlot = InventorySlot.MAIN) -> None:
+        if slot == InventorySlot.MAIN:
+            self._inventory.clear()
+            self._inventory_quality.clear()

@@ -130,11 +130,11 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
         return self.get_all_balances()
 
-    def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.deposit(int(amount), currency)
+    def _internal_add_assets(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self.deposit(amount, currency)
 
-    def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.withdraw(int(amount), currency)
+    def _internal_sub_assets(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self.withdraw(amount, currency)
 
     def get_interest_rate(self) -> float:
         return self.base_rate

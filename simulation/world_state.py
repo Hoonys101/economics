@@ -138,6 +138,8 @@ class WorldState:
         self._currency_holders_set: set = set()
         # FOUND-03: Global Registry - Initialized via Dependency Injection (simulation.lock via initializer)
         self.global_registry: Optional[IGlobalRegistry] = None
+        self.telemetry_collector: Optional[Any] = None
+        self.scenario_verifier: Optional[Any] = None
 
         # Attributes with default values
         self.batch_save_interval: int = self.config_manager.get("simulation.batch_save_interval", 50)

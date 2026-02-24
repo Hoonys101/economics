@@ -54,7 +54,7 @@ class CentralBankService:
         self,
         treasury_service: ITreasuryService,
         operation_type: Literal["purchase", "sale"],
-        target_cash_amount: float,
+        target_cash_amount: int,
         currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> OpenMarketOperationResultDTO:
         """

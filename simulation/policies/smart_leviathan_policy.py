@@ -2,7 +2,7 @@ from typing import Dict, Any, Optional
 from simulation.interfaces.policy_interface import IGovernmentPolicy
 from simulation.ai.enums import PoliticalParty
 from modules.government.ai.api import AIConfigDTO
-from modules.government.dtos import GovernmentStateDTO, GovernmentPolicyDTO
+from modules.government.dtos import GovernmentStateDTO, GovernmentPolicyDTO, GovernmentSensoryDTO
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
         self.ai = GovernmentAI(government, ai_config)
         self.last_action_tick = -999
 
-    def decide(self, government: Any, sensory_data: "GovernmentStateDTO", current_tick: int, central_bank: "CentralBank") -> Dict[str, Any]:
+    def decide(self, government: Any, sensory_data: "GovernmentSensoryDTO", current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
         """
         Policy Decision Cycle.
         Enforces 30-tick (1 month) silent interval as per Architect Prime's Directive.

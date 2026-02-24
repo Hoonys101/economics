@@ -269,11 +269,11 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
             output_gap=output_gap
         )
 
-    def _internal_add_assets(self, amount: float) -> None:
+    def _internal_add_assets(self, amount: int) -> None:
         """[INTERNAL ONLY] Increase cash reserves."""
         self.wallet.add(amount, memo="Internal Add")
 
-    def _internal_sub_assets(self, amount: float) -> None:
+    def _internal_sub_assets(self, amount: int) -> None:
         """[INTERNAL ONLY] Decrease cash reserves."""
         # Central Bank can withdraw (create money) even if it results in negative cash
         # This represents expansion of the monetary base.
@@ -309,6 +309,12 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
     @property
     def total_wealth(self) -> int:
         return sum(self.wallet.get_all_balances().values())
+
+    def get_liquid_assets(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        return self.get_balance(currency)
+
+    def get_total_debt(self) -> int:
+        return 0
 
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         self.wallet.add(amount, currency, memo="Protocol Deposit")

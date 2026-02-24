@@ -241,31 +241,6 @@ class IFinanceDepartment(Protocol):
 
 # --- Portfolio DTOs (TD-160) ---
 
-class InsufficientFundsError(Exception):
-    """
-    Custom exception to be raised when an operation cannot be completed due to lack of funds.
-    """
-    def __init__(self, message: str, required: Optional[MoneyDTO] = None, available: Optional[MoneyDTO] = None):
-        self.required = required
-        self.available = available
-        if required and available:
-             msg = f"{message} Required: {required.amount_pennies} pennies {required.currency}, Available: {available.amount_pennies} pennies {available.currency}"
-        else:
-             msg = message
-        super().__init__(msg)
-
-class LoanNotFoundError(Exception):
-    """Raised when a specified loan is not found."""
-    pass
-
-class LoanRepaymentError(Exception):
-    """Raised when there is an issue with loan repayment."""
-    pass
-
-class LoanRollbackError(Exception):
-    """Raised when a loan cancellation fails to reverse the associated deposit."""
-    pass
-
 # --- Lien and Encumbrance DTOs ---
 
 @runtime_checkable

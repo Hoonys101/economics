@@ -27,6 +27,11 @@ class AgentRegistry(IAgentRegistry):
         # in state.agents by SimulationInitializer, we can simply return values.
         return list(self._state.agents.values())
 
+    def get_all_agents(self) -> List[Any]:
+        if self._state is None:
+            return []
+        return list(self._state.agents.values())
+
 class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
     """
     Central repository for simulation parameters with priority and locking mechanisms.

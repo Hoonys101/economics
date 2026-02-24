@@ -4,12 +4,12 @@ from simulation.interfaces.policy_interface import IGovernmentPolicy
 from modules.common.utils.shadow_logger import log_shadow
 
 if TYPE_CHECKING:
-    from simulation.dtos import GovernmentStateDTO
+    from modules.government.dtos import GovernmentSensoryDTO
 
 class TaylorRulePolicy(IGovernmentPolicy):
     """
-    WO-056: 테일러 준칙 기반의 정책 엔진.
-    기존의 수식 기반 결정을 담당하며, 섀도우 모드 로깅을 수행합니다.
+    WO-056: Taylor Rule based policy engine.
+    Responsible for formula-based decisions and shadow mode logging.
     """
     
     def __init__(self, config_module: Any):
@@ -18,7 +18,7 @@ class TaylorRulePolicy(IGovernmentPolicy):
         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
         self.potential_gdp = 0.0
 
-    def decide(self, government: Any, sensory_data: "GovernmentStateDTO", current_tick: int, central_bank: Any) -> Dict[str, Any]:
+    def decide(self, government: Any, sensory_data: "GovernmentSensoryDTO", current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
         # Refactored to use sensory DTO instead of raw market_data
         if not sensory_data:
             return {"status": "NO_DATA"}

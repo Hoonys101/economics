@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Any, Optional, Protocol, Dict, Union, runtime_checkable
+from typing import List, Any, Optional, Protocol, Dict, Union, runtime_checkable, TYPE_CHECKING
 from dataclasses import dataclass, field
 import logging
 from uuid import UUID
@@ -8,7 +8,7 @@ from collections import deque
 from simulation.dtos.commands import GodCommandDTO, GodResponseDTO
 from modules.system.api import IGlobalRegistry, OriginType, IAgentRegistry, RegistryEntry, IRestorableRegistry
 from modules.system.constants import ID_CENTRAL_BANK
-from simulation.finance.api import ISettlementSystem, IFinancialAgent
+from simulation.finance.api import ISettlementSystem, IFinancialAgent, IMonetaryAuthority
 from modules.simulation.api import IInventoryHandler
 from modules.finance.api import IBank
 
@@ -57,7 +57,7 @@ class UndoStack:
         return []
 
 class CommandService:
-    def __init__(self, registry: IGlobalRegistry, settlement_system: ISettlementSystem, agent_registry: IAgentRegistry):
+    def __init__(self, registry: IGlobalRegistry, settlement_system: IMonetaryAuthority, agent_registry: IAgentRegistry):
         self.registry = registry
         self.settlement_system = settlement_system
         self.agent_registry = agent_registry

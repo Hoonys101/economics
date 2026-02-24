@@ -8,9 +8,15 @@ class IMarket(Protocol):
     safe for agent consumption (Snapshot Pattern).
     """
     id: str
-    buy_orders: Dict[str, List[Order]]
-    sell_orders: Dict[str, List[Order]]
-    matched_transactions: List[Transaction]
+
+    @property
+    def buy_orders(self) -> Dict[str, List[Order]]: ...
+
+    @property
+    def sell_orders(self) -> Dict[str, List[Order]]: ...
+
+    @property
+    def matched_transactions(self) -> List[Transaction]: ...
 
     def get_daily_avg_price(self) -> float: ...
     def get_daily_volume(self) -> float: ...

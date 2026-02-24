@@ -10,6 +10,9 @@ CurrencyCode = str
 DEFAULT_CURRENCY: CurrencyCode = "USD"
 AgentID = int
 
+# Import IAgent from simulation api
+from modules.simulation.api import IAgent
+
 @runtime_checkable
 class IWorldState(Protocol):
     """Module B: Protocol for decoupled world state management."""
@@ -182,7 +185,7 @@ class IConfigurationRegistry(Protocol):
         """
         ...
 
-    def set(self, key: str, value: Any, origin: OriginType = OriginType.USER) -> None:
+    def set(self, key: str, value: Any, origin: OriginType = OriginType.USER) -> bool:
         """
         Updates a configuration value with a specified origin.
         Should trigger any registered listeners for this key.
@@ -275,6 +278,9 @@ class IAgentRegistry(Protocol):
         ...
 
     def set_state(self, state: Any) -> None:
+        ...
+
+    def get_all_agents(self) -> List[Any]:
         ...
 
 @runtime_checkable

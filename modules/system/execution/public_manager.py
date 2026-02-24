@@ -88,6 +88,24 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent, ISys
         """Implementation of ICurrencyHolder."""
         return self.system_treasury.copy()
 
+    # --- IFinancialEntity Implementation ---
+    @property
+    def balance_pennies(self) -> int:
+        return self.get_balance(DEFAULT_CURRENCY)
+
+    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._deposit(amount_pennies, currency)
+
+    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._withdraw(amount_pennies, currency)
+
+    # --- IFinancialAgent Implementation ---
+    def get_liquid_assets(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        return self.get_balance(currency)
+
+    def get_total_debt(self) -> int:
+        return 0
+
     def process_bankruptcy_event(self, event: AgentBankruptcyEventDTO) -> None:
         """Takes ownership of a defunct agent's inventory."""
         self.logger.warning(f"Processing bankruptcy for Agent {event['agent_id']} at tick {event['tick']}. Recovering inventory.")

@@ -39,3 +39,21 @@ class EscrowAgent(IFinancialAgent):
     @property
     def total_wealth(self) -> int:
         return sum(self._balances.values())
+
+    # --- IFinancialEntity Implementation ---
+    @property
+    def balance_pennies(self) -> int:
+        return self.get_balance(DEFAULT_CURRENCY)
+
+    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._deposit(amount_pennies, currency)
+
+    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._withdraw(amount_pennies, currency)
+
+    # --- IFinancialAgent Implementation ---
+    def get_liquid_assets(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        return self.get_balance(currency)
+
+    def get_total_debt(self) -> int:
+        return 0

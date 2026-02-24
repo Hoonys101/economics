@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Any, TYPE_CHECKING
+from typing import List, Dict, Any, TYPE_CHECKING, Optional
 import logging
 import hashlib
 import json
@@ -122,6 +122,11 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.event_bus = EventBus()
         sim.world_state.taxation_system = TaxationSystem(config_module=self.config)
         from modules.system.telemetry import TelemetryCollector
+
+        # Ensure registry is attached before usage
+        if sim.world_state.global_registry is None:
+             raise RuntimeError("Global Registry not attached to WorldState")
+
         sim.telemetry_collector = TelemetryCollector(sim.world_state.global_registry)
         sim.world_state.telemetry_collector = sim.telemetry_collector
         sim.world_state.global_registry.set('system.telemetry_collector', sim.telemetry_collector, origin=OriginType.SYSTEM)
@@ -280,7 +285,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         distributed_count = 0
         for agent_id, amount in self.initial_balances.items():
             if agent_id in sim.agents and amount > 0:
-                Bootstrapper.distribute_initial_wealth(central_bank=sim.central_bank, target_agent=sim.agents[agent_id], amount=amount, settlement_system=sim.settlement_system)
+                Bootstrapper.distribute_initial_wealth(central_bank=sim.central_bank, target_agent=sim.agents[agent_id], amount=int(amount), settlement_system=sim.settlement_system)
                 distributed_count += 1
         self.logger.info(f'GENESIS | Distributed wealth to {distributed_count} agents.')
         Bootstrapper.inject_initial_liquidity(firms=sim.firms, config=self.config, settlement_system=sim.settlement_system, central_bank=sim.central_bank)
