@@ -15,6 +15,11 @@ The transition to a strict Integer-based Penny Standard revealed several areas w
 - **Liquidation**: Liquidation payouts were using `settlement_system.transfer` without emitting a `Transaction` object for the record.
     - **Fix**: We instrumented `LiquidationManager` and `DeathSystem` to emit transactions for every asset recovery and claim payout.
 
+### Architectural Safeguards (Code Review Validation)
+The introduction of `Transaction` objects for actions that were previously implicit raised concerns about potential "Double Spending" or "Double Counting".
+- **Double-Spend Protection**: Transactions emitted for audit purposes (e.g., Taxes) are marked with `metadata={"executed": True}`. We verified via `tests/unit/test_ledger_safety.py` that `TransactionProcessor` explicitly skips these transactions, ensuring funds are not moved twice.
+- **Double-Counting Protection**: `DebtServicingEngine` updates the accounting ledger (DTO), while `FinancialTransactionHandler` updates the cash wallet (Agent). We verified that the Handler does *not* write back to the Ledger DTO, confirming that the Engine's manual update is required and does not duplicate the Handler's work.
+
 ## 2. Regression Analysis
 - **`tests/unit/government/test_monetary_ledger_units.py`**:
     - **Failure**: `test_monetary_ledger_uses_pennies_source_and_returns_dollars` failed because `get_monetary_delta` now returns pennies (int) instead of dollars (float).
@@ -44,4 +49,6 @@ tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_li
 tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_settle_fail PASSED [ 88%]
 tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_success_atomic PASSED [ 94%]
 tests/unit/test_transaction_handlers.py::TestLaborTransactionHandler::test_labor_atomic_settlement PASSED [100%]
+tests/unit/test_ledger_safety.py::TestLedgerSafety::test_financial_handler_does_not_touch_ledger_dto PASSED [ 50%]
+tests/unit/test_ledger_safety.py::TestLedgerSafety::test_processor_skips_executed_transactions PASSED [100%]
 ```
