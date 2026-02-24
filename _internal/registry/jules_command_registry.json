@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-CONFIG-SCALING": {
-      "key": "WO-IMPL-CONFIG-SCALING",
-      "title": "Phase 23 Wave 1: 100M Economy Constant Realignment",
-      "type": "jules",
-      "instruction_raw": "MISSION_WO-SPEC-CONFIG-SCALING_SPEC.md\uc758 \uba85\uc138\ub97c \uc815\ud655\ud788 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.\n\n1. **Deduplication**: `defaults.py`\uc758 \uc911\ubcf5 \uc0c1\uc218\ub97c \uc81c\uac70\ud558\uace0 \uc2a4\ucf00\uc77c\ub9c1\uc744 \uc801\uc6a9\ud558\uc2ed\uc2dc\uc624.\n2. **DTO Purity**: `FiscalEngine`\uc5d0 `FiscalConfigDTO`\ub97c \ub3c4\uc785\ud558\uc5ec \ud558\ub4dc\ucf54\ub529\uc744 \uc81c\uac70\ud558\uc2ed\uc2dc\uc624.\n3. **Dimensional Consistency**: `AgingSystem` \ub4f1\uc5d0\uc11c \ub2e8\uc704(Unit vs Penny) \ud63c\uc6a9\uc744 \uc81c\uac70\ud558\uc2ed\uc2dc\uc624.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_WO-SPEC-CONFIG-SCALING_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-IMPL-LEDGER-HARDENING": {
       "key": "WO-IMPL-LEDGER-HARDENING",
       "title": "Phase 23 Wave 1: Penny Hardening & Shadow Transaction Elimination",
