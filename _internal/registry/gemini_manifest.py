@@ -24,55 +24,5 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "WO-WAVE5-MONETARY-AUDIT": {
-        "title": "Wave 5 Monetary Audit & Leakage Diagnosis",
-        "worker": "audit",
-        "instruction": "Analyze the 2.6B penny leakage identified in reports/diagnostic_refined.md. Pinpoint why Expected money supply (authorized changes) diverges from Current wallet summation. Identify the root cause of the 102M jump in Tick 1. Verify if SettlementSystem, TickOrchestrator, or WorldState logic restoration introduced accounting gaps. Provide a fix specification for Jules.",
-        "context_files": [
-            "reports/diagnostic_refined.md",
-            "simulation/world_state.py",
-            "simulation/orchestration/tick_orchestrator.py",
-            "modules/government/components/monetary_ledger.py",
-            "simulation/systems/settlement_system.py",
-            "simulation/agents/government.py",
-            "simulation/systems/central_bank_system.py",
-            "simulation/orchestration/phases/monetary_processing.py",
-            "simulation/orchestration/phases/transaction.py",
-            "modules/system/constants.py",
-            "scripts/operation_forensics.py"
-        ],
-        "output_path": "gemini-output/spec/MISSION_wave5_monetary_audit_SPEC.md"
-    },
-    "WO-WAVE6-RESTORATION-SPEC": {
-        "title": "Wave 6: Tooling Restoration & Domain Hardening Spec",
-        "worker": "spec",
-        "instruction": "Generate a comprehensive Integrated Mission Guide for Wave 6. Focus on: 1) Restoring 'ContextInjectorService' in 'dispatchers.py' using lazy imports to resolve circular dependencies. 2) Implementing a 'DefaultTransferHandler' for legacy 'transfer' type transactions to ensure ledger visibility (resolving TD-SYS-TRANSFER-HANDLER-GAP). 3) Auditing 'LaborTransactionHandler' and 'models.py' to enforce 'total_pennies' SSoT and resolve unit inconsistencies (dollars vs pennies). Reference 'QUICKSTART.md' for architectural standards.",
-        "context_files": [
-            "_internal/registry/commands/dispatchers.py",
-            "simulation/initialization/initializer.py",
-            "simulation/systems/transaction_processor.py",
-            "simulation/systems/handlers/labor_handler.py",
-            "simulation/models.py",
-            "simulation/systems/settlement_system.py",
-            "design/QUICKSTART.md",
-            "design/HANDOVER.md",
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-        ],
-        "output_path": "gemini-output/spec/MISSION_wave6_restoration_SPEC.md"
-    },
-    "WO-GRAND-LIQUIDATION-STRATEGY": {
-        "title": "Phase 22: Grand Tech-Debt Liquidation Analysis",
-        "worker": "spec",
-        "instruction": "Analyze the remaining 20+ technical debt items in TECH_DEBT_LEDGER.md and group them into 3 executable waves (Foundation, Finance, Evolution) as outlined in 'implementation_plan.md'. For each wave, generate a detailed MISSION_SPEC that Jules can execute. Focus on structural integrity (initialization sequence), financial soundness (M2/Sagas), and economic balance (Zombie firms). Ensure clear success criteria and verification protocols for each spec.",
-        "context_files": [
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
-            "simulation/initialization/initializer.py",
-            "simulation/systems/accounting.py",
-            "simulation/orchestration/tick_orchestrator.py",
-            "modules/finance/sagas/orchestrator.py",
-            "simulation/markets/matching_engine.py",
-            "C:/Users/Gram Pro/.gemini/antigravity/brain/52999a6d-bd9f-4877-a711-ec86fe8c2185/implementation_plan.md"
-        ],
-        "output_path": "gemini-output/spec/MISSION_grand_liquidation_SPEC.md"
-    }
+    # Add missions here
 }
