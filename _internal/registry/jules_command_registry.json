@@ -18,21 +18,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-IMPL-FINANCIAL-PRECISION": {
-      "key": "WO-IMPL-FINANCIAL-PRECISION",
-      "title": "Financial Precision & Liquidation Dust Fix",
-      "type": "jules",
-      "instruction_raw": "Harden DTOs to integer pennies and fix liquidation pro-rata truncation.",
-      "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-IMPL-FINANCIAL-PRECISION_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-IMPL-MAINTENANCE-PH33": {
       "key": "WO-IMPL-MAINTENANCE-PH33",
       "title": "Maintenance & Mock Regression Fix",
