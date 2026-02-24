@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Any, Dict, Optional, TYPE_CHECKING, Protocol, Tuple, Union
 import logging
 from modules.finance.api import IFinancialAgent
-from modules.simulation.api import IGovernment
+from modules.government.api import IGovernment
 from simulation.models import Transaction
 from modules.system.api import DEFAULT_CURRENCY
 from modules.finance.utils.currency_math import round_to_pennies

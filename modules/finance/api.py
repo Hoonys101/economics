@@ -78,7 +78,8 @@ class ITransaction(Protocol):
     memo: Optional[str] = None
 
 if TYPE_CHECKING:
-    from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
+    from modules.simulation.api import EconomicIndicatorsDTO
+    from modules.government.api import IGovernment
     from simulation.dtos.api import GovernmentSensoryDTO
     from simulation.models import Order, Transaction
     from modules.finance.wallet.api import IWallet

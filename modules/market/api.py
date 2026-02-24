@@ -13,7 +13,8 @@ if TYPE_CHECKING:
     from simulation.models import Transaction
     from simulation.core_agents import Household
     from modules.finance.api import IBank, ISettlementSystem
-    from modules.simulation.api import IGovernment, IAgent
+    from modules.simulation.api import IAgent
+    from modules.government.api import IGovernment
 
 class MarketSide(str, Enum):
     BUY = "BUY"

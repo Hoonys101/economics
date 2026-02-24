@@ -11,8 +11,9 @@ from modules.government.dtos import FiscalPolicyDTO
 def mock_simulation_state():
     state = MagicMock(spec=SimulationState)
     state.time = 100
-    # Use MagicMock(spec=Government) to satisfy protocol check and prevent drift
-    state.government = MagicMock(spec=Government)
+    # Use MagicMock() without spec for Government to satisfy Protocol check
+    # (MagicMock(spec=Class) has issues with runtime_checkable Protocols)
+    state.government = MagicMock()
     state.central_bank = MagicMock(spec=CentralBankSystem)
 
     # Setup government attributes
@@ -22,6 +23,18 @@ def mock_simulation_state():
     state.government.fiscal_policy = MagicMock(spec=FiscalPolicyDTO)
     state.government.fiscal_policy.corporate_tax_rate = 0.2
     state.government.fiscal_policy.income_tax_rate = 0.1
+
+    # Satisfy IGovernment protocol
+    from modules.system.api import DEFAULT_CURRENCY
+    state.government.expenditure_this_tick = {DEFAULT_CURRENCY: 0}
+    state.government.revenue_this_tick = {DEFAULT_CURRENCY: 0}
+    state.government.total_debt = 0
+    state.government.total_wealth = 0
+    state.government.state = MagicMock()
+    state.government.make_policy_decision = MagicMock()
+    state.government.id = 1
+    state.government.name = "MockGov"
+    state.government.is_active = True
 
     # Setup central bank attributes
     state.central_bank.base_rate = 0.05

@@ -219,11 +219,8 @@ class ITalented(Protocol):
 class ICentralBank(Protocol):
     base_rate: float
 
-@runtime_checkable
-class IGovernment(Protocol):
-    expenditure_this_tick: float
-    revenue_this_tick: float
-    total_debt: float
+if TYPE_CHECKING:
+    from modules.government.api import IGovernment
 
 @runtime_checkable
 class IEconomicIndicatorTracker(Protocol):

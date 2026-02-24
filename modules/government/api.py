@@ -17,10 +17,12 @@ from modules.government.dtos import (
     BondIssuanceResultDTO,
     IAgent
 )
+from typing import TYPE_CHECKING
 from modules.government.welfare.api import IWelfareRecipient
-from simulation.dtos.api import MarketSnapshotDTO
+if TYPE_CHECKING:
+    from simulation.dtos.api import MarketSnapshotDTO
 from modules.finance.api import TaxCollectionResult, IFinancialEntity
-from modules.system.api import CurrencyCode
+from modules.system.api import CurrencyCode, AgentID
 
 @runtime_checkable
 class ITaxableHousehold(IFinancialEntity, IAgent, Protocol):
@@ -55,7 +57,7 @@ class ITaxService(Protocol):
     A stateless service responsible for all tax calculations and for generating
     tax collection requests.
     """
-    def determine_fiscal_stance(self, snapshot: MarketSnapshotDTO) -> GovernmentPolicyDTO:
+    def determine_fiscal_stance(self, snapshot: "MarketSnapshotDTO") -> GovernmentPolicyDTO:
         """Determines the current fiscal policy based on market conditions."""
         ...
 
@@ -111,7 +113,7 @@ class IWelfareService(Protocol):
     A stateless service responsible for all welfare and subsidy logic.
     It does not hold state or have access to agent wallets.
     """
-    def run_welfare_check(self, agents: List[IAgent], market_data: MarketSnapshotDTO, current_tick: int, gdp_history: List[float], welfare_budget_multiplier: float = 1.0) -> WelfareResultDTO:
+    def run_welfare_check(self, agents: List[IAgent], market_data: "MarketSnapshotDTO", current_tick: int, gdp_history: List[float], welfare_budget_multiplier: float = 1.0) -> WelfareResultDTO:
         """
         Identifies agents needing support and returns a DTO containing
         welfare payment requests for the government to execute.
@@ -125,7 +127,7 @@ class IWelfareService(Protocol):
         """
         ...
 
-    def get_survival_cost(self, market_data: MarketSnapshotDTO) -> int:
+    def get_survival_cost(self, market_data: "MarketSnapshotDTO") -> int:
         """Calculates current survival cost based on market prices (pennies)."""
         ...
 
@@ -156,11 +158,39 @@ class IFiscalBondService(Protocol):
         """
         ...
 
+@runtime_checkable
 class IGovernment(Protocol):
-    """Facade for the government agent."""
+    """
+    Unified Facade for the Government Agent (Governor Pattern).
+    All financial values MUST be in Integer Pennies.
+    """
+    id: AgentID
+    is_active: bool
+    name: str
     state: GovernmentStateDTO
 
-    def make_policy_decision(self, market_snapshot: "MarketSnapshotDTO") -> None:
+    @property
+    def expenditure_this_tick(self) -> Dict[CurrencyCode, int]:
+        ...
+
+    @property
+    def revenue_this_tick(self) -> Dict[CurrencyCode, int]:
+        ...
+
+    @property
+    def total_debt(self) -> int:
+        ...
+
+    @property
+    def total_wealth(self) -> int:
+        ...
+
+    # Governance & Policy Fields
+    corporate_tax_rate: float
+    income_tax_rate: float
+    fiscal_policy: FiscalPolicyDTO
+
+    def make_policy_decision(self, market_snapshot: Any, current_tick: int, central_bank: Any) -> None:
         ...
 
 
@@ -184,7 +214,7 @@ class IGovernmentDecisionEngine(Protocol):
     def decide(
         self,
         state: GovernmentStateDTO,
-        market_snapshot: MarketSnapshotDTO,
+        market_snapshot: "MarketSnapshotDTO",
         central_bank: Any
     ) -> PolicyDecisionDTO:
         """

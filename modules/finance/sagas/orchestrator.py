@@ -5,7 +5,8 @@ import logging
 from modules.finance.kernel.api import ISagaOrchestrator, IHousingTransactionSagaHandler, IMonetaryLedger
 from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO
 from modules.finance.saga_handler import HousingTransactionSagaHandler
-from modules.simulation.api import ISimulationState, IAgent, IGovernment, HouseholdSnapshotDTO
+from modules.simulation.api import ISimulationState, IAgent, HouseholdSnapshotDTO
+from modules.government.api import IGovernment
 
 logger = logging.getLogger(__name__)
 

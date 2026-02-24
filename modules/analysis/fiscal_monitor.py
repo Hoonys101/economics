@@ -1,5 +1,6 @@
 from modules.finance.api import IFiscalMonitor
-from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
+from modules.simulation.api import EconomicIndicatorsDTO
+from modules.government.api import IGovernment
 
 class FiscalMonitor(IFiscalMonitor):
     """

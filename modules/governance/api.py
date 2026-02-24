@@ -46,11 +46,7 @@ class IFiscalPolicyHolder(Protocol):
     corporate_tax_rate: float
     income_tax_rate: float
 
-@runtime_checkable
-class IGovernment(Protocol):
-    corporate_tax_rate: float
-    income_tax_rate: float
-    fiscal_policy: IFiscalPolicyHolder
+from modules.government.api import IGovernment
 
 @runtime_checkable
 class ICentralBank(Protocol):

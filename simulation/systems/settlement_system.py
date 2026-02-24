@@ -14,7 +14,8 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, 
 from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER
 from modules.market.housing_planner_api import MortgageApplicationDTO
 from simulation.models import Transaction
-from modules.simulation.api import IGovernment, IAgent
+from modules.simulation.api import IAgent
+from modules.government.api import IGovernment
 from modules.common.protocol import enforce_purity
 
 # Transaction Engine Imports

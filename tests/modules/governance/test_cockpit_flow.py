@@ -47,10 +47,22 @@ def test_cockpit_command_flow_tax_rate(mock_deps):
     )
 
     # Setup World State
-    # Use spec=Government to prevent Mock Drift and ensure Protocol Fidelity
-    sim.world_state.government = MagicMock(spec=Government)
+    # Use MagicMock without spec because spec interferes with runtime_checkable Protocol checks
+    sim.world_state.government = MagicMock()
     sim.world_state.government.corporate_tax_rate = 0.2
     sim.world_state.government.income_tax_rate = 0.1
+
+    # Satisfy IGovernment protocol
+    from modules.system.api import DEFAULT_CURRENCY
+    sim.world_state.government.expenditure_this_tick = {DEFAULT_CURRENCY: 0}
+    sim.world_state.government.revenue_this_tick = {DEFAULT_CURRENCY: 0}
+    sim.world_state.government.total_debt = 0
+    sim.world_state.government.total_wealth = 0
+    sim.world_state.government.state = MagicMock()
+    sim.world_state.government.make_policy_decision = MagicMock()
+    sim.world_state.government.id = 1
+    sim.world_state.government.name = "MockGov"
+    sim.world_state.government.is_active = True
 
     # Use spec=FiscalPolicyDTO for nested object
     sim.world_state.government.fiscal_policy = MagicMock(spec=FiscalPolicyDTO)

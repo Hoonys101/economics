@@ -35,14 +35,21 @@ class StormVerifier:
         # Access Government spending/revenue via Protocol
         deficit_threshold = self._config["deficit_spending_threshold"]
         if self._simulation.government:
-            spending = self._simulation.government.expenditure_this_tick
-            revenue = self._simulation.government.revenue_this_tick
+            # Aggregate total spending and revenue (sum of all currencies, converted to pennies)
+            # We assume single currency for simplicity or sum all
+            spending_dict = self._simulation.government.expenditure_this_tick
+            revenue_dict = self._simulation.government.revenue_this_tick
+
+            spending = sum(spending_dict.values())
+            revenue = sum(revenue_dict.values())
+
             # Only trigger if significant spending happens (avoid trivial 0 > 0 cases)
             if spending > revenue and spending > deficit_threshold:
                 self._metrics["deficit_spending"] = True
 
             # 3. Debt-to-GDP Check
-            debt = self._simulation.government.total_debt
+            debt_pennies = self._simulation.government.total_debt
+            debt = debt_pennies / 100.0 # Convert to Dollars for GDP comparison
             gdp = market_snapshot["gdp"]
             if gdp > 0:
                 debt_to_gdp = debt / gdp

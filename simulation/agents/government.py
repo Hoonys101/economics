@@ -69,6 +69,8 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
 
     def __init__(self, id: int, initial_assets: float = 0.0, config_module: Any = None, strategy: Optional["ScenarioStrategy"] = None):
         self.id = id
+        self.name = f"Government-{id}"
+        self.is_active = True
 
         initial_balance_dict = {}
         if isinstance(initial_assets, dict):
@@ -168,6 +170,12 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
         )
 
+    @property
+    def state(self) -> GovernmentStateDTO:
+        # Return state for the current sensory tick or default to 0
+        tick = self.sensory_data.tick if self.sensory_data else 0
+        return self._get_state_dto(tick)
+
     def get_sensory_snapshot(self) -> AgentSensorySnapshotDTO:
         return {
             "is_active": True,
@@ -176,12 +184,11 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         }
 
     @property
-    def total_collected_tax(self) -> Dict[CurrencyCode, float]:
-        # Legacy compat, ideally int. TaxService might still return float.
+    def total_collected_tax(self) -> Dict[CurrencyCode, int]:
         return self.tax_service.get_total_collected_tax()
 
     @property
-    def revenue_this_tick(self) -> Dict[CurrencyCode, float]:
+    def revenue_this_tick(self) -> Dict[CurrencyCode, int]:
         return self.tax_service.get_revenue_this_tick()
 
     @property
