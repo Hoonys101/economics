@@ -28,7 +28,9 @@ class Bootstrapper:
         """
         amount_pennies = int(amount)
         if amount_pennies > 0:
-             settlement_system.transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT")
+             tx = settlement_system.transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT")
+             if tx is None:
+                 raise KeyError(f"Failed to distribute wealth to Agent {target_agent.id}. Agent possibly not registered.")
              logger.debug(f"GENESIS_GRANT | Transferred {amount_pennies} to Agent {target_agent.id}")
 
     @staticmethod
@@ -94,7 +96,9 @@ class Bootstrapper:
         if current_balance < Bootstrapper.MIN_CAPITAL:
             diff = int(Bootstrapper.MIN_CAPITAL - current_balance)
             if settlement_system and central_bank:
-                settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
+                tx = settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
+                if tx is None:
+                    raise KeyError(f"Failed to inject liquidity to Firm {firm.id}. Agent possibly not registered.")
                 logger.info(f"BOOTSTRAPPER | Injected {diff} capital to Firm {firm.id} via Settlement.")
                 injected = True
             else:

@@ -15,6 +15,14 @@ class AgentRegistry(IAgentRegistry):
     def set_state(self, state: SimulationState) -> None:
         self._state = state
 
+    def register(self, agent: Agent) -> None:
+        """
+        Registers an agent into the registry's state.
+        Ensures atomic registration visibility.
+        """
+        if self._state is not None:
+            self._state.agents[agent.id] = agent
+
     def get_agent(self, agent_id: Any) -> Optional[Agent]:
         if self._state is None:
             return None

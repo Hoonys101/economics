@@ -282,6 +282,13 @@ class IAgentRegistry(Protocol):
     def set_state(self, state: Any) -> None:
         ...
 
+    def register(self, agent: Any) -> None:
+        """
+        Registers an agent into the registry's state.
+        Ensures atomic registration visibility.
+        """
+        ...
+
     def get_all_agents(self) -> List[Any]:
         ...
 

@@ -137,6 +137,11 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.world_state.saga_orchestrator = sim.saga_orchestrator
         sim.shareholder_registry = ShareholderRegistry()
         sim.world_state.shareholder_registry = sim.shareholder_registry
+
+        # TD-INIT-RACE: Registry must be linked EARLY (Phase 1)
+        # Guarantees AgentRegistry.register() works during Population Phase
+        sim.agent_registry.set_state(sim.world_state)
+
         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
         from simulation.dtos.strategy import ScenarioStrategy
         active_scenario_name = self.config_manager.get('simulation.active_scenario')
@@ -173,17 +178,15 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.households = self.households
         sim.firms = self.firms
         sim.goods_data = self.goods_data
-        sim.agents = {h.id: h for h in self.households}
-        sim.agents.update({f.id: f for f in self.firms})
+
+        # Phase 4: Atomic Population Registration
+        self._init_phase4_population(sim)
 
         # Determine next available ID (assuming user agents start > 100)
         max_user_id = 0
         if sim.agents:
             max_user_id = max(sim.agents.keys())
         sim.next_agent_id = max(100, max_user_id + 1)
-
-        for agent in sim.agents.values():
-            agent.settlement_system = sim.settlement_system
         sim.ai_trainer = self.ai_trainer
         sim.time = 0
         credit_scoring_service = CreditScoringService(config_module=self.config)
@@ -225,14 +228,6 @@ class SimulationInitializer(SimulationInitializerInterface):
         if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
             sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
         sim.world_state.public_manager = sim.public_manager
-
-        # TD-INIT-RACE: Registry must be linked BEFORE Bootstrapper runs.
-        # Now that ALL System Agents (Gov, Bank, CB, PublicManager) are in sim.agents, we link the registry.
-        sim.agent_registry.set_state(sim.world_state)
-
-        # TD-LIFECYCLE-GHOST-FIRM: Atomic Account Registration for Initial Firms
-        for firm in sim.firms:
-            sim.settlement_system.register_account(sim.bank.id, firm.id)
 
         sim.central_bank_system = CentralBankSystem(
             central_bank_agent=sim.central_bank,
@@ -430,3 +425,39 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
         return sim
+
+    def _init_phase4_population(self, sim: Simulation) -> None:
+        """
+        Phase 4: Atomic Registration & Population Injection
+
+        - Registers agents into sim.agents (WorldState)
+        - Registers agents into AgentRegistry
+        - Creates Settlement Accounts
+        - Links SettlementSystem to Agents
+
+        Prevents TD-LIFECYCLE-GHOST-FIRM by ensuring no agent exists without a ledger account.
+        """
+        # Ensure sim.agents is initialized (it should be empty from WorldState)
+        if not sim.agents:
+            sim.agents = {}
+
+        # 1. Household Atomic Registration
+        for hh in sim.households:
+            sim.agents[hh.id] = hh
+            sim.agent_registry.register(hh)
+
+            # Guarantee Settlement Account Existence
+            # Use ID_BANK constant as sim.bank is not yet initialized
+            sim.settlement_system.register_account(ID_BANK, hh.id)
+            hh.settlement_system = sim.settlement_system
+
+        # 2. Firm Atomic Registration
+        for firm in sim.firms:
+            sim.agents[firm.id] = firm
+            sim.agent_registry.register(firm)
+
+            # Guarantee Settlement Account Existence BEFORE Bootstrapper
+            sim.settlement_system.register_account(ID_BANK, firm.id)
+            firm.settlement_system = sim.settlement_system
+
+        self.logger.info(f"Phase 4 Complete: Registered {len(sim.households)} Households and {len(sim.firms)} Firms atomically.")
