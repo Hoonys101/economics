@@ -96,15 +96,27 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
             if not is_panic and effective_offer < wage_floor:
                 self.logger.info(f'RESERVATION_WAGE_PURE | Household {state.id} refused labor. Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f}', extra={'tick': current_time, 'agent_id': state.id, 'tags': ['labor_refusal']})
             else:
+                # Phase 4.2: Reservation Wage & Talent Signal
+                price_pennies = int(desired_wage * 100)
+                price_limit = desired_wage
+
+                # Use shadow reservation wage if available (includes desperation decay)
+                if hasattr(state, 'shadow_reservation_wage_pennies') and state.shadow_reservation_wage_pennies > 0:
+                     price_pennies = state.shadow_reservation_wage_pennies
+                     price_limit = price_pennies / 100.0
+
                 orders.append(Order(
                     agent_id=state.id,
                     side='SELL',
                     item_id='labor',
                     quantity=1.0,
-                    price_pennies=int(desired_wage * 100),
-                    price_limit=desired_wage,
+                    price_pennies=price_pennies,
+                    price_limit=price_limit,
                     market_id='labor',
-                    metadata={'major': getattr(state, 'major', 'GENERAL')}
+                    metadata={
+                        'major': getattr(state, 'major', 'GENERAL'),
+                        'talent_score': getattr(state, 'talent_score', 1.0)
+                    }
                 ))
-                self.logger.info(f'Household {state.id} offers labor at wage {desired_wage:.2f}', extra={'tick': current_time, 'agent_id': state.id, 'tactic': chosen_tactic.name})
+                self.logger.info(f'Household {state.id} offers labor at wage {price_limit:.2f}', extra={'tick': current_time, 'agent_id': state.id, 'tactic': chosen_tactic.name})
         return DecisionOutputDTO(orders=orders, metadata=(chosen_tactic, chosen_aggressiveness))

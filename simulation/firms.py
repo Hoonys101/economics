@@ -1587,20 +1587,31 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
             offered_wage = int(base_wage * (1 + wage_premium))
 
-            orders.append(Order(
-                agent_id=self.id,
-                side='BUY',
-                item_id='labor',
-                quantity=float(intent.hiring_target),
-                price_pennies=offered_wage,
-                price_limit=float(offered_wage)/100.0,
-                market_id='labor',
-                metadata={
-                    'major': context.major, # Phase 4.1: Use Major instead of Specialization
-                    'specialization': context.specialization, # Keep specialization for debugging/specific matching if needed
-                    'required_education': 0 # Could be dynamic based on tech level
-                }
-            ))
+            # Phase 4.2: Liquidity Pre-flight Check
+            projected_cost = offered_wage * intent.hiring_target
+            current_cash = self.financial_component.get_balance(DEFAULT_CURRENCY)
+
+            if current_cash >= projected_cost:
+                orders.append(Order(
+                    agent_id=self.id,
+                    side='BUY',
+                    item_id='labor',
+                    quantity=float(intent.hiring_target),
+                    price_pennies=offered_wage,
+                    price_limit=float(offered_wage)/100.0,
+                    market_id='labor',
+                    metadata={
+                        'major': context.major, # Phase 4.1: Use Major instead of Specialization
+                        'specialization': context.specialization, # Keep specialization for debugging/specific matching if needed
+                        'required_education': 0, # Could be dynamic based on tech level
+                        'is_liquidity_verified': True
+                    }
+                ))
+            else:
+                self.logger.warning(
+                    f"Firm {self.id} skipped hiring due to liquidity constraint. Needed {projected_cost}, has {current_cash}.",
+                    extra={"tags": ["hr", "liquidity_block"]}
+                )
         return orders
 
     def _build_sales_context(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> SalesContextDTO:

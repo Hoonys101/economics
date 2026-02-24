@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 SHADOW_WAGE_DECAY = 0.95
 SHADOW_WAGE_TARGET_WEIGHT = 0.05
 SHADOW_WAGE_UNEMPLOYED_DECAY = 0.02
+DESPERATION_THRESHOLD_TICKS = 20
+DESPERATION_WAGE_DECAY = 0.95
 HOUSING_CHECK_FREQUENCY = 30
 DEFAULT_FOOD_PRICE_ESTIMATE = 10.0
 DEFAULT_SURVIVAL_BUDGET_PENNIES = 5000 # 50.00
@@ -61,8 +63,24 @@ class BudgetEngine(IBudgetEngine):
             new_shadow = state.shadow_reservation_wage_pennies * SHADOW_WAGE_DECAY + target * SHADOW_WAGE_TARGET_WEIGHT
             state.shadow_reservation_wage_pennies = int(new_shadow)
         else:
-            state.shadow_reservation_wage_pennies = int(state.shadow_reservation_wage_pennies * (1.0 - SHADOW_WAGE_UNEMPLOYED_DECAY))
+            # Phase 4.2: Desperation Decay
+            unemployment_duration = 0
+            if state.last_fired_tick > 0:
+                 unemployment_duration = current_tick - state.last_fired_tick
+
+            decay_factor = 1.0 - SHADOW_WAGE_UNEMPLOYED_DECAY
+            if unemployment_duration > DESPERATION_THRESHOLD_TICKS:
+                 decay_factor = DESPERATION_WAGE_DECAY
+
+            state.shadow_reservation_wage_pennies = int(state.shadow_reservation_wage_pennies * decay_factor)
+
+            # Floor at 1 penny, regardless of min_wage config if desperate
             min_wage = config.household_min_wage_demand if hasattr(config, 'household_min_wage_demand') else 0
+
+            if unemployment_duration > DESPERATION_THRESHOLD_TICKS:
+                 # Desperation overrides min wage config, floor is 1 penny
+                 min_wage = 1
+
             if state.shadow_reservation_wage_pennies < min_wage:
                 state.shadow_reservation_wage_pennies = min_wage
 
