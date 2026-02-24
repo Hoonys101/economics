@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from modules.government.dtos import GovernmentSensoryDTO
 
 class IGovernmentPolicy(ABC):
     """
@@ -8,7 +11,7 @@ class IGovernmentPolicy(ABC):
     """
     
     @abstractmethod
-    def decide(self, government: Any, sensory_data: Any, current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
+    def decide(self, government: Any, sensory_data: Optional["GovernmentSensoryDTO"], current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
         """
         Analyzes economic conditions to determine policy (rates, tax, budget).
         

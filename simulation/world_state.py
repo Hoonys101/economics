@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from simulation.systems.event_system import EventSystem
     from simulation.systems.sensory_system import SensorySystem
     from simulation.systems.settlement_system import SettlementSystem
+    from modules.finance.api import ISettlementSystem
     from simulation.systems.commerce_system import CommerceSystem
     from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
     from modules.analysis.crisis_monitor import CrisisMonitor
@@ -122,7 +123,7 @@ class WorldState:
         self.social_system: Optional[SocialSystem] = None
         self.event_system: Optional[EventSystem] = None
         self.sensory_system: Optional[SensorySystem] = None
-        self.settlement_system: Optional[SettlementSystem] = None
+        self.settlement_system: Optional[ISettlementSystem] = None
         self.agent_registry: Optional[IAgentRegistry] = None # Added for explicit typing
         self.saga_orchestrator: Optional[ISagaOrchestrator] = None
         self.monetary_ledger: Optional[IMonetaryLedger] = None

@@ -15,7 +15,8 @@ from simulation.models import Transaction
 from simulation.dtos.commands import GodCommandDTO
 from modules.system.services.command_service import CommandService
 from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, IGlobalRegistry, IAgentRegistry
+from modules.finance.api import ISettlementSystem
 
 from simulation.db.logger import SimulationLogger
 import simulation
@@ -65,7 +66,7 @@ class Simulation:
 
         # Initialize SimulationLogger
         db_path = self.world_state.config_manager.get("simulation.database_name", "simulation_data.db")
-        self.simulation_logger = SimulationLogger(db_path)
+        self.simulation_logger: SimulationLogger = SimulationLogger(db_path)
         self.simulation_logger.run_id = self.world_state.run_id
         # Expose via global module attribute for access by agents
         simulation.logger = self.simulation_logger
@@ -304,7 +305,8 @@ class Simulation:
 
     def _calculate_total_money(self) -> float:
         """Legacy wrapper for WorldState.calculate_total_money"""
-        return self.world_state.calculate_total_money()
+        money_dict = self.world_state.calculate_total_money()
+        return float(money_dict.get(DEFAULT_CURRENCY, 0))
 
     def _process_transactions(self, transactions: List[Transaction]) -> None:
         """Legacy wrapper for ActionProcessor.process_transactions"""

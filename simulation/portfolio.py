@@ -11,9 +11,10 @@ class Portfolio:
         self.owner_id = owner_id
         self.holdings: Dict[int, Share] = {}  # firm_id -> Share
 
-    def add(self, firm_id: int, quantity: float, price: float):
+    def add(self, firm_id: int, quantity: float, price: int):
         """
         Adds shares to the portfolio, updating Weighted Average Cost (WAC).
+        Price must be in pennies (int).
         """
         if quantity <= 0:
             return
@@ -24,13 +25,16 @@ class Portfolio:
             total_qty = share.quantity + quantity
 
             share.quantity = total_qty
-            share.acquisition_price = total_cost / total_qty
+            if total_qty > 0:
+                share.acquisition_price = int(round(total_cost / total_qty))
+            else:
+                share.acquisition_price = 0
         else:
             self.holdings[firm_id] = Share(
                 firm_id=firm_id,
                 holder_id=self.owner_id,
                 quantity=quantity,
-                acquisition_price=price
+                acquisition_price=int(price)
             )
 
     def get_stock_quantity(self, firm_id: int) -> float:
