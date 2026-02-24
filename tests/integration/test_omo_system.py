@@ -203,8 +203,8 @@ def test_process_omo_purchase_transaction(omo_setup):
 
     # Verify Gov Ledger Updated via MonetaryLedger (SSoT for M2 Tracking)
     delta = gov_agent.monetary_ledger.get_monetary_delta()
-    # 100 pennies created. get_monetary_delta returns Dollars (1.00)
-    assert delta == 1.00
+    # 100 pennies created. get_monetary_delta returns Pennies (100)
+    assert delta == 100
 
 def test_process_omo_sale_transaction(omo_setup):
     cb_system, tp, state, cb_agent, gov_agent, household, settlement = omo_setup
@@ -239,5 +239,5 @@ def test_process_omo_sale_transaction(omo_setup):
 
     # Verify Gov Ledger Updated (Burning)
     delta = gov_agent.monetary_ledger.get_monetary_delta()
-    # 100 pennies destroyed. get_monetary_delta returns -1.00
-    assert delta == -1.00
+    # 100 pennies destroyed. get_monetary_delta returns Pennies (-100)
+    assert delta == -100

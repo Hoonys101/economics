@@ -45,7 +45,7 @@ class ProductionStateDTO:
     current_production: float
     productivity_factor: float
     production_target: float
-    capital_stock: float
+    capital_stock: int
     base_quality: float
     automation_level: float
     specialization: str
