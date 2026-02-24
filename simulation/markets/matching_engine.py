@@ -274,8 +274,8 @@ class OrderBookMatchingEngine(IMatchingEngine):
                 if market_id == 'labor' or market_id == 'research_labor':
                     trade_price_pennies = b_wrapper.dto.price_pennies
                 else:
-                    # TD-MARKET-FLOAT-TRUNC: Use round() instead of truncation to prevent deflationary bias
-                    trade_price_pennies = int(round((b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) / 2))
+                    # WO-STABILIZE-POST-MERGE: Revert to integer division (truncation) for strict integer math consistency
+                    trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
                 trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
                 trade_total_pennies = int(round(trade_price_pennies * trade_qty))
                 effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
@@ -355,8 +355,8 @@ class StockMatchingEngine(IMatchingEngine):
                 idx_s += 1
                 continue
             if b_order.dto.price_pennies >= s_order.dto.price_pennies:
-                # TD-MARKET-FLOAT-TRUNC: Use round() instead of truncation
-                trade_price_pennies = int(round((b_order.dto.price_pennies + s_order.dto.price_pennies) / 2))
+                # WO-STABILIZE-POST-MERGE: Revert to integer division (truncation) for strict integer math consistency
+                trade_price_pennies = (b_order.dto.price_pennies + s_order.dto.price_pennies) // 2
                 trade_qty = min(b_order.remaining_qty, s_order.remaining_qty)
                 trade_total_pennies = int(round(trade_price_pennies * trade_qty))
                 effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0

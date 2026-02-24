@@ -279,7 +279,8 @@ class SimulationInitializer(SimulationInitializerInterface):
         self.logger.info('GENESIS | Starting initial wealth distribution...')
         distributed_count = 0
         for agent_id, amount in self.initial_balances.items():
-            if agent_id in sim.agents and amount > 0:
+            # WO-STABILIZE-POST-MERGE: Type cast amount to int to handle Mock objects in tests
+            if agent_id in sim.agents and int(amount) > 0:
                 Bootstrapper.distribute_initial_wealth(central_bank=sim.central_bank, target_agent=sim.agents[agent_id], amount=int(amount), settlement_system=sim.settlement_system)
                 distributed_count += 1
         self.logger.info(f'GENESIS | Distributed wealth to {distributed_count} agents.')
