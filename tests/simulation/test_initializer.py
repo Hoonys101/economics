@@ -84,9 +84,6 @@ class TestSimulationInitializer:
             patches['EscrowAgent'].return_value.id = ID_ESCROW
             patches['PublicManager'].return_value.id = ID_PUBLIC_MANAGER
 
-            print(f"DEBUG: ID_BANK={ID_BANK}")
-            print(f"DEBUG: patches['Bank'].return_value.id={patches['Bank'].return_value.id}")
-
             # Patch local imports at their source
             stack.enter_context(patch('modules.system.services.command_service.CommandService'))
             stack.enter_context(patch('modules.system.telemetry.TelemetryCollector'))
