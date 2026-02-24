@@ -476,6 +476,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         self.logger.info(f'GENESIS | Distributed wealth to {distributed_count} agents.')
         Bootstrapper.inject_initial_liquidity(firms=sim.firms, config=self.config, settlement_system=sim.settlement_system, central_bank=sim.central_bank)
 
+        if sim.bank.get_balance(DEFAULT_CURRENCY) <= 0:
+            self.logger.warning("GENESIS_ALERT | Bank has zero liquidity at startup. Settlement failure immintent.")
+
         sim.world_state.central_bank = sim.central_bank
         supply_dto = sim.world_state.calculate_total_money()
         sim.world_state.baseline_money_supply = float(supply_dto.total_m2_pennies)

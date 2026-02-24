@@ -2,6 +2,7 @@ from typing import List, Any, TYPE_CHECKING, Dict, Optional
 import logging
 from modules.system.api import DEFAULT_CURRENCY
 from modules.simulation.api import InventorySlot
+from modules.finance.utils.currency_math import round_to_pennies
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -94,7 +95,7 @@ class Bootstrapper:
         # 2. Capital Injection (Demand Side) - ALWAYS ALLOWED (via Transfer)
         current_balance = firm.wallet.get_balance(DEFAULT_CURRENCY)
         if current_balance < Bootstrapper.MIN_CAPITAL:
-            diff = int(Bootstrapper.MIN_CAPITAL - current_balance)
+            diff = round_to_pennies(Bootstrapper.MIN_CAPITAL - current_balance)
             if settlement_system and central_bank:
                 tx = settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
                 if tx is None:

@@ -62,7 +62,7 @@ taxation:
 # Bank & Finance Configuration
 # ----------------------------------------------------------------------
 bank:
-  initial_bank_assets: 1000000.0
+  initial_bank_assets: 5000000.0
   base_rate: 0.03
   initial_base_annual_rate: 0.05
   default_loan_term_ticks: 50
