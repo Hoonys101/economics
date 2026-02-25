@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING, Dict, List
-from modules.system.api import IAgentRegistry, IGlobalRegistry, IConfigurationRegistry, OriginType, RegistryValueDTO, RegistryObserver, RegistryEntry
+from modules.system.api import IAgentRegistry, IGlobalRegistry, IConfigurationRegistry, OriginType, RegistryValueDTO, RegistryObserver, RegistryEntry, ISystemAgentRegistry, IAgent, AgentID
 from modules.system.services.schema_loader import SchemaLoader
 from simulation.dtos.registry_dtos import ParameterSchemaDTO
 
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from simulation.agents import Agent
     from simulation.dtos.api import SimulationState
 
-class AgentRegistry(IAgentRegistry):
+class AgentRegistry(IAgentRegistry, ISystemAgentRegistry):
     def __init__(self):
         self._state: Optional[SimulationState] = None
 
@@ -23,11 +23,24 @@ class AgentRegistry(IAgentRegistry):
         if self._state is not None:
             self._state.agents[agent.id] = agent
 
+    def register_system_agent(self, agent: IAgent) -> None:
+        """Registers a system agent bypassing standard initialization constraints."""
+        if self._state is not None:
+            self._state.agents[agent.id] = agent
+
+    def get_system_agent(self, agent_id: AgentID) -> Optional[IAgent]:
+        """Retrieves a system agent, supporting ID 0."""
+        if self._state is None:
+            return None
+        return self._state.agents.get(agent_id)
+
     def get_agent(self, agent_id: Any) -> Optional[Agent]:
+        if agent_id is None:
+            return None
         if self._state is None:
             return None
         agent = self._state.agents.get(agent_id)
-        if agent:
+        if agent is not None:
              return agent
 
         # Check Estate Registry

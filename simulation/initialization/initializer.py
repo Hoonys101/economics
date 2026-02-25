@@ -239,6 +239,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Register Central Bank (Created earlier)
         if hasattr(sim, 'central_bank') and sim.central_bank:
              sim.agents[ID_CENTRAL_BANK] = sim.central_bank
+             sim.agent_registry.register_system_agent(sim.central_bank)
 
         sim.escrow_agent = EscrowAgent(id=ID_ESCROW)
         sim.agents[sim.escrow_agent.id] = sim.escrow_agent
@@ -249,6 +250,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.public_manager = PublicManager(config=self.config)
         if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
             sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
+            sim.agent_registry.register_system_agent(sim.public_manager)
         sim.world_state.public_manager = sim.public_manager
 
         # TD-INIT-RACE: Registry must be linked BEFORE Bootstrapper runs.
