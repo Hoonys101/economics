@@ -415,11 +415,54 @@ class IAccountRegistry(Protocol):
         ...
 
 @runtime_checkable
+class IMonetaryLedger(Protocol):
+    """
+    Single Source of Truth (SSoT) for M2 Money Supply tracking.
+    Records all authorized monetary expansions and contractions.
+    """
+    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Calculates total M2 = Circulating Cash + Total Deposits."""
+        ...
+
+    def get_expected_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Returns the authorized baseline money supply including all expansions."""
+        ...
+
+    def record_monetary_expansion(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Records authorized money creation (e.g., Central Bank OMO, Bank Loans)."""
+        ...
+
+    def record_monetary_contraction(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Records authorized money destruction (e.g., Loan Repayments, Central Bank QT)."""
+        ...
+
+    def set_expected_m2(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Sets the baseline M2 (e.g. at genesis)."""
+        ...
+
+    # Legacy Compatibility (Saga)
+    def record_credit_expansion(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None: ...
+    def record_credit_destruction(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None: ...
+
+
+@runtime_checkable
 class ISettlementSystem(IAccountRegistry, Protocol):
     """
     The transactional kernel for all financial operations.
     Responsible for ATOMIC, ZERO-SUM transfers between entities.
     """
+    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Calculates total M2 = Circulating Cash + Total Deposits."""
+        ...
+
+    def get_total_circulating_cash(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Returns total physical cash held by non-system agents (M0 outside bank reserves)."""
+        ...
+
+    def set_monetary_ledger(self, ledger: IMonetaryLedger) -> None:
+        """Injects the Monetary Ledger for tracking expansions/contractions."""
+        ...
+
     def transfer(
         self,
         debit_agent: IFinancialEntity,

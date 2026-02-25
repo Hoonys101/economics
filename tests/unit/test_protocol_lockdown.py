@@ -42,6 +42,10 @@ class MockSettlementSystem:
     def audit_total_m2(self, expected_total=None): # Added missing method
         return True
 
+    def get_total_m2_pennies(self, currency="USD") -> int: return 0
+    def get_total_circulating_cash(self, currency="USD") -> int: return 0
+    def set_monetary_ledger(self, ledger): pass
+
     def get_account_holders(self, bank_id):
         return []
     def get_agent_banks(self, agent_id):

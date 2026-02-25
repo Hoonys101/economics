@@ -158,7 +158,8 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.telemetry_collector = TelemetryCollector(sim.world_state.global_registry)
         sim.world_state.telemetry_collector = sim.telemetry_collector
         sim.world_state.global_registry.set('system.telemetry_collector', sim.telemetry_collector, origin=OriginType.SYSTEM)
-        sim.monetary_ledger = MonetaryLedger(sim.world_state.transactions, sim)
+        sim.monetary_ledger = MonetaryLedger(sim.world_state.transactions, sim, settlement_system=settlement_system)
+        sim.settlement_system.set_monetary_ledger(sim.monetary_ledger)
         sim.saga_orchestrator = SagaOrchestrator(monetary_ledger=sim.monetary_ledger, agent_registry=agent_registry)
         sim.world_state.monetary_ledger = sim.monetary_ledger
         sim.world_state.saga_orchestrator = sim.saga_orchestrator
@@ -263,7 +264,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Wire Settlement System to LLR (Wave 5 Stabilization)
         sim.settlement_system.set_monetary_authority(sim.central_bank_system)
 
-        sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system, monetary_authority=sim.central_bank_system)
+        sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system, monetary_authority=sim.central_bank_system, monetary_ledger=sim.monetary_ledger)
         sim.government.finance_system = sim.finance_system
         sim.bank.set_finance_system(sim.finance_system)
 
@@ -487,6 +488,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.world_state.central_bank = sim.central_bank
         supply_dto = sim.world_state.calculate_total_money()
         sim.world_state.baseline_money_supply = int(supply_dto.total_m2_pennies)
+        sim.monetary_ledger.set_expected_m2(sim.world_state.baseline_money_supply)
         self.logger.info(f'Initial baseline money supply established: {sim.world_state.baseline_money_supply}')
 
         Bootstrapper.force_assign_workers(sim.firms, sim.households)

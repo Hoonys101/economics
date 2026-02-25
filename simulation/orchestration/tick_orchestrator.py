@@ -240,25 +240,22 @@ class TickOrchestrator:
         # Money Supply Verification (Post-Tick) & M2 Leak Calculation
         m2_leak_delta = 0.0
         if state.time >= 1:
-            # WO-220: Repair Currency Holders Sync
-            # Rebuilds state.currency_holders from state.agents to ensure M2 integrity.
-            # TD-030: Removed _rebuild_currency_holders to enforce StrictCurrencyRegistry.
-            # LifecycleManager is now responsible for maintaining this list incrementally.
-            # self._rebuild_currency_holders(state)
+            # SSoT M2 Check via MonetaryLedger
+            current_money = 0
+            expected_money = 0
 
-            total_hh = sum(h.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) for h in state.households)
-            total_firm = sum(f.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) for f in state.firms)
-            gov_assets = state.government.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0)
-            cb_assets = state.central_bank.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) if state.central_bank else 0.0
-            bank_assets = state.bank.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) if state.bank else 0.0
-
-            state.logger.debug(f"M2_BREAKDOWN | HH: {total_hh}, Firms: {total_firm}, Gov: {gov_assets}, CB: {cb_assets}, Bank: {bank_assets}")
-
-            supply_dto = state.calculate_total_money()
-            current_money = int(supply_dto.total_m2_pennies)
-            expected_money = int(state.baseline_money_supply)
-            if hasattr(state.government, "get_monetary_delta"):
-                expected_money += int(state.government.get_monetary_delta(DEFAULT_CURRENCY))
+            if state.monetary_ledger:
+                current_money = state.monetary_ledger.get_total_m2_pennies(DEFAULT_CURRENCY)
+                expected_money = state.monetary_ledger.get_expected_m2_pennies(DEFAULT_CURRENCY)
+                # Update baseline for next tick (though ledger tracks it continuously now)
+                state.baseline_money_supply = expected_money
+            else:
+                # Fallback to legacy calculation
+                supply_dto = state.calculate_total_money()
+                current_money = int(supply_dto.total_m2_pennies)
+                expected_money = int(state.baseline_money_supply)
+                if hasattr(state.government, "get_monetary_delta"):
+                    expected_money += int(state.government.get_monetary_delta(DEFAULT_CURRENCY))
 
             m2_leak_delta = current_money - expected_money
 
@@ -272,12 +269,6 @@ class TickOrchestrator:
                  state.logger.warning(msg, extra=extra_data)
             else:
                  state.logger.info(msg, extra=extra_data)
-
-            # Update baseline for next tick to accumulate authorized changes
-            # This ensures 'Expected' follows the authorized expansion path
-            if hasattr(state.government, "get_monetary_delta"):
-                authorized_delta = int(state.government.get_monetary_delta(DEFAULT_CURRENCY))
-                state.baseline_money_supply += authorized_delta
 
             # Track Economics
             if state.tracker:

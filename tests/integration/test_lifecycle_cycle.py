@@ -60,6 +60,8 @@ class TestLifecycleCycle:
         state.stress_scenario_config = None
         state.saga_orchestrator = MagicMock()
         state.monetary_ledger = MagicMock()
+        state.monetary_ledger.get_total_m2_pennies.return_value = 1000
+        state.monetary_ledger.get_expected_m2_pennies.return_value = 1000
         state.shareholder_registry = MagicMock()
         state.global_registry = MagicMock()
         state.inequality_tracker = MagicMock()

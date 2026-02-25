@@ -7,7 +7,8 @@ from modules.finance.api import (
     IFinancialAgent, IFinancialEntity, IBank, InsufficientFundsError,
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
     IMonetaryAuthority, IEconomicMetricsService, IPanicRecorder, ICentralBank,
-    FXMatchDTO, IAccountRegistry, FloatIncursionError, ZeroSumViolationError
+    FXMatchDTO, IAccountRegistry, FloatIncursionError, ZeroSumViolationError,
+    IMonetaryLedger
 )
 from modules.finance.registry.account_registry import AccountRegistry
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry, ISystemFinancialAgent
@@ -53,12 +54,16 @@ class SettlementSystem(IMonetaryAuthority):
         self.estate_registry = estate_registry # Graveyard for dead agents
         self.panic_recorder: Optional[IPanicRecorder] = None # Injected by SimulationInitializer
         self.monetary_authority: Optional[ICentralBank] = None # Added for LLR Linkage
+        self.monetary_ledger: Optional[IMonetaryLedger] = None # WO-IMPL-FINANCIAL-FIX-PH33
 
         # Ledger Engine (Initialized lazily)
         self._transaction_engine: Optional[LedgerEngine] = None
 
         # TD-INT-STRESS-SCALE: Account Registry for Bank Run Simulation
         self.account_registry = account_registry or AccountRegistry()
+
+    def set_monetary_ledger(self, ledger: IMonetaryLedger) -> None:
+        self.monetary_ledger = ledger
 
     def set_monetary_authority(self, authority: ICentralBank) -> None:
         """Sets the monetary authority (Central Bank System) for LLR operations."""
@@ -175,6 +180,52 @@ class SettlementSystem(IMonetaryAuthority):
         # Wave 5 Phase 3: Reduce noise for missing agents
         self.logger.debug(f"get_balance: Agent {agent_id} not found or Registry not linked or Agent not IFinancialAgent.")
         return 0
+
+    def get_total_circulating_cash(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """
+        Returns total physical cash held by non-bank agents (M0 outside bank reserves).
+        """
+        if not self.agent_registry: return 0
+
+        agents = self.agent_registry.get_all_financial_agents()
+        total_cash = 0
+
+        for agent in agents:
+            # Skip Central Bank (M0 source)
+            if str(agent.id) == str(ID_CENTRAL_BANK):
+                continue
+
+            # Skip Commercial Banks (Reserves)
+            if isinstance(agent, IBank):
+                continue
+
+            balance = 0
+            if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
+                balance = agent.balance_pennies
+            elif isinstance(agent, IFinancialAgent):
+                balance = agent.get_balance(currency)
+            elif isinstance(agent, ICurrencyHolder):
+                 assets = agent.get_assets_by_currency()
+                 balance = assets.get(currency, 0)
+
+            if balance > 0:
+                total_cash += balance
+
+        return total_cash
+
+    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Calculates total M2 = Circulating Cash + Total Deposits."""
+        if not self.agent_registry: return 0
+
+        circulating_cash = self.get_total_circulating_cash(currency)
+
+        total_deposits = 0
+        agents = self.agent_registry.get_all_financial_agents()
+        for agent in agents:
+            if isinstance(agent, IBank):
+                total_deposits += agent.get_total_deposits()
+
+        return circulating_cash + total_deposits
 
     def get_assets_by_currency(self) -> Dict[str, int]:
         """
@@ -611,6 +662,11 @@ class SettlementSystem(IMonetaryAuthority):
                 )
                 tx = self._create_transaction_record(source.id, sink_authority.id, amount, reason, tick)
                 tx.transaction_type = "money_destruction"
+
+                # SSoT Update: Record Contraction
+                if self.monetary_ledger:
+                    self.monetary_ledger.record_monetary_contraction(amount, source=reason, currency=currency)
+
                 return tx
             except Exception as e:
                 self.logger.error(f"BURN_FAIL | {e}")
@@ -653,6 +709,11 @@ class SettlementSystem(IMonetaryAuthority):
             reason=reason,
             tick=tick
         )
+
+        # SSoT Update: Record Expansion
+        if tx and self.monetary_ledger:
+            self.monetary_ledger.record_monetary_expansion(amount, source=reason, currency=DEFAULT_CURRENCY)
+
         return tx is not None
 
     def _emit_zero_sum_check(self, debit_agent_id: AgentID, credit_agent_id: AgentID, amount: int) -> None:

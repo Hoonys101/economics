@@ -4,7 +4,7 @@ import uuid
 from modules.finance.api import (
     IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialAgent, IFinancialFirm,
     InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanDTO,
-    IConfig, IBank, IGovernmentFinance, IMonetaryAuthority, IBankRegistry
+    IConfig, IBank, IGovernmentFinance, IMonetaryAuthority, IBankRegistry, IMonetaryLedger
 )
 from modules.finance.domain import AltmanZScoreCalculator
 from modules.analysis.fiscal_monitor import FiscalMonitor
@@ -40,13 +40,14 @@ class FinanceSystem(IFinanceSystem):
     MIGRATION: Uses integer pennies.
     """
 
-    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None, bank_registry: Optional[IBankRegistry] = None, monetary_authority: Optional[Any] = None):
+    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None, bank_registry: Optional[IBankRegistry] = None, monetary_authority: Optional[Any] = None, monetary_ledger: Optional[IMonetaryLedger] = None):
         self.government = government
         self.central_bank = central_bank
         self.bank = bank
         self.config_module = config_module
         self.settlement_system = settlement_system
         self.monetary_authority = monetary_authority
+        self.monetary_ledger = monetary_ledger
 
         self.fiscal_monitor = FiscalMonitor()
 
@@ -178,6 +179,10 @@ class FinanceSystem(IFinanceSystem):
              self.settlement_system.register_account(lender_id, borrower_id)
 
         # loan_state is already LoanDTO (LoanStateDTO alias)
+        # SSoT Update: Record Expansion
+        if self.monetary_ledger:
+            self.monetary_ledger.record_monetary_expansion(amount, source=f"loan_{loan_id}", currency=DEFAULT_CURRENCY)
+
         return loan_state, result.generated_transactions
 
     def get_customer_balance(self, bank_id: AgentID, customer_id: AgentID) -> int:
@@ -217,6 +222,11 @@ class FinanceSystem(IFinanceSystem):
                 loan.remaining_principal_pennies -= applied
                 if loan.remaining_principal_pennies <= 0:
                      loan.remaining_principal_pennies = 0
+
+                # SSoT Update: Record Contraction
+                if self.monetary_ledger and applied > 0:
+                    self.monetary_ledger.record_monetary_contraction(applied, source=f"repayment_{loan_id}", currency=DEFAULT_CURRENCY)
+
                 return applied
         return 0
 
@@ -239,6 +249,10 @@ class FinanceSystem(IFinanceSystem):
             loan.remaining_principal_pennies -= applied
             remaining -= applied
             total_applied += applied
+
+            # SSoT Update: Record Contraction
+            if self.monetary_ledger and applied > 0:
+                self.monetary_ledger.record_monetary_contraction(applied, source=f"repayment_{loan.loan_id}", currency=DEFAULT_CURRENCY)
 
         return total_applied
 

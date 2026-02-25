@@ -250,11 +250,10 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         if success:
              # TD-030: M2 Integrity - Record Authorized Expansion for Mortgage Disbursal
              if principal > 0 and self.monetary_ledger:
-                 self.monetary_ledger.record_credit_expansion(
-                     amount=principal,
-                     saga_id=saga.saga_id,
-                     loan_id=saga.mortgage_approval.loan_id,
-                     reason="mortgage_disbursal"
+                 self.monetary_ledger.record_monetary_expansion(
+                     amount_pennies=principal_pennies,
+                     source=f"saga_{saga.saga_id}_loan_{saga.mortgage_approval.loan_id}_mortgage_disbursal",
+                     currency=DEFAULT_CURRENCY
                  )
              elif principal > 0:
                  # Fallback / Warning: Monetary Ledger missing
@@ -326,11 +325,10 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
 
         # TD-030: M2 Integrity - Record Destruction
         if principal > 0 and self.monetary_ledger:
-             self.monetary_ledger.record_credit_destruction(
-                 amount=principal,
-                 saga_id=saga.saga_id,
-                 loan_id=saga.mortgage_approval.loan_id,
-                 reason="mortgage_rollback"
+             self.monetary_ledger.record_monetary_contraction(
+                 amount_pennies=principal_pennies,
+                 source=f"saga_{saga.saga_id}_loan_{saga.mortgage_approval.loan_id}_mortgage_rollback",
+                 currency=DEFAULT_CURRENCY
              )
         elif principal > 0:
              logger.warning(f"SAGA_M2_LEAK | MonetaryLedger missing. Credit destruction of {principal} not recorded for saga {saga.saga_id}.")
