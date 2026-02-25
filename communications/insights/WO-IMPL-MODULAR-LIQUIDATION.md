@@ -32,4 +32,22 @@ We resolved this by adding a `set_settlement_system` dependency injection method
 
 ## 3. Test Evidence
 
-(To be populated after execution)
+```
+tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_asset_rich_cash_poor_liquidation
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.liquidation_manager:liquidation_manager.py:81 LIQUIDATION_START | Agent 1 starting liquidation. Assets: 80000.0, Total Claims: 500
+INFO     simulation.systems.liquidation_manager:liquidation_manager.py:126 LIQUIDATION_WATERFALL | Tier 1 fully paid. Remaining cash: 79500.0
+PASSED                                                                   [ 33%]
+tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_severance_priority_over_shareholders
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.liquidation_manager:liquidation_manager.py:81 LIQUIDATION_START | Agent 1 starting liquidation. Assets: 5000.0, Total Claims: 5614
+INFO     simulation.systems.liquidation_manager:liquidation_manager.py:139 LIQUIDATION_WATERFALL | Tier 1 partially paid (Pro-Rata). Cash exhausted.
+PASSED                                                                   [ 66%]
+tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_waterfall_tiers
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.liquidation_manager:liquidation_manager.py:81 LIQUIDATION_START | Agent 1 starting liquidation. Assets: 10000.0, Total Claims: 7003
+INFO     simulation.systems.liquidation_manager:liquidation_manager.py:126 LIQUIDATION_WATERFALL | Tier 1 fully paid. Remaining cash: 7997.0
+INFO     simulation.systems.liquidation_manager:liquidation_manager.py:126 LIQUIDATION_WATERFALL | Tier 2 fully paid. Remaining cash: 2997.0
+INFO     simulation.systems.liquidation_manager:liquidation_manager.py:185 LIQUIDATION_WATERFALL | Tier 5 (Equity) distributed 1498.50 USD and foreign assets: {} to shareholders.
+PASSED                                                                   [100%]
+```

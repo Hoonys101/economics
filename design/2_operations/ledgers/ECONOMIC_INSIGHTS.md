@@ -70,6 +70,11 @@
 - **[2026-02-14] Zero-Sum Bank Runs**
     - Validated that `FORCE_WITHDRAW_ALL` events must strictly follow a two-step process: 1) Liability Reduction (Deposit write-down), 2) Asset Transfer (Cash payout). This prevents "Magic Money" creation where agent cash increases without a corresponding bank liability decrease.
     - [Insight Report](../_archive/insights/2026-02-14_Macro_Shock_Stress_Test.md)
+- **[2026-02-25] Mint-to-Buy Liquidation Pattern (PublicManager)**
+    - **Phenomenon**: Firm bankruptcies frequently aborted (`LIQUIDATION_ASSET_SALE_FAIL`) because the `PublicManager` lacked sufficient treasury funds to execute the asset buyout, leading to an "Asset-Rich, Cash-Poor" liquidity trap.
+    - **Root Cause**: The `PublicManager` was constrained by standard market transfer mechanics, unable to perform its duty as a receiver without a heavily pre-funded treasury.
+    - **Solution**: The `PublicManager` was elevated to implement the `ILiquidator` protocol. The `SettlementSystem`'s `create_and_transfer` logic was expanded to recognize `ILiquidator` instances alongside the `ICentralBank` as authorized authorities for targeted monetary expansion.
+    - **Lesson Learned**: During systemic distress, Asset Recovery Systems must act as Liquidity Providers of Last Resort. By explicitly coupling asset recovery to scoped M2 expansion ("Mint-to-Buy"), we prevent unintended systemic liquidity contraction while maintaining transparent SSoT records via the `MonetaryLedger`.
 
 ---
 

@@ -292,6 +292,8 @@ class PublicManager(IAssetRecoverySystem, ILiquidator, ICurrencyHolder, IFinanci
             )
 
             if tx:
+                # Update accounting for bailout cost (Deficit Spending)
+                self.cumulative_deficit += result.total_paid_pennies
                 self.logger.info(f"LIQUIDATION_BAILOUT | PublicManager minted {result.total_paid_pennies} to buy assets from Agent {bankrupt_agent.id}.")
             else:
                 self.logger.error(f"LIQUIDATION_BAILOUT_FAIL | Failed to mint transfer for Agent {bankrupt_agent.id}.")
