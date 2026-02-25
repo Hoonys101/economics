@@ -183,64 +183,69 @@ class SettlementSystem(IMonetaryAuthority):
 
     def get_total_circulating_cash(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         """
-        Returns total physical cash held by non-bank agents (M0 outside bank reserves).
-        Includes Estate Agents to prevent M2 Leak upon death.
+        Deprecated: Use get_total_m2_pennies() instead.
+        Previously returned physical cash held by non-bank agents.
+        Now aliases to get_total_m2_pennies() for backward compatibility.
         """
-        total_cash = 0
+        return self.get_total_m2_pennies(currency)
+
+    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """
+        Calculates total M2 = Sum(balances of Household + Firm + Government + Estate Registry agents).
+        Strictly excludes ID_SYSTEM, ID_CENTRAL_BANK, ID_ESCROW, ID_PUBLIC_MANAGER, and any agent implementing IBank.
+        Ensures agents are not counted twice (e.g. if in both registries).
+        """
+        total_m2 = 0
+        processed_ids = set()
+
+        # System Agents to Exclude
+        excluded_ids = {str(ID_SYSTEM), str(ID_CENTRAL_BANK), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
+        if self.bank:
+             excluded_ids.add(str(self.bank.id))
+
+        def process_agent_balance(agent: Any) -> int:
+            if not agent: return 0
+
+            # 0. Deduplication
+            if agent.id in processed_ids:
+                return 0
+            processed_ids.add(agent.id)
+
+            # 1. ID Check
+            if str(agent.id) in excluded_ids:
+                return 0
+
+            # 2. Type Check (Exclude Banks - Reserves are M0)
+            if isinstance(agent, IBank):
+                # self.logger.debug(f"M2_CALC | Excluded Bank by Type: {agent.id}")
+                return 0
+
+            # 3. Get Balance
+            balance = 0
+            # Prefer IFinancialEntity for direct access
+            if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
+                balance = agent.balance_pennies
+            # Fallback to IFinancialAgent
+            elif isinstance(agent, IFinancialAgent):
+                balance = agent.get_balance(currency)
+            # Fallback to ICurrencyHolder
+            elif isinstance(agent, ICurrencyHolder):
+                 balance = agent.get_assets_by_currency().get(currency, 0)
+
+            return balance
 
         # 1. Active Agents
         if self.agent_registry:
             agents = self.agent_registry.get_all_financial_agents()
-            system_ids = {str(ID_CENTRAL_BANK), str(ID_SYSTEM), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
-
             for agent in agents:
-                # Skip System Agents
-                if str(agent.id) in system_ids:
-                    continue
+                total_m2 += process_agent_balance(agent)
 
-                # Skip Commercial Banks (Reserves)
-                if isinstance(agent, IBank):
-                    continue
-
-                balance = 0
-                if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
-                    balance = agent.balance_pennies
-                elif isinstance(agent, IFinancialAgent):
-                    balance = agent.get_balance(currency)
-                elif isinstance(agent, ICurrencyHolder):
-                     assets = agent.get_assets_by_currency()
-                     balance = assets.get(currency, 0)
-
-                if balance > 0:
-                    total_cash += balance
-
-        # 2. Estate Agents (Liquidation Holding)
+        # 2. Estate Agents
         if self.estate_registry:
             for agent in self.estate_registry.get_all_estate_agents():
-                balance = 0
-                if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
-                    balance = agent.balance_pennies
-                elif isinstance(agent, IFinancialAgent):
-                    balance = agent.get_balance(currency)
+                total_m2 += process_agent_balance(agent)
 
-                if balance > 0:
-                    total_cash += balance
-
-        return total_cash
-
-    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
-        """Calculates total M2 = Circulating Cash + Total Deposits."""
-        if not self.agent_registry: return 0
-
-        circulating_cash = self.get_total_circulating_cash(currency)
-
-        total_deposits = 0
-        agents = self.agent_registry.get_all_financial_agents()
-        for agent in agents:
-            if isinstance(agent, IBank):
-                total_deposits += agent.get_total_deposits()
-
-        return circulating_cash + total_deposits
+        return total_m2
 
     def get_assets_by_currency(self) -> Dict[str, int]:
         """
@@ -743,56 +748,22 @@ class SettlementSystem(IMonetaryAuthority):
         )
 
     def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:
-        if not self.agent_registry: return False
-
-        agents = self.agent_registry.get_all_financial_agents()
-        total_cash = 0
-        total_liabilities = 0
-        bank_reserves = 0
-        total_deposits = 0
-
-        for agent in agents:
-            if isinstance(agent, IFinancialAgent):
-                agent_id = agent.id
-            else:
-                continue
-
-            if agent_id == ID_CENTRAL_BANK or str(agent_id) == str(ID_CENTRAL_BANK):
-                continue
-
-            current_balance = 0
-            if isinstance(agent, IFinancialEntity):
-                current_balance = agent.balance_pennies
-            elif isinstance(agent, IFinancialAgent):
-                current_balance = agent.get_balance(DEFAULT_CURRENCY)
-            elif isinstance(agent, ICurrencyHolder):
-                 assets = agent.get_assets_by_currency()
-                 current_balance = assets.get(DEFAULT_CURRENCY, 0)
-
-            if current_balance >= 0:
-                total_cash += current_balance
-            else:
-                total_liabilities += current_balance
-
-            if isinstance(agent, IBank):
-                bank_reserves += current_balance
-                total_deposits += agent.get_total_deposits()
-
-        # M2 = Circulating Cash + Deposits + Liabilities
-        # Liabilities are negative, so adding them preserves the zero-sum ledger
-        total_m2 = (total_cash - bank_reserves) + total_deposits + total_liabilities
+        """
+        Verifies that the current M2 matches the expected total.
+        logs MONEY_SUPPLY_CHECK tag for forensics.
+        """
+        current_m2 = self.get_total_m2_pennies(DEFAULT_CURRENCY)
 
         if expected_total is not None:
-            if total_m2 != expected_total:
+            if current_m2 != expected_total:
                 self.logger.critical(
-                    f"AUDIT_INTEGRITY_FAILURE | M2 Mismatch! Expected: {expected_total}, Actual: {total_m2}, Diff: {total_m2 - expected_total} "
-                    f"(Cash: {total_cash}, Deposits: {total_deposits}, Liabilities: {total_liabilities})",
-                    extra={"expected": expected_total, "actual": total_m2, "diff": total_m2 - expected_total}
+                    f"AUDIT_INTEGRITY_FAILURE | M2 Mismatch! Expected: {expected_total}, Actual: {current_m2}, Diff: {current_m2 - expected_total}",
+                    extra={"expected": expected_total, "actual": current_m2, "diff": current_m2 - expected_total, "tag": "MONEY_SUPPLY_CHECK"}
                 )
                 return False
             else:
-                self.logger.info(f"AUDIT_PASS | M2 Verified: {total_m2} (Cash: {total_cash}, Liab: {total_liabilities})")
+                self.logger.info(f"AUDIT_PASS | M2 Verified: {current_m2} (Delta: 0)", extra={"tag": "MONEY_SUPPLY_CHECK"})
                 return True
         else:
-             self.logger.info(f"AUDIT_PASS | M2 Current: {total_m2} (Cash: {total_cash}, Liab: {total_liabilities}, No expectation set)")
+             self.logger.info(f"AUDIT_PASS | M2 Current: {current_m2} (No expectation set)", extra={"tag": "MONEY_SUPPLY_CHECK"})
              return True

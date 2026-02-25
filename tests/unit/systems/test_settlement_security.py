@@ -114,19 +114,18 @@ def test_audit_total_m2_strict_protocol():
     bank = StrictMockBank(id=1, balance=1000, deposits=5000)
     agent = StrictFinancialAgent(id=2, balance=200) # Cash in circulation
 
-    # M2 = (Total Cash - Bank Reserves) + Total Deposits + Escrow
-    # Cash: Bank(1000) + Agent(200) = 1200
-    # Bank Reserves: 1000
-    # Deposits: 5000
-    # Escrow: 0
-    # M2 = (1200 - 1000) + 5000 + 0 = 5200
+    # New M2 Definition: Sum of Public Balances.
+    # Bank (1000) is Excluded.
+    # Deposits (5000) are NOT added separately.
+    # Agent (200) is Included.
+    # M2 = 200.
 
     # Mock Registry
     mock_registry = MagicMock()
     mock_registry.get_all_financial_agents.return_value = [bank, agent]
     system.agent_registry = mock_registry
 
-    assert system.audit_total_m2(expected_total=5200) == True
+    assert system.audit_total_m2(expected_total=200) == True
 
 def test_transfer_memo_validation():
     """

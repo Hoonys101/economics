@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry, DEFAULT_CURRENCY # Added for Phase 33
 from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
-from modules.finance.api import IShareholderRegistry
+from modules.finance.api import IShareholderRegistry, IBank
 from modules.simulation.api import AgentID, IEstateRegistry
 from modules.governance.api import SystemCommand
 from simulation.dtos.commands import GodCommandDTO
@@ -196,6 +196,9 @@ class WorldState:
         # M2 from SSoT
         if self.monetary_ledger:
             total_m2_pennies = self.monetary_ledger.get_total_m2_pennies(DEFAULT_CURRENCY)
+        else:
+             # Re-run full calculation if ledger missing
+             return self._legacy_calculate_total_money()
 
         # Calculate System Debt (Legacy Iteration)
         # Helper to process an agent
@@ -213,29 +216,29 @@ class WorldState:
                 system_debt_pennies += abs(val)
 
         # 1. Active Agents in Registry
-        system_agent_ids = {ID_CENTRAL_BANK, ID_SYSTEM, getattr(self.bank, 'id', -999) if self.bank else -999}
+        excluded_ids = {str(ID_SYSTEM), str(ID_CENTRAL_BANK), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
+        if self.bank:
+             excluded_ids.add(str(self.bank.id))
         
         for agent in self.agents.values():
             # Dead Agent Guard (Strict)
             if hasattr(agent, 'is_active') and not agent.is_active:
                 continue
             
-            # Exclude System Agents from Debt check if needed (System Debt usually implies Gov Debt, but here it sums private debt?)
-            # "system_debt_pennies" usually means "Total Debt in the System".
-            if hasattr(agent, 'id') and agent.id in system_agent_ids:
+            # Exclude System Agents
+            if hasattr(agent, 'id') and str(agent.id) in excluded_ids:
                 continue
-                
+
+            # Exclude IBank
+            if isinstance(agent, IBank):
+                continue
+
             process_debt(agent)
 
         # 2. Estate Agents
         if self.estate_registry:
             for agent in self.estate_registry.get_all_estate_agents():
                 process_debt(agent)
-
-        # Fallback if Ledger missing (should not happen in initialized sim)
-        if not self.monetary_ledger:
-             # Re-run full calculation if ledger missing
-             return self._legacy_calculate_total_money()
 
         return MoneySupplyDTO(
             total_m2_pennies=total_m2_pennies,
@@ -247,24 +250,31 @@ class WorldState:
         # Fallback logic mirroring original implementation
         total_m2_pennies = 0
         system_debt_pennies = 0
+        processed_ids = set()
 
         def process_agent(agent):
             nonlocal total_m2_pennies, system_debt_pennies
+            if not hasattr(agent, 'id') or agent.id in processed_ids: return
+            processed_ids.add(agent.id)
+
             if not hasattr(agent, 'get_assets_by_currency'): return
             val = int(agent.get_assets_by_currency().get(DEFAULT_CURRENCY, 0))
             if val >= 0: total_m2_pennies += val
             else: system_debt_pennies += abs(val)
 
-        system_agent_ids = {
-            ID_CENTRAL_BANK,
-            ID_SYSTEM,
-            ID_ESCROW,
-            ID_PUBLIC_MANAGER,
-            getattr(self.bank, 'id', -999) if self.bank else -999
+        excluded_ids = {
+            str(ID_CENTRAL_BANK),
+            str(ID_SYSTEM),
+            str(ID_ESCROW),
+            str(ID_PUBLIC_MANAGER)
         }
+        if self.bank:
+            excluded_ids.add(str(self.bank.id))
+
         for agent in self.agents.values():
             if hasattr(agent, 'is_active') and not agent.is_active: continue
-            if hasattr(agent, 'id') and agent.id in system_agent_ids: continue
+            if hasattr(agent, 'id') and str(agent.id) in excluded_ids: continue
+            if isinstance(agent, IBank): continue
             process_agent(agent)
 
         if self.estate_registry:
