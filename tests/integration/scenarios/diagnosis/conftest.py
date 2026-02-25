@@ -59,4 +59,4 @@ def simple_market():
     mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
     mock_breaker.check_market_health.return_value = True
     mock_breaker.is_active.return_value = False
-    return OrderBookMarket(market_id="basic_food", index_circuit_breaker=mock_breaker)
+    return OrderBookMarket(market_id="basic_food", circuit_breaker=mock_breaker)
