@@ -6,9 +6,8 @@ from dataclasses import dataclass
 
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, ICircuitBreaker, IPriceLimitEnforcer, IIndexCircuitBreaker
+from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, IPriceLimitEnforcer, IIndexCircuitBreaker
 from simulation.markets.matching_engine import OrderBookMatchingEngine
-from simulation.markets.circuit_breaker import DynamicCircuitBreaker
 from modules.market.safety.price_limit import PriceLimitEnforcer
 from modules.market.safety_dtos import PriceLimitConfigDTO
 
@@ -67,16 +66,15 @@ class OrderBookMarket(Market):
     매수/매도 주문을 접수하고, 가격 우선 및 시간 우선 원칙에 따라 주문을 매칭하여 거래를 체결합니다.
     """
 
-    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, circuit_breaker: Optional[ICircuitBreaker] = None, enforcer: Optional[IPriceLimitEnforcer] = None, index_circuit_breaker: Optional[IIndexCircuitBreaker] = None):
+    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, enforcer: Optional[IPriceLimitEnforcer] = None, circuit_breaker: Optional[IIndexCircuitBreaker] = None):
         """OrderBookMarket을 초기화합니다.
 
         Args:
             market_id (str): 시장의 고유 ID (예: 'goods_market', 'labor_market').
             config_module (Any, optional): 시뮬레이션 설정 모듈.
             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
-            circuit_breaker (ICircuitBreaker, optional): 주입된 서킷 브레이커 인스턴스.
             enforcer (IPriceLimitEnforcer, optional): 주입된 가격 제한 집행기.
-            index_circuit_breaker (IIndexCircuitBreaker, optional): 주입된 인댈스 서킷 브레이커 인스턴스.
+            circuit_breaker (IIndexCircuitBreaker, optional): 주입된 시장 전체 서킷 브레이커.
         """
         super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
         self.id = market_id
@@ -89,7 +87,8 @@ class OrderBookMarket(Market):
         self.daily_total_volume: Dict[str, float] = {}
         self.last_traded_prices: Dict[str, float] = {}
         self.last_trade_ticks: Dict[str, int] = {} # Phase 2: Track staleness
-        
+        self._price_history: Dict[str, deque] = {} # Telemetry storage
+
         # --- GEMINI_ADDITION: Persist signals across ticks ---
         self.cached_best_bid: Dict[str, float] = {}
         self.cached_best_ask: Dict[str, float] = {}
@@ -97,9 +96,7 @@ class OrderBookMarket(Market):
         self.last_tick_supply: float = 0.0
         self.last_tick_demand: float = 0.0
 
-        # WO-136: Dynamic Circuit Breakers (Modular)
-        self.circuit_breaker = circuit_breaker or DynamicCircuitBreaker(config_module, self.logger)
-        self.index_circuit_breaker = index_circuit_breaker
+        self.circuit_breaker = circuit_breaker
 
         # WO-IMPL-MARKET-POLICY: Price Limit Enforcer
         if enforcer:
@@ -119,6 +116,11 @@ class OrderBookMarket(Market):
         )
 
     # --- TD-271: Public Interface Implementation ---
+
+    @property
+    def price_history(self) -> Dict[str, Any]:
+        """Exposes price history for signals/orchestration."""
+        return self._price_history
 
     @property
     def buy_orders(self) -> Dict[str, List[CanonicalOrderDTO]]:
@@ -161,11 +163,6 @@ class OrderBookMarket(Market):
             extra={"market_id": self.id, "tags": ["market_clear"]},
         )
 
-    @property
-    def price_history(self) -> Dict[str, Any]:
-        """Exposes price history from the circuit breaker for signals/orchestration."""
-        return getattr(self.circuit_breaker, 'price_history', {})
-
     def cancel_orders(self, agent_id: str) -> None:
         """
         Cancels all orders for the specified agent.
@@ -193,12 +190,21 @@ class OrderBookMarket(Market):
 
     def place_order(self, order_dto: CanonicalOrderDTO, current_time: int):
         """시장에 주문을 제출합니다. 매칭은 별도의 메서드로 처리됩니다.
-        WO-IMPL-MARKET-POLICY: Checks PriceLimitEnforcer before accepting.
+        WO-IMPL-MARKET-POLICY: Checks PriceLimitEnforcer and CircuitBreaker before accepting.
 
         Args:
             order_dto (CanonicalOrderDTO): 제출할 주문 객체.
             current_time (int): 현재 시뮬레이션 틱 (시간) 입니다.
         """
+        # 0. Market Halt Check
+        if self.circuit_breaker and self.circuit_breaker.is_active():
+             # Reject or queue based on system rules
+             self.logger.warning(
+                 f"MARKET_HALTED | Order rejected: Market {self.id} is halted.",
+                 extra={"tick": current_time, "market_id": self.id, "agent_id": order_dto.agent_id}
+             )
+             return
+
         # 1. Validate order via injected enforcer
         validation_result = self.enforcer.validate_order(order_dto)
 
@@ -216,26 +222,6 @@ class OrderBookMarket(Market):
                 }
             )
             return # Drop order immediately
-
-        # 3. Legacy Circuit Breaker Check (Maintain backward compatibility for volatility/relaxation)
-        if self.circuit_breaker:
-             last_trade_tick = self.last_trade_ticks.get(order_dto.item_id, -1)
-             min_price, max_price = self.circuit_breaker.get_dynamic_price_bounds(order_dto.item_id, current_time, last_trade_tick)
-             if order_dto.price_limit < min_price or order_dto.price_limit > max_price:
-                 # Check if bounds are active (max_price < inf)
-                 if max_price < float('inf'):
-                     self.logger.warning(
-                         f"CIRCUIT_BREAKER | Order rejected. Price {order_dto.price_limit:.2f} out of bounds [{min_price:.2f}, {max_price:.2f}]",
-                         extra={
-                             "tick": current_time,
-                             "market_id": self.id,
-                             "agent_id": order_dto.agent_id,
-                             "item_id": order_dto.item_id,
-                             "price": order_dto.price_limit,
-                             "bounds": (min_price, max_price)
-                         }
-                     )
-                     return # Reject order
 
         # Convert to mutable MarketOrder
         order = MarketOrder.from_dto(order_dto)
@@ -262,7 +248,7 @@ class OrderBookMarket(Market):
         """
         # WO-IMPL-INDEX-BREAKER: Check Market Health
         # We only READ the state. The orchestrator updates it centrally.
-        if self.index_circuit_breaker and self.index_circuit_breaker.is_active():
+        if self.circuit_breaker and self.circuit_breaker.is_active():
             self.logger.warning(
                 f"MARKET_HALT | OrderBookMarket {self.id} halted by IndexCircuitBreaker",
                 extra={'tick': current_time, 'market_id': self.id}
@@ -328,9 +314,17 @@ class OrderBookMarket(Market):
         }
 
         # Update Market Stats
+        window_size = getattr(self.config_module, "PRICE_VOLATILITY_WINDOW_TICKS", 20) if self.config_module else 20
         for item_id, price in result.market_stats.get("last_traded_prices", {}).items():
             self.last_traded_prices[item_id] = price
-            self.circuit_breaker.update_price_history(item_id, price)
+            # Update Price History (Telemetry)
+            if item_id not in self._price_history:
+                self._price_history[item_id] = deque(maxlen=window_size)
+            self._price_history[item_id].append(price)
+
+            # Update Enforcer Reference Price
+            price_pennies = int(round(price * 100))
+            self.enforcer.set_reference_price(price_pennies)
 
         for item_id, tick in result.market_stats.get("last_trade_ticks", {}).items():
             self.last_trade_ticks[item_id] = tick

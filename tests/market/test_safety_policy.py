@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from modules.market.api import CanonicalOrderDTO
+from modules.market.api import CanonicalOrderDTO, IPriceLimitEnforcer, IIndexCircuitBreaker
 from modules.market.safety_dtos import PriceLimitConfigDTO, ValidationResultDTO
 from modules.market.safety.price_limit import PriceLimitEnforcer
 from simulation.markets.order_book_market import OrderBookMarket
@@ -56,7 +56,7 @@ class TestPriceLimitEnforcer:
 class TestOrderBookMarketSafetyIntegration:
     def test_market_rejects_invalid_order(self):
         # Setup Enforcer that always rejects
-        mock_enforcer = MagicMock()
+        mock_enforcer = MagicMock(spec=IPriceLimitEnforcer)
         mock_enforcer.validate_order.return_value = ValidationResultDTO(is_valid=False, reason="Mock Reject")
 
         market = OrderBookMarket("test_market", enforcer=mock_enforcer)
@@ -73,7 +73,7 @@ class TestOrderBookMarketSafetyIntegration:
 
     def test_market_accepts_valid_order(self):
         # Setup Enforcer that always accepts
-        mock_enforcer = MagicMock()
+        mock_enforcer = MagicMock(spec=IPriceLimitEnforcer)
         mock_enforcer.validate_order.return_value = ValidationResultDTO(is_valid=True)
 
         market = OrderBookMarket("test_market", enforcer=mock_enforcer)
@@ -83,3 +83,15 @@ class TestOrderBookMarketSafetyIntegration:
 
         # Check order added
         assert len(market.buy_orders.get("a", [])) == 1
+
+    def test_market_halt_blocks_order(self):
+        mock_cb = MagicMock(spec=IIndexCircuitBreaker)
+        mock_cb.is_active.return_value = True
+
+        market = OrderBookMarket("test_market", circuit_breaker=mock_cb)
+
+        order = CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=100, market_id="test_market")
+        market.place_order(order, current_time=1)
+
+        assert len(market.buy_orders.get("a", [])) == 0
+        mock_cb.is_active.assert_called_once()

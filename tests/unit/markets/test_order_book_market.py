@@ -14,7 +14,7 @@ def market():
     mock_breaker.check_market_health.return_value = True
     mock_breaker.is_active.return_value = False
     return OrderBookMarket(
-        market_id="test_goods_market", logger=Logger(), index_circuit_breaker=mock_breaker
+        market_id="test_goods_market", logger=Logger(), circuit_breaker=mock_breaker
     )  # 테스트 중에는 기본 로거 사용
 
 
@@ -237,7 +237,7 @@ class TestMarketAPI:
         mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
         mock_breaker.check_market_health.return_value = True
         mock_breaker.is_active.return_value = False
-        market = OrderBookMarket(market_id="test_goods_market", logger=Logger(), index_circuit_breaker=mock_breaker)
+        market = OrderBookMarket(market_id="test_goods_market", logger=Logger(), circuit_breaker=mock_breaker)
 
         market.place_order(Order(2, 'SELL', 'food', 10, 105, market_id='test', price_limit=1.05), 2)
         assert market.get_spread('food') is None
