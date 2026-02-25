@@ -1,28 +1,43 @@
 from enum import Enum
 import os
 
-# --- Simulation Parameters ---
+# --- Consolidated Simulation Parameters ---
 SIMULATION_TICKS = 60
-NUM_HOUSEHOLDS = 50
-NUM_FIRMS = 10
-NUM_HOUSING_UNITS = 60
-INITIAL_PROPERTY_VALUE = 2000000
-INITIAL_RENT_PRICE = 10000
-INITIAL_HOUSEHOLD_ASSETS_MEAN = 200000
+NUM_HOUSEHOLDS = 20
+NUM_FIRMS = 4
+
+# --- Consolidated Agent Configuration ---
+HOUSEHOLD_MIN_FOOD_INVENTORY = 0.0 # Operation Empty Warehouse: No initial safety net
+TARGET_FOOD_BUFFER_QUANTITY = 5.0 # WO-023: Maslow Constraint Threshold
+
 INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
-INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 0.5
-INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.1
+INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 5000 # MIGRATION: Int pennies
+INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.2
+
 INITIAL_HOUSEHOLD_NEEDS_MEAN = {
-    "survival_need": 50.0,
+    "survival": 60.0,
+    "asset": 10.0,
+    "social": 20.0,
+    "improvement": 10.0,
+    "survival_need": 60.0,
     "recognition_need": 20.0,
     "growth_need": 10.0,
     "wealth_need": 10.0,
-    "imitation_need": 5.0
+    "imitation_need": 15.0,
+    "labor_need": 0.0,
+    "child_rearing_need": 0.0,
+    "quality": 0.0, # WO-023: New need for consumer goods
 }
-INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.2
-GOODS = {
-    "basic_food": {"type": "CONSUMABLE", "utility": 10.0}
-}
+
+INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.1
+INITIAL_EMPLOYMENT_RATE = 0.5  # 초기 고용률
+
+INITIAL_FIRM_CAPITAL_RANGE = 0.2
+INITIAL_FIRM_LIQUIDITY_NEED_MEAN = 20000 # MIGRATION: Int pennies
+INITIAL_FIRM_LIQUIDITY_NEED_RANGE = 0.2
+INITIAL_FIRM_INVENTORY_MEAN = 0.0  # Operation Empty Warehouse: No initial safety net
+INITIAL_FIRM_INVENTORY_RANGE = 0.2
+FIRM_PRODUCTIVITY_FACTOR = 20.0 # Laissez-Faire: Double Output
 
 # --- Phase 21: Corporate Empires ---
 AUTOMATION_LABOR_REDUCTION = 0.1  # Max 50% reduction in labor alpha
@@ -75,13 +90,6 @@ GOLD_STANDARD_MODE = False  # True: 금본위 (Full Reserve), False: 현대 금�
 RESERVE_REQ_RATIO = 0.1    # 지급준비율 (10%) - WO-064
 INITIAL_MONEY_SUPPLY = 100000000  # 초기 화폐 총량 (검증용 기준값) - MIGRATION: Int pennies (100M)
 
-# --- Simulation Parameters ---
-NUM_HOUSEHOLDS = 20
-NUM_FIRMS = 4
-SIMULATION_TICKS = 60
-HOUSEHOLD_MIN_FOOD_INVENTORY = 0.0 # Operation Empty Warehouse: No initial safety net
-TARGET_FOOD_BUFFER_QUANTITY = 5.0 # WO-023: Maslow Constraint Threshold
-
 class EngineType(Enum):
     RULE_BASED = "RuleBased"
     AI_DRIVEN = "AIDriven"
@@ -89,35 +97,6 @@ class EngineType(Enum):
 DEFAULT_ENGINE_TYPE = EngineType.AI_DRIVEN  # Can be RULE_BASED or AI_DRIVEN
 NEWBORN_ENGINE_TYPE = "AIDriven"  # Default engine for newborns: "AIDriven" or "RuleBased"
 
-# --- Initial Agent Configuration ---
-INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
-INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 5000 # MIGRATION: Int pennies
-INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.2
-INITIAL_HOUSEHOLD_NEEDS_MEAN = {
-    "survival": 60.0,
-    "asset": 10.0,
-    "social": 20.0,
-    "improvement": 10.0,
-    "survival_need": 60.0,
-    "recognition_need": 20.0,
-    "growth_need": 10.0,
-    "wealth_need": 10.0,
-    "imitation_need": 15.0,
-    "labor_need": 0.0,
-    "labor_need": 0.0,
-    "child_rearing_need": 0.0,
-    "quality": 0.0, # WO-023: New need for consumer goods
-}
-INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.1
-INITIAL_EMPLOYMENT_RATE = 0.5  # 초기 고용률
-
-INITIAL_FIRM_CAPITAL_MEAN = 5000000 # High Initial Capital for Laissez-Faire Runway - MIGRATION: Int pennies (10M)
-INITIAL_FIRM_CAPITAL_RANGE = 0.2
-INITIAL_FIRM_LIQUIDITY_NEED_MEAN = 20000 # MIGRATION: Int pennies
-INITIAL_FIRM_LIQUIDITY_NEED_RANGE = 0.2
-INITIAL_FIRM_INVENTORY_MEAN = 0.0  # Operation Empty Warehouse: No initial safety net
-INITIAL_FIRM_INVENTORY_RANGE = 0.2
-FIRM_PRODUCTIVITY_FACTOR = 20.0 # Laissez-Faire: Double Output
 
 # --- Goods Configuration ---
 GOODS = {
