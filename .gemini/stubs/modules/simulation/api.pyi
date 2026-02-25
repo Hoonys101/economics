@@ -4,9 +4,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from modules.finance.api import IBankService as IBankService
 from modules.finance.kernel.api import IMonetaryLedger as IMonetaryLedger
+from modules.government.api import IGovernment as IGovernment
 from modules.housing.api import IHousingService as IHousingService
 from modules.memory.api import MemoryV2Interface as MemoryV2Interface
-from modules.system.api import CurrencyCode as CurrencyCode
+from modules.simulation.dtos.api import MoneySupplyDTO as MoneySupplyDTO
+from modules.system.api import CurrencyCode as CurrencyCode, IAgent as IAgent
 from simulation.finance.api import ISettlementSystem as ISettlementSystem
 from simulation.interfaces.market_interface import IMarket as IMarket
 from simulation.systems.api import IRegistry as IRegistry
@@ -54,7 +56,7 @@ class InventorySlotDTO:
 @dataclass
 class AgentStateDTO:
     """A snapshot of an agent's mutable state."""
-    assets: dict[CurrencyCode, float]
+    assets: dict[CurrencyCode, int]
     is_active: bool
     inventories: dict[str, InventorySlotDTO] = field(default_factory=dict)
     inventory: dict[str, float] | None = ...
@@ -149,11 +151,18 @@ class IInventoryHandler(Protocol):
 
 class IDecisionEngine(Protocol):
     """Interface for the 'brain' of an agent."""
-    def make_decision(self, state: AgentStateDTO, world_context: Any) -> DecisionDTO | Any: ...
+    def make_decisions(self, context: Any, macro_context: Any = None) -> Any: ...
 
 class IAgent(Protocol):
     id: AgentID
     is_active: bool
+    name: str
+
+class IEstateRegistry(Protocol):
+    """Protocol for the Estate Registry managing dead/liquidated agents."""
+    def add_to_estate(self, agent: IAgent) -> None: ...
+    def get_agent(self, agent_id: Any) -> IAgent | None: ...
+    def get_all_estate_agents(self) -> list[IAgent]: ...
 
 class IOrchestratorAgent(IAgent, Protocol):
     """Public interface for an agent 'Orchestrator' supporting 2-stage initialization."""
@@ -189,11 +198,6 @@ class ITalented(Protocol):
 
 class ICentralBank(Protocol):
     base_rate: float
-
-class IGovernment(Protocol):
-    expenditure_this_tick: float
-    revenue_this_tick: float
-    total_debt: float
 
 class IEconomicIndicatorTracker(Protocol):
     """Protocol for the EconomicIndicatorTracker to enable smoothed metrics access."""
@@ -240,6 +244,7 @@ class ISimulationState(Protocol):
     bank: IBankService
     markets: dict[str, 'IMarket']
     monetary_ledger: IMonetaryLedger | None
+    estate_registry: IEstateRegistry | None
     def get_economic_indicators(self) -> EconomicIndicatorsDTO:
         """
         Retrieves the current market snapshot containing economic indicators like GDP.
@@ -247,6 +252,11 @@ class ISimulationState(Protocol):
     def get_system_state(self) -> SystemStateDTO:
         """
         Retrieves internal system state for phenomena analysis.
+        """
+    def calculate_total_money(self) -> MoneySupplyDTO:
+        """
+        Calculates M2 (Total Money Supply) and System Debt.
+        Returns the new MoneySupplyDTO as the single source of truth.
         """
 
 class IShockInjector(Protocol):

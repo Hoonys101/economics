@@ -1,15 +1,15 @@
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, IntEnum
 from modules.common.enums import IndustryDomain
 from modules.finance.api import IFinancialAgent
 from modules.simulation.api import AgentID, IInventoryHandler
 from modules.simulation.dtos.api import FinanceStateDTO as FinanceStateDTO, FirmConfigDTO as FirmConfigDTO, HRStateDTO as HRStateDTO, ProductionStateDTO as ProductionStateDTO, SalesStateDTO as SalesStateDTO
-from modules.system.api import MarketContextDTO, MarketSnapshotDTO
+from modules.system.api import CurrencyCode, MarketContextDTO, MarketSnapshotDTO
 from simulation.dtos.sales_dtos import MarketingAdjustmentResultDTO, SalesMarketingContextDTO, SalesPostAskContextDTO
 from simulation.models import Order, Transaction
 from typing import Any, Literal, Protocol
 
-__all__ = ['ICollateralizableAsset', 'FirmSnapshotDTO', 'FirmStrategy', 'FirmBrainScanContextDTO', 'FirmBrainScanResultDTO', 'FinanceDecisionInputDTO', 'BudgetPlanDTO', 'HRDecisionInputDTO', 'HRDecisionOutputDTO', 'ProductionInputDTO', 'ProductionResultDTO', 'AssetManagementInputDTO', 'AssetManagementResultDTO', 'LiquidationExecutionDTO', 'LiquidationResultDTO', 'RDInputDTO', 'RDResultDTO', 'PricingInputDTO', 'PricingResultDTO', 'BrandMetricsDTO', 'DynamicPricingResultDTO', 'IBrainScanReady', 'BaseDepartmentContextDTO', 'ProductionContextDTO', 'ProductionIntentDTO', 'ProcurementIntentDTO', 'HRContextDTO', 'HRIntentDTO', 'SalesContextDTO', 'SalesIntentDTO', 'IFinanceEngine', 'IHREngine', 'IProductionEngine', 'IAssetManagementEngine', 'IPricingEngine', 'IRDEngine', 'ISalesEngine', 'IBrandEngine', 'IDepartmentEngine', 'IProductionDepartment', 'IHRDepartment', 'ISalesDepartment', 'IFirmComponent', 'IInventoryComponent', 'InventoryComponentConfigDTO', 'IFinancialComponent', 'FinancialComponentConfigDTO', 'FirmConfigDTO', 'FirmStateDTO', 'FinanceStateDTO', 'ProductionStateDTO', 'SalesStateDTO', 'HRStateDTO']
+__all__ = ['ICollateralizableAsset', 'FirmSnapshotDTO', 'FirmStrategy', 'PaymentPriority', 'ObligationDTO', 'BudgetAllocationDTO', 'FirmBrainScanContextDTO', 'FirmBrainScanResultDTO', 'FinanceDecisionInputDTO', 'BudgetPlanDTO', 'HRDecisionInputDTO', 'HRDecisionOutputDTO', 'ProductionInputDTO', 'ProductionResultDTO', 'AssetManagementInputDTO', 'AssetManagementResultDTO', 'LiquidationExecutionDTO', 'LiquidationResultDTO', 'RDInputDTO', 'RDResultDTO', 'PricingInputDTO', 'PricingResultDTO', 'BrandMetricsDTO', 'DynamicPricingResultDTO', 'IBrainScanReady', 'BaseDepartmentContextDTO', 'ProductionContextDTO', 'ProductionIntentDTO', 'ProcurementIntentDTO', 'HRContextDTO', 'HRIntentDTO', 'SalesContextDTO', 'SalesIntentDTO', 'PayrollIntentDTO', 'TaxIntentDTO', 'IFinanceEngine', 'IHREngine', 'IProductionEngine', 'IAssetManagementEngine', 'IPricingEngine', 'IRDEngine', 'ISalesEngine', 'IBrandEngine', 'IBudgetGatekeeper', 'IBankruptcyHandler', 'IFirmActionExecutor', 'IDepartmentEngine', 'IProductionDepartment', 'IHRDepartment', 'ISalesDepartment', 'IFirmComponent', 'IInventoryComponent', 'InventoryComponentConfigDTO', 'IFinancialComponent', 'FinancialComponentConfigDTO', 'FirmConfigDTO', 'FirmStateDTO', 'FinanceStateDTO', 'ProductionStateDTO', 'SalesStateDTO', 'HRStateDTO']
 
 class ICollateralizableAsset(Protocol):
     """
@@ -32,6 +32,46 @@ class FirmStrategy(Enum):
     PROFIT_MAXIMIZATION = 'PROFIT_MAXIMIZATION'
     MARKET_SHARE = 'MARKET_SHARE'
     SURVIVAL = 'SURVIVAL'
+
+class PaymentPriority(IntEnum):
+    """
+    Strict priority hierarchy for firm obligations.
+    Lower value = Higher priority (Must pay first).
+    """
+    TAX = 1
+    WAGE = 2
+    SECURED_DEBT = 3
+    ESSENTIAL_OPEX = 4
+    UNSECURED_DEBT = 5
+    INVENTORY_PURCHASE = 6
+    MARKETING = 7
+    DIVIDEND = 8
+    DISCRETIONARY = 9
+
+@dataclass(frozen=True)
+class ObligationDTO:
+    """
+    Represents a potential financial outflow that needs prioritization.
+    """
+    amount_pennies: int
+    currency: CurrencyCode
+    priority: PaymentPriority
+    recipient_id: AgentID
+    description: str
+    transaction_id: str | None = ...
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+@dataclass(frozen=True)
+class BudgetAllocationDTO:
+    """
+    Result of the Budget Gatekeeper's prioritization.
+    """
+    approved_obligations: list[ObligationDTO]
+    rejected_obligations: list[ObligationDTO]
+    total_approved_amount_pennies: int
+    remaining_liquidity_pennies: int
+    is_insolvent: bool
+    insolvency_reason: str | None = ...
 
 @dataclass(frozen=True)
 class FirmSnapshotDTO:
@@ -172,6 +212,24 @@ class SalesIntentDTO:
     sales_orders: list[dict[str, Any]]
     marketing_spend_pennies: int = ...
     new_marketing_budget_rate: float = ...
+
+@dataclass(frozen=True)
+class PayrollIntentDTO:
+    """
+    Output of HREngine.calculate_payroll_obligations.
+    """
+    wage_obligations: list[ObligationDTO]
+    severance_obligations: list[ObligationDTO]
+    total_wages_pennies: int
+    total_severance_pennies: int
+
+@dataclass(frozen=True)
+class TaxIntentDTO:
+    """
+    Output of FinanceEngine.calculate_tax_obligations.
+    """
+    tax_obligations: list[ObligationDTO]
+    total_tax_pennies: int
 
 @dataclass(frozen=True)
 class FinanceDecisionInputDTO:
@@ -415,6 +473,31 @@ class IBrandEngine(Protocol):
     """
     def update(self, state: SalesStateDTO, config: FirmConfigDTO, marketing_spend: float, actual_quality: float, firm_id: int) -> BrandMetricsDTO:
         """Calculates updated brand metrics based on marketing spend and quality."""
+
+class IBudgetGatekeeper(Protocol):
+    """
+    Service responsible for enforcing liquidity constraints and payment priorities.
+    """
+    def allocate_budget(self, liquid_assets: dict[CurrencyCode, int], obligations: list[ObligationDTO]) -> BudgetAllocationDTO:
+        """
+        Filters obligations based on available liquidity and priority.
+        Returns the approved allocation and insolvency status.
+        """
+
+class IBankruptcyHandler(Protocol):
+    """
+    Protocol for gracefully handling firm failure.
+    """
+    def trigger_liquidation(self, firm: Any, reason: str) -> None:
+        """
+        Initiates the liquidation process for a zombie/insolvent firm.
+        """
+
+class IFirmActionExecutor(Protocol):
+    """
+    Executes internal orders (Command Bus).
+    """
+    def execute(self, firm: Any, orders: list[Any], fiscal_context: Any, current_time: int, market_context: Any) -> None: ...
 
 class IFirmComponent(Protocol):
     """Base protocol for Firm components."""

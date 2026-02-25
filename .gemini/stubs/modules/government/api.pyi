@@ -3,7 +3,7 @@ from modules.common.enums import IndustryDomain as IndustryDomain
 from modules.finance.api import IFinancialEntity as IFinancialEntity, TaxCollectionResult as TaxCollectionResult
 from modules.government.dtos import BailoutResultDTO as BailoutResultDTO, BondIssuanceResultDTO as BondIssuanceResultDTO, BondIssueRequestDTO as BondIssueRequestDTO, ExecutionResultDTO as ExecutionResultDTO, FiscalContextDTO as FiscalContextDTO, FiscalPolicyDTO as FiscalPolicyDTO, GovernmentStateDTO as GovernmentStateDTO, IAgent as IAgent, MacroEconomicSnapshotDTO as MacroEconomicSnapshotDTO, MonetaryPolicyDTO as MonetaryPolicyDTO, PolicyDecisionDTO as PolicyDecisionDTO, TaxAssessmentResultDTO as TaxAssessmentResultDTO, WelfareResultDTO as WelfareResultDTO
 from modules.government.welfare.api import IWelfareRecipient as IWelfareRecipient
-from modules.system.api import CurrencyCode as CurrencyCode
+from modules.system.api import AgentID as AgentID, CurrencyCode as CurrencyCode
 from simulation.dtos.api import MarketSnapshotDTO as MarketSnapshotDTO
 from typing import Any, Protocol
 
@@ -98,9 +98,26 @@ class IFiscalBondService(Protocol):
         """
 
 class IGovernment(Protocol):
-    """Facade for the government agent."""
+    """
+    Unified Facade for the Government Agent (Governor Pattern).
+    All financial values MUST be in Integer Pennies.
+    """
+    id: AgentID
+    is_active: bool
+    name: str
     state: GovernmentStateDTO
-    def make_policy_decision(self, market_snapshot: MarketSnapshotDTO) -> None: ...
+    @property
+    def expenditure_this_tick(self) -> dict[CurrencyCode, int]: ...
+    @property
+    def revenue_this_tick(self) -> dict[CurrencyCode, int]: ...
+    @property
+    def total_debt(self) -> int: ...
+    @property
+    def total_wealth(self) -> int: ...
+    corporate_tax_rate: float
+    income_tax_rate: float
+    fiscal_policy: FiscalPolicyDTO
+    def make_policy_decision(self, market_snapshot: Any, current_tick: int, central_bank: Any) -> None: ...
 
 @dataclass
 class GovernmentExecutionContext:

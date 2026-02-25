@@ -34,7 +34,7 @@ class ProductionStateDTO:
     current_production: float
     productivity_factor: float
     production_target: float
-    capital_stock: float
+    capital_stock: int
     base_quality: float
     automation_level: float
     specialization: str
@@ -277,3 +277,9 @@ class ServerConfigDTO:
     god_mode_token: str
     host: str = ...
     port: int = ...
+
+@dataclass(frozen=True)
+class MoneySupplyDTO:
+    total_m2_pennies: int
+    system_debt_pennies: int
+    currency: str = ...

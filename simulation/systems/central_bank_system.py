@@ -81,12 +81,18 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
         elif transaction.transaction_type == 'omo_sale':
             self.logger.info(f'OMO_SALE_SETTLED | CB Sold {transaction.quantity} bonds for {transaction.price}. Money Drained (Burned).')
 
-    def mint_and_transfer(self, target_agent: Any, amount: float, memo: str) -> bool:
+    def mint_and_transfer(self, target_agent: Any, amount: int, memo: str) -> bool:
         """
-        Creates money (by withdrawing from Central Bank which can go negative)
-        and transfers it to the target agent.
+        Creates money (minting) and transfers it to the target agent.
         """
-        tx = self.settlement.transfer(debit_agent=self.central_bank, credit_agent=target_agent, amount=amount, memo=f'MINT:{memo}')
+        # Phase 33 Hotfix: Use create_and_transfer to ensure non-zero-sum integrity and ledger recording.
+        tx = self.settlement.create_and_transfer(
+            source_authority=self.central_bank,
+            destination=target_agent,
+            amount=int(amount),
+            reason=f'MINT:{memo}',
+            tick=getattr(target_agent, 'time', 0)
+        )
         if tx:
             # Capture the transaction for the global ledger
             self.transactions.append(tx)
@@ -94,26 +100,32 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
             if hasattr(target_agent, 'total_money_issued'):
                 target_agent.total_money_issued += amount
 
-            self.logger.info(f'MINT_SUCCESS | Minted {amount:.2f} to {target_agent.id}. Memo: {memo}', extra={'agent_id': target_agent.id, 'amount': amount, 'memo': memo})
+            self.logger.info(f'MINT_SUCCESS | Minted {amount} to {target_agent.id}. Memo: {memo}', extra={'agent_id': target_agent.id, 'amount': amount, 'memo': memo})
             return True
         else:
-            self.logger.error(f'MINT_FAIL | Failed to mint {amount:.2f} to {target_agent.id}. Memo: {memo}', extra={'agent_id': target_agent.id, 'amount': amount, 'memo': memo})
+            self.logger.error(f'MINT_FAIL | Failed to mint {amount} to {target_agent.id}. Memo: {memo}', extra={'agent_id': target_agent.id, 'amount': amount, 'memo': memo})
             return False
 
-    def transfer_and_burn(self, source_agent: Any, amount: float, memo: str) -> bool:
+    def transfer_and_burn(self, source_agent: Any, amount: int, memo: str) -> bool:
         """
-        Transfers money from the source agent to the Central Bank and 'burns' it
-        (effectively removing it from circulation by crediting the CB).
+        Transfers money from the source agent to the Central Bank and 'burns' it (contraction).
         """
-        tx = self.settlement.transfer(debit_agent=source_agent, credit_agent=self.central_bank, amount=amount, memo=f'BURN:{memo}')
+        # Phase 33 Hotfix: Use transfer_and_destroy for proper monetary contraction recording.
+        tx = self.settlement.transfer_and_destroy(
+            source=source_agent,
+            sink_authority=self.central_bank,
+            amount=int(amount),
+            reason=f'BURN:{memo}',
+            tick=getattr(source_agent, 'time', 0)
+        )
         if tx:
             # Capture the transaction for the global ledger
             self.transactions.append(tx)
 
-            self.logger.info(f'BURN_SUCCESS | Burned {amount:.2f} from {source_agent.id}. Memo: {memo}', extra={'agent_id': source_agent.id, 'amount': amount, 'memo': memo})
+            self.logger.info(f'BURN_SUCCESS | Burned {amount} from {source_agent.id}. Memo: {memo}', extra={'agent_id': source_agent.id, 'amount': amount, 'memo': memo})
             return True
         else:
-            self.logger.error(f'BURN_FAIL | Failed to burn {amount:.2f} from {source_agent.id}. Memo: {memo}', extra={'agent_id': source_agent.id, 'amount': amount, 'memo': memo})
+            self.logger.error(f'BURN_FAIL | Failed to burn {amount} from {source_agent.id}. Memo: {memo}', extra={'agent_id': source_agent.id, 'amount': amount, 'memo': memo})
             return False
 
     def check_and_provide_liquidity(self, bank_agent: Any, amount_needed: int) -> bool:

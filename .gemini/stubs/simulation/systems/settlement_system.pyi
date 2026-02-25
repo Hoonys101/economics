@@ -1,10 +1,11 @@
 import logging
 from _typeshed import Incomplete
-from modules.finance.api import AgentID as AgentID, FXMatchDTO as FXMatchDTO, IAccountRegistry as IAccountRegistry, IBank, IEconomicMetricsService as IEconomicMetricsService, IFinancialAgent, IHeirProvider as IHeirProvider, IMonetaryAuthority, IPanicRecorder as IPanicRecorder, IPortfolioHandler as IPortfolioHandler, InsufficientFundsError as InsufficientFundsError, LienDTO as LienDTO, PortfolioAsset as PortfolioAsset, PortfolioDTO as PortfolioDTO
+from modules.finance.api import AgentID as AgentID, FXMatchDTO as FXMatchDTO, IAccountRegistry as IAccountRegistry, IBank, ICentralBank, IEconomicMetricsService as IEconomicMetricsService, IFinancialAgent, IHeirProvider as IHeirProvider, ILiquidator, IMonetaryAuthority, IMonetaryLedger as IMonetaryLedger, IPanicRecorder as IPanicRecorder, IPortfolioHandler as IPortfolioHandler, InsufficientFundsError as InsufficientFundsError, LienDTO as LienDTO, PortfolioAsset as PortfolioAsset, PortfolioDTO as PortfolioDTO, ZeroSumViolationError as ZeroSumViolationError
 from modules.finance.transaction.api import TransactionResultDTO as TransactionResultDTO
+from modules.government.api import IGovernment as IGovernment
 from modules.market.housing_planner_api import MortgageApplicationDTO as MortgageApplicationDTO
-from modules.simulation.api import IGovernment as IGovernment
 from modules.system.api import CurrencyCode as CurrencyCode, IAgentRegistry as IAgentRegistry
+from modules.system.constants import ID_ESCROW as ID_ESCROW, ID_PUBLIC_MANAGER as ID_PUBLIC_MANAGER, ID_SYSTEM as ID_SYSTEM
 from simulation.finance.api import ITransaction as ITransaction
 from simulation.firms import Firm as Firm
 from simulation.models import Transaction as Transaction
@@ -23,9 +24,15 @@ class SettlementSystem(IMonetaryAuthority):
     metrics_service: Incomplete
     total_liquidation_losses: int
     agent_registry: Incomplete
+    estate_registry: Incomplete
     panic_recorder: IPanicRecorder | None
+    monetary_authority: ICentralBank | None
+    monetary_ledger: IMonetaryLedger | None
     account_registry: Incomplete
-    def __init__(self, logger: logging.Logger | None = None, bank: IBank | None = None, metrics_service: IEconomicMetricsService | None = None, agent_registry: IAgentRegistry | None = None, account_registry: IAccountRegistry | None = None) -> None: ...
+    def __init__(self, logger: logging.Logger | None = None, bank: IBank | None = None, metrics_service: IEconomicMetricsService | None = None, agent_registry: IAgentRegistry | None = None, account_registry: IAccountRegistry | None = None, estate_registry: Any | None = None) -> None: ...
+    def set_monetary_ledger(self, ledger: IMonetaryLedger) -> None: ...
+    def set_monetary_authority(self, authority: ICentralBank) -> None:
+        """Sets the monetary authority (Central Bank System) for LLR operations."""
     def set_panic_recorder(self, recorder: IPanicRecorder) -> None: ...
     def set_metrics_service(self, service: IEconomicMetricsService) -> None:
         """Sets the economic metrics service for recording system-wide financial events."""
@@ -57,10 +64,26 @@ class SettlementSystem(IMonetaryAuthority):
         Queries the Single Source of Truth for an agent's current balance.
         This is the ONLY permissible way to check another agent's funds.
         """
+    def get_total_circulating_cash(self, currency: CurrencyCode = ...) -> int:
+        """
+        Deprecated: Use get_total_m2_pennies() instead.
+        Previously returned physical cash held by non-bank agents.
+        Now aliases to get_total_m2_pennies() for backward compatibility.
+        """
+    def get_total_m2_pennies(self, currency: CurrencyCode = ...) -> int:
+        """
+        Calculates total M2 = Sum(balances of Household + Firm + Government + Estate Registry agents).
+        Strictly excludes ID_SYSTEM, ID_CENTRAL_BANK, ID_ESCROW, ID_PUBLIC_MANAGER, and any agent implementing IBank.
+        Ensures agents are not counted twice (e.g. if in both registries).
+        """
     def get_assets_by_currency(self) -> dict[str, int]:
         """
         Implements ICurrencyHolder for M2 verification.
         Returns total cash held in escrow accounts.
+        """
+    def process_liquidation(self, liquidator: ILiquidator, bankrupt_agent: IFinancialAgent, assets: Any, tick: int) -> None:
+        """
+        Delegates asset liquidation to the authorized liquidator.
         """
     def record_liquidation(self, agent: IFinancialAgent, inventory_value: int, capital_value: int, recovered_cash: int, reason: str, tick: int, government_agent: IFinancialAgent | None = None) -> None:
         """
@@ -84,6 +107,8 @@ class SettlementSystem(IMonetaryAuthority):
     def transfer(self, debit_agent: IFinancialAgent, credit_agent: IFinancialAgent, amount: int, memo: str, debit_context: dict[str, Any] | None = None, credit_context: dict[str, Any] | None = None, tick: int = 0, currency: CurrencyCode = ...) -> ITransaction | None:
         """
         Executes an atomic transfer using TransactionEngine.
+        Returns the created Transaction object (or None on failure) to support the
+        Transaction Injection Pattern used by System Agents (e.g., CentralBank).
         """
     def create_and_transfer(self, source_authority: IFinancialAgent, destination: IFinancialAgent, amount: int, reason: str, tick: int, currency: CurrencyCode = ...) -> ITransaction | None:
         """
@@ -94,4 +119,8 @@ class SettlementSystem(IMonetaryAuthority):
         Transfers money from an agent to an authority to be destroyed.
         """
     def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = 'god_mode_injection') -> bool: ...
-    def audit_total_m2(self, expected_total: int | None = None) -> bool: ...
+    def audit_total_m2(self, expected_total: int | None = None) -> bool:
+        """
+        Verifies that the current M2 matches the expected total.
+        logs MONEY_SUPPLY_CHECK tag for forensics.
+        """

@@ -1,6 +1,6 @@
 from _typeshed import Incomplete
 from modules.analysis.fiscal_monitor import FiscalMonitor as FiscalMonitor
-from modules.finance.api import BailoutCovenant as BailoutCovenant, BailoutLoanDTO as BailoutLoanDTO, BondDTO as BondDTO, BorrowerProfileDTO as BorrowerProfileDTO, GrantBailoutCommand as GrantBailoutCommand, IBank as IBank, IBankRegistry as IBankRegistry, IConfig as IConfig, IFinanceSystem as IFinanceSystem, IFinancialAgent as IFinancialAgent, IFinancialFirm as IFinancialFirm, IGovernmentFinance as IGovernmentFinance, IMonetaryAuthority as IMonetaryAuthority, InsufficientFundsError as InsufficientFundsError, LoanDTO as LoanDTO
+from modules.finance.api import BailoutCovenant as BailoutCovenant, BailoutLoanDTO as BailoutLoanDTO, BondDTO as BondDTO, BorrowerProfileDTO as BorrowerProfileDTO, GrantBailoutCommand as GrantBailoutCommand, IBank as IBank, IBankRegistry as IBankRegistry, IConfig as IConfig, IFinanceSystem as IFinanceSystem, IFinancialAgent as IFinancialAgent, IFinancialFirm as IFinancialFirm, IGovernmentFinance as IGovernmentFinance, IMonetaryAuthority as IMonetaryAuthority, IMonetaryLedger as IMonetaryLedger, InsufficientFundsError as InsufficientFundsError, LoanDTO as LoanDTO
 from modules.finance.domain import AltmanZScoreCalculator as AltmanZScoreCalculator
 from modules.finance.engine_api import BankStateDTO as BankStateDTO, BondStateDTO as BondStateDTO, DepositStateDTO as DepositStateDTO, FinancialLedgerDTO as FinancialLedgerDTO, LiquidationRequestDTO as LiquidationRequestDTO, LoanApplicationDTO as LoanApplicationDTO, LoanStateDTO as LoanStateDTO, TreasuryStateDTO as TreasuryStateDTO
 from modules.finance.engines.debt_servicing_engine import DebtServicingEngine as DebtServicingEngine
@@ -29,6 +29,8 @@ class FinanceSystem(IFinanceSystem):
     bank: Incomplete
     config_module: Incomplete
     settlement_system: Incomplete
+    monetary_authority: Incomplete
+    monetary_ledger: Incomplete
     fiscal_monitor: Incomplete
     loan_risk_engine: Incomplete
     loan_booking_engine: Incomplete
@@ -37,7 +39,7 @@ class FinanceSystem(IFinanceSystem):
     interest_rate_engine: Incomplete
     bank_registry: Incomplete
     ledger: Incomplete
-    def __init__(self, government: IGovernmentFinance, central_bank: CentralBank, bank: IBank, config_module: IConfig, settlement_system: IMonetaryAuthority | None = None, bank_registry: IBankRegistry | None = None) -> None: ...
+    def __init__(self, government: IGovernmentFinance, central_bank: CentralBank, bank: IBank, config_module: IConfig, settlement_system: IMonetaryAuthority | None = None, bank_registry: IBankRegistry | None = None, monetary_authority: Any | None = None, monetary_ledger: IMonetaryLedger | None = None) -> None: ...
     def process_loan_application(self, borrower_id: AgentID, amount: int, borrower_profile: dict | BorrowerProfileDTO, current_tick: int) -> tuple[LoanDTO | None, list[Transaction]]:
         """
         Orchestrates the loan application process using Risk and Booking engines.

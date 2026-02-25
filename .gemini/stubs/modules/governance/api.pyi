@@ -1,4 +1,5 @@
 from enum import Enum
+from modules.government.api import IGovernment as IGovernment
 from pydantic import BaseModel, Field as Field
 from simulation.dtos.api import SimulationState as SimulationState
 from typing import Literal, Protocol
@@ -28,11 +29,6 @@ SystemCommand = SetTaxRateCommand | SetInterestRateCommand
 class IFiscalPolicyHolder(Protocol):
     corporate_tax_rate: float
     income_tax_rate: float
-
-class IGovernment(Protocol):
-    corporate_tax_rate: float
-    income_tax_rate: float
-    fiscal_policy: IFiscalPolicyHolder
 
 class ICentralBank(Protocol):
     base_rate: float

@@ -7,6 +7,7 @@ from modules.finance.dtos import MoneyDTO
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.common.interfaces import IPropertyOwner
 from modules.finance.api import IFinancialAgent
+from modules.market.safety_dtos import PriceLimitConfigDTO, ValidationResultDTO
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
@@ -397,10 +398,53 @@ class IMarriageMarket(Protocol):
         """Retrieves proposals targeting a specific agent."""
         ...
 @runtime_checkable
-class ICircuitBreaker(Protocol):
+class IPriceLimitEnforcer(Protocol):
     """
-    Protocol for Market Circuit Breakers with temporal relaxation.
-    Decouples volatility statistics and relaxation logic from the OrderBook.
+    Stateless enforcer for price limits, strictly adhering to the Penny Standard (int).
+    Validates orders against reference prices and configured limits.
+    """
+    def validate_order(self, order: 'CanonicalOrderDTO') -> ValidationResultDTO:
+        """
+        Validates an order's price against active boundaries.
+        MUST remain strictly idempotent and side-effect free (SRP).
+        """
+        ...
+
+    def set_reference_price(self, price: int) -> None:
+        """
+        Sets the reference anchor price used for dynamic boundary calculations.
+        """
+        ...
+
+    def update_config(self, config: PriceLimitConfigDTO) -> None:
+        """
+        Updates the enforcer's active configuration limits.
+        """
+        ...
+
+@runtime_checkable
+class IIndexCircuitBreaker(Protocol):
+    """
+    Market-wide circuit breaker to monitor macroeconomic health and halt trading.
+    """
+    def check_market_health(self, market_stats: Dict[str, Any]) -> bool:
+        """
+        Evaluates overall market health statistics to determine if a halt is required.
+        Returns True if healthy, False if a halt is triggered.
+        """
+        ...
+
+    def is_active(self) -> bool:
+        """
+        Returns True if the market is currently halted by the circuit breaker.
+        """
+        ...
+
+@runtime_checkable
+class ICircuitBreaker(IPriceLimitEnforcer, Protocol):
+    """
+    Legacy ICircuitBreaker maintained for backward compatibility.
+    Aggregates new safety protocols.
     """
     def get_dynamic_price_bounds(self, item_id: str, current_tick: int, last_trade_tick: int) -> Tuple[float, float]:
         """Calculates price bounds with temporal relaxation to prevent liquidity traps."""

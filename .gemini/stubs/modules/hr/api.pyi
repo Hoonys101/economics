@@ -1,7 +1,7 @@
 import abc
 from abc import ABC, abstractmethod
-from modules.common.dtos import Claim as Claim
-from modules.finance.api import IFinancialAgent as IFinancialAgent
+from modules.common.financial.api import IFinancialAgent as IFinancialAgent
+from modules.common.financial.dtos import Claim as Claim
 from simulation.firms import Firm as Firm
 from typing import Protocol
 

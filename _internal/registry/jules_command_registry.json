@@ -3,14 +3,48 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-HARDEN-LOCK": {
-      "key": "WO-IMPL-HARDEN-LOCK",
-      "title": "Hardening Simulation Lock Management",
+    "MARKET_POLICY_INTEGRATION_SPEC": {
+      "key": "MARKET_POLICY_INTEGRATION_SPEC",
+      "title": "Market Safety Config & Policy Integration Spec",
+      "type": "gemini",
+      "instruction_raw": "MISSION_MARKET_SAFETY_API_SPEC.md \ubc0f MISSION_WO-IMPL-MARKET-POLICY.md\ub97c \ubc14\ud0d5\uc73c\ub85c JSON \uc124\uc815 \uae30\ubc18 \uc2dc\uc7a5 \uc548\uc815\ud654 \uc815\ucc45 \ud1b5\ud569 \uba85\uc138\ub97c \uc791\uc131\ud558\uc2ed\uc2dc\uc624. OrderBookMarket \ubc0f Initializer\uc5d0 \uc5b4\ub5bb\uac8c \uc8fc\uc785\ud560\uc9c0 \uc815\uc758\ud558\uc2ed\uc2dc\uc624.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "modules/market/api.py",
+        "modules/market/safety_dtos.py",
+        "C:/Users/Gram Pro/.gemini/antigravity/brain/7aca855c-502b-4c50-9b83-1da1d1fa8b93/MISSION_WO-IMPL-MARKET-POLICY.md"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MARKET_PRICE_LIMIT_IMPL": {
+      "key": "MARKET_PRICE_LIMIT_IMPL",
+      "title": "PriceLimitEnforcer Implementation",
       "type": "jules",
       "instruction_raw": "",
       "command": "create",
-      "file_path": "C:/Users/Gram Pro/.gemini/antigravity/brain/7aca855c-502b-4c50-9b83-1da1d1fa8b93/MISSION_WO-IMPL-HARDEN-LOCK.md",
-      "wait": true,
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-IMPL-PRICE-LIMIT_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MARKET_INDEX_BREAKER_IMPL": {
+      "key": "MARKET_INDEX_BREAKER_IMPL",
+      "title": "IndexCircuitBreaker Implementation",
+      "type": "jules",
+      "instruction_raw": "",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-IMPL-INDEX-BREAKER_SPEC.md",
+      "wait": false,
       "session_id": null,
       "worker": null,
       "context_files": [],

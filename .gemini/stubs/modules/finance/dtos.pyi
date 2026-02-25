@@ -1,19 +1,11 @@
 from _typeshed import Incomplete
 from dataclasses import dataclass, field as field
+from modules.common.financial.dtos import MoneyDTO as MoneyDTO
 from modules.simulation.api import AgentID as AgentID
 from typing import Any, Literal, TypeAlias
 
 CurrencyCode: TypeAlias = str
 LoanStatus: Incomplete
-
-@dataclass
-class MoneyDTO:
-    """
-    Represents a monetary value with its associated currency.
-    MIGRATION NOTE: Used to be float 'amount'. Now 'amount_pennies' (int).
-    """
-    amount_pennies: int
-    currency: CurrencyCode
 
 @dataclass
 class MultiCurrencyWalletDTO:

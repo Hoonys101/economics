@@ -1,0 +1,13 @@
+{
+  "security_market": {
+    "is_enabled": true,
+    "mode": "DYNAMIC",
+    "base_limit": 0.30
+  },
+  "basic_food": {
+    "is_enabled": false,
+    "mode": "STATIC",
+    "static_ceiling": 1000,
+    "static_floor": 10
+  }
+}

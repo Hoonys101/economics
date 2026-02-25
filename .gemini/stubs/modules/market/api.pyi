@@ -4,7 +4,9 @@ from enum import Enum
 from modules.common.interfaces import IPropertyOwner as IPropertyOwner
 from modules.finance.api import IBank as IBank, IFinancialAgent as IFinancialAgent, ISettlementSystem as ISettlementSystem
 from modules.finance.dtos import MoneyDTO as MoneyDTO
-from modules.simulation.api import IAgent as IAgent, IGovernment as IGovernment
+from modules.government.api import IGovernment as IGovernment
+from modules.market.safety_dtos import PriceLimitConfigDTO as PriceLimitConfigDTO, ValidationResultDTO as ValidationResultDTO
+from modules.simulation.api import IAgent as IAgent
 from modules.system.api import CurrencyCode as CurrencyCode, DEFAULT_CURRENCY as DEFAULT_CURRENCY
 from pydantic import BaseModel
 from simulation.core_agents import Household as Household
@@ -181,9 +183,15 @@ class IHousingTransactionParticipant(IPropertyOwner, IFinancialAgent, Protocol):
     @property
     def residing_property_id(self) -> int | None:
         """ID of the property where the agent currently resides."""
+    @residing_property_id.setter
+    def residing_property_id(self, value: int | None) -> None:
+        """Sets the property where the agent currently resides."""
     @property
     def is_homeless(self) -> bool:
         """Indicates if the agent is currently homeless."""
+    @is_homeless.setter
+    def is_homeless(self, value: bool) -> None:
+        """Sets the homeless status of the agent."""
 
 class IMarket(Protocol):
     """
@@ -240,3 +248,46 @@ class IMarriageMarket(Protocol):
         """
     def get_proposals_for(self, agent_id: int) -> list[MarriageProposalDTO]:
         """Retrieves proposals targeting a specific agent."""
+
+class IPriceLimitEnforcer(Protocol):
+    """
+    Stateless enforcer for price limits, strictly adhering to the Penny Standard (int).
+    Validates orders against reference prices and configured limits.
+    """
+    def validate_order(self, order: CanonicalOrderDTO) -> ValidationResultDTO:
+        """
+        Validates an order's price against active boundaries.
+        MUST remain strictly idempotent and side-effect free (SRP).
+        """
+    def set_reference_price(self, price: int) -> None:
+        """
+        Sets the reference anchor price used for dynamic boundary calculations.
+        """
+    def update_config(self, config: PriceLimitConfigDTO) -> None:
+        """
+        Updates the enforcer's active configuration limits.
+        """
+
+class IIndexCircuitBreaker(Protocol):
+    """
+    Market-wide circuit breaker to monitor macroeconomic health and halt trading.
+    """
+    def check_market_health(self, market_stats: dict[str, Any]) -> bool:
+        """
+        Evaluates overall market health statistics to determine if a halt is required.
+        Returns True if healthy, False if a halt is triggered.
+        """
+    def is_active(self) -> bool:
+        """
+        Returns True if the market is currently halted by the circuit breaker.
+        """
+
+class ICircuitBreaker(IPriceLimitEnforcer, Protocol):
+    """
+    Legacy ICircuitBreaker maintained for backward compatibility.
+    Aggregates new safety protocols.
+    """
+    def get_dynamic_price_bounds(self, item_id: str, current_tick: int, last_trade_tick: int) -> tuple[float, float]:
+        """Calculates price bounds with temporal relaxation to prevent liquidity traps."""
+    def update_price_history(self, item_id: str, price: float) -> None:
+        """Records a traded price to update volatility calculations."""

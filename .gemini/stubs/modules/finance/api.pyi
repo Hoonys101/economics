@@ -3,17 +3,57 @@ from _typeshed import Incomplete
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field as field
 from enum import Enum
-from modules.common.dtos import Claim as Claim
-from modules.finance.dtos import BailoutCovenant as BailoutCovenant, BailoutLoanDTO as BailoutLoanDTO, BondDTO as BondDTO, BorrowerProfileDTO as BorrowerProfileDTO, CreditAssessmentResultDTO as CreditAssessmentResultDTO, DebtStatusDTO as DebtStatusDTO, DepositDTO as DepositDTO, EquityStake as EquityStake, FXMatchDTO as FXMatchDTO, GrantBailoutCommand as GrantBailoutCommand, LienDTO as LienDTO, LoanApplicationDTO as LoanApplicationDTO, LoanDTO as LoanDTO, MoneyDTO as MoneyDTO, MortgageApplicationDTO as MortgageApplicationDTO, MultiCurrencyWalletDTO as MultiCurrencyWalletDTO, PortfolioAsset as PortfolioAsset, PortfolioDTO as PortfolioDTO, SettlementOrder as SettlementOrder, TaxCollectionResult as TaxCollectionResult
+from modules.common.financial.api import IFinancialAgent as IFinancialAgent
+from modules.common.financial.dtos import Claim as Claim, MoneyDTO as MoneyDTO
+from modules.finance.dtos import BailoutCovenant as BailoutCovenant, BailoutLoanDTO as BailoutLoanDTO, BondDTO as BondDTO, BorrowerProfileDTO as BorrowerProfileDTO, CreditAssessmentResultDTO as CreditAssessmentResultDTO, DebtStatusDTO as DebtStatusDTO, DepositDTO as DepositDTO, EquityStake as EquityStake, FXMatchDTO as FXMatchDTO, GrantBailoutCommand as GrantBailoutCommand, LienDTO as LienDTO, LoanApplicationDTO as LoanApplicationDTO, LoanDTO as LoanDTO, MortgageApplicationDTO as MortgageApplicationDTO, MultiCurrencyWalletDTO as MultiCurrencyWalletDTO, PortfolioAsset as PortfolioAsset, PortfolioDTO as PortfolioDTO, SettlementOrder as SettlementOrder, TaxCollectionResult as TaxCollectionResult
 from modules.finance.engine_api import BankStateDTO as BankStateDTO, DepositStateDTO as DepositStateDTO, LoanStateDTO as LoanStateDTO
 from modules.finance.wallet.api import IWallet as IWallet
+from modules.government.api import IGovernment as IGovernment
 from modules.hr.api import IHRService as IHRService
-from modules.simulation.api import AgentID as AgentID, AnyAgentID as AnyAgentID, EconomicIndicatorsDTO as EconomicIndicatorsDTO, IGovernment as IGovernment
+from modules.simulation.api import AgentID as AgentID, AnyAgentID as AnyAgentID, EconomicIndicatorsDTO as EconomicIndicatorsDTO
 from modules.system.api import CurrencyCode as CurrencyCode, DEFAULT_CURRENCY as DEFAULT_CURRENCY, MarketContextDTO as MarketContextDTO
 from simulation.dtos.api import GovernmentSensoryDTO as GovernmentSensoryDTO
 from simulation.models import Order as Order, Transaction as Transaction
 from typing import Any, Callable, Literal, Protocol
 from uuid import UUID
+
+class IFinancialEntity(Protocol):
+    """
+    Standard interface for any entity capable of holding and transferring financial value.
+    Enforces strict integer arithmetic for all monetary operations.
+    """
+    id: AgentID
+    @property
+    def balance_pennies(self) -> int:
+        """Returns the balance in the default currency (pennies)."""
+    def deposit(self, amount_pennies: int, currency: CurrencyCode = ...) -> None:
+        """
+        Deposits funds into the entity's wallet.
+        MUST raise TypeError if amount_pennies is float.
+        """
+    def withdraw(self, amount_pennies: int, currency: CurrencyCode = ...) -> None:
+        """
+        Withdraws funds from the entity's wallet.
+        MUST raise TypeError if amount_pennies is float.
+        MUST raise InsufficientFundsError if balance is insufficient (unless overdraft allowed).
+        """
+
+@dataclass(frozen=True)
+class SettlementVerificationDTO:
+    """
+    Result of a Zero-Sum integrity check after a batch settlement.
+    """
+    tick: int
+    total_debits: int
+    total_credits: int
+    delta: int
+    is_balanced: bool
+    transaction_ids: list[str]
+
+class FloatIncursionError(TypeError):
+    """Raised when a float is passed to a strict integer financial API."""
+class ZeroSumViolationError(RuntimeError):
+    """Raised when a settlement operation fails to balance (Debits != Credits)."""
 
 class ITransaction(Protocol):
     """Module A: Protocol for a completed financial transaction."""
@@ -53,19 +93,6 @@ class LiquidationContext:
 class IConfig(Protocol):
     """Protocol for configuration module."""
     def get(self, key: str, default: Any = None) -> Any: ...
-
-class IFinancialEntity(Protocol):
-    """
-    Standard interface for any entity capable of holding and transferring financial value.
-    Replaces legacy `hasattr` checks and standardizes on integer pennies.
-    """
-    @property
-    def balance_pennies(self) -> int:
-        """Returns the balance in the default currency (pennies)."""
-    def deposit(self, amount_pennies: int, currency: CurrencyCode = ...) -> None:
-        """Deposits funds into the entity's wallet."""
-    def withdraw(self, amount_pennies: int, currency: CurrencyCode = ...) -> None:
-        """Withdraws funds from the entity's wallet."""
 
 class IFinancialFirm(IFinancialEntity, Protocol):
     """
@@ -137,21 +164,6 @@ class IFinanceDepartment(Protocol):
     def pay_ad_hoc_tax(self, amount: int, currency: CurrencyCode, reason: str, government: Any, current_time: int) -> None:
         """Pays a one-time tax of a specific currency."""
 
-class InsufficientFundsError(Exception):
-    """
-    Custom exception to be raised when an operation cannot be completed due to lack of funds.
-    """
-    required: Incomplete
-    available: Incomplete
-    def __init__(self, message: str, required: MoneyDTO | None = None, available: MoneyDTO | None = None) -> None: ...
-
-class LoanNotFoundError(Exception):
-    """Raised when a specified loan is not found."""
-class LoanRepaymentError(Exception):
-    """Raised when there is an issue with loan repayment."""
-class LoanRollbackError(Exception):
-    """Raised when a loan cancellation fails to reverse the associated deposit."""
-
 class ICreditScoringService(Protocol):
     """
     Interface for a service that assesses the creditworthiness of a potential borrower.
@@ -192,27 +204,12 @@ class ILiquidatable(Protocol):
         An empty list signifies no equity holders.
         """
 
-class IFinancialAgent(Protocol):
-    """
-    Protocol for agents participating in the financial system.
-    """
-    id: AgentID
-    def get_liquid_assets(self, currency: CurrencyCode = 'USD') -> int: ...
-    def get_total_debt(self) -> int: ...
-    def get_balance(self, currency: CurrencyCode = ...) -> int:
-        """Returns the current balance for the specified currency."""
-    def get_all_balances(self) -> dict[CurrencyCode, int]:
-        """Returns a copy of all currency balances."""
-    @property
-    def total_wealth(self) -> int:
-        """Returns the total wealth in default currency estimation."""
-
 class IBankService(Protocol):
     """
     Interface for Bank Services used by Markets.
     """
     def get_interest_rate(self) -> float: ...
-    def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int) -> tuple[LoanDTO, Any] | None: ...
+    def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int | None = None, borrower_profile: BorrowerProfileDTO | None = None) -> tuple[LoanDTO, Any] | None: ...
     def stage_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int | None, borrower_profile: BorrowerProfileDTO | None) -> LoanDTO | None: ...
     def repay_loan(self, loan_id: str, amount: int) -> int: ...
 
@@ -292,15 +289,47 @@ class IAccountRegistry(Protocol):
     def remove_agent_from_all_accounts(self, agent_id: AgentID) -> None:
         """Removes an agent from all bank account indices."""
 
+class IMonetaryLedger(Protocol):
+    """
+    Single Source of Truth (SSoT) for M2 Money Supply tracking.
+    Records all authorized monetary expansions and contractions.
+    """
+    def get_total_m2_pennies(self, currency: CurrencyCode = ...) -> int:
+        """Calculates total M2 = Circulating Cash + Total Deposits."""
+    def get_expected_m2_pennies(self, currency: CurrencyCode = ...) -> int:
+        """Returns the authorized baseline money supply including all expansions."""
+    def record_monetary_expansion(self, amount_pennies: int, source: str, currency: CurrencyCode = ...) -> None:
+        """Records authorized money creation (e.g., Central Bank OMO, Bank Loans)."""
+    def record_monetary_contraction(self, amount_pennies: int, source: str, currency: CurrencyCode = ...) -> None:
+        """Records authorized money destruction (e.g., Loan Repayments, Central Bank QT)."""
+    def set_expected_m2(self, amount_pennies: int, currency: CurrencyCode = ...) -> None:
+        """Sets the baseline M2 (e.g. at genesis)."""
+    def record_credit_expansion(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None: ...
+    def record_credit_destruction(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None: ...
+
 class ISettlementSystem(IAccountRegistry, Protocol):
     """
-    Interface for the centralized settlement system.
-    Basic financial operations for Households and Firms.
-    Inherits IAccountRegistry to maintain backward compatibility for account management
-    methods during the transition to a dedicated AccountRegistry service.
+    The transactional kernel for all financial operations.
+    Responsible for ATOMIC, ZERO-SUM transfers between entities.
     """
-    def transfer(self, debit_agent: IFinancialAgent, credit_agent: IFinancialAgent, amount: int, memo: str, debit_context: dict[str, Any] | None = None, credit_context: dict[str, Any] | None = None, tick: int = 0, currency: CurrencyCode = ...) -> ITransaction | None:
-        """Executes an immediate, single transfer. Returns transaction or None."""
+    def get_total_m2_pennies(self, currency: CurrencyCode = ...) -> int:
+        """Calculates total M2 = Circulating Cash + Total Deposits."""
+    def get_total_circulating_cash(self, currency: CurrencyCode = ...) -> int:
+        """Returns total physical cash held by non-system agents (M0 outside bank reserves)."""
+    def set_monetary_ledger(self, ledger: IMonetaryLedger) -> None:
+        """Injects the Monetary Ledger for tracking expansions/contractions."""
+    def transfer(self, debit_agent: IFinancialEntity, credit_agent: IFinancialEntity, amount: int, memo: str, debit_context: dict[str, Any] | None = None, credit_context: dict[str, Any] | None = None, tick: int = 0, currency: CurrencyCode = ...) -> ITransaction | None:
+        """
+        Executes an immediate, single transfer.
+        MUST enforce:
+        1. amount is int (no floats).
+        2. debit_agent has funds (or overdraft).
+        3. Zero-sum outcome (Debit - Credit == 0).
+        """
+    def audit_total_m2(self, expected_total: int | None = None) -> bool:
+        """
+        Audits the total M2 money supply in the system against registered CurrencyHolders.
+        """
     def execute_swap(self, match: FXMatchDTO) -> ITransaction | None:
         """
         Phase 4.1: Executes an atomic currency swap (Barter FX).
@@ -314,20 +343,21 @@ class ISettlementSystem(IAccountRegistry, Protocol):
 
 class IMonetaryAuthority(ISettlementSystem, Protocol):
     """
-    Interface for monetary authority operations (Central Bank, Government, God Mode).
-    Extends ISettlementSystem with money creation/destruction capabilities.
+    Extended interface for authorized NON-ZERO-SUM operations.
+    Used by Central Bank and Government (Minting/Burning).
     """
+    def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = 'god_mode_injection') -> bool:
+        """
+        Creates new money (M2 Expansion).
+        Records creation event in MonetaryLedger.
+        """
+    def transfer_and_destroy(self, source: IFinancialEntity, sink_authority: IFinancialEntity, amount: int, reason: str, tick: int, currency: CurrencyCode = ...) -> Any:
+        """
+        Destroys money (M2 Contraction).
+        Records destruction event in MonetaryLedger.
+        """
     def create_and_transfer(self, source_authority: IFinancialAgent, destination: IFinancialAgent, amount: int, reason: str, tick: int, currency: CurrencyCode = ...) -> ITransaction | None:
         """Creates new money (or grants) and transfers it to an agent."""
-    def transfer_and_destroy(self, source: IFinancialAgent, sink_authority: IFinancialAgent, amount: int, reason: str, tick: int, currency: CurrencyCode = ...) -> ITransaction | None:
-        """Transfers money from an agent to an authority to be destroyed."""
-    def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = 'god_mode_injection') -> bool:
-        """Minting capability for God Mode."""
-    def audit_total_m2(self, expected_total: int | None = None) -> bool:
-        """
-        Audits the total M2 money supply in the system.
-        Returns True if the audit passes (or no expectation set), False otherwise.
-        """
     def record_liquidation(self, agent: IFinancialAgent, inventory_value: int, capital_value: int, recovered_cash: int, reason: str, tick: int, government_agent: IFinancialAgent | None = None) -> None:
         """
         Records the outcome of an asset liquidation.
@@ -502,6 +532,17 @@ class ITaxService(ABC, metaclass=abc.ABCMeta):
     @abstractmethod
     def calculate_liquidation_tax_claims(self, firm: Firm) -> list[Claim]:
         """Calculates corporate tax claims for a firm in liquidation."""
+
+class ILiquidator(Protocol):
+    """
+    Protocol for performing asset liquidations and escheatment.
+    Separates the financial settlement of debt from the physical asset recovery.
+    """
+    def liquidate_assets(self, bankrupt_agent: IFinancialAgent, assets: Any, tick: int) -> None:
+        """
+        Performs escheatment or mint-to-buy operations to clear bankrupt assets
+        without relying on standard market constraints.
+        """
 
 @dataclass(frozen=True)
 class ShareholderData:

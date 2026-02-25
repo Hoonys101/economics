@@ -1,4 +1,4 @@
-from modules.finance.api import IFinancialAgent as IFinancialAgent
+from modules.finance.api import IFinancialAgent as IFinancialAgent, IMonetaryLedger as IMonetaryLedger
 from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO as HousingTransactionSagaStateDTO, IHousingTransactionSagaHandler as IHousingTransactionSagaHandler
 from modules.system.api import CurrencyCode as CurrencyCode, DEFAULT_CURRENCY as DEFAULT_CURRENCY
 from simulation.finance.api import ITransaction as ITransaction
@@ -24,23 +24,6 @@ class ISagaOrchestrator(Protocol):
         """
     def get_active_sagas(self) -> dict[UUID, HousingTransactionSagaStateDTO]:
         """Returns a view of the currently active sagas."""
-
-class IMonetaryLedger(Protocol):
-    """
-    An observational service that records events impacting the money supply (M2)
-    which are not direct mint/burn actions by the Central Bank.
-    e.g., fractional reserve banking via mortgage disbursal.
-    """
-    def record_credit_expansion(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None:
-        """
-        Records that new credit has been extended, increasing the money supply.
-        This creates an observational Transaction record, it does not move funds.
-        """
-    def record_credit_destruction(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None:
-        """
-        Records that credit has been paid back or rolled back, decreasing the money supply.
-        This creates an observational Transaction record.
-        """
 
 class ISettlementSystem(Protocol):
     """
