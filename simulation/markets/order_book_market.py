@@ -6,9 +6,11 @@ from dataclasses import dataclass
 
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, ICircuitBreaker
+from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, ICircuitBreaker, IPriceLimitEnforcer
 from simulation.markets.matching_engine import OrderBookMatchingEngine
 from simulation.markets.circuit_breaker import DynamicCircuitBreaker
+from modules.market.safety.price_limit import PriceLimitEnforcer
+from modules.market.safety_dtos import PriceLimitConfigDTO
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +67,7 @@ class OrderBookMarket(Market):
     매수/매도 주문을 접수하고, 가격 우선 및 시간 우선 원칙에 따라 주문을 매칭하여 거래를 체결합니다.
     """
 
-    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, circuit_breaker: Optional[ICircuitBreaker] = None):
+    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, circuit_breaker: Optional[ICircuitBreaker] = None, enforcer: Optional[IPriceLimitEnforcer] = None):
         """OrderBookMarket을 초기화합니다.
 
         Args:
@@ -73,6 +75,7 @@ class OrderBookMarket(Market):
             config_module (Any, optional): 시뮬레이션 설정 모듈.
             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
             circuit_breaker (ICircuitBreaker, optional): 주입된 서킷 브레이커 인스턴스.
+            enforcer (IPriceLimitEnforcer, optional): 주입된 가격 제한 집행기.
         """
         super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
         self.id = market_id
@@ -95,6 +98,15 @@ class OrderBookMarket(Market):
 
         # WO-136: Dynamic Circuit Breakers (Modular)
         self.circuit_breaker = circuit_breaker or DynamicCircuitBreaker(config_module, self.logger)
+
+        # WO-IMPL-MARKET-POLICY: Price Limit Enforcer
+        if enforcer:
+            self.enforcer = enforcer
+        else:
+            # Default permissive enforcer if none provided (e.g. legacy tests)
+            # Create a disabled config
+            default_config = PriceLimitConfigDTO(id=f"{market_id}_safety", is_enabled=False, mode='STATIC')
+            self.enforcer = PriceLimitEnforcer(default_config)
 
         # Phase 10: Stateless Matching Engine
         self.matching_engine = OrderBookMatchingEngine()
@@ -179,30 +191,49 @@ class OrderBookMarket(Market):
 
     def place_order(self, order_dto: CanonicalOrderDTO, current_time: int):
         """시장에 주문을 제출합니다. 매칭은 별도의 메서드로 처리됩니다.
-        WO-136: Checks dynamic circuit breakers before accepting.
+        WO-IMPL-MARKET-POLICY: Checks PriceLimitEnforcer before accepting.
 
         Args:
             order_dto (CanonicalOrderDTO): 제출할 주문 객체.
             current_time (int): 현재 시뮬레이션 틱 (시간) 입니다.
         """
-        # WO-136: Circuit Breaker Check
-        last_trade_tick = self.last_trade_ticks.get(order_dto.item_id, -1)
-        min_price, max_price = self.circuit_breaker.get_dynamic_price_bounds(order_dto.item_id, current_time, last_trade_tick)
-        if order_dto.price_limit < min_price or order_dto.price_limit > max_price:
-            # Check if bounds are active (max_price < inf)
-            if max_price < float('inf'):
-                self.logger.warning(
-                    f"CIRCUIT_BREAKER | Order rejected. Price {order_dto.price_limit:.2f} out of bounds [{min_price:.2f}, {max_price:.2f}]",
-                    extra={
-                        "tick": current_time,
-                        "market_id": self.id,
-                        "agent_id": order_dto.agent_id,
-                        "item_id": order_dto.item_id,
-                        "price": order_dto.price_limit,
-                        "bounds": (min_price, max_price)
-                    }
-                )
-                return # Reject order
+        # 1. Validate order via injected enforcer
+        validation_result = self.enforcer.validate_order(order_dto)
+
+        # 2. Handle Rejection
+        if not validation_result.is_valid:
+            self.logger.warning(
+                f"SAFETY_POLICY | Order rejected: {validation_result.reason}",
+                extra={
+                    "tick": current_time,
+                    "market_id": self.id,
+                    "agent_id": order_dto.agent_id,
+                    "item_id": order_dto.item_id,
+                    "price_pennies": order_dto.price_pennies,
+                    "reason": validation_result.reason
+                }
+            )
+            return # Drop order immediately
+
+        # 3. Legacy Circuit Breaker Check (Maintain backward compatibility for volatility/relaxation)
+        if self.circuit_breaker:
+             last_trade_tick = self.last_trade_ticks.get(order_dto.item_id, -1)
+             min_price, max_price = self.circuit_breaker.get_dynamic_price_bounds(order_dto.item_id, current_time, last_trade_tick)
+             if order_dto.price_limit < min_price or order_dto.price_limit > max_price:
+                 # Check if bounds are active (max_price < inf)
+                 if max_price < float('inf'):
+                     self.logger.warning(
+                         f"CIRCUIT_BREAKER | Order rejected. Price {order_dto.price_limit:.2f} out of bounds [{min_price:.2f}, {max_price:.2f}]",
+                         extra={
+                             "tick": current_time,
+                             "market_id": self.id,
+                             "agent_id": order_dto.agent_id,
+                             "item_id": order_dto.item_id,
+                             "price": order_dto.price_limit,
+                             "bounds": (min_price, max_price)
+                         }
+                     )
+                     return # Reject order
 
         # Convert to mutable MarketOrder
         order = MarketOrder.from_dto(order_dto)
@@ -425,3 +456,10 @@ class OrderBookMarket(Market):
                 dto = order.to_dto(self.id)
                 snapshot.append(OrderTelemetrySchema.from_canonical(dto))
         return snapshot
+
+    def set_reference_price(self, price: int) -> None:
+        """
+        Updates the enforcer's reference price.
+        Called by TickOrchestrator or Market orchestrator.
+        """
+        self.enforcer.set_reference_price(price)

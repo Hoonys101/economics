@@ -24,6 +24,8 @@ from simulation.loan_market import LoanMarket
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.markets.circuit_breaker import DynamicCircuitBreaker
 from simulation.markets.stock_market import StockMarket
+from modules.market.safety.price_limit import PriceLimitEnforcer
+from modules.market.safety_dtos import PriceLimitConfigDTO
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.metrics.inequality_tracker import InequalityTracker
 from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStatisticsTracker
@@ -283,15 +285,20 @@ class SimulationInitializer(SimulationInitializerInterface):
         """
         sim.real_estate_units = [RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE, rent_price=self.config.INITIAL_RENT_PRICE) for i in range(self.config.NUM_HOUSING_UNITS)]
 
+        # Load Market Safety Configs
+        safety_configs = self._load_market_safety_config()
+
         sim.markets = {}
         for good_name in self.config.GOODS:
              cb = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
-             sim.markets[good_name] = OrderBookMarket(market_id=good_name, config_module=self.config, circuit_breaker=cb)
+             enforcer = self._create_enforcer(good_name, safety_configs)
+             sim.markets[good_name] = OrderBookMarket(market_id=good_name, config_module=self.config, circuit_breaker=cb, enforcer=enforcer)
 
         sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
 
         cb_sec = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
-        sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config, circuit_breaker=cb_sec)
+        sec_enforcer = self._create_enforcer('security_market', safety_configs)
+        sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config, circuit_breaker=cb_sec, enforcer=sec_enforcer)
 
         if sim.central_bank:
              sim.central_bank.set_bond_market(sim.markets['security_market'])
@@ -309,7 +316,8 @@ class SimulationInitializer(SimulationInitializerInterface):
             sim.stock_tracker = None
 
         cb_housing = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
-        sim.markets['housing'] = OrderBookMarket(market_id='housing', config_module=self.config, circuit_breaker=cb_housing)
+        housing_enforcer = self._create_enforcer('housing', safety_configs)
+        sim.markets['housing'] = OrderBookMarket(market_id='housing', config_module=self.config, circuit_breaker=cb_housing, enforcer=housing_enforcer)
 
         sim.inequality_tracker = InequalityTracker(config_module=self.config)
         sim.personality_tracker = PersonalityStatisticsTracker(config_module=self.config)
@@ -542,3 +550,35 @@ class SimulationInitializer(SimulationInitializerInterface):
         
         if hasattr(sim.settlement_system, 'set_panic_recorder'):
              sim.settlement_system.set_panic_recorder(sim.world_state)
+
+    def _load_market_safety_config(self) -> Dict[str, PriceLimitConfigDTO]:
+        """Loads market safety configuration from JSON."""
+        config_path = "config/market_safety.json"
+        configs = {}
+        try:
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    data = json.load(f)
+                    for key, val in data.items():
+                        configs[key] = PriceLimitConfigDTO(
+                            id=val.get('id', key),
+                            is_enabled=val.get('is_enabled', True),
+                            mode=val.get('mode', 'DYNAMIC'),
+                            base_limit=val.get('base_limit', 0.30),
+                            static_ceiling=val.get('static_ceiling'),
+                            static_floor=val.get('static_floor')
+                        )
+            else:
+                self.logger.warning(f"Market safety config not found at {config_path}. Using defaults.")
+        except Exception as e:
+            self.logger.warning(f"Failed to load market safety config: {e}. Using defaults.")
+
+        return configs
+
+    def _create_enforcer(self, market_id: str, configs: Dict[str, PriceLimitConfigDTO]) -> PriceLimitEnforcer:
+        """Creates a PriceLimitEnforcer for the given market."""
+        config = configs.get(market_id, configs.get("default"))
+        if not config:
+            # Fallback if no default in json
+            config = PriceLimitConfigDTO(id=f"{market_id}_safety", is_enabled=True, mode='DYNAMIC')
+        return PriceLimitEnforcer(config)
