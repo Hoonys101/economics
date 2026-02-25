@@ -58,7 +58,9 @@ class MonetaryLedger(IMonetaryLedger):
             metadata={
                 "source": source,
                 "currency": currency,
-                "is_monetary_expansion": True
+                "is_monetary_expansion": True,
+                "executed": True,
+                "is_audit": True
             },
             total_pennies=amount_pennies
         )
@@ -80,7 +82,9 @@ class MonetaryLedger(IMonetaryLedger):
             metadata={
                 "source": source,
                 "currency": currency,
-                "is_monetary_destruction": True
+                "is_monetary_destruction": True,
+                "executed": True,
+                "is_audit": True
             },
             total_pennies=amount_pennies
         )
