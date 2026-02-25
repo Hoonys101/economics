@@ -3,13 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-FIN-M2-CALC-FIX": {
-      "key": "WO-IMPL-FIN-M2-CALC-FIX",
-      "title": "Refine M2 Calculation Definition",
+    "WO-IMPL-FIN-CREDIT-EXPANSION-TRACKING": {
+      "key": "WO-IMPL-FIN-CREDIT-EXPANSION-TRACKING",
+      "title": "Credit Expansion Tracking & Financial Module Debt Cleanup",
       "type": "jules",
-      "instruction_raw": "Fix 4B+ penny delta by eliminating double-counting in SettlementSystem.",
+      "instruction_raw": "Resolve M2 Delta by recording credit creation/destruction in MonetaryLedger. Bundle fixes for DRY excluded_ids, Government M2 exclusion, accounting gap, Bank hasattr coupling, hardcoded bond rate, and Settlement dark pool.",
       "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-SPEC-FIN-M2-CALC-FIX_SPEC.md",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-SPEC-FIN-CREDIT-EXPANSION-TRACKING_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,

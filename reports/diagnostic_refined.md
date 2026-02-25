@@ -13,90 +13,145 @@ Critical events extracted for Gemini analysis.
 - **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
 - **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
 - **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 200051140
-- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 443890518, Expected: 243890518, Delta: 200000000
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 200051140
-- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 443846682, Expected: 243890518, Delta: 199956164
-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 199938311
-- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 843629354, Expected: 443803772, Delta: 399825582
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 199938311
-- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 843585518, Expected: 443803772, Delta: 399781746
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 51490.
-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
-- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1082695256, Expected: 563380559, Delta: 519314697
-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 189928071
-- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1446888282, Expected: 737735388, Delta: 709152894
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 189928071
-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
-- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1466593948, Expected: 747612198, Delta: 718981750
-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 102705886
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 102766915
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 102766994
-- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1549837094, Expected: 789257929, Delta: 760579165
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 102705886
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 102766915
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 102766994
-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 204215828
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 103 (Type: Household) = 103874754
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 105 (Type: Household) = 103804734
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 106 (Type: Household) = 103770743
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 113799282
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 118860299
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 113860378
-- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1956988773, Expected: 987302155, Delta: 969686618
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 204215828
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 103 (Type: Household) = 103874754
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 105 (Type: Household) = 103804734
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 106 (Type: Household) = 103770743
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 113799282
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 118860299
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 113860378
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4578574, Req: 5000000.
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 100 (Type: Household) = 108928810
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 101 (Type: Household) = 109899533
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 102 (Type: Household) = 109892325
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 103 (Type: Household) = 114968733
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 104 (Type: Household) = 109904301
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 105 (Type: Household) = 114897910
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 106 (Type: Household) = 114862894
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 107 (Type: Household) = 104890992
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 109 (Type: Household) = 109970419
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 111 (Type: Household) = 109942527
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 112 (Type: Household) = 104909684
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 114 (Type: Household) = 104937017
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 124890459
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 129924100
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 124951543
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 118 (Type: Household) = 104930250
-- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1956939635, Expected: 987302155, Delta: 969637480
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 100 (Type: Household) = 108928810
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 101 (Type: Household) = 109899533
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 102 (Type: Household) = 109892325
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 103 (Type: Household) = 114968733
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 104 (Type: Household) = 109904301
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 105 (Type: Household) = 114897910
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 106 (Type: Household) = 114862894
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 107 (Type: Household) = 104890992
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 109 (Type: Household) = 109970419
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 111 (Type: Household) = 109942527
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 112 (Type: Household) = 104909684
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 114 (Type: Household) = 104937017
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 124890459
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 129924100
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 124951543
-- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 118 (Type: Household) = 104930250
+- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 443983519, Expected: 243983519, Delta: 200000000
+- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 443939683, Expected: 243983519, Delta: 199956164
+- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 843722323, Expected: 443896757, Delta: 399825566
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 31904.
+- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 843678487, Expected: 443896757, Delta: 399781730
+- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1204443890, Expected: 613189909, Delta: 591253981
+- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1204396734, Expected: 613189909, Delta: 591206825
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1295415, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1295415, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1295415, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1295415, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1295415, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1295415, Req: 5000000.
+- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1290077703, Expected: 647671263, Delta: 642406440
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2953871, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2953871, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2953871, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2953871, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2953871, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2953871, Req: 5000000.
+- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1363328506, Expected: 673069945, Delta: 690258561
+- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1770254773, Expected: 869889753, Delta: 900365020
+- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1770207137, Expected: 869889753, Delta: 900317384
+- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2158453152, Expected: 1064036644, Delta: 1094416508
+- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2179272480, Expected: 1074470259, Delta: 1104802221
+- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2567424890, Expected: 1268570485, Delta: 1298854405
+- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2567376703, Expected: 1268570485, Delta: 1298806218
+- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2591614908, Expected: 1268570485, Delta: 1323044423
+- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2591566416, Expected: 1268570485, Delta: 1322995931
+- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2611901752, Expected: 1268570485, Delta: 1343331267
+- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2833980367, Expected: 1379636739, Delta: 1454343628
+- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3020564078, Expected: 1472956055, Delta: 1547608023
+- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3252547056, Expected: 1588975594, Delta: 1663571462
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 828, Req: 1010.
+- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3252489602, Expected: 1588975594, Delta: 1663514008
+- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3274087859, Expected: 1588975594, Delta: 1685112265
+- **Tick 23** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.56 out of bounds [8.78, 11.93]
+  - Details: agent_id=122
+- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3273974240, Expected: 1588975594, Delta: 1684998646
+- **Tick 24** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.13 out of bounds [8.78, 11.93]
+  - Details: agent_id=122
+- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3608632113, Expected: 1756371777, Delta: 1852260336
+- **Tick 25** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.72 out of bounds [8.78, 11.93]
+  - Details: agent_id=122
+- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3692114351, Expected: 1798194087, Delta: 1893920264
+- **Tick 26** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.33 out of bounds [8.78, 11.93]
+  - Details: agent_id=122
+- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4026617832, Expected: 1965545689, Delta: 2061072143
+- **Tick 27** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.96 out of bounds [8.75, 11.90]
+  - Details: agent_id=122
+- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4026368022, Expected: 1965545689, Delta: 2060822333
+- **Tick 28** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.61 out of bounds [8.72, 11.87]
+  - Details: agent_id=122
+- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4049277086, Expected: 1965545689, Delta: 2083731397
+- **Tick 29** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.27 out of bounds [8.72, 11.87]
+  - Details: agent_id=122
+- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4048869476, Expected: 1965545689, Delta: 2083323787
+- **Tick 30** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.95 out of bounds [8.72, 11.87]
+  - Details: agent_id=122
+- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4048339972, Expected: 1965545689, Delta: 2082794283
+- **Tick 31** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.65 out of bounds [8.72, 11.87]
+  - Details: agent_id=122
+- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4243509737, Expected: 2063477481, Delta: 2180032256
+- **Tick 32** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.36 out of bounds [8.70, 11.85]
+  - Details: agent_id=122
+- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4474843210, Expected: 2179601969, Delta: 2295241241
+- **Tick 33** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.09 out of bounds [8.70, 11.85]
+  - Details: agent_id=122
+- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4669401524, Expected: 2277488527, Delta: 2391912997
+- **Tick 34** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.83 out of bounds [8.68, 11.82]
+  - Details: agent_id=122
+- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4899835760, Expected: 2393515213, Delta: 2506320547
+- **Tick 35** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.58 out of bounds [8.68, 11.82]
+  - Details: agent_id=122
+- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5093353414, Expected: 2491356867, Delta: 2601996547
+- **Tick 36** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.35 out of bounds [8.67, 11.80]
+  - Details: agent_id=122
+- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 121 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+  - Details: agent_id=121
+- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5325282022, Expected: 2607389817, Delta: 2717892205
+- **Tick 37** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.13 out of bounds [8.67, 11.80]
+  - Details: agent_id=122
+- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5520840335, Expected: 2705244900, Delta: 2815595435
+- **Tick 38** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.92 out of bounds [8.65, 11.79]
+  - Details: agent_id=122
+- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5762528951, Expected: 2826173624, Delta: 2936355327
+- **Tick 39** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.72 out of bounds [8.65, 11.79]
+  - Details: agent_id=122
+- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5958062856, Expected: 2924034895, Delta: 3034027961
+- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6188057888, Expected: 3039133247, Delta: 3148924641
+- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6394861562, Expected: 3142649012, Delta: 3252212550
+- **Tick 42** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.56 out of bounds [8.62, 11.75]
+  - Details: agent_id=123
+- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6624709137, Expected: 3257702277, Delta: 3367006860
+- **Tick 43** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.13 out of bounds [8.62, 11.75]
+  - Details: agent_id=123
+- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6831462023, Expected: 3361226375, Delta: 3470235648
+- **Tick 44** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.72 out of bounds [8.62, 11.75]
+  - Details: agent_id=123
+- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7071138894, Expected: 3481233715, Delta: 3589905179
+- **Tick 45** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.33 out of bounds [8.60, 11.72]
+  - Details: agent_id=123
+- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7277709662, Expected: 3584712844, Delta: 3692996818
+- **Tick 46** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.96 out of bounds [8.60, 11.72]
+  - Details: agent_id=123
+- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7517187745, Expected: 3704674669, Delta: 3812513076
+- **Tick 47** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.61 out of bounds [8.60, 11.72]
+  - Details: agent_id=123
+- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7723541776, Expected: 3808108414, Delta: 3915433362
+- **Tick 48** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.27 out of bounds [8.58, 11.70]
+  - Details: agent_id=123
+- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7962780647, Expected: 3928024262, Delta: 4034756385
+- **Tick 49** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.95 out of bounds [8.58, 11.70]
+  - Details: agent_id=123
+- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8178869381, Expected: 4036411431, Delta: 4142457950
+- **Tick 50** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.65 out of bounds [8.56, 11.67]
+  - Details: agent_id=123
+- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8417814331, Expected: 4156280937, Delta: 4261533394
+- **Tick 51** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.36 out of bounds [8.56, 11.67]
+  - Details: agent_id=123
+- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8633471387, Expected: 4264569890, Delta: 4368901497
+- **Tick 52** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.09 out of bounds [8.56, 11.67]
+  - Details: agent_id=123
+- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8872151444, Expected: 4384444451, Delta: 4487706993
+- **Tick 53** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.83 out of bounds [8.54, 11.63]
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 120 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+  - Details: agent_id=120
+- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9088589574, Expected: 4492685434, Delta: 4595904140
+- **Tick 54** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.58 out of bounds [8.54, 11.63]
+  - Details: agent_id=123
+- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9328337198, Expected: 4612581164, Delta: 4715756034
+- **Tick 55** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.35 out of bounds [8.54, 11.63]
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 123 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+  - Details: agent_id=123
+- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9554747870, Expected: 4725808418, Delta: 4828939452
+- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9794219186, Expected: 4845565994, Delta: 4948653192
+- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10020825082, Expected: 4958890860, Delta: 5061934222
+- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10260100360, Expected: 5078550417, Delta: 5181549943
+- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10486613056, Expected: 5191828683, Delta: 5294784373
+- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10735793160, Expected: 5316440653, Delta: 5419352507
