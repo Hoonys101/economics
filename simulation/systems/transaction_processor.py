@@ -141,6 +141,7 @@ class TransactionProcessor(SystemInterface):
             public_manager=public_manager,
             transaction_queue=[],  # Initialize empty queue for side-effects
             shareholder_registry=state.shareholder_registry,
+            estate_registry=getattr(state, 'estate_registry', None)
         )
 
         default_handler = self._handlers.get("default")
@@ -199,11 +200,21 @@ class TransactionProcessor(SystemInterface):
                 if seller: is_seller_inactive = True
 
             # Inactive Agent Guard
-            # Skip transaction if an agent is inactive, unless it's a special type (Escheatment/Liquidation)
-            allowed_inactive_types = ["escheatment", "liquidation", "asset_buyout", "asset_transfer", "education_spending"]
-            if (is_buyer_inactive or is_seller_inactive) and tx.transaction_type not in allowed_inactive_types:
+            # Skip transaction if an agent is inactive, unless it's a special type or in EstateRegistry
+            allowed_inactive_types = ["escheatment", "liquidation", "asset_buyout", "asset_transfer", "education_spending", "wage", "dividend"]
+            
+            # Check if inactive agents are actually in the Estate Registry (valid for settlement)
+            estate_safe = True
+            if is_buyer_inactive:
+                if not (context.estate_registry and context.estate_registry.get_agent(tx.buyer_id)):
+                    estate_safe = False
+            if is_seller_inactive:
+                if not (context.estate_registry and context.estate_registry.get_agent(tx.seller_id)):
+                    estate_safe = False
+
+            if (is_buyer_inactive or is_seller_inactive) and not estate_safe and tx.transaction_type not in allowed_inactive_types:
                 state.logger.warning(
-                    f"Transaction Skipped: Inactive Agent involved. "
+                    f"Transaction Skipped: Inactive Agent involved and not in Estate. "
                     f"Buyer: {tx.buyer_id} (Inactive={is_buyer_inactive}), "
                     f"Seller: {tx.seller_id} (Inactive={is_seller_inactive}) "
                     f"for Transaction: {tx.transaction_type}"

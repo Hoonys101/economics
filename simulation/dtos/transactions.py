@@ -45,3 +45,4 @@ class TransactionContext:
     public_manager: Optional[Any] # PublicManager
     transaction_queue: List['Transaction'] # For appending side-effect transactions (e.g. credit creation)
     shareholder_registry: Optional['IShareholderRegistry'] = None # TD-275
+    estate_registry: Optional[Any] = None

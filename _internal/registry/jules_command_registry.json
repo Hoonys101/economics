@@ -3,13 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-FINANCIAL-PRECISION": {
-      "key": "WO-IMPL-FINANCIAL-PRECISION",
-      "title": "Financial Precision & Liquidation Dust Fix",
+    "WO-IMPL-FINANCIAL-FIX-PH33": {
+      "key": "WO-IMPL-FINANCIAL-FIX-PH33",
+      "title": "Implementation of Financial Integrity & M2 SSoT",
       "type": "jules",
-      "instruction_raw": "Harden DTOs to integer pennies and fix liquidation pro-rata truncation.",
+      "instruction_raw": "Implement the unified M2 definition via IMonetaryLedger, refactor WorldState/TickOrchestrator, and fix agent registration leaks.",
       "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-IMPL-FINANCIAL-PRECISION_SPEC.md",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-SPEC-FINANCIAL-FIX-PH33_PLAN.md",
       "wait": false,
       "session_id": null,
       "worker": null,

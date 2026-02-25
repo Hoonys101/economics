@@ -211,11 +211,17 @@ class WorldState:
 
         # 1. Active Agents in Registry
         # Use self.agents as the primary source of truth to avoid missing agents
-        # that were not registered in currency_holders (Fix for Current: 0.00 bug)
+        system_agent_ids = {ID_CENTRAL_BANK, ID_SYSTEM, getattr(self.bank, 'id', -999) if self.bank else -999}
+        
         for agent in self.agents.values():
             # Dead Agent Guard (Strict)
             if hasattr(agent, 'is_active') and not agent.is_active:
                 continue
+            
+            # Exclude System Agents from M2 (Double-counting guard)
+            if hasattr(agent, 'id') and agent.id in system_agent_ids:
+                continue
+                
             process_agent(agent)
 
         # 2. Estate Agents (Always Inactive, but holding funds)
