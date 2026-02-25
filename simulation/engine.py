@@ -71,6 +71,15 @@ class Simulation:
         # Expose via global module attribute for access by agents
         simulation.logger = self.simulation_logger
 
+    def initialize(self) -> None:
+        """
+        Final initialization step for the Simulation facade.
+        Ensures the database schema is up-to-date before any processing begins.
+        """
+        if self.world_state.repository:
+            self.world_state.repository.migrate()
+        logger.info("Simulation initialized and database schema verified.")
+
     def __getattr__(self, name: str) -> Any:
         return getattr(self.world_state, name)
 
