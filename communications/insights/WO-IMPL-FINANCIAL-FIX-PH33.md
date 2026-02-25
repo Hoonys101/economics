@@ -27,8 +27,9 @@ During implementation, several tests failed due to **Mock Drift** and **Protocol
 -   **Fix:** Added the missing methods to `MockSettlementSystem` to satisfy the updated protocol.
 
 ### Logic Gap Fixes (Post-Review)
--   **M2 Leak (Bond Issuance):** `FinanceSystem.issue_treasury_bonds` was updated to explicitly record M2 expansion when system agents (CB/Bank Reserves) purchase bonds from the Government (which is part of M2), preventing a divergence between Actual and Expected M2.
+-   **M2 Leak (Bond Issuance):** `FinanceSystem.issue_treasury_bonds` was updated to explicitly record M2 expansion when system agents (CB/Bank Reserves) purchase bonds from the Government (which is part of M2), preventing a divergence between Actual and Expected M2. This check now explicitly verifies the buyer is a System Agent to prevent future bugs if Households purchase bonds.
 -   **Legacy Fallback Drift:** `WorldState._legacy_calculate_total_money` was updated to exclude `ID_ESCROW` and `ID_PUBLIC_MANAGER` to align with the new `SettlementSystem` logic.
+-   **M2 Leak (Estate Agents):** `SettlementSystem.get_total_circulating_cash` was updated to include cash held by `EstateRegistry` agents, preventing M2 drift when agents are liquidated.
 
 ### Legacy Method Support
 -   **Saga Compatibility:** `IMonetaryLedger` retains `record_credit_expansion` and `record_credit_destruction` as wrappers around the new API to prevent breaking legacy `SagaHandler` calls, although `SagaHandler` itself was also updated to use the new API for consistency.

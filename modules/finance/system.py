@@ -407,7 +407,10 @@ class FinanceSystem(IFinanceSystem):
             # Government (Seller) IS in M2 in this simulation configuration.
             # Bank Reserves and Central Bank are OUT of M2.
             # Money moves from Non-M2 to M2 -> Expansion.
-            if self.monetary_ledger:
+            # Added explicit check to prevent M2 divergence if Households/Firms buy bonds in future.
+            is_system_buyer = hasattr(buyer_agent, 'id') and buyer_agent.id in {self.bank.id, self.central_bank.id}
+
+            if self.monetary_ledger and is_system_buyer:
                 self.monetary_ledger.record_monetary_expansion(
                     amount_pennies=amount,
                     source=f"bond_issuance_{bond_id}",

@@ -2,6 +2,7 @@ import pytest
 from typing import Protocol, runtime_checkable
 from modules.finance.api import IFinancialEntity, ISettlementSystem, IBankService
 from modules.finance.transaction.api import ITransactionExecutor, ITransactionValidator
+from modules.system.api import DEFAULT_CURRENCY
 
 class MockFinancialEntity:
     """Correct implementation of IFinancialEntity"""
@@ -42,8 +43,8 @@ class MockSettlementSystem:
     def audit_total_m2(self, expected_total=None): # Added missing method
         return True
 
-    def get_total_m2_pennies(self, currency="USD") -> int: return 0
-    def get_total_circulating_cash(self, currency="USD") -> int: return 0
+    def get_total_m2_pennies(self, currency=DEFAULT_CURRENCY) -> int: return 0
+    def get_total_circulating_cash(self, currency=DEFAULT_CURRENCY) -> int: return 0
     def set_monetary_ledger(self, ledger): pass
 
     def get_account_holders(self, bank_id):

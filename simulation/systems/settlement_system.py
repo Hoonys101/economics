@@ -184,34 +184,47 @@ class SettlementSystem(IMonetaryAuthority):
     def get_total_circulating_cash(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         """
         Returns total physical cash held by non-bank agents (M0 outside bank reserves).
+        Includes Estate Agents to prevent M2 Leak upon death.
         """
-        if not self.agent_registry: return 0
-
-        agents = self.agent_registry.get_all_financial_agents()
         total_cash = 0
 
-        system_ids = {str(ID_CENTRAL_BANK), str(ID_SYSTEM), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
+        # 1. Active Agents
+        if self.agent_registry:
+            agents = self.agent_registry.get_all_financial_agents()
+            system_ids = {str(ID_CENTRAL_BANK), str(ID_SYSTEM), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
 
-        for agent in agents:
-            # Skip System Agents
-            if str(agent.id) in system_ids:
-                continue
+            for agent in agents:
+                # Skip System Agents
+                if str(agent.id) in system_ids:
+                    continue
 
-            # Skip Commercial Banks (Reserves)
-            if isinstance(agent, IBank):
-                continue
+                # Skip Commercial Banks (Reserves)
+                if isinstance(agent, IBank):
+                    continue
 
-            balance = 0
-            if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
-                balance = agent.balance_pennies
-            elif isinstance(agent, IFinancialAgent):
-                balance = agent.get_balance(currency)
-            elif isinstance(agent, ICurrencyHolder):
-                 assets = agent.get_assets_by_currency()
-                 balance = assets.get(currency, 0)
+                balance = 0
+                if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
+                    balance = agent.balance_pennies
+                elif isinstance(agent, IFinancialAgent):
+                    balance = agent.get_balance(currency)
+                elif isinstance(agent, ICurrencyHolder):
+                     assets = agent.get_assets_by_currency()
+                     balance = assets.get(currency, 0)
 
-            if balance > 0:
-                total_cash += balance
+                if balance > 0:
+                    total_cash += balance
+
+        # 2. Estate Agents (Liquidation Holding)
+        if self.estate_registry:
+            for agent in self.estate_registry.get_all_estate_agents():
+                balance = 0
+                if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
+                    balance = agent.balance_pennies
+                elif isinstance(agent, IFinancialAgent):
+                    balance = agent.get_balance(currency)
+
+                if balance > 0:
+                    total_cash += balance
 
         return total_cash
 
