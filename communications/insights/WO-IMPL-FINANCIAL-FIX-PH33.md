@@ -26,9 +26,9 @@ During implementation, several tests failed due to **Mock Drift** and **Protocol
 -   **Cause:** The `MockSettlementSystem` class used in unit tests did not implement the new methods added to `ISettlementSystem` protocol (`get_total_m2_pennies`, `get_total_circulating_cash`, `set_monetary_ledger`).
 -   **Fix:** Added the missing methods to `MockSettlementSystem` to satisfy the updated protocol.
 
-### Logic Gap Fix
--   **Currency Hardcoding:** Identified and fixed a bug where `create_and_transfer` in `SettlementSystem` was using `DEFAULT_CURRENCY` instead of the passed `currency` parameter for recording expansion.
--   **M2 Calculation Discrepancy:** Updated `get_total_circulating_cash` to exclude System Agents (`ID_SYSTEM`, `ID_ESCROW`, etc.) to match legacy M2 definitions and prevent inflation errors.
+### Logic Gap Fixes (Post-Review)
+-   **M2 Leak (Bond Issuance):** `FinanceSystem.issue_treasury_bonds` was updated to explicitly record M2 expansion when system agents (CB/Bank Reserves) purchase bonds from the Government (which is part of M2), preventing a divergence between Actual and Expected M2.
+-   **Legacy Fallback Drift:** `WorldState._legacy_calculate_total_money` was updated to exclude `ID_ESCROW` and `ID_PUBLIC_MANAGER` to align with the new `SettlementSystem` logic.
 
 ### Legacy Method Support
 -   **Saga Compatibility:** `IMonetaryLedger` retains `record_credit_expansion` and `record_credit_destruction` as wrappers around the new API to prevent breaking legacy `SagaHandler` calls, although `SagaHandler` itself was also updated to use the new API for consistency.

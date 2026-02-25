@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from simulation.dtos.scenario import StressScenarioConfig
     from modules.government.politics_system import PoliticsSystem
 from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry, DEFAULT_CURRENCY # Added for Phase 33
-from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM
+from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
 from modules.finance.api import IShareholderRegistry
 from modules.simulation.api import AgentID, IEstateRegistry
@@ -255,7 +255,13 @@ class WorldState:
             if val >= 0: total_m2_pennies += val
             else: system_debt_pennies += abs(val)
 
-        system_agent_ids = {ID_CENTRAL_BANK, ID_SYSTEM, getattr(self.bank, 'id', -999) if self.bank else -999}
+        system_agent_ids = {
+            ID_CENTRAL_BANK,
+            ID_SYSTEM,
+            ID_ESCROW,
+            ID_PUBLIC_MANAGER,
+            getattr(self.bank, 'id', -999) if self.bank else -999
+        }
         for agent in self.agents.values():
             if hasattr(agent, 'is_active') and not agent.is_active: continue
             if hasattr(agent, 'id') and agent.id in system_agent_ids: continue

@@ -402,6 +402,18 @@ class FinanceSystem(IFinanceSystem):
             if not success:
                 logger.warning(f"BOND_ISSUANCE_FAILED | Settlement transfer failed for amount {amount}. Buyer: {buyer_id}")
                 return [], []
+
+            # SSoT Update: Record Expansion if Buyer is System Agent (CB/Bank Reserves)
+            # Government (Seller) IS in M2 in this simulation configuration.
+            # Bank Reserves and Central Bank are OUT of M2.
+            # Money moves from Non-M2 to M2 -> Expansion.
+            if self.monetary_ledger:
+                self.monetary_ledger.record_monetary_expansion(
+                    amount_pennies=amount,
+                    source=f"bond_issuance_{bond_id}",
+                    currency=DEFAULT_CURRENCY
+                )
+
         else:
              logger.warning("BOND_ISSUANCE_WARNING | No SettlementSystem attached. Wallet updates skipped.")
 
