@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-LIQUIDATE-MARKET": {
-      "key": "WO-LIQUIDATE-MARKET",
-      "title": "Module Implementation: Market DTO Realignment",
-      "type": "jules",
-      "instruction_raw": "Refactor LaborMarket and StockMarket (and their call sites) to use the new Config DTOs and align with CanonicalOrderDTO major field.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_MARKET_LIQUIDATION_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-LIQUIDATE-LIFECYCLE": {
       "key": "WO-LIQUIDATE-LIFECYCLE",
       "title": "Module Implementation: Lifecycle DTO Realignment",
