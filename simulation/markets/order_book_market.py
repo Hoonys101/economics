@@ -230,20 +230,13 @@ class OrderBookMarket(Market):
         각 아이템별로 주문 매칭을 수행합니다.
         """
         # WO-IMPL-INDEX-BREAKER: Check Market Health
-        if self.index_circuit_breaker:
-            # Calculate simple equal-weighted index of last traded prices
-            if self.last_traded_prices:
-                current_index = sum(self.last_traded_prices.values()) / len(self.last_traded_prices)
-            else:
-                current_index = 0.0
-
-            market_stats = {'market_index': current_index}
-            if not self.index_circuit_breaker.check_market_health(market_stats, current_time):
-                self.logger.warning(
-                    f"MARKET_HALT | OrderBookMarket {self.id} halted by IndexCircuitBreaker",
-                    extra={'tick': current_time, 'market_id': self.id}
-                )
-                return []
+        # We only READ the state. The orchestrator updates it centrally.
+        if self.index_circuit_breaker and self.index_circuit_breaker.is_active():
+            self.logger.warning(
+                f"MARKET_HALT | OrderBookMarket {self.id} halted by IndexCircuitBreaker",
+                extra={'tick': current_time, 'market_id': self.id}
+            )
+            return []
 
         all_transactions: List[Transaction] = []
 

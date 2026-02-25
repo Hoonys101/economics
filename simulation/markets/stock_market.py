@@ -171,25 +171,13 @@ class StockMarket(Market):
         Delegates to Stateless Matching Engine.
         """
         # WO-IMPL-INDEX-BREAKER: Check Market Health
-        if self.index_circuit_breaker:
-            # Calculate Market Index (Sum of all stock prices)
-            # Use last_prices, fallback to reference_prices
-            total_price_index = 0.0
-            # Iterate over all known firms (keys in reference_prices usually cover active firms)
-            known_firms = set(self.reference_prices.keys()) | set(self.last_prices.keys())
-
-            for firm_id in known_firms:
-                price = self.last_prices.get(firm_id, self.reference_prices.get(firm_id, 0.0))
-                total_price_index += price
-
-            market_stats = {'market_index': total_price_index}
-
-            if not self.index_circuit_breaker.check_market_health(market_stats, tick):
-                self.logger.warning(
-                    f"MARKET_HALT | StockMarket halted by IndexCircuitBreaker",
-                    extra={'tick': tick, 'market_id': self.id, 'market_index': total_price_index}
-                )
-                return []
+        # We only READ the state. The orchestrator updates it centrally.
+        if self.index_circuit_breaker and self.index_circuit_breaker.is_active():
+            self.logger.warning(
+                f"MARKET_HALT | StockMarket halted by IndexCircuitBreaker",
+                extra={'tick': tick, 'market_id': self.id}
+            )
+            return []
 
         def to_dto_with_metadata(managed: ManagedOrder) -> CanonicalOrderDTO:
             dto = replace(managed.order, quantity=managed.remaining_quantity)

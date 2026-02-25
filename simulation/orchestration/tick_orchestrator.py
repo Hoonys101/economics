@@ -92,6 +92,24 @@ class TickOrchestrator:
             extra={"tick": state.time, "tags": ["tick_start"]},
         )
 
+        # WO-IMPL-INDEX-BREAKER: Centralized Market Health Check
+        # Calculates unified macro index (Stock Market Cap/Price Sum) and updates circuit breaker state ONCE per tick.
+        if state.stock_market and state.index_circuit_breaker:
+            total_price_index = 0.0
+            # Use accessors if available, else direct access (StockMarket is friend)
+            # We use last_prices or reference_prices as fallback
+            known_firms = set(state.stock_market.reference_prices.keys()) | set(state.stock_market.last_prices.keys())
+            for firm_id in known_firms:
+                price = state.stock_market.last_prices.get(firm_id, state.stock_market.reference_prices.get(firm_id, 0.0))
+                total_price_index += price
+
+            # Auto-initialize reference index at start of simulation if valid
+            if state.time == 1 and total_price_index > 0:
+                state.index_circuit_breaker.set_reference_index(total_price_index)
+
+            # Execute Check (Mutates breaker state)
+            state.index_circuit_breaker.check_market_health({'market_index': total_price_index}, state.time)
+
         # TD-177: Ensure flow counters are reset at the start of the tick
         if state.government and hasattr(state.government, "reset_tick_flow"):
             state.government.reset_tick_flow()

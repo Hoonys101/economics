@@ -23,6 +23,8 @@ from simulation.agents.central_bank import CentralBank
 from simulation.loan_market import LoanMarket
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.markets.circuit_breaker import DynamicCircuitBreaker
+from simulation.markets.market_circuit_breaker import IndexCircuitBreaker
+from modules.market.api import IndexCircuitBreakerConfigDTO
 from simulation.markets.stock_market import StockMarket
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.metrics.inequality_tracker import InequalityTracker
@@ -281,24 +283,34 @@ class SimulationInitializer(SimulationInitializerInterface):
         """
         Phase 3: Instantiates OrderBookMarkets, LoanMarket, LaborMarket, TaxationSystem, JudicialSystem, etc.
         """
+        # WO-IMPL-INDEX-BREAKER: Initialize Circuit Breaker
+        ib_config = IndexCircuitBreakerConfigDTO(
+            threshold_level_1=self.config_manager.get('market_circuit_breaker.threshold_level_1', 0.08),
+            threshold_level_2=self.config_manager.get('market_circuit_breaker.threshold_level_2', 0.15),
+            threshold_level_3=self.config_manager.get('market_circuit_breaker.threshold_level_3', 0.20),
+            halt_duration_level_1=self.config_manager.get('market_circuit_breaker.halt_duration_level_1', 15),
+            halt_duration_level_2=self.config_manager.get('market_circuit_breaker.halt_duration_level_2', 15)
+        )
+        sim.world_state.index_circuit_breaker = IndexCircuitBreaker(config=ib_config, logger=self.logger)
+
         sim.real_estate_units = [RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE, rent_price=self.config.INITIAL_RENT_PRICE) for i in range(self.config.NUM_HOUSING_UNITS)]
 
         sim.markets = {}
         for good_name in self.config.GOODS:
              cb = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
-             sim.markets[good_name] = OrderBookMarket(market_id=good_name, config_module=self.config, circuit_breaker=cb)
+             sim.markets[good_name] = OrderBookMarket(market_id=good_name, config_module=self.config, circuit_breaker=cb, index_circuit_breaker=sim.world_state.index_circuit_breaker)
 
         sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
 
         cb_sec = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
-        sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config, circuit_breaker=cb_sec)
+        sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config, circuit_breaker=cb_sec, index_circuit_breaker=sim.world_state.index_circuit_breaker)
 
         if sim.central_bank:
              sim.central_bank.set_bond_market(sim.markets['security_market'])
         sim.markets['loan_market'] = LoanMarket(market_id='loan_market', bank=sim.bank, config_module=self.config)
         sim.markets['loan_market'].agents_ref = sim.agents
         if getattr(self.config, 'STOCK_MARKET_ENABLED', False):
-            sim.stock_market = StockMarket(config_module=self.config, shareholder_registry=sim.shareholder_registry, logger=self.logger)
+            sim.stock_market = StockMarket(config_module=self.config, shareholder_registry=sim.shareholder_registry, logger=self.logger, index_circuit_breaker=sim.world_state.index_circuit_breaker)
             sim.stock_tracker = StockMarketTracker(config_module=self.config)
             sim.markets['stock_market'] = sim.stock_market
             for firm in sim.firms:

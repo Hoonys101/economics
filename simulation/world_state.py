@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from simulation.dtos.scenario import StressScenarioConfig
     from modules.government.politics_system import PoliticsSystem
 from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry, DEFAULT_CURRENCY # Added for Phase 33
+from modules.market.api import IIndexCircuitBreaker
 from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
 from modules.finance.api import IShareholderRegistry, IBank
@@ -136,6 +137,7 @@ class WorldState:
         self.stress_scenario_config: Optional[StressScenarioConfig] = None
         self.public_manager: Optional[IAssetRecoverySystem] = None
         self.politics_system: Optional[PoliticsSystem] = None # Phase 4.4: Political Orchestrator
+        self.index_circuit_breaker: Optional[IIndexCircuitBreaker] = None # WO-IMPL-INDEX-BREAKER
         self.currency_holders: List[ICurrencyHolder] = [] # Added for Phase 33
         self._currency_holders_set: set = set()
         self.estate_registry: Optional[IEstateRegistry] = None
