@@ -22,6 +22,21 @@
       "model": null,
       "audit_requirements": null
     },
+    "MARKET_PRICE_LIMIT_IMPL": {
+      "key": "MARKET_PRICE_LIMIT_IMPL",
+      "title": "PriceLimitEnforcer Implementation",
+      "type": "jules",
+      "instruction_raw": "",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-IMPL-PRICE-LIMIT_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
     "MARKET_INDEX_BREAKER_IMPL": {
       "key": "MARKET_INDEX_BREAKER_IMPL",
       "title": "IndexCircuitBreaker Implementation",
@@ -29,6 +44,21 @@
       "instruction_raw": "",
       "command": "create",
       "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-IMPL-INDEX-BREAKER_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MARKET_POLICY_INTEGRATION_IMPL": {
+      "key": "MARKET_POLICY_INTEGRATION_IMPL",
+      "title": "Market Safety Policy Integration",
+      "type": "jules",
+      "instruction_raw": "",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_MARKET_POLICY_INTEGRATION_SPEC_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
