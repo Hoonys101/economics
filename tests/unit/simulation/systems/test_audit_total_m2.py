@@ -25,7 +25,9 @@ def test_audit_total_m2_logic():
     # Total Cash = HH(100) + Bank(50) = 150.
     # Bank Reserves = 50.
     # Total Deposits = 200.
-    # M2 = (150 - 50) + 200 = 300.
+    # New M2 Definition: Sum of Public Balances (Household + Firm).
+    # Bank Reserves (M0) and Deposits (Liabilities) are NOT summed.
+    # M2 = HH(100).
     bank = MagicMock(spec=IBank)
     bank.id = 2
     # IBank uses get_balance method
@@ -40,7 +42,7 @@ def test_audit_total_m2_logic():
 
     # Verify M2 calculation
     # Since audit_total_m2 returns bool based on expectation, we pass expectation.
-    result = ss.audit_total_m2(expected_total=300)
+    result = ss.audit_total_m2(expected_total=100)
 
     if not result:
         # Debug why it failed
@@ -51,5 +53,5 @@ def test_audit_total_m2_logic():
             print(f"All logs: {ss.logger.mock_calls}")
 
     assert result
-    # Expected: Cash 150, Liab: 0
-    ss.logger.info.assert_called_with("AUDIT_PASS | M2 Verified: 300 (Cash: 150, Liab: 0)")
+    # Expected: M2 = 100.
+    ss.logger.info.assert_called_with("AUDIT_PASS | M2 Verified: 100 (Delta: 0)", extra={'tag': 'MONEY_SUPPLY_CHECK'})
