@@ -59,21 +59,8 @@ class GeminiDispatcher(ICommand):
             }
             output_path = mapping.get(mission.worker)
 
-        from modules.tools.context_injector.service import ContextInjectorService
-        from modules.tools.context_injector.api import InjectionRequestDTO
-        
-        injector = ContextInjectorService()
         existing_context = mission.context_files or []
-        
-        req = InjectionRequestDTO(
-            target_files=existing_context,
-            include_tests=True,
-            include_docs=True,
-            max_dependency_depth=1
-        )
-        
-        injection_result = injector.analyze_context(req)
-        final_context = [node.file_path for node in injection_result.nodes]
+        final_context = existing_context
 
         cmd = [sys.executable, str(ctx.base_dir / "_internal" / "scripts" / "gemini_worker.py"), mission.worker, instruction]
         if final_context:
@@ -129,8 +116,8 @@ class JulesDispatcher(ICommand):
             return CommandResult(success=False, message=msg)
 
         # --- UPS-6.0: Stub-First Context Injection ---
-        from modules.tools.context_injector.service import ContextInjectorService
-        from modules.tools.context_injector.api import InjectionRequestDTO
+        from _internal.scripts.core.context_injector.service import ContextInjectorService
+        from _internal.scripts.core.context_injector.api import InjectionRequestDTO
 
         injector = ContextInjectorService()
         existing_context = mission.context_files or []
@@ -142,6 +129,7 @@ class JulesDispatcher(ICommand):
 
         req = InjectionRequestDTO(
             target_files=targets,
+            worker_type="spec", # Jules is implicitly spec-execution
             include_tests=True,
             include_docs=True,
             max_dependency_depth=1

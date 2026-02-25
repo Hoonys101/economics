@@ -1,0 +1,19 @@
+from _typeshed import Incomplete
+
+TX_LABOR: str
+TX_GOODS: str
+TX_REAL_ESTATE: str
+TX_HOUSING: str
+TX_STOCK: str
+TX_EMERGENCY_BUY: str
+TX_ASSET_TRANSFER: str
+TX_RESEARCH_LABOR: str
+TX_TAX: str
+TX_SUBSIDY: str
+ID_CENTRAL_BANK: int
+ID_GOVERNMENT: int
+ID_BANK: int
+ID_ESCROW: int
+ID_PUBLIC_MANAGER: int
+ID_SYSTEM: int
+NON_M2_SYSTEM_AGENT_IDS: Incomplete

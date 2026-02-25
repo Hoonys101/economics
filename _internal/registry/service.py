@@ -130,10 +130,19 @@ class MissionRegistryService:
         Scans _internal/registry/ for any *_manifest.py files and migrates missions.
         After migration, standard manifests (gemini/jules) are auto-reset to their
         manual-only template state to prevent re-migration of completed missions.
+        
+        ROUTING: Only processes the manifest section matching this service's db_path.
+        - Jules service (jules_command_registry.json) -> only JULES_MISSIONS
+        - Gemini service (gemini_command_registry.json) -> only GEMINI_MISSIONS
         """
         registry_dir = Path("_internal/registry")
         template_dir = Path("_internal/templates")
         manifest_files = list(registry_dir.glob("*_manifest.py"))
+        
+        # Determine which mission type this service handles based on db_path
+        db_name = self.db_path.stem.lower()
+        is_jules_service = "jules" in db_name
+        is_gemini_service = "gemini" in db_name
         
         count = 0
         import importlib.util
@@ -164,8 +173,8 @@ class MissionRegistryService:
 
             manifest_mission_count = 0
 
-            # JULES
-            if hasattr(module, "JULES_MISSIONS"):
+            # JULES — only process if this is the Jules service
+            if is_jules_service and hasattr(module, "JULES_MISSIONS"):
                 for key, m_data in module.JULES_MISSIONS.items():
                     dto = MissionDTO(
                         key=key,
@@ -175,14 +184,17 @@ class MissionRegistryService:
                         command=m_data.get("command", "create"),
                         file_path=m_data.get("file"),
                         wait=m_data.get("wait", False),
-                        session_id=m_data.get("session_id")
+                        session_id=m_data.get("session_id"),
+                        context_files=m_data.get("context_files", []),
+                        model=m_data.get("model"),
+                        audit_requirements=m_data.get("audit_requirements")
                     )
                     self.register_mission(dto)
                     count += 1
                     manifest_mission_count += 1
 
-            # GEMINI
-            if hasattr(module, "GEMINI_MISSIONS"):
+            # GEMINI — only process if this is the Gemini service
+            if is_gemini_service and hasattr(module, "GEMINI_MISSIONS"):
                 for key, m_data in module.GEMINI_MISSIONS.items():
                     dto = MissionDTO(
                         key=key,
@@ -283,7 +295,10 @@ class MissionRegistryService:
                     command=m_data.get("command", "create"),
                     file_path=m_data.get("file"),
                     wait=m_data.get("wait", False),
-                    session_id=m_data.get("session_id")
+                    session_id=m_data.get("session_id"),
+                    context_files=m_data.get("context_files", []),
+                    model=m_data.get("model"),
+                    audit_requirements=m_data.get("audit_requirements")
                 )
                 self.register_mission(dto)
                 count += 1

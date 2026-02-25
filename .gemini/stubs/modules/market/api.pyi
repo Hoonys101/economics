@@ -268,18 +268,35 @@ class IPriceLimitEnforcer(Protocol):
         Updates the enforcer's active configuration limits.
         """
 
+@dataclass(frozen=True)
+class IndexCircuitBreakerConfigDTO:
+    """
+    Configuration DTO for Index Circuit Breaker thresholds.
+    Satisfies [Config DTO Purity] principle.
+    """
+    threshold_level_1: float = ...
+    threshold_level_2: float = ...
+    threshold_level_3: float = ...
+    halt_duration_level_1: int = ...
+    halt_duration_level_2: int = ...
+
 class IIndexCircuitBreaker(Protocol):
     """
     Market-wide circuit breaker to monitor macroeconomic health and halt trading.
     """
-    def check_market_health(self, market_stats: dict[str, Any]) -> bool:
+    def check_market_health(self, market_stats: dict[str, Any], current_tick: int) -> bool:
         """
         Evaluates overall market health statistics to determine if a halt is required.
-        Returns True if healthy, False if a halt is triggered.
+        Updates internal halt state safely.
+        Returns True if healthy (trading continues), False if a halt is triggered.
         """
     def is_active(self) -> bool:
         """
         Returns True if the market is currently halted by the circuit breaker.
+        """
+    def set_reference_index(self, index_value: float) -> None:
+        """
+        Sets the baseline index value used to calculate the drop percentage.
         """
 
 class ICircuitBreaker(IPriceLimitEnforcer, Protocol):

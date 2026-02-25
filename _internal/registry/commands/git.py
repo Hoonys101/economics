@@ -52,17 +52,7 @@ class GitReviewCommand(ICommand):
         diff_status = subprocess.run(diff_status_cmd, cwd=base_dir, capture_output=True, text=True, encoding='utf-8')
         changed_files = diff_status.stdout.splitlines()
         
-        # injector = ContextInjectorService()
-        # injection_result = injector.analyze_context(InjectionRequestDTO(
-        #     target_files=changed_files,
-        #     include_tests=True,
-        #     include_docs=True,
-        #     max_dependency_depth=1
-        # ))
-        
-        # final_context = [node.file_path for node in injection_result.nodes]
-        # Only include files that exist in the local FS for standalone context.
-        # New files are already covered by the diff file.
+        # Changed files are the raw targets for the git-review worker type
         final_context = [f for f in changed_files if (base_dir / f).is_file()]
 
         review_output = base_dir / "gemini-output" / "review" / f"pr_review_{short_name}.md"
