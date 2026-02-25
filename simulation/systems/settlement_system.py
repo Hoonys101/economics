@@ -12,7 +12,7 @@ from modules.finance.api import (
 )
 from modules.finance.registry.account_registry import AccountRegistry
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry, ISystemFinancialAgent
-from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW
+from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW, NON_M2_SYSTEM_AGENT_IDS
 from modules.market.housing_planner_api import MortgageApplicationDTO
 from simulation.models import Transaction
 from modules.simulation.api import IAgent
@@ -199,7 +199,8 @@ class SettlementSystem(IMonetaryAuthority):
         processed_ids = set()
 
         # System Agents to Exclude
-        excluded_ids = {str(ID_SYSTEM), str(ID_CENTRAL_BANK), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
+        # Use set comprehension to ensure all IDs are strings for comparison
+        excluded_ids = {str(uid) for uid in NON_M2_SYSTEM_AGENT_IDS}
         if self.bank:
              excluded_ids.add(str(self.bank.id))
 
@@ -643,8 +644,14 @@ class SettlementSystem(IMonetaryAuthority):
                     f"MINT_AND_TRANSFER | Created {amount} {currency} from {source_authority.id} to {destination.id}. Reason: {reason}",
                     extra={"tick": tick}
                 )
-                tx = self._create_transaction_record(source_authority.id, destination.id, amount, reason, tick)
-                tx.transaction_type = "money_creation"
+                tx = self._create_transaction_record(
+                    source_authority.id,
+                    destination.id,
+                    amount,
+                    reason,
+                    tick,
+                    transaction_type="money_creation"
+                )
 
                 # SSoT Update: Record Expansion
                 if self.monetary_ledger:
@@ -685,8 +692,14 @@ class SettlementSystem(IMonetaryAuthority):
                     f"TRANSFER_AND_DESTROY | Destroyed {amount} {currency} from {source.id} to {sink_authority.id}. Reason: {reason}",
                     extra={"tick": tick}
                 )
-                tx = self._create_transaction_record(source.id, sink_authority.id, amount, reason, tick)
-                tx.transaction_type = "money_destruction"
+                tx = self._create_transaction_record(
+                    source.id,
+                    sink_authority.id,
+                    amount,
+                    reason,
+                    tick,
+                    transaction_type="money_destruction"
+                )
 
                 # SSoT Update: Record Contraction
                 if self.monetary_ledger:
@@ -699,7 +712,15 @@ class SettlementSystem(IMonetaryAuthority):
         else:
             return self.transfer(source, sink_authority, amount, reason, tick=tick, currency=currency)
 
-    def _create_transaction_record(self, buyer_id: int, seller_id: int, amount: int, memo: str, tick: int) -> Optional[Transaction]:
+    def _create_transaction_record(
+        self,
+        buyer_id: int,
+        seller_id: int,
+        amount: int,
+        memo: str,
+        tick: int,
+        transaction_type: str = "transfer"
+    ) -> Optional[Transaction]:
         if buyer_id is None or seller_id is None:
              return None
 
@@ -711,7 +732,7 @@ class SettlementSystem(IMonetaryAuthority):
             price=amount / 100.0, # Display price in dollars
             total_pennies=amount, # SSoT
             market_id="settlement",
-            transaction_type="transfer",
+            transaction_type=transaction_type,
             time=tick,
             metadata={"memo": memo}
         )

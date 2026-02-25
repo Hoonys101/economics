@@ -22,3 +22,7 @@ ID_BANK = 2
 ID_ESCROW = 3
 ID_PUBLIC_MANAGER = 4
 ID_SYSTEM = 5  # System-level distributions (e.g. Inheritance)
+
+# M2 Exclusion Set (Sovereign & System Agents)
+# Commercial Banks are excluded by Type (IBank), not just ID.
+NON_M2_SYSTEM_AGENT_IDS = {ID_SYSTEM, ID_CENTRAL_BANK, ID_ESCROW, ID_PUBLIC_MANAGER, ID_GOVERNMENT}

@@ -234,13 +234,22 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
              if borrower_obj:
                  # We use 'transfer' effectively swapping Reserves (Bank) for Deposit (Borrower).
                  # If Bank runs out of Reserves, it stops lending (Capital Constraint).
-                 self.settlement_system.transfer(
+                 tx = self.settlement_system.transfer(
                      self,
                      borrower_obj, # Target Object
                      amount,
                      memo=f"loan_disbursement_{loan_dto.loan_id}",
                      currency=DEFAULT_CURRENCY
                  )
+
+                 # Record M2 Expansion (Credit Creation)
+                 # Only record if transfer succeeded (tx is not None)
+                 if tx and self.settlement_system.monetary_ledger:
+                     self.settlement_system.monetary_ledger.record_monetary_expansion(
+                         amount,
+                         source=f"credit_creation_loan_{loan_dto.loan_id}",
+                         currency=DEFAULT_CURRENCY
+                     )
              else:
                  logger.warning(f"Bank {self.id} cannot transfer loan funds: Borrower object not provided for ID {borrower_agent_id}")
 
@@ -256,47 +265,85 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     def close_account(self, agent_id: AgentID) -> int:
         if self.finance_system:
              # Requires FinanceSystem update (Phase 4.1)
-             if hasattr(self.finance_system, 'close_deposit_account'):
+             try:
                  balance = self.finance_system.close_deposit_account(self.id, agent_id)
                  if self.settlement_system:
                      self.settlement_system.deregister_account(self.id, agent_id)
                  return balance
+             except AttributeError:
+                 logger.error("FinanceSystem missing close_deposit_account")
         return 0
 
     def repay_loan(self, loan_id: str, amount: int) -> int:
         # Updates ledger only. Money transfer assumed handled by caller.
-        if self.finance_system and hasattr(self.finance_system, 'record_loan_repayment'):
-            return self.finance_system.record_loan_repayment(loan_id, amount)
-        return 0
+        repaid_amount = 0
+        if self.finance_system:
+            try:
+                repaid_amount = self.finance_system.record_loan_repayment(loan_id, amount)
+            except AttributeError:
+                logger.error("FinanceSystem missing record_loan_repayment")
+
+        if repaid_amount > 0 and self.settlement_system and self.settlement_system.monetary_ledger:
+             self.settlement_system.monetary_ledger.record_monetary_contraction(
+                 repaid_amount,
+                 source=f"credit_destruction_repayment_{loan_id}",
+                 currency=DEFAULT_CURRENCY
+             )
+
+        return repaid_amount
 
     def receive_repayment(self, borrower_id: AgentID, amount: int) -> int:
         # Generic repayment application.
-        if self.finance_system and hasattr(self.finance_system, 'repay_any_debt'):
-            return self.finance_system.repay_any_debt(borrower_id, amount)
-        return 0
+        repaid_amount = 0
+        if self.finance_system:
+            try:
+                repaid_amount = self.finance_system.repay_any_debt(borrower_id, amount)
+            except AttributeError:
+                 logger.error("FinanceSystem missing repay_any_debt")
+
+        if repaid_amount > 0 and self.settlement_system and self.settlement_system.monetary_ledger:
+             # Contraction recorded here as well since repay_any_debt also reduces principal
+             # Note: If repay_any_debt calls record_loan_repayment internally in FinanceSystem, we might double count
+             # IF we added it there. But we removed it from FinanceSystem.
+             # AND repay_any_debt iterates loans.
+             # Wait, does repay_any_debt return total applied? Yes.
+             # But if repay_any_debt just updates ledger, we should record contraction here.
+             self.settlement_system.monetary_ledger.record_monetary_contraction(
+                 repaid_amount,
+                 source=f"credit_destruction_repayment_any_{borrower_id}",
+                 currency=DEFAULT_CURRENCY
+             )
+
+        return repaid_amount
 
     def get_customer_balance(self, agent_id: AgentID) -> int:
-        if self.finance_system and hasattr(self.finance_system, 'get_customer_balance'):
-            return self.finance_system.get_customer_balance(self.id, agent_id)
+        if self.finance_system:
+            try:
+                return self.finance_system.get_customer_balance(self.id, agent_id)
+            except AttributeError:
+                pass
         return 0
 
     def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
-        if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
-             loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
-             # UPDATED: Use outstanding_balance (float) per new DTO spec
-             total_debt = int(sum(l.outstanding_balance for l in loans) * 100) # Convert back to pennies for total? No, outstanding_balance is float.
-             # Wait, total_outstanding_pennies should be int.
-             # loans has remaining_principal_pennies.
-             total_debt_pennies = sum(l.remaining_principal_pennies for l in loans)
+        if self.finance_system:
+            try:
+                 loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
+                 # UPDATED: Use outstanding_balance (float) per new DTO spec
+                 total_debt = int(sum(l.outstanding_balance for l in loans) * 100) # Convert back to pennies for total? No, outstanding_balance is float.
+                 # Wait, total_outstanding_pennies should be int.
+                 # loans has remaining_principal_pennies.
+                 total_debt_pennies = sum(l.remaining_principal_pennies for l in loans)
 
-             return DebtStatusDTO(
-                 borrower_id=AgentID(int(borrower_id)),
-                 total_outstanding_pennies=total_debt_pennies,
-                 loans=loans,
-                 is_insolvent=False,
-                 next_payment_pennies=0,
-                 next_payment_tick=0
-             )
+                 return DebtStatusDTO(
+                     borrower_id=AgentID(int(borrower_id)),
+                     total_outstanding_pennies=total_debt_pennies,
+                     loans=loans,
+                     is_insolvent=False,
+                     next_payment_pennies=0,
+                     next_payment_tick=0
+                 )
+            except AttributeError:
+                pass
         return DebtStatusDTO(
             borrower_id=AgentID(int(borrower_id)),
             total_outstanding_pennies=0,
@@ -310,22 +357,28 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         return None
 
     def withdraw_for_customer(self, agent_id: AgentID, amount: int) -> bool:
-        if self.finance_system and hasattr(self.finance_system, 'ledger'):
-             if self.id in self.finance_system.ledger.banks:
-                 dep_id = f"DEP_{agent_id}_{self.id}"
-                 bank_state = self.finance_system.ledger.banks[self.id]
-                 if dep_id in bank_state.deposits:
-                     if bank_state.deposits[dep_id].balance_pennies >= amount:
-                         bank_state.deposits[dep_id].balance_pennies -= amount
-                         return True
+        if self.finance_system:
+            try:
+                 if self.id in self.finance_system.ledger.banks:
+                     dep_id = f"DEP_{agent_id}_{self.id}"
+                     bank_state = self.finance_system.ledger.banks[self.id]
+                     if dep_id in bank_state.deposits:
+                         if bank_state.deposits[dep_id].balance_pennies >= amount:
+                             bank_state.deposits[dep_id].balance_pennies -= amount
+                             return True
+            except AttributeError:
+                pass
         return False
 
     def get_total_deposits(self) -> int:
         # Sum from Ledger
-        if self.finance_system and hasattr(self.finance_system, 'ledger'):
-             if self.id in self.finance_system.ledger.banks:
-                 deposits = self.finance_system.ledger.banks[self.id].deposits
-                 return sum(d.balance_pennies for d in deposits.values())
+        if self.finance_system:
+            try:
+                 if self.id in self.finance_system.ledger.banks:
+                     deposits = self.finance_system.ledger.banks[self.id].deposits
+                     return sum(d.balance_pennies for d in deposits.values())
+            except AttributeError:
+                pass
         return 0
 
     # --- Agent Lifecycle ---
@@ -339,9 +392,11 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
         txs = []
         if self.finance_system:
-             if hasattr(self.finance_system, 'service_debt'):
+             try:
                  debt_txs = self.finance_system.service_debt(current_tick)
                  txs.extend(debt_txs)
+             except AttributeError:
+                 logger.error("FinanceSystem missing service_debt")
 
         return txs
 
@@ -349,23 +404,26 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     def deposit_from_customer(self, depositor_id: AgentID, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> Optional[str]:
         # Used by tests mostly
         # We need to manually update Ledger to simulate deposit
-        if self.finance_system and hasattr(self.finance_system, 'ledger'):
-             if self.id in self.finance_system.ledger.banks:
-                 dep_id = f"DEP_{depositor_id}_{self.id}"
-                 bank_state = self.finance_system.ledger.banks[self.id]
-                 from modules.finance.engine_api import DepositStateDTO
-                 if dep_id not in bank_state.deposits:
-                     # Correct instantiation for DepositDTO
-                     bank_state.deposits[dep_id] = DepositStateDTO(
-                         owner_id=depositor_id,
-                         balance_pennies=0,
-                         interest_rate=0.0,
-                         deposit_id=dep_id,
-                         currency=currency
-                     )
-                     # TD-INT-STRESS-SCALE: Sync SettlementSystem Reverse Index
-                     if self.settlement_system:
-                         self.settlement_system.register_account(self.id, depositor_id)
-                 bank_state.deposits[dep_id].balance_pennies += int(amount)
-                 return dep_id
+        if self.finance_system:
+            try:
+                 if self.id in self.finance_system.ledger.banks:
+                     dep_id = f"DEP_{depositor_id}_{self.id}"
+                     bank_state = self.finance_system.ledger.banks[self.id]
+                     from modules.finance.engine_api import DepositStateDTO
+                     if dep_id not in bank_state.deposits:
+                         # Correct instantiation for DepositDTO
+                         bank_state.deposits[dep_id] = DepositStateDTO(
+                             owner_id=depositor_id,
+                             balance_pennies=0,
+                             interest_rate=0.0,
+                             deposit_id=dep_id,
+                             currency=currency
+                         )
+                         # TD-INT-STRESS-SCALE: Sync SettlementSystem Reverse Index
+                         if self.settlement_system:
+                             self.settlement_system.register_account(self.id, depositor_id)
+                     bank_state.deposits[dep_id].balance_pennies += int(amount)
+                     return dep_id
+            except AttributeError:
+                pass
         return None

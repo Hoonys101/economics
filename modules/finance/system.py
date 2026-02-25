@@ -179,9 +179,7 @@ class FinanceSystem(IFinanceSystem):
              self.settlement_system.register_account(lender_id, borrower_id)
 
         # loan_state is already LoanDTO (LoanStateDTO alias)
-        # SSoT Update: Record Expansion
-        if self.monetary_ledger:
-            self.monetary_ledger.record_monetary_expansion(amount, source=f"loan_{loan_id}", currency=DEFAULT_CURRENCY)
+        # SSoT Update: Expansion is now handled by Bank.grant_loan upon successful transfer to prevent double counting.
 
         return loan_state, result.generated_transactions
 
@@ -223,9 +221,7 @@ class FinanceSystem(IFinanceSystem):
                 if loan.remaining_principal_pennies <= 0:
                      loan.remaining_principal_pennies = 0
 
-                # SSoT Update: Record Contraction
-                if self.monetary_ledger and applied > 0:
-                    self.monetary_ledger.record_monetary_contraction(applied, source=f"repayment_{loan_id}", currency=DEFAULT_CURRENCY)
+                # SSoT Update: Contraction is now handled by Bank.repay_loan to prevent double counting.
 
                 return applied
         return 0
@@ -250,9 +246,7 @@ class FinanceSystem(IFinanceSystem):
             remaining -= applied
             total_applied += applied
 
-            # SSoT Update: Record Contraction
-            if self.monetary_ledger and applied > 0:
-                self.monetary_ledger.record_monetary_contraction(applied, source=f"repayment_{loan.loan_id}", currency=DEFAULT_CURRENCY)
+            # SSoT Update: Contraction is now handled by Bank.repay_loan (via repay_any_debt caller) to prevent double counting.
 
         return total_applied
 
@@ -328,7 +322,7 @@ class FinanceSystem(IFinanceSystem):
 
         # Updates self.ledger.treasury.bonds
 
-        base_rate = self.config_module.get("economy_params.bank.base_rate", 0.03)
+        base_rate = self.config_module.get("finance.default_bond_rate", 0.03)
         all_banks = self.bank_registry.get_all_banks()
         if all_banks:
             base_rate = all_banks[0].base_rate

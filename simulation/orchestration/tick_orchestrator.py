@@ -254,8 +254,7 @@ class TickOrchestrator:
                 supply_dto = state.calculate_total_money()
                 current_money = int(supply_dto.total_m2_pennies)
                 expected_money = int(state.baseline_money_supply)
-                if hasattr(state.government, "get_monetary_delta"):
-                    expected_money += int(state.government.get_monetary_delta(DEFAULT_CURRENCY))
+                # Removed government.get_monetary_delta() as Gov is now excluded from M2
 
             m2_leak_delta = current_money - expected_money
 

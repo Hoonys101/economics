@@ -21,7 +21,10 @@ def mock_finance_system():
 
 @pytest.fixture
 def mock_settlement_system():
-    return MagicMock(spec=ISettlementSystem)
+    mss = MagicMock(spec=ISettlementSystem)
+    mss.monetary_ledger = MagicMock()
+    mss.transfer.return_value = MagicMock(spec=Transaction)
+    return mss
 
 @pytest.fixture
 def bank(mock_finance_system, mock_settlement_system):
@@ -144,6 +147,12 @@ def test_grant_loan_with_object_calls_transfer(bank, mock_finance_system, mock_s
     assert args[0] == bank
     assert args[1] == borrower_agent # The object
     assert args[2] == 10000
+
+    # Assert: M2 Expansion Recorded
+    mock_settlement_system.monetary_ledger.record_monetary_expansion.assert_called_once()
+    args, kwargs = mock_settlement_system.monetary_ledger.record_monetary_expansion.call_args
+    assert args[0] == 10000
+    assert "credit_creation_loan" in kwargs['source']
 
 def test_grant_loan_with_id_skips_transfer(bank, mock_finance_system, mock_settlement_system):
     # Setup Mock Return
