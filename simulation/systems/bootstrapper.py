@@ -26,10 +26,21 @@ class Bootstrapper:
         """
         Transfers initial wealth from Central Bank to target agent.
         Ensures zero-sum integrity via SettlementSystem.
+        Phase 33: Uses create_and_transfer for Central Bank to ensure M2 Expansion is recorded.
         """
         amount_pennies = int(amount)
         if amount_pennies > 0:
-             tx = settlement_system.transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT")
+             from modules.system.constants import ID_CENTRAL_BANK
+             # Check if source is Central Bank
+             is_cb = False
+             if hasattr(central_bank, 'id'):
+                 is_cb = str(central_bank.id) == str(ID_CENTRAL_BANK)
+
+             if is_cb and hasattr(settlement_system, 'create_and_transfer'):
+                 tx = settlement_system.create_and_transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT", tick=0)
+             else:
+                 tx = settlement_system.transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT")
+
              if tx is None:
                  raise KeyError(f"Failed to distribute wealth to Agent {target_agent.id}. Agent possibly not registered.")
              logger.debug(f"GENESIS_GRANT | Transferred {amount_pennies} to Agent {target_agent.id}")
@@ -97,7 +108,16 @@ class Bootstrapper:
         if current_balance < Bootstrapper.MIN_CAPITAL:
             diff = round_to_pennies(Bootstrapper.MIN_CAPITAL - current_balance)
             if settlement_system and central_bank:
-                tx = settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
+                from modules.system.constants import ID_CENTRAL_BANK
+                is_cb = False
+                if hasattr(central_bank, 'id'):
+                    is_cb = str(central_bank.id) == str(ID_CENTRAL_BANK)
+
+                if is_cb and hasattr(settlement_system, 'create_and_transfer'):
+                    tx = settlement_system.create_and_transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION", tick=current_tick)
+                else:
+                    tx = settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
+
                 if tx is None:
                     raise KeyError(f"Failed to inject liquidity to Firm {firm.id}. Agent possibly not registered.")
                 logger.info(f"BOOTSTRAPPER | Injected {diff} capital to Firm {firm.id} via Settlement.")

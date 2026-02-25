@@ -190,61 +190,24 @@ class WorldState:
         SystemDebt = Sum(abs(balance)) where balance < 0.
         Returns: MoneySupplyDTO with strict penny values.
         """
-        total_m2_pennies = 0
-        system_debt_pennies = 0
-
         # M2 from SSoT
         if self.monetary_ledger:
             total_m2_pennies = self.monetary_ledger.get_total_m2_pennies(DEFAULT_CURRENCY)
-        else:
-             # Re-run full calculation if ledger missing
-             return self._legacy_calculate_total_money()
-
-        # Calculate System Debt (Legacy Iteration)
-        # Helper to process an agent
-        def process_debt(agent):
-            nonlocal system_debt_pennies
-            # Check if agent holds currency
-            if not hasattr(agent, 'get_assets_by_currency'):
-                return
-
-            # Retrieve assets safely (strictly in pennies)
-            assets_dict = agent.get_assets_by_currency()
-            val = int(assets_dict.get(DEFAULT_CURRENCY, 0))
+            # expected_m2 = self.monetary_ledger.get_expected_m2_pennies()
             
-            if val < 0:
-                system_debt_pennies += abs(val)
-
-        # 1. Active Agents in Registry
-        excluded_ids = {str(ID_SYSTEM), str(ID_CENTRAL_BANK), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
-        if self.bank:
-             excluded_ids.add(str(self.bank.id))
-        
-        for agent in self.agents.values():
-            # Dead Agent Guard (Strict)
-            if hasattr(agent, 'is_active') and not agent.is_active:
-                continue
+            # Debt Calculation (Phase 33 Hardening)
+            # We defer system debt calculation to a future update or macro tracker
+            # to strictly decouple WorldState from agent iteration.
+            system_debt_pennies = 0
             
-            # Exclude System Agents
-            if hasattr(agent, 'id') and str(agent.id) in excluded_ids:
-                continue
+            return MoneySupplyDTO(
+                total_m2_pennies=total_m2_pennies,
+                system_debt_pennies=system_debt_pennies,
+                currency=DEFAULT_CURRENCY
+            )
 
-            # Exclude IBank
-            if isinstance(agent, IBank):
-                continue
-
-            process_debt(agent)
-
-        # 2. Estate Agents
-        if self.estate_registry:
-            for agent in self.estate_registry.get_all_estate_agents():
-                process_debt(agent)
-
-        return MoneySupplyDTO(
-            total_m2_pennies=total_m2_pennies,
-            system_debt_pennies=system_debt_pennies,
-            currency=DEFAULT_CURRENCY
-        )
+        # Legacy Fallback (O(N) Iteration)
+        return self._legacy_calculate_total_money()
 
     def _legacy_calculate_total_money(self) -> MoneySupplyDTO:
         # Fallback logic mirroring original implementation

@@ -69,8 +69,16 @@ class TickOrchestrator:
             # Ensure currency_holders is correct before baseline calculation
             # TD-030: Removed _rebuild_currency_holders. Initializer populates this.
             # self._rebuild_currency_holders(state)
-            money_dto = state.calculate_total_money()
-            state.baseline_money_supply = int(money_dto.total_m2_pennies)
+
+            # Phase 33: Use MonetaryLedger for initial baseline if available
+            if state.monetary_ledger:
+                 state.baseline_money_supply = state.monetary_ledger.get_total_m2_pennies(DEFAULT_CURRENCY)
+                 # Sync expected to actual at Genesis if not set
+                 if state.monetary_ledger.get_expected_m2_pennies(DEFAULT_CURRENCY) == 0 and state.baseline_money_supply > 0:
+                     state.monetary_ledger.set_expected_m2(state.baseline_money_supply, DEFAULT_CURRENCY)
+            else:
+                 money_dto = state.calculate_total_money()
+                 state.baseline_money_supply = int(money_dto.total_m2_pennies)
 
             state.logger.info(
                 f"MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: {state.baseline_money_supply}",
@@ -247,14 +255,13 @@ class TickOrchestrator:
             if state.monetary_ledger:
                 current_money = state.monetary_ledger.get_total_m2_pennies(DEFAULT_CURRENCY)
                 expected_money = state.monetary_ledger.get_expected_m2_pennies(DEFAULT_CURRENCY)
-                # Update baseline for next tick (though ledger tracks it continuously now)
+                # Ensure baseline is synced to expected M2 (SSoT)
                 state.baseline_money_supply = expected_money
             else:
                 # Fallback to legacy calculation
                 supply_dto = state.calculate_total_money()
                 current_money = int(supply_dto.total_m2_pennies)
                 expected_money = int(state.baseline_money_supply)
-                # Removed government.get_monetary_delta() as Gov is now excluded from M2
 
             m2_leak_delta = current_money - expected_money
 
@@ -276,7 +283,6 @@ class TickOrchestrator:
                 m0_pennies = m0_dict.get(DEFAULT_CURRENCY, 0)
 
                 # Tracker expects float dollars usually, let's keep it as float dollars for the tracker interface
-                # or check if tracker handles pennies. Assuming tracker expects dollars for now based on previous code.
                 current_money_dollars = current_money / 100.0
                 m2_leak_dollars = m2_leak_delta / 100.0
 

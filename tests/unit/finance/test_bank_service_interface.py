@@ -78,14 +78,11 @@ class TestBankServiceInterface:
         assert transaction.price == amount
         assert transaction.buyer_id == bank.id
 
-    def test_repay_loan(self, bank):
+    def test_repay_loan(self, bank, mock_finance_system):
         # repay_loan is currently not fully implemented in Bank to delegate to Engine for manual calls
+        mock_finance_system.record_loan_repayment.return_value = 20000
         success = bank.repay_loan("loan_1", 20000)
-        # Bank.repay_loan returns int (amount repaid). 
-        # Since finance_system is a MagicMock, it returns another MagicMock.
-        # We just want to ensure it's called and doesn't crash here, 
-        # or setup the mock properly.
-        assert success is not None 
+        assert success == 20000
 
     def test_get_balance(self, bank, mock_finance_system):
         depositor_id = 202

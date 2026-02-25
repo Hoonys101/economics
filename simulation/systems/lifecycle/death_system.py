@@ -113,22 +113,27 @@ class DeathSystem(IDeathSystem):
 
         # O(1) Dictionary Cleanup - TD-SYS-PERF-DEATH
         for firm in inactive_firms:
-            if firm.id in state.agents:
-                if self.estate_registry:
-                    self.estate_registry.add_to_estate(firm)
-                del state.agents[firm.id]
+            self._decommission_agent(firm, state)
 
         for household in inactive_households:
-             if household.id in state.agents:
-                if self.estate_registry:
-                    self.estate_registry.add_to_estate(household)
-                del state.agents[household.id]
+            self._decommission_agent(household, state)
 
         # Modify lists in place to reflect removals
         state.households[:] = [h for h in state.households if h.is_active]
         state.firms[:] = [f for f in state.firms if f.is_active]
 
         return transactions
+
+    def _decommission_agent(self, agent: Any, state: SimulationState) -> None:
+        """
+        Standardized Decommission: Moves agent to estate and removes from global map.
+        Note: List removal (households/firms) is handled in bulk for performance.
+        """
+        if self.estate_registry:
+            self.estate_registry.add_to_estate(agent)
+
+        if agent.id in state.agents:
+            del state.agents[agent.id]
 
     def _recover_external_assets(self, agent_id: int, state: SimulationState, transactions: List[Transaction]) -> None:
         """

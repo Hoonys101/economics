@@ -1,38 +1,45 @@
 import pytest
 from unittest.mock import MagicMock, PropertyMock
 from simulation.systems.settlement_system import SettlementSystem
-from modules.finance.api import IFinancialAgent, IBank, IFinancialEntity
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.system.api import DEFAULT_CURRENCY
+from simulation.core_agents import Household
+from simulation.agents.central_bank import CentralBank
+from simulation.bank import Bank
 
 def test_audit_total_m2_logic():
     ss = SettlementSystem()
     ss.agent_registry = MagicMock()
     ss.settlement_accounts = {}
 
-    # 1. Standard Agent (Household) -> IFinancialAgent (to pass isinstance check)
-    hh = MagicMock(spec=IFinancialAgent)
+    # 1. Standard Agent (Household)
+    hh = MagicMock(spec=Household)
     hh.id = 1
-    hh.get_balance.return_value = 100
+    # Household implements IFinancialEntity via protocol/duck typing, ensure property exists
     type(hh).balance_pennies = PropertyMock(return_value=100)
+    # Fallback for instance check failure
+    hh.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 100}
 
-    # 2. Central Bank (Should be Excluded) -> IFinancialEntity
-    cb = MagicMock(spec=IFinancialEntity)
+    # 2. Central Bank (Should be Excluded)
+    cb = MagicMock(spec=CentralBank)
     cb.id = ID_CENTRAL_BANK
     type(cb).balance_pennies = PropertyMock(return_value=999999)
+    cb.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 999999}
 
-    # 3. Bank (Reserves = 50, Deposits = 200) -> IBank (inherits IFinancialAgent)
+    # 3. Bank (Reserves = 50, Deposits = 200)
     # Total Cash = HH(100) + Bank(50) = 150.
     # Bank Reserves = 50.
     # Total Deposits = 200.
     # New M2 Definition: Sum of Public Balances (Household + Firm).
     # Bank Reserves (M0) and Deposits (Liabilities) are NOT summed.
     # M2 = HH(100).
-    bank = MagicMock(spec=IBank)
+    bank = MagicMock(spec=Bank)
     bank.id = 2
-    # IBank uses get_balance method
-    bank.get_balance.return_value = 50
+    # Bank uses get_balance method (or balance_pennies depending on implementation)
+    # SettlementSystem prefers balance_pennies for IFinancialEntity
     type(bank).balance_pennies = PropertyMock(return_value=50)
+    bank.get_balance.return_value = 50
+    bank.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 50}
     bank.get_total_deposits.return_value = 200
 
     ss.agent_registry.get_all_financial_agents.return_value = [hh, cb, bank]

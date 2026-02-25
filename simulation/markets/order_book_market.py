@@ -133,11 +133,12 @@ class OrderBookMarket(Market):
 
         self.price_history[item_id].append(price)
 
-    def get_dynamic_price_bounds(self, item_id: str) -> Tuple[float, float]:
+    def get_dynamic_price_bounds(self, item_id: str, current_tick: Optional[int] = None) -> Tuple[float, float]:
         """
         Calculate adaptive price bounds based on volatility.
         Formula: Bounds = Mean * (1 ± (Base_Limit * Volatility_Adj))
         Volatility_Adj = 1 + (StdDev / Mean)
+        Phase 33: Adds temporal relaxation if no trades occur for a while.
         """
         # Phase 1: Relax circuit breakers for price discovery
         min_history_len = getattr(self.config_module, "CIRCUIT_BREAKER_MIN_HISTORY", 7) if self.config_module else 7
@@ -159,8 +160,28 @@ class OrderBookMarket(Market):
         # WO-136: Use config for base limit
         base_limit = getattr(self.config_module, "MARKET_CIRCUIT_BREAKER_BASE_LIMIT", 0.15)
 
-        lower_bound = mean_price * (1.0 - (base_limit * volatility_adj))
-        upper_bound = mean_price * (1.0 + (base_limit * volatility_adj))
+        effective_limit = base_limit * volatility_adj
+
+        # Phase 33: Circuit Breaker Relaxation
+        if current_tick is not None and item_id in self.last_trade_ticks:
+            last_tick = self.last_trade_ticks[item_id]
+            ticks_since = current_tick - last_tick
+            timeout = getattr(self.config_module, "CIRCUIT_BREAKER_TIMEOUT_TICKS", 10)
+
+            if ticks_since > timeout:
+                relaxation_factor = getattr(self.config_module, "CIRCUIT_BREAKER_RELAXATION_PER_TICK", 0.05)
+                extra_width = (ticks_since - timeout) * relaxation_factor
+                effective_limit += extra_width
+
+                # Log relaxation event periodically (e.g. every 10 ticks of relaxation) to avoid spam
+                if (ticks_since - timeout) % 10 == 0:
+                     self.logger.info(
+                         f"CIRCUIT_BREAKER_RELAXATION | Item: {item_id}, Ticks Since Trade: {ticks_since}, Extra Width: {extra_width:.2f}",
+                         extra={"tick": current_tick, "item_id": item_id, "extra_width": extra_width}
+                     )
+
+        lower_bound = mean_price * (1.0 - effective_limit)
+        upper_bound = mean_price * (1.0 + effective_limit)
 
         return max(0.0, lower_bound), upper_bound
 
@@ -222,7 +243,7 @@ class OrderBookMarket(Market):
             current_time (int): 현재 시뮬레이션 틱 (시간) 입니다.
         """
         # WO-136: Circuit Breaker Check
-        min_price, max_price = self.get_dynamic_price_bounds(order_dto.item_id)
+        min_price, max_price = self.get_dynamic_price_bounds(order_dto.item_id, current_time)
         if order_dto.price_limit < min_price or order_dto.price_limit > max_price:
             # Check if bounds are active (max_price < inf)
             if max_price < float('inf'):
