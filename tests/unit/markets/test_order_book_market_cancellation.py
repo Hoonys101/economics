@@ -1,13 +1,16 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.markets.order_book_market import OrderBookMarket
-from modules.market.api import CanonicalOrderDTO
+from modules.market.api import CanonicalOrderDTO, IIndexCircuitBreaker
 
 class TestOrderBookMarketCancellation:
 
     @pytest.fixture
     def market(self):
-        return OrderBookMarket(market_id="test_market", logger=MagicMock())
+        mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+        mock_breaker.check_market_health.return_value = True
+        mock_breaker.is_active.return_value = False
+        return OrderBookMarket(market_id="test_market", logger=MagicMock(), index_circuit_breaker=mock_breaker)
 
     def test_cancel_orders_removes_agent_orders(self, market):
         # Setup orders

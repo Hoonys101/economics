@@ -3,7 +3,7 @@ from unittest.mock import Mock, MagicMock
 from pytest import approx
 from simulation.markets.circuit_breaker import DynamicCircuitBreaker
 from simulation.markets.order_book_market import OrderBookMarket
-from modules.market.api import CanonicalOrderDTO
+from modules.market.api import CanonicalOrderDTO, IIndexCircuitBreaker
 
 class TestDynamicCircuitBreaker:
     @pytest.fixture
@@ -67,7 +67,10 @@ class TestOrderBookMarketIntegration:
         return config
 
     def test_place_order_delegates_to_circuit_breaker(self, config):
-        market = OrderBookMarket("test_market", config_module=config)
+        mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+        mock_breaker.check_market_health.return_value = True
+        mock_breaker.is_active.return_value = False
+        market = OrderBookMarket("test_market", config_module=config, index_circuit_breaker=mock_breaker)
         # Note: OrderBookMarket creates its own DynamicCircuitBreaker if not provided
 
         # Manually populate history in the internal circuit breaker

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.markets.stock_market import StockMarket
-from modules.market.api import CanonicalOrderDTO
+from modules.market.api import CanonicalOrderDTO, IIndexCircuitBreaker
 
 class TestStockMarketCancellation:
 
@@ -11,7 +11,10 @@ class TestStockMarketCancellation:
         config = MagicMock()
         config.STOCK_PRICE_LIMIT_RATE = 0.1
         config.STOCK_BOOK_VALUE_MULTIPLIER = 1.0
-        return StockMarket(config_module=config, shareholder_registry=shareholder_registry, logger=MagicMock())
+        mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+        mock_breaker.check_market_health.return_value = True
+        mock_breaker.is_active.return_value = False
+        return StockMarket(config_module=config, shareholder_registry=shareholder_registry, logger=MagicMock(), index_circuit_breaker=mock_breaker)
 
     def test_cancel_orders_removes_agent_orders(self, market):
         # Setup orders

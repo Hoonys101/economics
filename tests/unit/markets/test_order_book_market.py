@@ -1,207 +1,249 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.models import Order
+from modules.common.utils.logger import Logger
+from modules.system.api import DEFAULT_CURRENCY
+from modules.market.api import IIndexCircuitBreaker
 
-@pytest.fixture(autouse=True)
-def mock_logger():
-    with patch('simulation.markets.order_book_market.logging.getLogger') as mock_get_logger:
-        mock_logger_instance = MagicMock()
-        mock_get_logger.return_value = mock_logger_instance
-        yield mock_logger_instance
 
 @pytest.fixture
-def goods_market_instance():
-    return OrderBookMarket(market_id='goods_market')
+def market():
+    """테스트를 위한 OrderBookMarket 객체를 생성합니다."""
+    mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+    mock_breaker.check_market_health.return_value = True
+    mock_breaker.is_active.return_value = False
+    return OrderBookMarket(
+        market_id="test_goods_market", logger=Logger(), index_circuit_breaker=mock_breaker
+    )  # 테스트 중에는 기본 로거 사용
 
-@pytest.fixture
-def labor_market_instance(mock_logger):
-    return OrderBookMarket(market_id='labor_market', logger=mock_logger)
 
-@pytest.fixture
-def order_book_market_instance():
-    return OrderBookMarket(market_id='test_market')
+class TestOrderBookMarketInitialization:
+    def test_market_initialization(self, market: OrderBookMarket):
+        """시장이 올바르게 초기화되는지 테스트합니다."""
+        assert market.id == "test_goods_market"
+        assert isinstance(market.logger, Logger)
+        assert not market.buy_orders
+        assert not market.sell_orders
 
-@pytest.fixture
-def sample_buy_order():
-    return Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
 
-@pytest.fixture
-def sample_sell_order():
-    return Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='test_market')
+# --- Phase 1: 시장 기반 구축 테스트 ---
 
-class TestOrderBookMarket:
 
-    def test_initialization(self, order_book_market_instance):
-        assert order_book_market_instance.id == 'test_market'
-        assert order_book_market_instance.buy_orders == {}
-        assert order_book_market_instance.sell_orders == {}
+class TestPlaceOrderToBook:
+    def test_add_single_buy_order(self, market: OrderBookMarket):
+        """단일 매수 주문이 오더북에 올바르게 추가되는지 테스트합니다."""
+        # Order(..., pennies, limit, ...)
+        # 100 pennies = $1.00
+        order = Order(
+            1, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00
+        )
+        market.place_order(order, 1)
 
-    def test_place_buy_order_adds_and_sorts(self, order_book_market_instance):
-        order1 = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
-        order2 = Order(agent_id=2, side='BUY', item_id='food', quantity=5, price_pennies=int(110 * 100), price_limit=110, market_id='test_market')
-        order_book_market_instance.place_order(order1, 1)
-        order_book_market_instance.place_order(order2, 1)
-        buy_book = order_book_market_instance.buy_orders.get('food', [])
-        assert len(buy_book) == 2
-        assert buy_book[0].price == 110
-        assert buy_book[1].price == 100
+        buy_book = market.buy_orders.get("food", [])
+        sell_book = market.sell_orders.get("food", [])
+        assert len(buy_book) == 1
+        assert len(sell_book) == 0
+        assert buy_book[0].price_pennies == 100
 
-    def test_place_sell_order_adds_and_sorts(self, order_book_market_instance):
-        order1 = Order(agent_id=1, side='SELL', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
-        order2 = Order(agent_id=2, side='SELL', item_id='food', quantity=5, price_pennies=int(90 * 100), price_limit=90, market_id='test_market')
-        order_book_market_instance.place_order(order1, 1)
-        order_book_market_instance.place_order(order2, 1)
-        sell_book = order_book_market_instance.sell_orders.get('food', [])
-        assert len(sell_book) == 2
-        assert sell_book[0].price == 90
-        assert sell_book[1].price == 100
+    def test_add_buy_orders_sorted(self, market: OrderBookMarket):
+        """여러 매수 주문이 가격 내림차순으로 정렬되는지 테스트합니다."""
+        # 100 pennies ($1.00), 110 ($1.10), 105 ($1.05)
+        order1 = Order(1, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00)
+        order2 = Order(2, "BUY", "food", 5, 110, market_id="test_market", price_limit=1.10)
+        order3 = Order(3, "BUY", "food", 8, 105, market_id="test_market", price_limit=1.05)
 
-    def test_place_order_unknown_type_logs_warning(self, order_book_market_instance, mock_logger):
-        order = Order(agent_id=1, side='UNKNOWN', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
-        order_book_market_instance.place_order(order, 1)
-        mock_logger.warning.assert_called_with('Unknown side for _add_order: UNKNOWN', extra={'tick': 1, 'market_id': 'test_market', 'agent_id': 1, 'item_id': 'food', 'side': 'UNKNOWN', 'price': 100, 'quantity': 10})
-        assert mock_logger.warning.call_count == 1
-        assert order_book_market_instance.buy_orders == {}
-        assert order_book_market_instance.sell_orders == {}
+        market.place_order(order1, 1)
+        market.place_order(order2, 2)
+        market.place_order(order3, 3)
 
-    def test_match_orders_full_fill(self, goods_market_instance):
-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
-        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
-        goods_market_instance.place_order(buy_order, 1)
-        goods_market_instance.place_order(sell_order, 1)
-        transactions = goods_market_instance.match_orders(1)
+        buy_book = market.buy_orders.get("food", [])
+        assert len(buy_book) == 3
+        # Check SSoT (Pennies)
+        assert [o.price_pennies for o in buy_book] == [110, 105, 100]
+
+    def test_add_sell_orders_sorted(self, market: OrderBookMarket):
+        """여러 매도 주문이 가격 오름차순으로 정렬되는지 테스트합니다."""
+        order1 = Order(1, "SELL", "food", 10, 100, market_id="test_market", price_limit=1.00)
+        order2 = Order(2, "SELL", "food", 5, 90, market_id="test_market", price_limit=0.90)
+        order3 = Order(3, "SELL", "food", 8, 95, market_id="test_market", price_limit=0.95)
+
+        market.place_order(order1, 1)
+        market.place_order(order2, 2)
+        market.place_order(order3, 3)
+
+        sell_book = market.sell_orders.get("food", [])
+        assert len(sell_book) == 3
+        assert [o.price_pennies for o in sell_book] == [90, 95, 100]
+
+    def test_add_orders_with_same_price(self, market: OrderBookMarket):
+        """가격이 같은 주문은 시간 순서(FIFO)대로 정렬되는지 테스트합니다."""
+        order1 = Order(1, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00)
+        order2 = Order(2, "BUY", "food", 5, 110, market_id="test_market", price_limit=1.10)
+        order3 = Order(3, "BUY", "food", 8, 100, market_id="test_market", price_limit=1.00)
+
+        market.place_order(order1, 1)
+        market.place_order(order2, 2)
+        market.place_order(order3, 3)
+
+        buy_book = market.buy_orders.get("food", [])
+        assert len(buy_book) == 3
+        assert [o.price_pennies for o in buy_book] == [110, 100, 100]
+        # 가격이 100인 주문들 중 먼저 들어온 order1(agent_id=1)이 앞에 위치해야 함
+        assert [o.agent_id for o in buy_book if o.price_pennies == 100] == [1, 3]
+
+
+class TestOrderMatching:
+    def test_unfilled_order_no_match(self, market: OrderBookMarket):
+        """가격이 교차하지 않아 매칭이 발생하지 않는 경우를 테스트합니다."""
+        # Sell @ 110 ($1.10), Buy @ 100 ($1.00) -> No match
+        sell_order = Order(1, "SELL", "food", 10, 110, market_id="test_market", price_limit=1.10)
+        market.place_order(sell_order, current_time=1)
+
+        buy_order = Order(2, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00)
+        market.place_order(buy_order, current_time=2)
+
+        # Act
+        transactions = market.match_orders(current_time=3)
+
+        # Assert
+        assert len(transactions) == 0
+
+        buy_book = market.buy_orders.get("food", [])
+        sell_book = market.sell_orders.get("food", [])
+
+        assert len(buy_book) == 1
+        assert len(sell_book) == 1
+        assert buy_book[0].price_pennies == 100
+        assert sell_book[0].price_pennies == 110
+
+    def test_full_match_one_to_one(self, market: OrderBookMarket):
+        """매수 주문 1개와 매도 주문 1개가 완전히 체결되는 경우를 테스트합니다."""
+        # Sell @ 100 ($1.00)
+        sell_order = Order(2, "SELL", "food", 10, 100, market_id="test_market", price_limit=1.00)
+        market.place_order(sell_order, current_time=1)
+
+        # Buy @ 105 ($1.05)
+        buy_order = Order(1, "BUY", "food", 10, 105, market_id="test_market", price_limit=1.05)
+        market.place_order(buy_order, current_time=2)
+
+        transactions = market.match_orders(current_time=2)
+
         assert len(transactions) == 1
         tx = transactions[0]
+        assert tx.quantity == 10
+        # Integer Math: (105 + 100) // 2 = 102 pennies
+        # Price (Float) = 1.02
+        assert tx.price == 1.02
+        assert tx.total_pennies == 1020
         assert tx.buyer_id == 1
         assert tx.seller_id == 2
-        assert tx.item_id == 'food'
-        assert tx.quantity == 10
-        assert tx.price == 95.0
-        assert tx.transaction_type == 'goods'
-        assert tx.time == 1
-        assert not goods_market_instance.buy_orders.get('food')
-        assert not goods_market_instance.sell_orders.get('food')
+        assert tx.currency == DEFAULT_CURRENCY
 
-    def test_match_orders_partial_fill_buy_order(self, goods_market_instance):
-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=15, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
-        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
-        goods_market_instance.place_order(buy_order, 1)
-        goods_market_instance.place_order(sell_order, 1)
-        transactions = goods_market_instance.match_orders(1)
+        assert not market.buy_orders.get("food", [])
+        assert not market.sell_orders.get("food", [])
+
+    def test_partial_match_then_book(self, market: OrderBookMarket):
+        """새로운 매수 주문이 부분 체결된 후 나머지가 오더북에 등록되는 경우를 테스트합니다."""
+        # Sell 5 @ 100 ($1.00)
+        sell_order = Order(2, "SELL", "food", 5, 100, market_id="test_market", price_limit=1.00)
+        market.place_order(sell_order, current_time=1)
+
+        # Buy 10 @ 105 ($1.05)
+        buy_order = Order(1, "BUY", "food", 10, 105, market_id="test_market", price_limit=1.05)
+        market.place_order(buy_order, current_time=2)
+
+        transactions = market.match_orders(current_time=2)
+
         assert len(transactions) == 1
         tx = transactions[0]
-        assert tx.quantity == 10
-        buy_book = goods_market_instance.buy_orders.get('food', [])
+        assert tx.quantity == 5
+        assert tx.price == 1.02 # 102 pennies
+
+        buy_book = market.buy_orders.get("food", [])
+        sell_book = market.sell_orders.get("food", [])
+        assert not sell_book
         assert len(buy_book) == 1
+        assert buy_book[0].agent_id == 1
         assert buy_book[0].quantity == 5
-        assert not goods_market_instance.sell_orders.get('food', [])
 
-    def test_match_orders_partial_fill_sell_order(self, goods_market_instance):
-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
-        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=15, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
-        goods_market_instance.place_order(buy_order, 1)
-        goods_market_instance.place_order(sell_order, 1)
-        transactions = goods_market_instance.match_orders(1)
-        assert len(transactions) == 1
-        tx = transactions[0]
-        assert tx.quantity == 10
-        sell_book = goods_market_instance.sell_orders.get('food', [])
-        assert len(sell_book) == 1
-        assert sell_book[0].quantity == 5
-        assert not goods_market_instance.buy_orders.get('food', [])
+    def test_match_with_multiple_orders(self, market: OrderBookMarket):
+        """새로운 큰 주문 하나가 여러 개의 작은 주문과 체결되는 경우를 테스트합니다."""
+        # Sell 5 @ 98 ($0.98)
+        sell1 = Order(2, "SELL", "food", 5, 98, market_id="test_market", price_limit=0.98)
+        # Sell 5 @ 100 ($1.00)
+        sell2 = Order(3, "SELL", "food", 5, 100, market_id="test_market", price_limit=1.00)
+        market.place_order(sell1, current_time=1)
+        market.place_order(sell2, current_time=2)
 
-    def test_match_orders_no_match_price(self, goods_market_instance):
-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(80 * 100), price_limit=80, market_id='goods_market')
-        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
-        goods_market_instance.place_order(buy_order, 1)
-        goods_market_instance.place_order(sell_order, 1)
-        transactions = goods_market_instance.match_orders(1)
-        assert not transactions
-        assert len(goods_market_instance.buy_orders.get('food', [])) == 1
-        assert len(goods_market_instance.sell_orders.get('food', [])) == 1
+        # Buy 12 @ 105 ($1.05)
+        buy_order = Order(1, "BUY", "food", 12, 105, market_id="test_market", price_limit=1.05)
+        market.place_order(buy_order, current_time=3)
 
-    def test_match_orders_multiple_matches(self, goods_market_instance):
-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=20, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
-        sell_order1 = Order(agent_id=2, side='SELL', item_id='food', quantity=5, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
-        sell_order2 = Order(agent_id=3, side='SELL', item_id='food', quantity=8, price_pennies=int(95 * 100), price_limit=95, market_id='goods_market')
-        goods_market_instance.place_order(buy_order, 1)
-        goods_market_instance.place_order(sell_order1, 1)
-        goods_market_instance.place_order(sell_order2, 1)
-        transactions = goods_market_instance.match_orders(1)
+        transactions = market.match_orders(current_time=3)
+
         assert len(transactions) == 2
         assert transactions[0].quantity == 5
-        assert transactions[1].quantity == 8
-        remaining_orders = goods_market_instance.buy_orders.get('food', [])
-        assert len(remaining_orders) == 1
-        assert remaining_orders[0].quantity == 7
-        assert remaining_orders[0].agent_id == 1
-        assert not goods_market_instance.sell_orders.get('food', [])
+        # (105 + 98) // 2 = 101 pennies -> 1.01
+        assert transactions[0].price == 1.01
+        assert transactions[1].quantity == 5
+        # (105 + 100) // 2 = 102 pennies -> 1.02
+        assert transactions[1].price == 1.02
 
-    def test_match_orders_different_items(self, goods_market_instance):
-        buy_order_food = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
-        sell_order_food = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
-        buy_order_water = Order(agent_id=3, side='BUY', item_id='water', quantity=5, price_pennies=int(50 * 100), price_limit=50, market_id='goods_market')
-        sell_order_water = Order(agent_id=4, side='SELL', item_id='water', quantity=5, price_pennies=int(40 * 100), price_limit=40, market_id='goods_market')
-        goods_market_instance.place_order(buy_order_food, 1)
-        goods_market_instance.place_order(sell_order_food, 1)
-        goods_market_instance.place_order(buy_order_water, 1)
-        goods_market_instance.place_order(sell_order_water, 1)
-        transactions = goods_market_instance.match_orders(1)
-        assert len(transactions) == 2
-        food_tx = next((tx for tx in transactions if tx.item_id == 'food'), None)
-        water_tx = next((tx for tx in transactions if tx.item_id == 'water'), None)
-        assert food_tx is not None
-        assert water_tx is not None
+        buy_book = market.buy_orders.get("food", [])
+        assert len(buy_book) == 1
+        assert buy_book[0].quantity == 2
 
-    def test_match_orders_empty_books(self, order_book_market_instance):
-        transactions = order_book_market_instance.match_orders(1)
-        assert not transactions
-        assert not order_book_market_instance.buy_orders.get('food', [])
-        assert not order_book_market_instance.sell_orders.get('food', [])
 
-    def test_match_orders_transaction_type_goods(self, goods_market_instance):
-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
-        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
-        goods_market_instance.place_order(buy_order, 1)
-        goods_market_instance.place_order(sell_order, 1)
-        transactions = goods_market_instance.match_orders(1)
-        assert transactions[0].transaction_type == 'goods'
+# --- Phase 2: API 구현 테스트 ---
 
-    def test_match_orders_transaction_type_labor(self, labor_market_instance, mock_logger):
-        buy_order = Order(agent_id=1, side='BUY', item_id='labor', quantity=1, price_pennies=int(20 * 100), price_limit=20, market_id='labor_market')
-        sell_order = Order(agent_id=2, side='SELL', item_id='labor', quantity=1, price_pennies=int(15 * 100), price_limit=15, market_id='labor_market')
-        labor_market_instance.place_order(buy_order, 1)
-        labor_market_instance.place_order(sell_order, 1)
-        transactions = labor_market_instance.match_orders(1)
-        assert transactions[0].transaction_type == 'labor'
 
-    def test_get_best_ask_empty(self, order_book_market_instance):
-        assert order_book_market_instance.get_best_ask('food') is None
+class TestMarketAPI:
+    def test_get_best_bid_empty(self, market: OrderBookMarket):
+        assert market.get_best_bid("food") is None
 
-    def test_get_best_ask_non_empty(self, order_book_market_instance):
-        order_book_market_instance.place_order(Order(1, 'SELL', 'food', 10, int(100 * 100), market_id='test_market', price_limit=100), 1)
-        order_book_market_instance.place_order(Order(2, 'SELL', 'food', 5, int(90 * 100), market_id='test_market', price_limit=90), 1)
-        assert order_book_market_instance.get_best_ask('food') == 90
+    def test_get_best_bid_non_empty(self, market: OrderBookMarket):
+        # 100 pennies ($1.00), 110 pennies ($1.10)
+        market.place_order(Order(1, "BUY", "food", 10, 100, market_id="test", price_limit=1.00), 1)
+        market.place_order(Order(2, "BUY", "food", 5, 110, market_id="test", price_limit=1.10), 2)
+        assert market.get_best_bid("food") == 1.10 # Returns Dollars (Float)
 
-    def test_get_best_bid_empty(self, order_book_market_instance):
-        assert order_book_market_instance.get_best_bid('food') is None
+    def test_get_best_ask_empty(self, market: OrderBookMarket):
+        assert market.get_best_ask("food") is None
 
-    def test_get_best_bid_non_empty(self, order_book_market_instance):
-        order_book_market_instance.place_order(Order(1, 'BUY', 'food', 10, int(100 * 100), market_id='test_market', price_limit=100), 1)
-        order_book_market_instance.place_order(Order(2, 'BUY', 'food', 5, int(110 * 100), market_id='test_market', price_limit=110), 1)
-        assert order_book_market_instance.get_best_bid('food') == 110
+    def test_get_best_ask_non_empty(self, market: OrderBookMarket):
+        # 100 pennies, 90 pennies
+        market.place_order(Order(1, "SELL", "food", 10, 100, market_id="test", price_limit=1.00), 1)
+        market.place_order(Order(2, "SELL", "food", 5, 90, market_id="test", price_limit=0.90), 2)
+        assert market.get_best_ask("food") == 0.90 # Returns Dollars (Float)
 
-    def test_get_order_book_status_empty(self, order_book_market_instance):
-        status = order_book_market_instance.get_order_book_status('food')
-        assert status['buy_orders'] == []
-        assert status['sell_orders'] == []
+    def test_get_last_traded_price(self, market: OrderBookMarket):
+        market.place_order(Order(1, 'SELL', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
+        market.place_order(Order(2, 'BUY', 'food', 10, 105, market_id='test', price_limit=1.05), 2)
+        market.match_orders(2)
+        # 102 pennies -> 1.02 Dollars
+        assert market.get_last_traded_price('food') == 1.02
 
-    def test_get_order_book_status_non_empty(self, order_book_market_instance):
-        order_book_market_instance.place_order(Order(1, 'BUY', 'food', 10, int(90 * 100), market_id='test_market', price_limit=90), 1)
-        order_book_market_instance.place_order(Order(2, 'SELL', 'food', 5, int(100 * 100), market_id='test_market', price_limit=100), 1)
-        status = order_book_market_instance.get_order_book_status('food')
-        assert len(status['buy_orders']) == 1
-        assert status['buy_orders'][0]['price'] == 90
-        assert len(status['sell_orders']) == 1
-        assert status['sell_orders'][0]['price'] == 100
+    def test_get_spread(self, market: OrderBookMarket):
+        market.place_order(Order(1, 'BUY', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
+        market.place_order(Order(2, 'SELL', 'food', 10, 105, market_id='test', price_limit=1.05), 2)
+        # 1.05 - 1.00 = 0.05
+        assert market.get_spread('food') == pytest.approx(0.05)
+
+    def test_get_spread_no_bid_or_ask(self, market: OrderBookMarket):
+        market.place_order(Order(1, 'BUY', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
+        assert market.get_spread('food') is None
+
+        mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+        mock_breaker.check_market_health.return_value = True
+        mock_breaker.is_active.return_value = False
+        market = OrderBookMarket(market_id="test_goods_market", logger=Logger(), index_circuit_breaker=mock_breaker)
+
+        market.place_order(Order(2, 'SELL', 'food', 10, 105, market_id='test', price_limit=1.05), 2)
+        assert market.get_spread('food') is None
+
+    def test_get_market_depth(self, market: OrderBookMarket):
+        market.place_order(Order(1, 'BUY', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
+        market.place_order(Order(2, 'BUY', 'food', 5, 90, market_id='test', price_limit=0.90), 2)
+        market.place_order(Order(3, 'SELL', 'food', 10, 105, market_id='test', price_limit=1.05), 3)
+        assert market.get_market_depth('food') == {'buy_orders': 2, 'sell_orders': 1}

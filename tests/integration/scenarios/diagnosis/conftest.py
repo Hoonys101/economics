@@ -6,6 +6,7 @@ from simulation.core_agents import Household, Talent
 from simulation.firms import Firm
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_markets import Market
+from modules.market.api import IIndexCircuitBreaker
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.ai.api import Personality # Import Personality enum
 import config
@@ -55,4 +56,7 @@ def simple_firm(mock_config_module):
 
 @pytest.fixture
 def simple_market():
-    return OrderBookMarket(market_id="basic_food")
+    mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+    mock_breaker.check_market_health.return_value = True
+    mock_breaker.is_active.return_value = False
+    return OrderBookMarket(market_id="basic_food", index_circuit_breaker=mock_breaker)

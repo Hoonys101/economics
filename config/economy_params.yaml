@@ -147,3 +147,13 @@ labor_market:
     MATERIAL: "MANUFACTURING"
     LUXURY: "SERVICES"
     TECH: "TECHNOLOGY"
+
+# ----------------------------------------------------------------------
+# Market Circuit Breaker Configuration (WO-IMPL-INDEX-BREAKER)
+# ----------------------------------------------------------------------
+market_circuit_breaker:
+  threshold_level_1: 0.08
+  threshold_level_2: 0.15
+  threshold_level_3: 0.20
+  halt_duration_level_1: 15
+  halt_duration_level_2: 15
