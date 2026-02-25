@@ -1,13 +1,20 @@
 {
-  "security_market": {
-    "is_enabled": true,
-    "mode": "DYNAMIC",
-    "base_limit": 0.30
-  },
-  "basic_food": {
-    "is_enabled": false,
-    "mode": "STATIC",
-    "static_ceiling": 1000,
-    "static_floor": 10
-  }
+    "default": {
+        "id": "default",
+        "is_enabled": true,
+        "mode": "DYNAMIC",
+        "base_limit": 0.30
+    },
+    "housing": {
+        "id": "housing",
+        "is_enabled": true,
+        "mode": "DYNAMIC",
+        "base_limit": 0.50
+    },
+    "security_market": {
+        "id": "security_market",
+        "is_enabled": true,
+        "mode": "DYNAMIC",
+        "base_limit": 0.10
+    }
 }
