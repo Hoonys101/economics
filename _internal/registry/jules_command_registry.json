@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-SYSTEM-DEBT": {
-      "key": "WO-IMPL-SYSTEM-DEBT",
-      "title": "Implementation: System Debt Calculation Registry",
-      "type": "jules",
-      "instruction_raw": "\uba85\uc138\uc11c\uc5d0 \ub530\ub77c MonetaryLedger\uc5d0 \uc2dc\uc2a4\ud15c \ubd80\ucc44 \ucd94\uc801 \uae30\ub2a5\uc744 \ucd94\uac00\ud558\uace0 SimulationState\ub97c \uc5f0\ub3d9\ud558\uc2ed\uc2dc\uc624.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_SYSTEM_DEBT_CALC_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-IMPL-MARKET-DTO-ALIGNMENT": {
       "key": "WO-IMPL-MARKET-DTO-ALIGNMENT",
       "title": "Implementation: OrderBookMarket DTO Integration",
