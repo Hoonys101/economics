@@ -7,8 +7,10 @@ from typing import Optional, TextIO
 if os.name == 'nt':
     try:
         import msvcrt
+        import ctypes
     except ImportError:
         msvcrt = None
+        ctypes = None
 else:
     try:
         import fcntl
@@ -21,6 +23,7 @@ class PlatformLockManager(ILockManager):
     """
     Cross-platform implementation of file locking.
     Uses 'fcntl' on Unix-like systems and 'msvcrt' on Windows.
+    Now includes PID verification and writing.
     """
 
     def __init__(self, lock_file_path: str = 'simulation.lock'):
@@ -37,17 +40,104 @@ class PlatformLockManager(ILockManager):
             return # Already acquired
 
         try:
-            # Use 'a' (append) to avoid truncating the file if it exists and has content (e.g. PID)
-            self._lock_file = open(self.lock_file_path, 'a')
+            # Use 'a+' (append+read) to handle both checking stale content and overwriting
+            self._lock_file = open(self.lock_file_path, 'a+')
         except IOError as e:
             raise LockAcquisitionError(f"Could not open lock file: {e}")
 
-        if os.name == 'nt':
-            self._acquire_windows()
-        else:
-            self._acquire_unix()
+        try:
+            if os.name == 'nt':
+                self._acquire_windows()
+            else:
+                self._acquire_unix()
 
-        self.logger.info(f"Acquired exclusive lock on {self.lock_file_path}")
+            # If successful, write PID
+            self._update_lock_file()
+            self.logger.info(f"Acquired exclusive lock on {self.lock_file_path}")
+
+        except LockAcquisitionError as e:
+            # Check if this is a stale lock or valid lock
+            self._check_lock_status()
+            # If check_lock_status doesn't raise (it re-raises with more info usually), we re-raise original
+            raise e
+
+    def _update_lock_file(self) -> None:
+        """Truncates the file and writes the current PID."""
+        if not self._lock_file:
+            return
+        try:
+            self._lock_file.seek(0)
+            self._lock_file.truncate()
+            self._lock_file.write(str(os.getpid()))
+            self._lock_file.flush()
+            try:
+                os.fsync(self._lock_file.fileno())
+            except (OSError, AttributeError, TypeError):
+                # fsync might fail on some pipe-like files or mocks
+                pass
+        except IOError as e:
+            self.logger.error(f"Failed to write PID to lock file: {e}")
+
+    def _check_lock_status(self) -> None:
+        """
+        Reads the PID from the lock file and checks if the process is running.
+        Raises LockAcquisitionError with detailed info.
+        """
+        try:
+            if not os.path.exists(self.lock_file_path):
+                 return
+
+            # Open a new handle to read, since the original one is closed/failed
+            with open(self.lock_file_path, 'r') as f:
+                content = f.read().strip()
+
+            if not content:
+                 return
+
+            try:
+                pid = int(content)
+            except ValueError:
+                self.logger.warning(f"Invalid PID in lock file: '{content}'")
+                return
+
+            if self._is_process_running(pid):
+                raise LockAcquisitionError(f"Simulation is already running (PID {pid})")
+            else:
+                # PID found, but not running.
+                # However, the OS lock failed.
+                self.logger.warning(f"Lock held, but documented PID {pid} is not running. Potential stale PID or zombie process.")
+                raise LockAcquisitionError(f"Simulation is already running (Lock held, but PID {pid} inactive)")
+
+        except IOError:
+            pass # Can't read file
+
+    def _is_process_running(self, pid: int) -> bool:
+        """Checks if a process with the given PID is running."""
+        try:
+            if os.name == 'nt':
+                if not ctypes:
+                    return True # Fallback assume running if no ctypes
+
+                kernel32 = ctypes.windll.kernel32
+                PROCESS_QUERY_INFORMATION = 0x0400
+                SYNCHRONIZE = 0x00100000
+
+                process = kernel32.OpenProcess(PROCESS_QUERY_INFORMATION | SYNCHRONIZE, False, pid)
+                if process:
+                    exit_code = ctypes.c_ulong()
+                    if kernel32.GetExitCodeProcess(process, ctypes.byref(exit_code)):
+                        kernel32.CloseHandle(process)
+                        return exit_code.value == 259 # STILL_ACTIVE = 259
+                    kernel32.CloseHandle(process)
+                return False
+            else:
+                # Unix: sending signal 0 checks existence
+                os.kill(pid, 0)
+                return True
+        except OSError:
+            return False
+        except Exception:
+            return False
 
     def _acquire_windows(self) -> None:
         if not msvcrt:
