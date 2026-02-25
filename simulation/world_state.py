@@ -200,7 +200,7 @@ class WorldState:
             # Debt Calculation (Phase 33 Hardening)
             # We defer system debt calculation to a future update or macro tracker
             # to strictly decouple WorldState from agent iteration.
-            system_debt_pennies = 0
+            system_debt_pennies = self.monetary_ledger.get_system_debt_pennies(DEFAULT_CURRENCY)
             
             return MoneySupplyDTO(
                 total_m2_pennies=total_m2_pennies,

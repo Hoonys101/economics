@@ -1,4 +1,4 @@
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Dict
 from uuid import UUID
 from simulation.models import Transaction
 from modules.finance.kernel.api import IMonetaryLedger
@@ -26,6 +26,7 @@ class MonetaryLedger(IMonetaryLedger):
         self.time_provider = time_provider
         self.settlement_system = settlement_system
         self.expected_m2_pennies = 0
+        self.total_system_debt: Dict[CurrencyCode, int] = {}
 
     @property
     def _current_tick(self) -> int:
@@ -42,6 +43,25 @@ class MonetaryLedger(IMonetaryLedger):
 
     def get_expected_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         return self.expected_m2_pennies
+
+    def get_system_debt_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        return self.total_system_debt.get(currency, 0)
+
+    def record_system_debt_increase(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        if currency not in self.total_system_debt:
+            self.total_system_debt[currency] = 0
+        self.total_system_debt[currency] += amount_pennies
+        logger.debug(f"SYSTEM_DEBT_INCREASE | +{amount_pennies} ({source}) | Total Debt: {self.total_system_debt[currency]}")
+
+    def record_system_debt_decrease(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        if currency not in self.total_system_debt:
+            self.total_system_debt[currency] = 0
+        self.total_system_debt[currency] -= amount_pennies
+        # Floor at 0 to prevent negative debt anomalies
+        if self.total_system_debt[currency] < 0:
+            logger.warning(f"SYSTEM_DEBT_UNDERFLOW | Attempted to decrease debt below zero via {source}. Resetting to 0.")
+            self.total_system_debt[currency] = 0
+        logger.debug(f"SYSTEM_DEBT_DECREASE | -{amount_pennies} ({source}) | Total Debt: {self.total_system_debt[currency]}")
 
     def record_monetary_expansion(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         self.expected_m2_pennies += amount_pennies

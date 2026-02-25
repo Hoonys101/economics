@@ -22,6 +22,28 @@ class MonetaryLedger:
         # WO-024: Fractional Reserve Credit Tracking
         self.credit_delta_this_tick: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
 
+        # WO-IMPL-SYSTEM-DEBT: System Debt Tracking
+        self.total_system_debt: Dict[CurrencyCode, int] = {}
+
+    def get_system_debt_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        return self.total_system_debt.get(currency, 0)
+
+    def record_system_debt_increase(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        if currency not in self.total_system_debt:
+            self.total_system_debt[currency] = 0
+        self.total_system_debt[currency] += amount_pennies
+        logger.debug(f"SYSTEM_DEBT_INCREASE | +{amount_pennies} ({source}) | Total Debt: {self.total_system_debt[currency]}")
+
+    def record_system_debt_decrease(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        if currency not in self.total_system_debt:
+            self.total_system_debt[currency] = 0
+        self.total_system_debt[currency] -= amount_pennies
+        # Floor at 0 to prevent negative debt anomalies
+        if self.total_system_debt[currency] < 0:
+            logger.warning(f"SYSTEM_DEBT_UNDERFLOW | Attempted to decrease debt below zero via {source}. Resetting to 0.")
+            self.total_system_debt[currency] = 0
+        logger.debug(f"SYSTEM_DEBT_DECREASE | -{amount_pennies} ({source}) | Total Debt: {self.total_system_debt[currency]}")
+
     def reset_tick_flow(self):
         """
         Called at the start of every tick to reset flow counters and snapshot totals.

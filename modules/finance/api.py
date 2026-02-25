@@ -440,6 +440,27 @@ class IMonetaryLedger(Protocol):
         """Sets the baseline M2 (e.g. at genesis)."""
         ...
 
+    def get_system_debt_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """
+        Returns the total accumulated system debt.
+        Resolves the O(N) aggregation bottleneck by returning a running total.
+        """
+        ...
+
+    def record_system_debt_increase(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """
+        Records an increase in system debt.
+        Triggered when system agents (e.g., PublicManager, Government) utilize overdrafts or issue bonds.
+        """
+        ...
+
+    def record_system_debt_decrease(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """
+        Records a decrease in system debt.
+        Triggered when system debt is repaid or reconciled.
+        """
+        ...
+
     # Legacy Compatibility (Saga)
     def record_credit_expansion(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None: ...
     def record_credit_destruction(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None: ...
