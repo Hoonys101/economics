@@ -272,6 +272,21 @@ class IProtocolEnforcer(Protocol):
         """
         ...
 
+@runtime_checkable
+class ISystemAgentRegistry(Protocol):
+    """
+    Protocol for system agent registration and retrieval.
+    Explicitly supports IDs that might evaluate to False (e.g., Agent 0).
+    """
+    def register_system_agent(self, agent: IAgent) -> None:
+        """Registers a system agent bypassing standard initialization constraints."""
+        ...
+
+    def get_system_agent(self, agent_id: AgentID) -> Optional[IAgent]:
+        """Retrieves a system agent, supporting ID 0."""
+        ...
+
+@runtime_checkable
 class IAgentRegistry(Protocol):
     def get_agent(self, agent_id: Any) -> Any:
         ...

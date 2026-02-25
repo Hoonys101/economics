@@ -795,6 +795,19 @@ class ITaxService(ABC):
         """Calculates corporate tax claims for a firm in liquidation."""
         ...
 
+@runtime_checkable
+class ILiquidator(Protocol):
+    """
+    Protocol for performing asset liquidations and escheatment.
+    Separates the financial settlement of debt from the physical asset recovery.
+    """
+    def liquidate_assets(self, bankrupt_agent: IFinancialAgent, assets: List[Any], tick: int) -> None:
+        """
+        Performs escheatment or mint-to-buy operations to clear bankrupt assets
+        without relying on standard market constraints.
+        """
+        ...
+
 # --- Shareholder Registry Interfaces (TD-275) ---
 
 @dataclass(frozen=True)

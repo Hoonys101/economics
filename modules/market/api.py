@@ -396,3 +396,16 @@ class IMarriageMarket(Protocol):
     def get_proposals_for(self, agent_id: int) -> List[MarriageProposalDTO]:
         """Retrieves proposals targeting a specific agent."""
         ...
+@runtime_checkable
+class ICircuitBreaker(Protocol):
+    """
+    Protocol for Market Circuit Breakers with temporal relaxation.
+    Decouples volatility statistics and relaxation logic from the OrderBook.
+    """
+    def get_dynamic_price_bounds(self, item_id: str, current_tick: int, last_trade_tick: int) -> Tuple[float, float]:
+        """Calculates price bounds with temporal relaxation to prevent liquidity traps."""
+        ...
+
+    def update_price_history(self, item_id: str, price: float) -> None:
+        """Records a traded price to update volatility calculations."""
+        ...
