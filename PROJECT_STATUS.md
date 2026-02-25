@@ -17,12 +17,19 @@
 
     - **`Phase 33: Foundation Hardening (Estate & DTO)`** 🛡️ ✅ (2026-02-25)
         - **Goal**: Liquidate final high-priority technical debt: Estate Registry implementation and Telemetry DTO integer migration.
-        - **Status**: COMPLETED
+        - **Status**: COMPLETED (Pivoted to Project Rebirth)
             - [x] **Track A (Research & Planning)**: Updating Tech Debt Ledger and mapping Estate patterns. ✅
             - [x] **Track B (Estate Registry)**: Implementing formal graveyard for dead agents. ✅
             - [x] **Track C (DTO Precision)**: Migrating `SettlementResultDTO` to strict `int`. ✅
             - [x] **Track D (Modular Kernel)**: Hardened System, Market, DB, and Liquidation. ✅
             - [x] **Track E (Platform Security)**: PID-based Lock Hardening. ✅
+
+    - **`Phase 34: Project Rebirth (Batch Simulation & Reporting)`** 📈 🚀 (2026-02-25)
+        - **Goal**: Decommission failed "Cockpit" web infrastructure and pivot to a high-performance Batch Reporting pipeline.
+        - **Status**: IN-PROGRESS (Intent & Design Locked)
+            - [x] **Step 1: Scorched Earth**: Purged `frontend/` and obsolete web services. ✅
+            - [/] **Step 2: Strategic Design**: Established "Reactive War Room" paradigm. 🏗️
+            - [ ] **Step 3: Implementation**: Developing Scenario Loader and Buffered Persistence.
 
     - **`Phase 4.1: AI Logic & Simulation Re-architecture`** 🧠 ✅ (2026-02-22)
         - **Status**:

@@ -47,6 +47,11 @@
 | **TD-ARCH-ESTATE-REGISTRY** | Lifecycle | **Post-Mortem Integrity**: Missing graveyard registry for dead agents' transactions. | **High**: Financial soundness. | **SPECCED (PH33)** |
 | **TD-SPEC-DTO-INT-MIGRATION** | DTO | **Telemetry Precision**: `SettlementResultDTO` still uses floats for reporting. | **Medium**: Consistency. | **SPECCED (PH33)** |
 | **TD-FIN-LIQUIDATION-DUST** | Finance | **Wealth Orphanage**: Pro-rata liquidation truncates dust pennies. | **Low**: Accuracy. | **SPECCED (PH33)** |
+| **TD-REBIRTH-BUFFER-LOSS** | Architecture | **Buffer Flush Risk**: Crash during simulation results in loss of up to N ticks of data. | **Medium**: Data Loss. | **NEW (PH34)** |
+| **TD-REBIRTH-TIMELINE-OPS** | Configuration | **Dynamic Shift Handling**: Config DTOs are immutable; re-generation needed during events. | **High**: Logic Complexity. | **NEW (PH34)** |
+| **TD-TEST-LIFECYCLE-STALE-MOCK** | Testing | **Stale Method Access**: `test_engine.py` calls deprecated `_handle_agent_liquidation`. | **Medium**: Failure. | **NEW (AUDIT)** |
+| **TD-ARCH-GOD-CMD-DIVERGENCE** | Architecture | **Naming Drift**: `god_command_queue` (deque) vs `god_commands` (list). | **Low**: Confusion. | **NEW (AUDIT)** |
+| **TD-ARCH-GOV-DYNAMIC** | Architecture | **Fragile Injection**: `state.government` rely on dynamic `__setattr__` in initializer. | **Medium**: Flakiness. | **NEW (AUDIT)** |
 
 ---
 
@@ -59,11 +64,17 @@
 - **Solution**: Extract `BankRegistry` and `MetricsRecording` into dedicated services. Keep `SettlementSystem` purely for orchestration.
 - **Status**: RESOLVED (Phase 4.1)
 
-### ID: TD-ARCH-GOV-MISMATCH
-- **Title**: Singleton vs List Mismatch
-- **Symptom**: `WorldState` has `governments` (List) vs Singleton `government`.
-- **Risk**: Logic Fragility.
-- **Solution**: Standardize on a single representation for government access.
+### ID: TD-ARCH-GOV-MISMATCH / TD-ARCH-GOV-DYNAMIC
+- **Title**: Singleton vs List & Fragile Injection
+- **Symptom**: `WorldState` has `governments` (List) but `TickOrchestrator` uses `state.government`. Relies on dynamic `setattr` in initializer.
+- **Risk**: Test fragility; `AttributeError` in unit tests where initializer is bypassed.
+- **Solution**: Implement a `@property` or explicit facade in `WorldState` to provide a singular `government` reference.
+
+### ID: TD-ARCH-GOD-CMD-DIVERGENCE
+- **Title**: God Command Naming Divergence
+- **Symptom**: `WorldState` uses `god_command_queue` (deque) while `SimulationState` DTO uses `god_commands` (list).
+- **Risk**: Confusion during DTO construction and inconsistency across the command pipeline.
+- **Solution**: Synchronize naming to `god_commands` across both classes and use `deque` only internally if needed for performance.
 
 ---
 
@@ -174,6 +185,22 @@
 - **Risk**: Absolute accounting failure for non-market transfers. The `MonetaryLedger` only sees transactions with specialized handlers (LLR, Tax, Goods), creating a massive "dark pool" of money movement.
 - **Solution**: Register a `DefaultTransferHandler` in `initializer.py` or update `SettlementSystem` to use specific types for all operations.
 - **Status**: RESOLVED (Wave 6) - `DefaultTransferHandler` implemented and registered.
+
+---
+
+## Testing & Quality Assurance
+---
+### ID: TD-TEST-MOCK-REGRESSION
+- **Title**: Cockpit Mock Attribute Regressions
+- **Symptom**: Tests (e.g. `test_state_synchronization.py`) use deprecated `system_command_queue` on `WorldState` mocks.
+- **Risk**: Silent coverage loss; Cockpit commands are ignored in tests but tests pass.
+- **Solution**: Update mocks to use `system_commands` (list).
+
+### ID: TD-TEST-LIFECYCLE-STALE-MOCK
+- **Title**: Stale Lifecycle Method Access
+- **Symptom**: `tests/system/test_engine.py` attempts to call `_handle_agent_liquidation` which was refactored into `DeathSystem`.
+- **Risk**: Test failures in the system engine suite.
+- **Solution**: Realign test logic to use `DeathSystem` or mock the new lifecycle components accurately.
 
 ---
 > [!NOTE]
