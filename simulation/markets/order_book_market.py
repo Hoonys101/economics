@@ -6,8 +6,9 @@ from dataclasses import dataclass
 
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema
+from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, ICircuitBreaker
 from simulation.markets.matching_engine import OrderBookMatchingEngine
+from simulation.markets.circuit_breaker import DynamicCircuitBreaker
 
 logger = logging.getLogger(__name__)
 
@@ -64,13 +65,14 @@ class OrderBookMarket(Market):
     매수/매도 주문을 접수하고, 가격 우선 및 시간 우선 원칙에 따라 주문을 매칭하여 거래를 체결합니다.
     """
 
-    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None):
+    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, circuit_breaker: Optional[ICircuitBreaker] = None):
         """OrderBookMarket을 초기화합니다.
 
         Args:
             market_id (str): 시장의 고유 ID (예: 'goods_market', 'labor_market').
             config_module (Any, optional): 시뮬레이션 설정 모듈.
             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
+            circuit_breaker (ICircuitBreaker, optional): 주입된 서킷 브레이커 인스턴스.
         """
         super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
         self.id = market_id
@@ -91,9 +93,8 @@ class OrderBookMarket(Market):
         self.last_tick_supply: float = 0.0
         self.last_tick_demand: float = 0.0
 
-        # WO-136: Dynamic Circuit Breakers (Price History)
-        # Store last 20 trade prices per item for volatility calculation
-        self.price_history: Dict[str, deque] = {}
+        # WO-136: Dynamic Circuit Breakers (Modular)
+        self.circuit_breaker = circuit_breaker or DynamicCircuitBreaker(config_module, self.logger)
 
         # Phase 10: Stateless Matching Engine
         self.matching_engine = OrderBookMatchingEngine()
@@ -121,69 +122,6 @@ class OrderBookMarket(Market):
             for item_id, orders in self._sell_orders.items()
         }
 
-    def _update_price_history(self, item_id: str, price: float):
-        """Update the sliding window of price history."""
-        window_size = getattr(self.config_module, "PRICE_VOLATILITY_WINDOW_TICKS", 20) if self.config_module else 20
-
-        if item_id not in self.price_history:
-            self.price_history[item_id] = deque(maxlen=window_size)
-        elif self.price_history[item_id].maxlen != window_size:
-            # Resize if config changed
-            self.price_history[item_id] = deque(self.price_history[item_id], maxlen=window_size)
-
-        self.price_history[item_id].append(price)
-
-    def get_dynamic_price_bounds(self, item_id: str, current_tick: Optional[int] = None) -> Tuple[float, float]:
-        """
-        Calculate adaptive price bounds based on volatility.
-        Formula: Bounds = Mean * (1 ± (Base_Limit * Volatility_Adj))
-        Volatility_Adj = 1 + (StdDev / Mean)
-        Phase 33: Adds temporal relaxation if no trades occur for a while.
-        """
-        # Phase 1: Relax circuit breakers for price discovery
-        min_history_len = getattr(self.config_module, "CIRCUIT_BREAKER_MIN_HISTORY", 7) if self.config_module else 7
-
-        if item_id not in self.price_history or len(self.price_history[item_id]) < min_history_len:
-            self.logger.debug(f"History-Free Discovery: Widening bounds for {item_id}.")
-            return 0.0, float('inf') # No bounds yet
-
-        history = list(self.price_history[item_id])
-        mean_price = sum(history) / len(history)
-
-        if mean_price <= 0:
-            return 0.0, float('inf')
-
-        variance = sum((p - mean_price) ** 2 for p in history) / len(history)
-        std_dev = math.sqrt(variance)
-
-        volatility_adj = 1.0 + (std_dev / mean_price)
-        # WO-136: Use config for base limit
-        base_limit = getattr(self.config_module, "MARKET_CIRCUIT_BREAKER_BASE_LIMIT", 0.15)
-
-        effective_limit = base_limit * volatility_adj
-
-        # Phase 33: Circuit Breaker Relaxation
-        if current_tick is not None and item_id in self.last_trade_ticks:
-            last_tick = self.last_trade_ticks[item_id]
-            ticks_since = current_tick - last_tick
-            timeout = getattr(self.config_module, "CIRCUIT_BREAKER_TIMEOUT_TICKS", 10)
-
-            if ticks_since > timeout:
-                relaxation_factor = getattr(self.config_module, "CIRCUIT_BREAKER_RELAXATION_PER_TICK", 0.05)
-                extra_width = (ticks_since - timeout) * relaxation_factor
-                effective_limit += extra_width
-
-                # Log relaxation event periodically (e.g. every 10 ticks of relaxation) to avoid spam
-                if (ticks_since - timeout) % 10 == 0:
-                     self.logger.info(
-                         f"CIRCUIT_BREAKER_RELAXATION | Item: {item_id}, Ticks Since Trade: {ticks_since}, Extra Width: {extra_width:.2f}",
-                         extra={"tick": current_tick, "item_id": item_id, "extra_width": extra_width}
-                     )
-
-        lower_bound = mean_price * (1.0 - effective_limit)
-        upper_bound = mean_price * (1.0 + effective_limit)
-
-        return max(0.0, lower_bound), upper_bound
 
 
     def clear_orders(self) -> None:
@@ -243,7 +181,8 @@ class OrderBookMarket(Market):
             current_time (int): 현재 시뮬레이션 틱 (시간) 입니다.
         """
         # WO-136: Circuit Breaker Check
-        min_price, max_price = self.get_dynamic_price_bounds(order_dto.item_id, current_time)
+        last_trade_tick = self.last_trade_ticks.get(order_dto.item_id, -1)
+        min_price, max_price = self.circuit_breaker.get_dynamic_price_bounds(order_dto.item_id, current_time, last_trade_tick)
         if order_dto.price_limit < min_price or order_dto.price_limit > max_price:
             # Check if bounds are active (max_price < inf)
             if max_price < float('inf'):
@@ -344,7 +283,7 @@ class OrderBookMarket(Market):
         # Update Market Stats
         for item_id, price in result.market_stats.get("last_traded_prices", {}).items():
             self.last_traded_prices[item_id] = price
-            self._update_price_history(item_id, price)
+            self.circuit_breaker.update_price_history(item_id, price)
 
         for item_id, tick in result.market_stats.get("last_trade_ticks", {}).items():
             self.last_trade_ticks[item_id] = tick
