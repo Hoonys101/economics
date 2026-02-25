@@ -13,311 +13,105 @@ Critical events extracted for Gemini analysis.
 - **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
 - **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
 - **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 463907923, Expected: 519000000, Delta: -55092077
-- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 463907923, Expected: 519000000, Delta: -55092077
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 820, Req: 47053.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 793641218, Expected: 678603080, Delta: 115038138
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1064218310, Expected: 813891626, Delta: 250326684
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 827, Req: 51678.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2569178, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2569178, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2569178, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2569178, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2569178, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2569178, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2569178, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2569178, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2569178, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2569178, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2569178, Req: 5000000.
-- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1075330248, Expected: 813891626, Delta: 261438622
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1469884080, Expected: 1011168542, Delta: 458715538
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1469884080, Expected: 1011168542, Delta: 458715538
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271640, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271640, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271640, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271640, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271640, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271640, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271640, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271640, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271640, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271640, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271640, Req: 5000000.
-- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1551086020, Expected: 1043386746, Delta: 507699274
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1946041084, Expected: 1240864278, Delta: 705176806
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1958541084, Expected: 1240864278, Delta: 717676806
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2086869788, Expected: 1305028630, Delta: 781841158
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2342699332, Expected: 1432943402, Delta: 909755930
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2495935310, Expected: 1509561391, Delta: 986373919
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2751671640, Expected: 1637429556, Delta: 1114242084
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2904815784, Expected: 1714001628, Delta: 1190814156
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3160459452, Expected: 1841823462, Delta: 1318635990
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3194036051, Expected: 1841823462, Delta: 1352212589
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3194036051, Expected: 1841823462, Delta: 1352212589
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3194036051, Expected: 1841823462, Delta: 1352212589
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3194036051, Expected: 1841823462, Delta: 1352212589
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3433170281, Expected: 1961390577, Delta: 1471779704
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3612560753, Expected: 2051085813, Delta: 1561474940
-- **Tick 23** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.56 out of bounds [8.77, 11.92]
+- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 464066238, Expected: 519000000, Delta: -54933762
+- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 464066238, Expected: 519000000, Delta: -54933762
+- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 863892658, Expected: 718913210, Delta: 144979448
+- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 863892658, Expected: 718913210, Delta: 144979448
+- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1263574476, Expected: 918754119, Delta: 344820357
+- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1263574476, Expected: 918754119, Delta: 344820357
+- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1661613406, Expected: 1117773584, Delta: 543839822
+- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1663018890, Expected: 1118476326, Delta: 544542564
+- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2060967392, Expected: 1317450577, Delta: 743516815
+- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2072278002, Expected: 1323105882, Delta: 749172120
+- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2470133822, Expected: 1522033792, Delta: 948100030
+- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2480663951, Expected: 1522033792, Delta: 958630159
+- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2630946069, Expected: 1597174851, Delta: 1033771218
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 824, Req: 34872.
+- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2647058004, Expected: 1597174851, Delta: 1049883153
+- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2919799514, Expected: 1733545606, Delta: 1186253908
+- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3023652318, Expected: 1785472008, Delta: 1238180310
+- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3045441652, Expected: 1785472008, Delta: 1259969644
+- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3162154380, Expected: 1843828372, Delta: 1318326008
+- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3420515052, Expected: 1973008708, Delta: 1447506344
+- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3580712820, Expected: 2053107592, Delta: 1527605228
+- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3838873850, Expected: 2182188107, Delta: 1656685743
+- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3999088226, Expected: 2262295295, Delta: 1736792931
+- **Tick 23** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.56 out of bounds [8.81, 11.94]
   - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3665894911, Expected: 2051085813, Delta: 1614809098
-- **Tick 24** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.13 out of bounds [8.77, 11.92]
+- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4257156960, Expected: 2391329662, Delta: 1865827298
+- **Tick 24** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.13 out of bounds [8.80, 11.93]
   - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3665894911, Expected: 2051085813, Delta: 1614809098
-- **Tick 25** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.72 out of bounds [8.77, 11.92]
+- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4417280984, Expected: 2471391674, Delta: 1945889310
+- **Tick 25** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.72 out of bounds [8.79, 11.93]
   - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3665894911, Expected: 2051085813, Delta: 1614809098
-- **Tick 26** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.33 out of bounds [8.74, 11.88]
+- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4685256914, Expected: 2605379639, Delta: 2079877275
+- **Tick 26** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.33 out of bounds [8.79, 11.93]
   - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3689115873, Expected: 2051085813, Delta: 1638030060
-- **Tick 27** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.96 out of bounds [8.71, 11.85]
+- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4845287634, Expected: 2685394999, Delta: 2159892635
+- **Tick 27** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.96 out of bounds [8.78, 11.92]
   - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3689115873, Expected: 2051085813, Delta: 1638030060
-- **Tick 28** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.61 out of bounds [8.68, 11.82]
+- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4892024720, Expected: 2685394999, Delta: 2206629721
+- **Tick 28** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.61 out of bounds [8.77, 11.90]
   - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3689115873, Expected: 2051085813, Delta: 1638030060
-- **Tick 29** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.27 out of bounds [8.66, 11.80]
+- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4892024720, Expected: 2685394999, Delta: 2206629721
+- **Tick 29** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.27 out of bounds [8.76, 11.89]
   - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3689115873, Expected: 2051085813, Delta: 1638030060
-- **Tick 30** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.95 out of bounds [8.66, 11.80]
+- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4892024720, Expected: 2685394999, Delta: 2206629721
+- **Tick 30** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.95 out of bounds [8.76, 11.89]
   - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3689115873, Expected: 2051085813, Delta: 1638030060
-- **Tick 31** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.65 out of bounds [8.66, 11.80]
-  - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3689115873, Expected: 2051085813, Delta: 1638030060
-- **Tick 32** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.36 out of bounds [8.66, 11.80]
-  - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3895764347, Expected: 2154410050, Delta: 1741354297
-- **Tick 33** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.09 out of bounds [8.64, 11.77]
-  - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4107382603, Expected: 2260219178, Delta: 1847163425
-- **Tick 34** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.83 out of bounds [8.63, 11.75]
-  - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4313838383, Expected: 2363447068, Delta: 1950391315
-- **Tick 35** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.58 out of bounds [8.63, 11.75]
-  - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4534309841, Expected: 2474262797, Delta: 2060047044
-- **Tick 36** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.35 out of bounds [8.61, 11.74]
-  - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4564310665, Expected: 2474262797, Delta: 2090047868
-- **Tick 37** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.13 out of bounds [8.60, 11.72]
-  - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4564310665, Expected: 2474262797, Delta: 2090047868
-- **Tick 38** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.92 out of bounds [8.59, 11.70]
-  - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4563340665, Expected: 2474262797, Delta: 2089077868
-- **Tick 39** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.72 out of bounds [8.59, 11.70]
+- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4892024720, Expected: 2685394999, Delta: 2206629721
+- **Tick 31** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.65 out of bounds [8.76, 11.89]
   - Details: agent_id=122
 - **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 121 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
   - Details: agent_id=121
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4561193946, Expected: 2474262797, Delta: 2086931149
-- **Tick 40** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.53 out of bounds [8.58, 11.69]
+- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4890847855, Expected: 2685394999, Delta: 2205452856
+- **Tick 32** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.36 out of bounds [8.76, 11.89]
   - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4560809489, Expected: 2474262797, Delta: 2086546692
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4732646593, Expected: 2560181349, Delta: 2172465244
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4988715489, Expected: 2688215797, Delta: 2300499692
-- **Tick 43** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.56 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 43** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.56 out of bounds [8.58, 11.69]
+- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 123 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
   - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5160367487, Expected: 2774041796, Delta: 2386325691
-- **Tick 44** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.13 out of bounds [8.58, 11.69]
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2335377, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2335377, Req: 5000000.
+- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4903223656, Expected: 2692613956, Delta: 2210609700
+- **Tick 33** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.09 out of bounds [8.76, 11.89]
+  - Details: agent_id=122
+- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5296681314, Expected: 2889342785, Delta: 2407338529
+- **Tick 34** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.83 out of bounds [8.76, 11.89]
+  - Details: agent_id=122
+- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5331114850, Expected: 2906559553, Delta: 2424555297
+- **Tick 35** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.58 out of bounds [8.76, 11.89]
+  - Details: agent_id=122
+- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5724484812, Expected: 3103244534, Delta: 2621240278
+- **Tick 36** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.35 out of bounds [8.76, 11.89]
+  - Details: agent_id=122
+- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 122 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+  - Details: agent_id=122
+- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5768378278, Expected: 3125364789, Delta: 2643013489
+- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6161827638, Expected: 3322089469, Delta: 2839738169
+- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6205957660, Expected: 3344154480, Delta: 2861803180
+- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 120 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
   - Details: agent_id=120
-- **Tick 44** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.13 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5416358651, Expected: 2902037378, Delta: 2514321273
-- **Tick 45** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.72 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 45** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.72 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5588030459, Expected: 2987873282, Delta: 2600157177
-- **Tick 46** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.33 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 46** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.33 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5853940397, Expected: 3120828251, Delta: 2733112146
-- **Tick 47** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.96 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 47** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.96 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6025528775, Expected: 3206622440, Delta: 2818906335
-- **Tick 48** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.61 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 48** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.61 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6291355055, Expected: 3339535580, Delta: 2951819475
-- **Tick 49** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.27 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 49** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.27 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6462859657, Expected: 3425287881, Delta: 3037571776
-- **Tick 50** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.95 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 50** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.95 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6728501993, Expected: 3558109049, Delta: 3170392944
-- **Tick 51** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.65 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 51** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.65 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6910017405, Expected: 3648866755, Delta: 3261150650
-- **Tick 52** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.36 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 52** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.36 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7175476883, Expected: 3781596494, Delta: 3393880389
-- **Tick 53** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.09 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 53** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.09 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7357007445, Expected: 3872361775, Delta: 3484645670
-- **Tick 54** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.83 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 54** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.83 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7622383107, Expected: 4005049606, Delta: 3617333501
-- **Tick 55** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.58 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 55** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.58 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7803822973, Expected: 4095769539, Delta: 3708053434
-- **Tick 56** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.35 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 56** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.35 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8069115403, Expected: 4228415754, Delta: 3840699649
-- **Tick 57** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.13 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 57** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.13 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8260465929, Expected: 4324091017, Delta: 3936374912
-- **Tick 58** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.92 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 58** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.92 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8525566113, Expected: 4456641109, Delta: 4068925004
-- **Tick 59** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.72 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 59** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.72 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8716827157, Expected: 4552271631, Delta: 4164555526
-- **Tick 60** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.53 out of bounds [8.58, 11.69]
-  - Details: agent_id=120
-- **Tick 60** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.53 out of bounds [8.58, 11.69]
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 116 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 105 (Inactive=True) for Transaction: wage
-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8981941495, Expected: 4684828800, Delta: 4297112695
+- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6598481310, Expected: 3540833782, Delta: 3057647528
+- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6642645470, Expected: 3562915862, Delta: 3079729608
+- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7035896574, Expected: 3759541414, Delta: 3276355160
+- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7089971246, Expected: 3786578750, Delta: 3303392496
+- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7483132878, Expected: 3983159566, Delta: 3499973312
+- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7537118108, Expected: 4010152181, Delta: 3526965927
+- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7930087294, Expected: 4206636774, Delta: 3723450520
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1954087, Req: 5000000.
+- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7983983130, Expected: 4233584692, Delta: 3750398438
+- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8376965956, Expected: 4430076105, Delta: 3946889851
+- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8440770412, Expected: 4461978333, Delta: 3978792079
+- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8833661878, Expected: 4658424066, Delta: 4175237812
+- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8897374992, Expected: 4690280623, Delta: 4207094369
+- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9290175136, Expected: 4886680695, Delta: 4403494441
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1868589, Req: 5000000.
+- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9353796942, Expected: 4918491598, Delta: 4435305344
+- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9746402788, Expected: 5114794521, Delta: 4631608267
+- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9820034356, Expected: 5151610305, Delta: 4668424051
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 119 (Inactive=True), Seller: 1 (Inactive=False) for Transaction: emergency_buy
+- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9849320894, Expected: 5151610305, Delta: 4697710589
+- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9849320894, Expected: 5151610305, Delta: 4697710589
+- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9849320894, Expected: 5151610305, Delta: 4697710589
+- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9849320894, Expected: 5151610305, Delta: 4697710589
+- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9849320894, Expected: 5151610305, Delta: 4697710589
+- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9849320894, Expected: 5151610305, Delta: 4697710589
