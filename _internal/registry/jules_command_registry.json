@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-MODULAR-DB": {
-      "key": "WO-IMPL-MODULAR-DB",
-      "title": "Modular: Persistence Migration (Schema Update)",
-      "type": "jules",
-      "instruction_raw": "Implement IDatabaseMigrator in SimulationRepository to handle total_pennies column addition and backfill.",
-      "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-IMPL-MODULAR-DB.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-IMPL-MODULAR-LIQUIDATION": {
       "key": "WO-IMPL-MODULAR-LIQUIDATION",
       "title": "Modular: Liquidity Bailout (PublicManager)",
