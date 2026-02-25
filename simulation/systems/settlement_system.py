@@ -12,7 +12,7 @@ from modules.finance.api import (
 )
 from modules.finance.registry.account_registry import AccountRegistry
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry, ISystemFinancialAgent
-from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER
+from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW
 from modules.market.housing_planner_api import MortgageApplicationDTO
 from simulation.models import Transaction
 from modules.simulation.api import IAgent
@@ -190,9 +190,11 @@ class SettlementSystem(IMonetaryAuthority):
         agents = self.agent_registry.get_all_financial_agents()
         total_cash = 0
 
+        system_ids = {str(ID_CENTRAL_BANK), str(ID_SYSTEM), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
+
         for agent in agents:
-            # Skip Central Bank (M0 source)
-            if str(agent.id) == str(ID_CENTRAL_BANK):
+            # Skip System Agents
+            if str(agent.id) in system_ids:
                 continue
 
             # Skip Commercial Banks (Reserves)
@@ -625,6 +627,11 @@ class SettlementSystem(IMonetaryAuthority):
                 )
                 tx = self._create_transaction_record(source_authority.id, destination.id, amount, reason, tick)
                 tx.transaction_type = "money_creation"
+
+                # SSoT Update: Record Expansion
+                if self.monetary_ledger:
+                    self.monetary_ledger.record_monetary_expansion(amount, source=reason, currency=currency)
+
                 return tx
             except Exception as e:
                 self.logger.error(f"MINT_FAIL | {e}")
@@ -702,17 +709,16 @@ class SettlementSystem(IMonetaryAuthority):
         target_agent = self.agent_registry.get_agent(target_agent_id)
         if not target_agent: return False
 
+        # Pass DEFAULT_CURRENCY explicitly if not provided (though mint_and_distribute assumes default)
+        # create_and_transfer signature: (..., currency=DEFAULT_CURRENCY)
         tx = self.create_and_transfer(
             source_authority=central_bank,
             destination=target_agent,
             amount=amount,
             reason=reason,
-            tick=tick
+            tick=tick,
+            currency=DEFAULT_CURRENCY
         )
-
-        # SSoT Update: Record Expansion
-        if tx and self.monetary_ledger:
-            self.monetary_ledger.record_monetary_expansion(amount, source=reason, currency=DEFAULT_CURRENCY)
 
         return tx is not None
 
