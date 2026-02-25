@@ -3,22 +3,17 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-FINANCIAL-INTEGRITY-FIX": {
-      "key": "WO-IMPL-FINANCIAL-INTEGRITY-FIX",
-      "title": "M2 Monetary Ledger Integrity Fix: Boundary-Crossing Transfer Tracking",
+    "STABILIZE_COCKPIT": {
+      "key": "STABILIZE_COCKPIT",
+      "title": "Cockpit Stabilization & Command Pipeline",
       "type": "jules",
-      "instruction_raw": "Execute the 3 action items from the attached audit report:\n1. In SettlementSystem.transfer(), add M2-boundary detection: if sender is NON_M2 and receiver is M2, call record_monetary_expansion. If sender is M2 and receiver is NON_M2, call record_monetary_contraction.\n2. In SettlementSystem._create_transaction_record(), force executed=True for money_creation and money_destruction transaction types.\n3. In TransactionProcessor, register money_creation and money_destruction as explicit No-Op types to eliminate warnings.\nRun pytest after changes to ensure no regressions.",
+      "instruction_raw": "",
       "command": "create",
-      "file_path": null,
+      "file_path": "C:/Users/Gram Pro/.gemini/antigravity/brain/7aca855c-502b-4c50-9b83-1da1d1fa8b93/MISSION_WO-IMPL-COCKPIT-STABILIZATION.md",
       "wait": false,
       "session_id": null,
       "worker": null,
-      "context_files": [
-        "gemini-output/audit/MISSION_WO-SPEC-MONETARY-ANOMALY_AUDIT.md",
-        "simulation/systems/settlement_system.py",
-        "simulation/systems/transaction_processor.py",
-        "modules/system/constants.py"
-      ],
+      "context_files": [],
       "output_path": null,
       "model": null,
       "audit_requirements": null

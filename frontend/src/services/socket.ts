@@ -24,7 +24,8 @@ class SocketService {
 
     private getWsUrl(path: string, params: Record<string, string> = {}): string {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
+        // Force port 8000 for WebSockets to bypass potentially unstable Vite proxying in dev
+        const host = window.location.hostname + ':8000';
         let url = `${protocol}//${host}${path}`;
 
         const queryString = new URLSearchParams(params).toString();
