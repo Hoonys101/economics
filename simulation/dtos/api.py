@@ -287,6 +287,8 @@ class SimulationState:
 
     # TD-255: Unified Command Pipeline
     command_batch: Optional[CommandBatchDTO] = None
+    god_commands: List[GodCommandDTO] = field(default_factory=list) # Sync with WorldState
+    system_commands: List[Any] = field(default_factory=list) # Sync with WorldState
 
     # --- NEW TRANSIENT FIELDS ---
     # From Phase 1 (Decisions)
@@ -330,6 +332,10 @@ class SimulationState:
         # Ensure command_batch is initialized if not provided (though orchestrator should provide it)
         if self.command_batch is None:
             self.command_batch = CommandBatchDTO(tick=self.time)
+        if self.god_commands is None:
+            self.god_commands = []
+        if self.system_commands is None:
+            self.system_commands = []
 
 
 # ------------------------------------------------------------------------------

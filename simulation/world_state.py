@@ -83,7 +83,7 @@ class WorldState:
         self.next_agent_id: int = 0
         self.markets: Dict[str, Market] = {}
         self.bank: Optional[Bank] = None
-        self.government: Optional[Government] = None
+        self._governments: List[Government] = [] # TD-ARCH-GOV-MISMATCH
         self.central_bank: Optional[CentralBank] = None
         self.stock_market: Optional[StockMarket] = None
         self.tracker: Optional[EconomicIndicatorTracker] = None
@@ -114,7 +114,7 @@ class WorldState:
         self.inactive_agents: Dict[int, Any] = {}  # WO-109: Store inactive agents for transaction processing
         from collections import deque
         self.system_commands: List[SystemCommand] = [] # TD-255: Cockpit Event Queue
-        self.god_command_queue: deque[GodCommandDTO] = deque() # FOUND-03: Thread-safe Phase 0 Queue
+        self.god_commands: List[GodCommandDTO] = [] # Renamed for DTO parity (TD-ARCH-GOD-CMD-DIVERGENCE)
 
         # Production Integration (INT-01)
         self.command_queue: Optional[CommandQueue] = None
@@ -166,6 +166,16 @@ class WorldState:
         # Phase 4.1: Macro & Sentiment Metrics
         self.tick_withdrawal_pennies: int = 0
         self.market_panic_index: float = 0.0
+
+    @property
+    def government(self) -> Optional[Government]:
+        """Facade to provide the primary government instance (TD-ARCH-GOV-MISMATCH)."""
+        return self._governments[0] if self._governments else None
+
+    @government.setter
+    def government(self, value: Government) -> None:
+        if value not in self._governments:
+            self._governments.append(value)
 
     def record_withdrawal(self, amount_pennies: int) -> None:
         """Records a withdrawal event for panic index calculation."""

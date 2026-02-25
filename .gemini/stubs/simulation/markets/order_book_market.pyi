@@ -1,10 +1,8 @@
 import logging
 from _typeshed import Incomplete
-from collections import deque as deque
 from dataclasses import dataclass
-from modules.market.api import CanonicalOrderDTO, ICircuitBreaker as ICircuitBreaker, IIndexCircuitBreaker as IIndexCircuitBreaker, IPriceLimitEnforcer as IPriceLimitEnforcer, OrderTelemetrySchema
+from modules.market.api import CanonicalOrderDTO, IIndexCircuitBreaker as IIndexCircuitBreaker, IPriceLimitEnforcer as IPriceLimitEnforcer, MarketConfigDTO, OrderTelemetrySchema
 from simulation.core_markets import Market as Market
-from simulation.markets.circuit_breaker import DynamicCircuitBreaker as DynamicCircuitBreaker
 from simulation.markets.matching_engine import OrderBookMatchingEngine as OrderBookMatchingEngine
 from simulation.models import Order as Order, Transaction as Transaction
 from typing import Any
@@ -36,7 +34,7 @@ class OrderBookMarket(Market):
     매수/매도 주문을 접수하고, 가격 우선 및 시간 우선 원칙에 따라 주문을 매칭하여 거래를 체결합니다.
     """
     id: Incomplete
-    config_module: Incomplete
+    config_dto: Incomplete
     daily_avg_price: dict[str, float]
     daily_total_volume: dict[str, float]
     last_traded_prices: dict[str, float]
@@ -46,20 +44,21 @@ class OrderBookMarket(Market):
     last_tick_supply: float
     last_tick_demand: float
     circuit_breaker: Incomplete
-    index_circuit_breaker: Incomplete
     enforcer: Incomplete
     matching_engine: Incomplete
-    def __init__(self, market_id: str, config_module: Any = None, logger: logging.Logger | None = None, circuit_breaker: ICircuitBreaker | None = None, enforcer: IPriceLimitEnforcer | None = None, index_circuit_breaker: IIndexCircuitBreaker | None = None) -> None:
+    def __init__(self, market_id: str, config_dto: MarketConfigDTO | None = None, logger: logging.Logger | None = None, enforcer: IPriceLimitEnforcer | None = None, circuit_breaker: IIndexCircuitBreaker | None = None) -> None:
         """OrderBookMarket을 초기화합니다.
 
         Args:
             market_id (str): 시장의 고유 ID (예: 'goods_market', 'labor_market').
-            config_module (Any, optional): 시뮬레이션 설정 모듈.
+            config_dto (MarketConfigDTO, optional): Market Configuration DTO.
             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
-            circuit_breaker (ICircuitBreaker, optional): 주입된 서킷 브레이커 인스턴스.
             enforcer (IPriceLimitEnforcer, optional): 주입된 가격 제한 집행기.
-            index_circuit_breaker (IIndexCircuitBreaker, optional): 주입된 인댈스 서킷 브레이커 인스턴스.
+            circuit_breaker (IIndexCircuitBreaker, optional): 주입된 시장 전체 서킷 브레이커.
         """
+    @property
+    def price_history(self) -> dict[str, Any]:
+        """Exposes price history for signals/orchestration."""
     @property
     def buy_orders(self) -> dict[str, list[CanonicalOrderDTO]]:
         """Returns active buy orders as immutable CanonicalOrderDTOs."""
@@ -68,9 +67,6 @@ class OrderBookMarket(Market):
         """Returns active sell orders as immutable CanonicalOrderDTOs."""
     def clear_orders(self) -> None:
         """현재 틱의 모든 주문을 초기화합니다. 초기화 전 Best Bid/Ask를 캐싱합니다."""
-    @property
-    def price_history(self) -> dict[str, Any]:
-        """Exposes price history from the circuit breaker for signals/orchestration."""
     def cancel_orders(self, agent_id: str) -> None:
         """
         Cancels all orders for the specified agent.
@@ -78,7 +74,7 @@ class OrderBookMarket(Market):
         """
     def place_order(self, order_dto: CanonicalOrderDTO, current_time: int):
         """시장에 주문을 제출합니다. 매칭은 별도의 메서드로 처리됩니다.
-        WO-IMPL-MARKET-POLICY: Checks PriceLimitEnforcer before accepting.
+        WO-IMPL-MARKET-POLICY: Checks PriceLimitEnforcer and CircuitBreaker before accepting.
 
         Args:
             order_dto (CanonicalOrderDTO): 제출할 주문 객체.

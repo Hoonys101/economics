@@ -35,6 +35,38 @@ class LifecycleConfigDTO:
             default_fallback_price_pennies=int(getattr(config_module, "DEFAULT_FALLBACK_PRICE", 1000))
         )
 
+@dataclass(frozen=True)
+class BirthConfigDTO:
+    """Configuration DTO for the BirthSystem."""
+    initial_household_assets_pennies: int
+    reproduction_rate: float
+    immigration_rate: float
+    max_population_cap: int
+
+    @classmethod
+    def from_config_module(cls, config_module: Any) -> "BirthConfigDTO":
+        return cls(
+            initial_household_assets_pennies=int(getattr(config_module, "INITIAL_HOUSEHOLD_ASSETS", 100000) * 100),
+            reproduction_rate=float(getattr(config_module, "REPRODUCTION_RATE", 0.01)),
+            immigration_rate=float(getattr(config_module, "IMMIGRATION_RATE", 0.005)),
+            max_population_cap=int(getattr(config_module, "MAX_POPULATION_CAP", 5000))
+        )
+
+@dataclass(frozen=True)
+class DeathConfigDTO:
+    """Configuration DTO for the DeathSystem."""
+    death_tax_rate: float
+    min_inheritance_pennies: int
+    liquidation_fee_pennies: int
+
+    @classmethod
+    def from_config_module(cls, config_module: Any) -> "DeathConfigDTO":
+        return cls(
+            death_tax_rate=float(getattr(config_module, "DEATH_TAX_RATE", 0.1)),
+            min_inheritance_pennies=int(getattr(config_module, "MIN_INHERITANCE", 1000) * 100),
+            liquidation_fee_pennies=int(getattr(config_module, "LIQUIDATION_FEE", 500) * 100)
+        )
+
 @runtime_checkable
 class ILifecycleSubsystem(Protocol):
     """

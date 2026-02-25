@@ -35,6 +35,7 @@ class CanonicalOrderDTO:
     quantity: float
     price_pennies: int # Integer pennies (The SSoT)
     market_id: str
+    major: IndustryDomain = IndustryDomain.GENERAL # Phase 4.1: Domain specificity
 
     # Legacy/Display fields (Deprecated but kept for transition)
     price_limit: float = 0.0 # DEPRECATED: Use price_pennies
@@ -156,7 +157,8 @@ def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
             brand_info=order.get("brand_info"),
             metadata=order.get("metadata"),
             monetary_amount=order.get("monetary_amount"),
-            currency=order.get("currency", DEFAULT_CURRENCY)
+            currency=order.get("currency", DEFAULT_CURRENCY),
+            major=order.get("major") or IndustryDomain.GENERAL
         )
 
     raise ValueError(f"Cannot convert object of type {type(order)} to CanonicalOrderDTO")
@@ -211,6 +213,21 @@ class MarketConfigDTO:
     labor_matching_mode: str = "BID"
     initial_property_value: Optional[int] = None
     initial_rent_price: Optional[int] = None
+
+@dataclass(frozen=True)
+class LaborMarketConfigDTO:
+    """Configuration DTO for the Labor Market."""
+    majors: List[IndustryDomain] = field(default_factory=list)
+    education_weight: float = 0.1
+    matching_mode: str = "BID"
+    min_reservation_wage_pennies: int = 1000
+
+@dataclass(frozen=True)
+class StockMarketConfigDTO:
+    """Configuration DTO for the Stock Market."""
+    trading_fee_pennies: int = 100
+    circuit_breaker_threshold: float = 0.1
+    matching_mode: str = "MIDPOINT"
 
 @dataclass
 class HousingTransactionContextDTO:
