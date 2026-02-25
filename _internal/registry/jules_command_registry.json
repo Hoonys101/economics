@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-MONETARY-HARDENING": {
-      "key": "WO-IMPL-MONETARY-HARDENING",
-      "title": "Implementation: MonetaryLedger & Test Hardening",
-      "type": "jules",
-      "instruction_raw": "\uba85\uc138\uc11c\uc5d0 \ub530\ub77c MonetaryLedger\uc758 \ub9e4\uc9c1 \ub118\ubc84\ub97c \uc81c\uac70\ud558\uace0 \ubc29\uc5b4\uc801 \ub85c\uc9c1\uc744 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624. \ud14c\uc2a4\ud2b8 \ucf54\ub4dc\uc758 \uc0c1\uc218\ud654\ub3c4 \ud568\uaed8 \uc9c4\ud589\ud569\ub2c8\ub2e4.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_MONETARY_LEDGER_HARDENING_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-IMPL-SYSTEM-DEBT": {
       "key": "WO-IMPL-SYSTEM-DEBT",
       "title": "Implementation: System Debt Calculation Registry",
