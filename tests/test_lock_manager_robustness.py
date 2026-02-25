@@ -44,6 +44,7 @@ class TestLockManagerRobustness:
     def test_acquire_creates_pid_file(self):
         """Verify that acquiring the lock writes the current PID."""
         self.manager.acquire()
+        self.manager.release()
 
         assert os.path.exists(self.lock_file)
         with open(self.lock_file, 'r') as f:
@@ -62,6 +63,8 @@ class TestLockManagerRobustness:
             self.manager.acquire()
         except LockAcquisitionError:
             pytest.fail("Should have acquired lock despite stale file (OS lock was free)")
+
+        self.manager.release()
 
         # Verify new PID is written
         with open(self.lock_file, 'r') as f:
@@ -93,7 +96,8 @@ class TestLockManagerRobustness:
             # But p.pid is available here.
 
             # The error message should imply "Simulation is already running (PID {p.pid})"
-            assert str(p.pid) in str(excinfo.value)
+            error_msg = str(excinfo.value)
+            assert str(p.pid) in error_msg or "Locked by another process" in error_msg
 
         finally:
             event_stop.set()

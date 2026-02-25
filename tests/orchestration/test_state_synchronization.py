@@ -57,6 +57,7 @@ class TestStateSynchronization:
         ws.shareholder_registry = None
         ws.housing_service = None
         ws.registry = None
+        ws.index_circuit_breaker = MagicMock()
         return ws
 
     @pytest.fixture

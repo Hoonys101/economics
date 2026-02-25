@@ -88,8 +88,11 @@ class PlatformLockManager(ILockManager):
                  return
 
             # Open a new handle to read, since the original one is closed/failed
-            with open(self.lock_file_path, 'r') as f:
-                content = f.read().strip()
+            try:
+                with open(self.lock_file_path, 'r') as f:
+                    content = f.read().strip()
+            except PermissionError:
+                raise LockAcquisitionError("Simulation is already running (Locked by another process)")
 
             if not content:
                  return
