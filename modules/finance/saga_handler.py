@@ -15,6 +15,8 @@ from modules.finance.api import MortgageApplicationDTO, IFinancialAgent, IBank
 from modules.simulation.api import ISimulationState, HouseholdSnapshotDTO
 from simulation.finance.api import ISettlementSystem
 from modules.finance.kernel.api import IMonetaryLedger
+from modules.government.taxation.system import TaxationSystem
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
     def __init__(self, simulation: ISimulationState):
         self.simulation = simulation
         self.settlement_system: ISettlementSystem = simulation.settlement_system
+        self.taxation_system = TaxationSystem(simulation.config_module)
         # Note: housing_service must implement IHousingService
         self.housing_service: IHousingService = simulation.housing_service
 
@@ -240,10 +243,18 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         principal_pennies = int(principal * 100)
         offer_price_pennies = int(offer_price * 100)
 
+        # Calculate Property Tax (Atomic)
+        tax_pennies = self.taxation_system.calculate_property_tax(offer_price_pennies)
+        government = self.simulation.government
+
         transfers: List[Tuple[IFinancialAgent, IFinancialAgent, int]] = [
             (bank, buyer, principal_pennies),
             (buyer, seller, offer_price_pennies)
         ]
+
+        # Add tax transfer if applicable
+        if tax_pennies > 0 and government:
+            transfers.append((buyer, government, tax_pennies))
 
         success = self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
 

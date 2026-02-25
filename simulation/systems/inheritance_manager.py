@@ -40,35 +40,44 @@ class InheritanceManager:
 
         # 1. Valuation & Asset Gathering
         # ------------------------------------------------------------------
-        cash_raw = deceased._econ_state.assets
-        cash = cash_raw
-        if isinstance(cash_raw, dict):
-            cash = cash_raw.get(DEFAULT_CURRENCY, 0.0)
-        cash = round(cash, 2)
+        # MIGRATION: Integer Pennies Standard
+        cash_pennies = 0
+        if hasattr(deceased, 'wallet'):
+            cash_pennies = deceased.wallet.get_balance(DEFAULT_CURRENCY)
+        elif hasattr(deceased, 'assets') and isinstance(deceased.assets, dict):
+            cash_pennies = int(deceased.assets.get(DEFAULT_CURRENCY, 0))
+        elif hasattr(deceased, 'assets'):
+            # Legacy fallback
+            try:
+                cash_pennies = int(deceased.assets)
+            except (ValueError, TypeError):
+                # If it's a float, convert
+                cash_pennies = int(float(deceased.assets) * 100) if deceased.assets else 0
 
         self.logger.info(
-            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {cash:.2f}",
+            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets (pennies): {cash_pennies}",
             extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
         )
 
         deceased_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
-        real_estate_value = sum(u.estimated_value for u in deceased_units)
-        real_estate_value = round(real_estate_value, 2)
+        real_estate_value_pennies = sum(int(u.estimated_value * 100) for u in deceased_units)
 
         portfolio_holdings = deceased._econ_state.portfolio.holdings.copy() # dict of firm_id -> Share
-        stock_value = 0.0
-        current_prices = {}
+        stock_value_pennies = 0
+        current_prices_pennies = {}
+
         if simulation.stock_market:
             for firm_id, share in portfolio_holdings.items():
                 price = simulation.stock_market.get_daily_avg_price(firm_id)
                 if price <= 0:
                     price = share.acquisition_price
-                price = round(price, 2)
-                current_prices[firm_id] = price
-                stock_value += share.quantity * price
 
-        stock_value = round(stock_value, 2)
-        total_wealth = round(cash + real_estate_value + stock_value, 2)
+                # Price is float dollars, convert to pennies
+                price_pennies = int(price * 100)
+                current_prices_pennies[firm_id] = price_pennies
+                stock_value_pennies += int(share.quantity * price_pennies)
+
+        total_wealth_pennies = cash_pennies + real_estate_value_pennies + stock_value_pennies
 
         # 1.5 Debt Repayment (Phase 4.1)
         # ------------------------------------------------------------------
@@ -77,9 +86,13 @@ class InheritanceManager:
             debt_status = bank.get_debt_status(deceased.id)
             if debt_status.total_outstanding_pennies > 0:
                 for loan in debt_status.loans:
-                    if loan.outstanding_balance > 0 and cash > 0:
-                        repay_amount = min(cash, loan.outstanding_balance)
-                        repay_pennies = int(repay_amount) # Convert back to pennies
+                    # Use remaining_principal_pennies if available, else convert outstanding_balance
+                    outstanding_pennies = getattr(loan, 'remaining_principal_pennies', None)
+                    if outstanding_pennies is None:
+                         outstanding_pennies = int(loan.outstanding_balance * 100)
+
+                    if outstanding_pennies > 0 and cash_pennies > 0:
+                        repay_pennies = min(cash_pennies, outstanding_pennies)
 
                         if repay_pennies > 0:
                             # Create Repayment Transaction
@@ -88,7 +101,7 @@ class InheritanceManager:
                                 seller_id=bank.id,
                                 item_id=loan.loan_id,
                                 quantity=1,
-                                price=repay_amount,
+                                price=repay_pennies / 100.0,
                                 total_pennies=repay_pennies,
                                 market_id="financial",
                                 transaction_type="loan_repayment",
@@ -97,27 +110,29 @@ class InheritanceManager:
                             results = simulation.transaction_processor.execute(simulation, [tx])
                             if results and results[0].success:
                                 transactions.append(tx)
-                                cash -= repay_amount
-                                self.logger.info(f"DEBT_REPAID | Repaid {repay_amount} on loan {loan.loan_id}")
+                                cash_pennies -= repay_pennies
+                                self.logger.info(f"DEBT_REPAID | Repaid {repay_pennies} pennies on loan {loan.loan_id}")
 
         # 2. Liquidation for Tax (if needed)
         # ------------------------------------------------------------------
         tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.4)
         deduction = getattr(self.config_module, "INHERITANCE_DEDUCTION", 10000.0)
-        taxable_base = max(0.0, total_wealth - deduction)
-        tax_amount = round(taxable_base * tax_rate, 2)
+        deduction_pennies = int(deduction * 100)
 
-        if cash < tax_amount:
+        taxable_base_pennies = max(0, total_wealth_pennies - deduction_pennies)
+        tax_amount_pennies = int(taxable_base_pennies * tax_rate)
+
+        if cash_pennies < tax_amount_pennies:
             # Need to liquidate assets to pay tax.
             # We liquidate to Government (Simulated Buyback) for simplicity and speed (Atomic).
 
-            needed = tax_amount - cash
+            needed_pennies = tax_amount_pennies - cash_pennies
 
             # A. Stock Liquidation
-            if needed > 0 and stock_value > 0:
+            if needed_pennies > 0 and stock_value_pennies > 0:
                 for firm_id, share in list(portfolio_holdings.items()):
-                    price = current_prices.get(firm_id, 0.0)
-                    proceeds = round(share.quantity * price, 2)
+                    price_pennies = current_prices_pennies.get(firm_id, 0)
+                    proceeds_pennies = int(share.quantity * price_pennies)
 
                     # TD-232: Use TransactionProcessor for atomic execution + side effects
                     tx = Transaction(
@@ -125,8 +140,8 @@ class InheritanceManager:
                         seller_id=deceased.id,
                         item_id=f"stock_{firm_id}",
                         quantity=share.quantity,
-                        price=price,
-                        total_pennies=int(proceeds * 100),
+                        price=price_pennies / 100.0,
+                        total_pennies=proceeds_pennies,
                         market_id="stock_market",
                         transaction_type="asset_liquidation",
                         time=current_tick,
@@ -144,16 +159,18 @@ class InheritanceManager:
                         tx.metadata["executed"] = True
                         transactions.append(tx)
 
-                        cash += proceeds
-                        needed -= proceeds
-                        if needed <= 0:
+                        cash_pennies += proceeds_pennies
+                        needed_pennies -= proceeds_pennies
+                        if needed_pennies <= 0:
                             break
 
             # B. Real Estate Liquidation
-            if needed > 0 and real_estate_value > 0:
+            if needed_pennies > 0 and real_estate_value_pennies > 0:
                 fire_sale_ratio = 0.9
                 for unit in list(deceased_units):
-                    sale_price = round(unit.estimated_value * fire_sale_ratio, 2)
+                    # unit.estimated_value is float dollars, we need pennies
+                    est_value_pennies = int(unit.estimated_value * 100)
+                    sale_price_pennies = int(est_value_pennies * fire_sale_ratio)
 
                     # TD-232: Use TransactionProcessor
                     tx = Transaction(
@@ -161,8 +178,8 @@ class InheritanceManager:
                         seller_id=deceased.id,
                         item_id=f"real_estate_{unit.id}",
                         quantity=1.0,
-                        price=sale_price,
-                        total_pennies=int(sale_price * 100),
+                        price=sale_price_pennies / 100.0,
+                        total_pennies=sale_price_pennies,
                         market_id="real_estate_market",
                         transaction_type="asset_liquidation",
                         time=current_tick,
@@ -176,9 +193,9 @@ class InheritanceManager:
                         tx.metadata["executed"] = True
                         transactions.append(tx)
 
-                        cash += sale_price
-                        needed -= sale_price
-                        if needed <= 0:
+                        cash_pennies += sale_price_pennies
+                        needed_pennies -= sale_price_pennies
+                        if needed_pennies <= 0:
                             break
 
         # 3. TD-232: Removed explicit Settlement Account creation.
@@ -188,15 +205,15 @@ class InheritanceManager:
         # ------------------------------------------------------------------
 
         # A. Tax
-        tax_to_pay = min(cash, tax_amount)
-        if tax_to_pay > 0:
+        tax_to_pay_pennies = min(cash_pennies, tax_amount_pennies)
+        if tax_to_pay_pennies > 0:
             tx = Transaction(
                 buyer_id=deceased.id, # Payer
                 seller_id=government.id, # Payee
                 item_id="inheritance_tax",
                 quantity=1.0,
-                price=tax_to_pay,
-                total_pennies=int(tax_to_pay * 100),
+                price=tax_to_pay_pennies / 100.0,
+                total_pennies=tax_to_pay_pennies,
                 market_id="system",
                 transaction_type="tax",
                 time=current_tick
@@ -204,7 +221,7 @@ class InheritanceManager:
             results = simulation.transaction_processor.execute(simulation, [tx])
             if results and results[0].success:
                 transactions.append(tx)
-                cash -= tax_to_pay
+                cash_pennies -= tax_to_pay_pennies
 
         # B. Heirs & Escheatment
         heirs = []
@@ -215,7 +232,7 @@ class InheritanceManager:
 
         if not heirs:
             # Escheatment (To Gov)
-            if cash > 0:
+            if cash_pennies > 0:
                 # TD-232: Escheatment via TransactionProcessor
                 # Note: EscheatmentHandler transfers ALL assets.
                 # Since we already paid tax, remaining cash is escheated.
@@ -224,8 +241,8 @@ class InheritanceManager:
                     seller_id=government.id,
                     item_id="escheatment",
                     quantity=1.0,
-                    price=cash, # Used for record, handler takes all
-                    total_pennies=int(cash * 100),
+                    price=cash_pennies / 100.0, # Used for record, handler takes all
+                    total_pennies=cash_pennies,
                     market_id="system",
                     transaction_type="escheatment",
                     time=current_tick
@@ -257,14 +274,14 @@ class InheritanceManager:
         else:
             # Distribute to Heirs
             # Cash & Portfolio via InheritanceHandler (Single Transaction)
-            if cash > 0:
+            if cash_pennies > 0:
                 tx = Transaction(
                     buyer_id=deceased.id,
                     seller_id=ID_SYSTEM, # System distribution (Fixed COLLISION with PublicManager -1)
                     item_id="estate_distribution",
                     quantity=1.0,
-                    price=cash, # Informational
-                    total_pennies=int(cash * 100),
+                    price=cash_pennies / 100.0, # Informational
+                    total_pennies=cash_pennies,
                     market_id="system",
                     transaction_type="inheritance_distribution",
                     time=current_tick,

@@ -20,6 +20,7 @@ class ITaxConfig(Protocol):
     TAX_BRACKETS: List[Tuple[float, float]]
     TAX_RATE_BASE: float
     SALES_TAX_RATE: float
+    PROPERTY_TRANSFER_TAX_RATE: float
     GOODS_INITIAL_PRICE: Dict[str, float]
     HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK: float
     TAX_MODE: str
@@ -115,6 +116,17 @@ class TaxationSystem:
         if profit <= 0:
             return 0
         return self._round_currency(profit * current_corporate_tax_rate)
+
+    def calculate_property_tax(self, transaction_amount: int) -> int:
+        """
+        Calculates property transfer tax.
+        transaction_amount: integer pennies.
+        """
+        if transaction_amount <= 0:
+            return 0
+
+        rate = getattr(self.config_module, "PROPERTY_TRANSFER_TAX_RATE", 0.01)
+        return self._round_currency(transaction_amount * rate)
 
     def calculate_tax_intents(
         self,
