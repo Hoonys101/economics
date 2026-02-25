@@ -88,10 +88,10 @@ class EconomicIndicatorData:
     run_id: int
     time: int
     unemployment_rate: Optional[float] = None
-    avg_wage: Optional[float] = None
-    food_avg_price: Optional[float] = None
+    avg_wage: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)
+    food_avg_price: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)
     food_trade_volume: Optional[float] = None
-    avg_goods_price: Optional[float] = None
+    avg_goods_price: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)
     total_production: Optional[float] = None
     total_consumption: Optional[int] = None
     total_household_assets: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)

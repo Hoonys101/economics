@@ -219,12 +219,13 @@ class EconomicIndicatorTracker:
 
         # Perform calculations...
         # TD-213: Tracks all assets converted to DEFAULT_CURRENCY.
-        total_household_assets = sum(
+        # WO-IMPL-FINANCIAL-PRECISION: Cast to int (Pennies) for strict compliance
+        total_household_assets = int(sum(
             self._calculate_total_wallet_value(h._econ_state.assets) for h in households if h._bio_state.is_active
-        )
+        ))
 
         # WO-106: Initial Sink Fix
-        total_firm_assets = 0.0
+        total_firm_assets = 0
         for f in firms:
              if not getattr(f, "is_active", False):
                  continue
@@ -253,6 +254,9 @@ class EconomicIndicatorTracker:
                  total_firm_assets += firm_wallet_value + non_cash_assets
              else:
                  total_firm_assets += firm_wallet_value
+
+        # WO-IMPL-FINANCIAL-PRECISION: Ensure total_firm_assets is int
+        total_firm_assets = int(total_firm_assets)
 
         record["total_household_assets"] = total_household_assets
         record["total_firm_assets"] = total_firm_assets
@@ -294,18 +298,18 @@ class EconomicIndicatorTracker:
                          food_volume_sum += volume
 
         if food_volume_sum > 0:
-            record["food_avg_price"] = food_price_sum / food_volume_sum
+            record["food_avg_price"] = int(food_price_sum / food_volume_sum)
         else:
             f_market = markets.get(primary_food_key)
             if f_market and hasattr(f_market, "get_daily_avg_price"):
-                 record["food_avg_price"] = f_market.get_daily_avg_price() or 0.0
+                 record["food_avg_price"] = int(f_market.get_daily_avg_price() or 0)
             else:
-                 record["food_avg_price"] = 0.0
+                 record["food_avg_price"] = 0
 
         record["food_trade_volume"] = food_volume_sum
 
         if total_volume > 0:
-            record["avg_goods_price"] = weighted_price_sum / total_volume
+            record["avg_goods_price"] = int(weighted_price_sum / total_volume)
         else:
             fallback_prices = []
             for market_id, market in markets.items():
@@ -318,9 +322,9 @@ class EconomicIndicatorTracker:
                     fallback_prices.append(price)
 
             if fallback_prices:
-                record["avg_goods_price"] = sum(fallback_prices) / len(fallback_prices)
+                record["avg_goods_price"] = int(sum(fallback_prices) / len(fallback_prices))
             else:
-                record["avg_goods_price"] = 0.0
+                record["avg_goods_price"] = 0
 
         # Sync to goods_price_index for CPI tracking
         record["goods_price_index"] = record["avg_goods_price"]
@@ -333,17 +337,19 @@ class EconomicIndicatorTracker:
         )
         record["total_production"] = total_production
 
+        # WO-IMPL-FINANCIAL-PRECISION: Maintain Penny Standard (int)
         total_consumption = sum(
             h._econ_state.consumption_expenditure_this_tick_pennies for h in households if h._bio_state.is_active
-        ) / 100.0
-        record["total_consumption"] = total_consumption
+        )
+        record["total_consumption"] = int(total_consumption)
 
+        # WO-IMPL-FINANCIAL-PRECISION: Maintain Penny Standard (int)
         total_food_consumption = sum(
             h._econ_state.food_expenditure_this_tick_pennies
             for h in households
             if isinstance(h, Household) and h._bio_state.is_active
-        ) / 100.0
-        record["total_food_consumption"] = total_food_consumption
+        )
+        record["total_food_consumption"] = int(total_food_consumption)
 
         total_inventory = sum(
             sum(f.get_all_items().values()) if f.get_all_items() else 0.0
@@ -367,14 +373,15 @@ class EconomicIndicatorTracker:
 
         # --- WO-043: Comprehensive Metrics ---
         # 1. Labor Share
-        # Sum labor income (pennies) and convert to dollars for reporting parity
+        # Sum labor income (pennies). Kept in pennies for reporting parity with GDP (Pennies).
+        # WO-IMPL-FINANCIAL-PRECISION: Removed conversion to dollars.
         total_labor_income_pennies = sum(
             h._econ_state.labor_income_this_tick_pennies
             for h in households
             if h._bio_state.is_active
         )
-        total_labor_income = total_labor_income_pennies / 100.0
-        record["total_labor_income"] = total_labor_income
+        total_labor_income = total_labor_income_pennies
+        record["total_labor_income"] = int(total_labor_income)
 
         # Sales Volume
         total_sales_volume = sum(
@@ -438,7 +445,7 @@ class EconomicIndicatorTracker:
         record["social_cohesion"] = cohesion
 
         for field in self.all_fieldnames:
-            record.setdefault(field, 0.0)
+            record.setdefault(field, 0)
 
         # Store the record in metrics
         for key, value in record.items():

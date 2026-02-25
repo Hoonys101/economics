@@ -169,6 +169,6 @@ class TestReportingPennies:
         # Check metrics
         latest = tracker.get_latest_indicators()
         # 5000 pennies = 50.00 dollars
-        assert latest["total_consumption"] == 50.0
-        assert latest["total_food_consumption"] == 20.0
-        assert isinstance(latest["total_consumption"], float)
+        assert latest["total_consumption"] == 5000 # Pennies (int)
+        assert latest["total_food_consumption"] == 2000 # Pennies (int)
+        assert isinstance(latest["total_consumption"], int)
