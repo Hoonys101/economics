@@ -3,26 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-MARKET-SAFETY-INTEGRATION": {
-      "key": "WO-IMPL-MARKET-SAFETY-INTEGRATION",
-      "title": "Module Integration: Decorating OrderBookMarket with Market Safety Policies",
-      "type": "jules",
-      "instruction_raw": "Execute the attached specification to integrate PriceLimitEnforcer and IndexCircuitBreaker into OrderBookMarket and Initializer.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [
-        "communications/insights/WO-IMPL-MARKET-SAFETY-INTEGRATION.md",
-        "modules/markets/order_book_market.py",
-        "modules/system/initializer.py",
-        "api.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-IMPL-FINANCIAL-INTEGRITY-FIX": {
       "key": "WO-IMPL-FINANCIAL-INTEGRITY-FIX",
       "title": "M2 Monetary Ledger Integrity Fix: Boundary-Crossing Transfer Tracking",
