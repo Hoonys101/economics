@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict, Any, Optional
 import logging
 from modules.system.api import DEFAULT_CURRENCY, AssetBuyoutRequestDTO
-from modules.finance.api import ILiquidatable
+from modules.finance.api import ILiquidatable, ILiquidator
 from modules.simulation.api import IInventoryHandler, IConfigurable
 
 if TYPE_CHECKING:
@@ -45,6 +45,22 @@ class InventoryLiquidationHandler(ILiquidationHandler):
         if not (isinstance(agent, IInventoryHandler) and isinstance(agent, IConfigurable)):
             return
 
+        # New Path: ILiquidator Mint-to-Buy
+        if isinstance(self.public_manager, ILiquidator):
+            # Delegate entirely to the Liquidator (PublicManager) via SettlementSystem
+            # This allows PublicManager to Mint-to-Buy if funds are insufficient
+            self.settlement_system.process_liquidation(
+                self.public_manager,
+                agent,
+                agent.get_all_items().copy(),
+                state.time
+            )
+            # The PublicManager updates its inventory and mints payment.
+            # We must clear the agent's inventory here to reflect the transfer of custody.
+            agent.clear_inventory()
+            return
+
+        # Legacy Path (Standard Transfer) - Fallback
         # Use Protocol Access
         liq_config = agent.get_liquidation_config()
         haircut = liq_config.haircut

@@ -8,7 +8,7 @@ from modules.finance.api import (
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
     IMonetaryAuthority, IEconomicMetricsService, IPanicRecorder, ICentralBank,
     FXMatchDTO, IAccountRegistry, FloatIncursionError, ZeroSumViolationError,
-    IMonetaryLedger
+    IMonetaryLedger, ILiquidator
 )
 from modules.finance.registry.account_registry import AccountRegistry
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry, ISystemFinancialAgent
@@ -254,6 +254,18 @@ class SettlementSystem(IMonetaryAuthority):
         Returns total cash held in escrow accounts.
         """
         return {DEFAULT_CURRENCY: 0}
+
+    def process_liquidation(
+        self,
+        liquidator: ILiquidator,
+        bankrupt_agent: IFinancialAgent,
+        assets: Any,
+        tick: int
+    ) -> None:
+        """
+        Delegates asset liquidation to the authorized liquidator.
+        """
+        liquidator.liquidate_assets(bankrupt_agent, assets, tick)
 
     def record_liquidation(
         self,
@@ -628,8 +640,9 @@ class SettlementSystem(IMonetaryAuthority):
 
         # Protocol Strict Check
         is_central_bank = isinstance(source_authority, ICentralBank)
+        is_liquidator = isinstance(source_authority, ILiquidator)
 
-        if is_central_bank:
+        if is_central_bank or is_liquidator:
             # Minting is special: Source doesn't need funds.
             try:
                 if isinstance(destination, IFinancialEntity):

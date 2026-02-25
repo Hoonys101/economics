@@ -252,6 +252,9 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # TD-FIN-INVISIBLE-HAND: PublicManager must be registered BEFORE AgentRegistry snapshot
         sim.public_manager = PublicManager(config=self.config)
+        # Inject Settlement System (WO-IMPL-MODULAR-LIQUIDATION)
+        sim.public_manager.set_settlement_system(sim.settlement_system)
+
         if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
             sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
             sim.agent_registry.register_system_agent(sim.public_manager)
