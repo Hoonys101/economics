@@ -7,17 +7,18 @@ from modules.system.api import (
     PublicManagerReportDTO, CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder,
     AssetBuyoutRequestDTO, AssetBuyoutResultDTO, ISystemFinancialAgent
 )
-from modules.finance.api import IFinancialAgent, InsufficientFundsError
+from modules.finance.api import IFinancialAgent, InsufficientFundsError, ILiquidator, ISettlementSystem
+from modules.simulation.api import IConfigurable
 from modules.system.constants import ID_PUBLIC_MANAGER
 from simulation.models import Order
 
-class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent, ISystemFinancialAgent):
+class PublicManager(IAssetRecoverySystem, ILiquidator, ICurrencyHolder, IFinancialAgent, ISystemFinancialAgent):
     """
     A system-level service responsible for asset recovery and liquidation.
     It acts as a 'Receiver' in bankruptcy proceedings, taking custody of assets
     and liquidating them back into the market to prevent value destruction.
 
-    Implements IAssetRecoverySystem and IFinancialAgent (for atomic settlement).
+    Implements IAssetRecoverySystem, ILiquidator, and IFinancialAgent.
     """
 
     def __init__(self, config: Any):
@@ -26,6 +27,7 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent, ISys
         self.logger = logging.getLogger('PublicManager')
         self.managed_inventory: Dict[str, float] = defaultdict(float)
         self.system_treasury: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
+        self.settlement_system: Optional[ISettlementSystem] = None
         self.logger = logging.getLogger('PublicManager')
         self.last_tick_recovered_assets: Dict[str, float] = defaultdict(float)
         self.last_tick_revenue: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
@@ -221,3 +223,75 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent, ISys
             system_treasury_balance=self.system_treasury,
             cumulative_deficit=self.cumulative_deficit
         )
+
+    def set_settlement_system(self, system: ISettlementSystem) -> None:
+        """Injects the SettlementSystem dependency for Mint-to-Buy operations."""
+        self.settlement_system = system
+
+    def liquidate_assets(self, bankrupt_agent: IFinancialAgent, assets: Any, tick: int) -> None:
+        """
+        Implementation of ILiquidator.
+        Performs "Mint-to-Buy" asset recovery:
+        1. Valuates assets using agent configuration.
+        2. Takes custody of assets (Inventory Update).
+        3. Mints new money to pay the bankrupt agent (Liquidity Injection).
+        """
+        if not self.settlement_system:
+            self.logger.error("LIQUIDATION_FAIL | SettlementSystem not injected into PublicManager.")
+            return
+
+        # 1. Valuation Logic
+        # Default fallback values if configuration is missing
+        haircut = 0.2
+        initial_prices = {}
+        default_price = 10.0
+        market_prices = {}
+
+        # Attempt to retrieve configuration from the agent
+        if isinstance(bankrupt_agent, IConfigurable):
+            try:
+                liq_config = bankrupt_agent.get_liquidation_config()
+                haircut = liq_config.haircut
+                initial_prices = liq_config.initial_prices
+                default_price = liq_config.default_price
+                market_prices = liq_config.market_prices
+            except Exception as e:
+                self.logger.warning(f"Failed to retrieve liquidation config from Agent {bankrupt_agent.id}: {e}")
+
+        # Calculate valuations in pennies
+        prices_pennies = {}
+        inventory_assets = assets if isinstance(assets, dict) else {}
+
+        for item_id in inventory_assets.keys():
+            price = market_prices.get(item_id, 0.0)
+            if price <= 0:
+                price = initial_prices.get(item_id, default_price)
+            prices_pennies[item_id] = int(price)
+
+        # 2. Asset Buyout (Inventory Update)
+        # Construct Request
+        request = AssetBuyoutRequestDTO(
+            seller_id=bankrupt_agent.id,
+            inventory=inventory_assets.copy(),
+            market_prices=prices_pennies,
+            distress_discount=1.0 - haircut
+        )
+
+        # Execute internal inventory update (No funds moved yet)
+        result = self.execute_asset_buyout(request)
+
+        # 3. Liquidity Injection (Mint-to-Buy)
+        if result.success and result.total_paid_pennies > 0:
+            tx = self.settlement_system.create_and_transfer(
+                source_authority=self,
+                destination=bankrupt_agent,
+                amount=result.total_paid_pennies,
+                reason="LIQUIDATION_BAILOUT",
+                tick=tick,
+                currency=DEFAULT_CURRENCY
+            )
+
+            if tx:
+                self.logger.info(f"LIQUIDATION_BAILOUT | PublicManager minted {result.total_paid_pennies} to buy assets from Agent {bankrupt_agent.id}.")
+            else:
+                self.logger.error(f"LIQUIDATION_BAILOUT_FAIL | Failed to mint transfer for Agent {bankrupt_agent.id}.")

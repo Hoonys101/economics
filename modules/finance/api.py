@@ -801,7 +801,7 @@ class ILiquidator(Protocol):
     Protocol for performing asset liquidations and escheatment.
     Separates the financial settlement of debt from the physical asset recovery.
     """
-    def liquidate_assets(self, bankrupt_agent: IFinancialAgent, assets: List[Any], tick: int) -> None:
+    def liquidate_assets(self, bankrupt_agent: IFinancialAgent, assets: Any, tick: int) -> None:
         """
         Performs escheatment or mint-to-buy operations to clear bankrupt assets
         without relying on standard market constraints.

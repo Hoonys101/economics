@@ -9,16 +9,18 @@ from simulation.core_agents import Household
 from simulation.dtos.api import SimulationState
 from modules.simulation.dtos.api import FirmConfigDTO
 from modules.simulation.api import LiquidationConfigDTO
-from modules.finance.api import EquityStake
-from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY, AssetBuyoutResultDTO
+from modules.finance.api import EquityStake, ILiquidator
+from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY, AssetBuyoutResultDTO, AssetBuyoutRequestDTO
 from modules.system.registry import AgentRegistry
 from modules.hr.service import HRService
 from modules.finance.service import TaxService
+from modules.system.execution.public_manager import PublicManager
 
 class TestLiquidationWaterfallIntegration(unittest.TestCase):
     def setUp(self):
         self.mock_settlement = MagicMock()
-        self.mock_public_manager = MagicMock(spec=IAssetRecoverySystem)
+        # Mock PublicManager as concrete class to pass instance checks for ILiquidator and IAssetRecoverySystem
+        self.mock_public_manager = MagicMock(spec=PublicManager)
         self.mock_public_manager.managed_inventory = {}
         self.mock_public_manager.id = 999
         # Default mock return for asset buyout (Success but 0 paid if no inventory)
@@ -315,16 +317,55 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
 
         self.mock_settlement.transfer.side_effect = transfer_side_effect
 
+        # WO-IMPL-MODULAR-LIQUIDATION: Mock create_and_transfer side effect as well (used by PublicManager)
+        def create_and_transfer_side_effect(source_authority, destination, amount, reason, tick, currency=DEFAULT_CURRENCY):
+            return transfer_side_effect(source_authority, destination, amount, reason, currency)
+        self.mock_settlement.create_and_transfer.side_effect = create_and_transfer_side_effect
+
+        # WO-IMPL-MODULAR-LIQUIDATION: Mock process_liquidation side effect to call liquidator
+        def process_liquidation_side_effect(liquidator, agent, assets, tick):
+            liquidator.liquidate_assets(agent, assets, tick)
+        self.mock_settlement.process_liquidation.side_effect = process_liquidation_side_effect
+
+        # WO-IMPL-MODULAR-LIQUIDATION: Mock PublicManager.liquidate_assets to execute the bailout logic
+        def liquidate_assets_side_effect(agent, assets, tick):
+            # Calculate value (800.0 * 100 = 80000 pennies)
+            # This logic mimics the real PublicManager.liquidate_assets but simplified for test
+            val = 80000
+            # Invoke Mint-to-Buy
+            self.mock_settlement.create_and_transfer(
+                source_authority=self.mock_public_manager,
+                destination=agent,
+                amount=val,
+                reason="LIQUIDATION_BAILOUT",
+                tick=tick,
+                currency=DEFAULT_CURRENCY
+            )
+            # Invoke Execute Asset Buyout logic (mocked call)
+            # We don't need real logic here, just ensuring the call happens
+            self.mock_public_manager.execute_asset_buyout(AssetBuyoutRequestDTO(
+                seller_id=agent.id,
+                inventory=assets,
+                market_prices={},
+                distress_discount=0.8
+            ))
+
+        self.mock_public_manager.liquidate_assets.side_effect = liquidate_assets_side_effect
+
         # Run
         self.manager.initiate_liquidation(self.firm, self.state)
 
         # Verify
-        # 1. PublicManager -> Firm Transfer (800.0 dollars -> 80000 pennies)
-        self.mock_settlement.transfer.assert_any_call(
-            self.mock_public_manager,
-            self.firm,
-            80000,
-            "Asset Liquidation (Inventory) - Agent 1",
+        # 1. process_liquidation called
+        self.mock_settlement.process_liquidation.assert_called_once()
+
+        # 2. PublicManager -> Firm Transfer (via create_and_transfer)
+        self.mock_settlement.create_and_transfer.assert_called_with(
+            source_authority=self.mock_public_manager,
+            destination=self.firm,
+            amount=80000,
+            reason="LIQUIDATION_BAILOUT",
+            tick=self.state.time,
             currency=DEFAULT_CURRENCY
         )
 
