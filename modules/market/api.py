@@ -205,6 +205,12 @@ class MarketConfigDTO:
     transaction_fee: float = 0.0
     housing_max_ltv: float = 0.8
     housing_mortgage_term: int = 300
+    price_volatility_window: int = 20
+    labor_education_weight: float = 0.1
+    commodity_matching_mode: str = "MIDPOINT"
+    labor_matching_mode: str = "BID"
+    initial_property_value: Optional[int] = None
+    initial_rent_price: Optional[int] = None
 
 @dataclass
 class HousingTransactionContextDTO:
@@ -260,7 +266,7 @@ class MatchingResultDTO:
 
 class IMatchingEngine(Protocol):
     """Protocol for stateless market matching engines."""
-    def match(self, state: Any, current_tick: int) -> MatchingResultDTO:
+    def match(self, state: Any, current_tick: int, config: Optional[MarketConfigDTO] = None) -> MatchingResultDTO:
         """Executes matching logic on the provided state snapshot."""
         ...
 

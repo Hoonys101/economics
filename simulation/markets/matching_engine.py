@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional, Tuple, Protocol
 from dataclasses import replace
 import logging
-from modules.market.api import IMatchingEngine, OrderBookStateDTO, StockMarketStateDTO, MatchingResultDTO, CanonicalOrderDTO
+from modules.market.api import IMatchingEngine, OrderBookStateDTO, StockMarketStateDTO, MatchingResultDTO, CanonicalOrderDTO, MarketConfigDTO
 from simulation.models import Transaction
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
     Uses Integer Math (Pennies) for Zero-Sum Integrity.
     """
 
-    def match(self, state: OrderBookStateDTO, current_tick: int) -> MatchingResultDTO:
+    def match(self, state: OrderBookStateDTO, current_tick: int, config: Optional[MarketConfigDTO] = None) -> MatchingResultDTO:
         all_transactions: List[Transaction] = []
         unfilled_buy_orders: Dict[str, List[CanonicalOrderDTO]] = {}
         unfilled_sell_orders: Dict[str, List[CanonicalOrderDTO]] = {}
@@ -25,7 +25,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
                 unfilled_buy_orders[item_id] = buy_orders
                 unfilled_sell_orders[item_id] = sell_orders
                 continue
-            transactions, remaining_buys, remaining_sells, stats = self._match_item(item_id, buy_orders, sell_orders, state.market_id, current_tick)
+            transactions, remaining_buys, remaining_sells, stats = self._match_item(item_id, buy_orders, sell_orders, state.market_id, current_tick, config)
             all_transactions.extend(transactions)
             unfilled_buy_orders[item_id] = remaining_buys
             unfilled_sell_orders[item_id] = remaining_sells
@@ -39,10 +39,10 @@ class OrderBookMatchingEngine(IMatchingEngine):
                     market_stats['last_trade_ticks'][item_id] = current_tick
         return MatchingResultDTO(transactions=all_transactions, unfilled_buy_orders=unfilled_buy_orders, unfilled_sell_orders=unfilled_sell_orders, market_stats=market_stats)
 
-    def _calculate_labor_utility(self, order: CanonicalOrderDTO) -> float:
+    def _calculate_labor_utility(self, order: CanonicalOrderDTO, education_weight: float = 0.1) -> float:
         """
         Calculates utility for a Labor Sell Order.
-        Utility = (labor_skill * (1.0 + 0.1 * education_level)) / price_pennies
+        Utility = (labor_skill * (1.0 + weight * education_level)) / price_pennies
         """
         price = order.price_pennies
         if price <= 0:
@@ -52,10 +52,10 @@ class OrderBookMatchingEngine(IMatchingEngine):
         skill = brand.get('labor_skill', 1.0)
         education = brand.get('education_level', 0)
 
-        perception = skill * (1.0 + 0.1 * education)
+        perception = skill * (1.0 + education_weight * education)
         return perception / price
 
-    def _match_labor_utility(self, item_id: str, buy_orders: List[CanonicalOrderDTO], sell_orders: List[CanonicalOrderDTO], market_id: str, current_tick: int) -> Tuple[List[Transaction], List[CanonicalOrderDTO], List[CanonicalOrderDTO], Dict[str, Any]]:
+    def _match_labor_utility(self, item_id: str, buy_orders: List[CanonicalOrderDTO], sell_orders: List[CanonicalOrderDTO], market_id: str, current_tick: int, config: Optional[MarketConfigDTO] = None) -> Tuple[List[Transaction], List[CanonicalOrderDTO], List[CanonicalOrderDTO], Dict[str, Any]]:
         transactions: List[Transaction] = []
         stats: Dict[str, Any] = {'volume': 0.0}
 
@@ -143,10 +143,12 @@ class OrderBookMatchingEngine(IMatchingEngine):
              mutable_general_buys.sort(key=lambda o: o.dto.price_pennies, reverse=True)
 
         # 5. Process General Buys with Utility Priority
+        # Use config for education weight
+        edu_weight = config.labor_education_weight if config else 0.1
 
         # Sort Active Sells by Utility
         active_sells = [s for s in all_mutable_sells if s.remaining_qty > 1e-9]
-        active_sells.sort(key=lambda o: self._calculate_labor_utility(o.dto), reverse=True)
+        active_sells.sort(key=lambda o: self._calculate_labor_utility(o.dto, edu_weight), reverse=True)
 
         # Matching Loop
         for b_wrapper in mutable_general_buys:
@@ -158,7 +160,16 @@ class OrderBookMatchingEngine(IMatchingEngine):
 
                 if b_wrapper.dto.price_pennies >= s_wrapper.dto.price_pennies:
                     # Match!
-                    trade_price_pennies = b_wrapper.dto.price_pennies # Labor uses Bid Price usually (Firm Offer)
+                    # Logic: Use BID price or Configured Mode?
+                    # "labor_matching_mode"
+                    match_mode = config.labor_matching_mode if config else "BID"
+
+                    if match_mode == "MIDPOINT":
+                         trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
+                    elif match_mode == "ASK":
+                         trade_price_pennies = s_wrapper.dto.price_pennies
+                    else: # BID (default for Labor market usually, as Firm Offer)
+                         trade_price_pennies = b_wrapper.dto.price_pennies
 
                     trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
                     trade_total_pennies = int(round(trade_price_pennies * trade_qty))
@@ -197,10 +208,10 @@ class OrderBookMatchingEngine(IMatchingEngine):
 
         return (transactions, final_buys, final_sells, stats)
 
-    def _match_item(self, item_id: str, buy_orders: List[CanonicalOrderDTO], sell_orders: List[CanonicalOrderDTO], market_id: str, current_tick: int) -> Tuple[List[Transaction], List[CanonicalOrderDTO], List[CanonicalOrderDTO], Dict[str, Any]]:
+    def _match_item(self, item_id: str, buy_orders: List[CanonicalOrderDTO], sell_orders: List[CanonicalOrderDTO], market_id: str, current_tick: int, config: Optional[MarketConfigDTO] = None) -> Tuple[List[Transaction], List[CanonicalOrderDTO], List[CanonicalOrderDTO], Dict[str, Any]]:
         # Phase 4.1: Utility-Priority Matching for Labor
         if market_id in ['labor', 'research_labor']:
-            return self._match_labor_utility(item_id, buy_orders, sell_orders, market_id, current_tick)
+            return self._match_labor_utility(item_id, buy_orders, sell_orders, market_id, current_tick, config)
 
         transactions: List[Transaction] = []
         stats: Dict[str, Any] = {'volume': 0.0}
@@ -274,8 +285,16 @@ class OrderBookMatchingEngine(IMatchingEngine):
                 if market_id == 'labor' or market_id == 'research_labor':
                     trade_price_pennies = b_wrapper.dto.price_pennies
                 else:
-                    # WO-STABILIZE-POST-MERGE: Revert to integer division (truncation) for strict integer math consistency
-                    trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
+                    # Determine Matching Mode
+                    match_mode = config.commodity_matching_mode if config else "MIDPOINT"
+
+                    if match_mode == "MIDPOINT":
+                         trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
+                    elif match_mode == "ASK":
+                         trade_price_pennies = s_wrapper.dto.price_pennies
+                    else: # BID
+                         trade_price_pennies = b_wrapper.dto.price_pennies
+
                 trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
                 trade_total_pennies = int(round(trade_price_pennies * trade_qty))
                 effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
@@ -300,7 +319,7 @@ class StockMatchingEngine(IMatchingEngine):
     Uses Integer Math (Pennies).
     """
 
-    def match(self, state: StockMarketStateDTO, current_tick: int) -> MatchingResultDTO:
+    def match(self, state: StockMarketStateDTO, current_tick: int, config: Optional[MarketConfigDTO] = None) -> MatchingResultDTO:
         all_transactions: List[Transaction] = []
         unfilled_buy_orders: Dict[str, List[CanonicalOrderDTO]] = {}
         unfilled_sell_orders: Dict[str, List[CanonicalOrderDTO]] = {}

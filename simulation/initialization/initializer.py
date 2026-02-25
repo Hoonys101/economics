@@ -23,7 +23,7 @@ from simulation.agents.central_bank import CentralBank
 from simulation.loan_market import LoanMarket
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.markets.market_circuit_breaker import IndexCircuitBreaker
-from modules.market.api import IndexCircuitBreakerConfigDTO
+from modules.market.api import IndexCircuitBreakerConfigDTO, MarketConfigDTO
 from simulation.markets.stock_market import StockMarket
 from modules.market.safety.price_limit import PriceLimitEnforcer
 from modules.market.safety_dtos import PriceLimitConfigDTO
@@ -308,13 +308,26 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Load Market Safety Configs
         safety_configs = self._load_market_safety_config()
 
+        # Create MarketConfigDTO from global config
+        market_config = MarketConfigDTO(
+             transaction_fee=getattr(self.config, 'TRANSACTION_FEE', 0.0),
+             housing_max_ltv=getattr(self.config, 'HOUSING_MAX_LTV', 0.8),
+             housing_mortgage_term=getattr(self.config, 'HOUSING_MORTGAGE_TERM', 300),
+             price_volatility_window=getattr(self.config, 'PRICE_VOLATILITY_WINDOW_TICKS', 20),
+             labor_education_weight=getattr(self.config, 'LABOR_EDUCATION_WEIGHT', 0.1),
+             commodity_matching_mode=getattr(self.config, 'COMMODITY_MATCHING_MODE', "MIDPOINT"),
+             labor_matching_mode=getattr(self.config, 'LABOR_MATCHING_MODE', "BID"),
+             initial_property_value=getattr(self.config, 'INITIAL_PROPERTY_VALUE', None),
+             initial_rent_price=getattr(self.config, 'INITIAL_RENT_PRICE', None)
+        )
+
         sim.markets = {}
         for good_name in self.config.GOODS:
              enforcer = self._create_enforcer(good_name, safety_configs)
              safety_manager.register_enforcer(good_name, enforcer)
              sim.markets[good_name] = OrderBookMarket(
                  market_id=good_name,
-                 config_module=self.config,
+                 config_dto=market_config,
                  enforcer=enforcer,
                  circuit_breaker=sim.world_state.index_circuit_breaker
              )
@@ -325,7 +338,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         safety_manager.register_enforcer('security_market', sec_enforcer)
         sim.markets['security_market'] = OrderBookMarket(
             market_id='security_market',
-            config_module=self.config,
+            config_dto=market_config,
             enforcer=sec_enforcer,
             circuit_breaker=sim.world_state.index_circuit_breaker
         )
@@ -349,7 +362,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         safety_manager.register_enforcer('housing', housing_enforcer)
         sim.markets['housing'] = OrderBookMarket(
             market_id='housing',
-            config_module=self.config,
+            config_dto=market_config,
             enforcer=housing_enforcer,
             circuit_breaker=sim.world_state.index_circuit_breaker
         )

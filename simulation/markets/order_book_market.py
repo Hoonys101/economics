@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, IPriceLimitEnforcer, IIndexCircuitBreaker
+from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, IPriceLimitEnforcer, IIndexCircuitBreaker, MarketConfigDTO
 from simulation.markets.matching_engine import OrderBookMatchingEngine
 from modules.market.safety.price_limit import PriceLimitEnforcer
 from modules.market.safety_dtos import PriceLimitConfigDTO
@@ -66,19 +66,19 @@ class OrderBookMarket(Market):
     매수/매도 주문을 접수하고, 가격 우선 및 시간 우선 원칙에 따라 주문을 매칭하여 거래를 체결합니다.
     """
 
-    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, enforcer: Optional[IPriceLimitEnforcer] = None, circuit_breaker: Optional[IIndexCircuitBreaker] = None):
+    def __init__(self, market_id: str, config_dto: Optional[MarketConfigDTO] = None, logger: Optional[logging.Logger] = None, enforcer: Optional[IPriceLimitEnforcer] = None, circuit_breaker: Optional[IIndexCircuitBreaker] = None):
         """OrderBookMarket을 초기화합니다.
 
         Args:
             market_id (str): 시장의 고유 ID (예: 'goods_market', 'labor_market').
-            config_module (Any, optional): 시뮬레이션 설정 모듈.
+            config_dto (MarketConfigDTO, optional): Market Configuration DTO.
             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
             enforcer (IPriceLimitEnforcer, optional): 주입된 가격 제한 집행기.
             circuit_breaker (IIndexCircuitBreaker, optional): 주입된 시장 전체 서킷 브레이커.
         """
         super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
         self.id = market_id
-        self.config_module = config_module
+        self.config_dto = config_dto or MarketConfigDTO()
         # TD-271: Internal state encapsulated
         self._buy_orders: Dict[str, List[MarketOrder]] = {}
         self._sell_orders: Dict[str, List[MarketOrder]] = {}
@@ -297,7 +297,7 @@ class OrderBookMarket(Market):
         )
 
         # 2. Execute Matching via Engine
-        result = self.matching_engine.match(state, current_time)
+        result = self.matching_engine.match(state, current_time, self.config_dto)
 
         # 3. Apply Results
         all_transactions = result.transactions
@@ -314,7 +314,7 @@ class OrderBookMarket(Market):
         }
 
         # Update Market Stats
-        window_size = getattr(self.config_module, "PRICE_VOLATILITY_WINDOW_TICKS", 20) if self.config_module else 20
+        window_size = self.config_dto.price_volatility_window
         for item_id, price in result.market_stats.get("last_traded_prices", {}).items():
             self.last_traded_prices[item_id] = price
             # Update Price History (Telemetry)
