@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-MODULAR-MARKET": {
-      "key": "WO-IMPL-MODULAR-MARKET",
-      "title": "Modular: Market Relaxation (Circuit Breaker)",
-      "type": "jules",
-      "instruction_raw": "Extract ICircuitBreaker logic and implement Dynamic Circuit Breaker with temporal relaxation logic.",
-      "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-IMPL-MODULAR-MARKET.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-IMPL-MODULAR-DB": {
       "key": "WO-IMPL-MODULAR-DB",
       "title": "Modular: Persistence Migration (Schema Update)",
