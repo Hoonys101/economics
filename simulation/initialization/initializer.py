@@ -122,6 +122,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Phase 5: Genesis
         self._init_phase5_genesis(sim)
 
+        # Final Initialization: Database Migration & Verification
+        sim.initialize()
+
         self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
         return sim
 

@@ -32,7 +32,16 @@ class SimulationRepository:
     def __init__(self):
         self.conn = get_db_connection()
 
-        # Database Migration
+        # Initialize sub-repositories sharing the same connection
+        self.agents = AgentRepository(self.conn)
+        self.markets = MarketRepository(self.conn)
+        self.analytics = AnalyticsRepository(self.conn)
+        self.runs = RunRepository(self.conn)
+
+    def migrate(self) -> None:
+        """
+        Executes database schema migration.
+        """
         migrator = SchemaMigrator(self.conn)
         report = migrator.migrate()
         if not report.success:
@@ -40,12 +49,6 @@ class SimulationRepository:
             raise RuntimeError(f"Database migration failed: {report.errors}")
         elif report.migrated_tables:
             logger.info(f"Database Migration Successful: {report.migrated_tables}, Rows affected: {report.rows_affected}")
-
-        # Initialize sub-repositories sharing the same connection
-        self.agents = AgentRepository(self.conn)
-        self.markets = MarketRepository(self.conn)
-        self.analytics = AnalyticsRepository(self.conn)
-        self.runs = RunRepository(self.conn)
 
     def clear_all_data(self):
         """

@@ -67,7 +67,8 @@ class SchemaMigrator:
                 cursor.execute("ALTER TABLE transactions ADD COLUMN total_pennies INTEGER DEFAULT 0")
 
                 # Populate column
-                # Using ROUND(price * quantity * 100) to ensure precision before casting to INT
+                # Using ROUND(price * quantity * 100) to ensure precision before casting to INT.
+                # This aligns with modules.finance.utils.currency_math.round_to_pennies.
                 cursor.execute("""
                     UPDATE transactions
                     SET total_pennies = CAST(ROUND(price * quantity * 100) AS INTEGER)
