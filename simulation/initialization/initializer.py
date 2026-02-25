@@ -22,6 +22,7 @@ from simulation.agents.government import Government
 from simulation.agents.central_bank import CentralBank
 from simulation.loan_market import LoanMarket
 from simulation.markets.order_book_market import OrderBookMarket
+from simulation.markets.circuit_breaker import DynamicCircuitBreaker
 from simulation.markets.stock_market import StockMarket
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.metrics.inequality_tracker import InequalityTracker
@@ -276,9 +277,16 @@ class SimulationInitializer(SimulationInitializerInterface):
         """
         sim.real_estate_units = [RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE, rent_price=self.config.INITIAL_RENT_PRICE) for i in range(self.config.NUM_HOUSING_UNITS)]
 
-        sim.markets = {good_name: OrderBookMarket(market_id=good_name, config_module=self.config) for good_name in self.config.GOODS}
+        sim.markets = {}
+        for good_name in self.config.GOODS:
+             cb = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
+             sim.markets[good_name] = OrderBookMarket(market_id=good_name, config_module=self.config, circuit_breaker=cb)
+
         sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
-        sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config)
+
+        cb_sec = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
+        sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config, circuit_breaker=cb_sec)
+
         if sim.central_bank:
              sim.central_bank.set_bond_market(sim.markets['security_market'])
         sim.markets['loan_market'] = LoanMarket(market_id='loan_market', bank=sim.bank, config_module=self.config)
@@ -293,7 +301,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         else:
             sim.stock_market = None
             sim.stock_tracker = None
-        sim.markets['housing'] = OrderBookMarket(market_id='housing', config_module=self.config)
+
+        cb_housing = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
+        sim.markets['housing'] = OrderBookMarket(market_id='housing', config_module=self.config, circuit_breaker=cb_housing)
 
         sim.inequality_tracker = InequalityTracker(config_module=self.config)
         sim.personality_tracker = PersonalityStatisticsTracker(config_module=self.config)

@@ -19,6 +19,8 @@ def test_audit_total_m2_logic():
     type(hh).balance_pennies = PropertyMock(return_value=100)
     # Fallback for instance check failure
     hh.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 100}
+
+    # Ensure get_balance returns integer if called (mock doesn't default to int)
     hh.get_balance.return_value = 100
 
     # 2. Central Bank (Should be Excluded)
@@ -26,6 +28,7 @@ def test_audit_total_m2_logic():
     cb.id = ID_CENTRAL_BANK
     type(cb).balance_pennies = PropertyMock(return_value=999999)
     cb.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 999999}
+    cb.get_balance.return_value = 999999
 
     # 3. Bank (Reserves = 50, Deposits = 200)
     # Total Cash = HH(100) + Bank(50) = 150.
@@ -35,7 +38,7 @@ def test_audit_total_m2_logic():
     # Bank Reserves (M0) and Deposits (Liabilities) are NOT summed.
     # M2 = HH(100).
     bank = MagicMock(spec=Bank)
-    bank.id = 2
+    bank.id = 2 # Bank ID
     # Bank uses get_balance method (or balance_pennies depending on implementation)
     # SettlementSystem prefers balance_pennies for IFinancialEntity
     type(bank).balance_pennies = PropertyMock(return_value=50)
