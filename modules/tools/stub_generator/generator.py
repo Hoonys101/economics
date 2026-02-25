@@ -4,6 +4,7 @@ import subprocess
 import logging
 from pathlib import Path
 from typing import List, Dict
+from concurrent.futures import ThreadPoolExecutor
 from modules.tools.stub_generator.api import (
     IStubGenerator, StubGenerationRequestDTO, StubGenerationResultDTO
 )
@@ -130,7 +131,6 @@ class StubGenerator(IStubGenerator):
             )
 
     def batch_generate(self, requests: List[StubGenerationRequestDTO]) -> List[StubGenerationResultDTO]:
-        results = []
-        for req in requests:
-            results.append(self.generate_stub(req))
+        with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
+            results = list(executor.map(self.generate_stub, requests))
         return results

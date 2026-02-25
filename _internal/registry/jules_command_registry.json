@@ -2,21 +2,5 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {
-    "WO-IMPL-MODULAR-LIQUIDATION": {
-      "key": "WO-IMPL-MODULAR-LIQUIDATION",
-      "title": "Modular: Liquidity Bailout (PublicManager)",
-      "type": "jules",
-      "instruction_raw": "Implement ILiquidator for PublicManager to use create_and_transfer for escheatment valuation, preventing liquidity stalls.",
-      "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-IMPL-MODULAR-LIQUIDATION.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    }
-  }
+  "missions": {}
 }
