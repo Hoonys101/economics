@@ -1,7 +1,8 @@
-from typing import Dict, List
+from typing import Dict, List, Any
 import logging
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from simulation.models import Transaction
+from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,6 @@ class MonetaryLedger:
         """
         Processes transactions related to monetary policy (Credit Creation/Destruction).
         """
-        from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER
 
         for tx in transactions:
             cur = getattr(tx, 'currency', DEFAULT_CURRENCY)
@@ -69,18 +69,22 @@ class MonetaryLedger:
             # Any transaction originating from a System Agent (CB/PM) into the public is Expansion.
             # Any transaction returning to a System Agent from the public is Contraction.
             
-            # IDs can be int or string
-            buyer_id = str(tx.buyer_id)
-            seller_id = str(tx.seller_id)
-            cb_id = str(ID_CENTRAL_BANK)
-            pm_id = str(ID_PUBLIC_MANAGER)
+            # IDs can be int or string. Normalize to int for comparison.
+            def normalize_id(agent_id: Any) -> int:
+                try:
+                    return int(agent_id)
+                except (ValueError, TypeError):
+                    return -1 # Invalid ID, won't match system IDs (which are >= 0)
+
+            buyer_id = normalize_id(tx.buyer_id)
+            seller_id = normalize_id(tx.seller_id)
 
             # Expansion: System -> Public (Money Injection)
-            if buyer_id in [cb_id, pm_id] and seller_id not in [cb_id, pm_id]:
+            if buyer_id in [ID_CENTRAL_BANK, ID_PUBLIC_MANAGER] and seller_id not in [ID_CENTRAL_BANK, ID_PUBLIC_MANAGER]:
                 is_expansion = True
             
             # Contraction: Public -> System (Money Drain)
-            elif seller_id in [cb_id, pm_id] and buyer_id not in [cb_id, pm_id]:
+            elif seller_id in [ID_CENTRAL_BANK, ID_PUBLIC_MANAGER] and buyer_id not in [ID_CENTRAL_BANK, ID_PUBLIC_MANAGER]:
                 is_contraction = True
             
             # Explicit types as fallback for non-agent minting (e.g. credit creation by banks if not seller=PM)
@@ -90,8 +94,9 @@ class MonetaryLedger:
                 elif tx.transaction_type in ["credit_destruction", "money_destruction"]:
                     is_contraction = True
 
+            amount = int(tx.total_pennies)
+
             if is_expansion:
-                amount = int(tx.total_pennies)
                 if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0
                 if cur not in self.total_money_issued: self.total_money_issued[cur] = 0
 
@@ -100,14 +105,28 @@ class MonetaryLedger:
                 logger.debug(f"MONETARY_EXPANSION | {tx.transaction_type} (from {tx.buyer_id}): {amount}")
 
             elif is_contraction:
-                amount = int(tx.total_pennies)
+                contraction_amount = amount
+
+                if tx.transaction_type == "bond_repayment":
+                    # metadata가 None일 수 있음을 방어하고, 안전하게 principal 추출
+                    metadata = getattr(tx, 'metadata', None) or {}
+                    principal_raw = metadata.get('principal', 0)
+
+                    try:
+                        principal = int(principal_raw)
+                    except (TypeError, ValueError):
+                        principal = 0 # 예기치 않은 타입의 경우 0 처리
+
+                    # principal이 존재하는 경우 principal만큼만 contraction으로 처리
+                    if principal > 0:
+                        contraction_amount = principal
 
                 if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0
                 if cur not in self.total_money_destroyed: self.total_money_destroyed[cur] = 0
 
-                self.credit_delta_this_tick[cur] -= amount
-                self.total_money_destroyed[cur] += amount
-                logger.debug(f"MONETARY_CONTRACTION | {tx.transaction_type} (to {tx.seller_id}): {amount}")
+                self.credit_delta_this_tick[cur] -= contraction_amount
+                self.total_money_destroyed[cur] += contraction_amount
+                logger.debug(f"MONETARY_CONTRACTION | {tx.transaction_type} (to {tx.seller_id}): {contraction_amount}")
 
     def get_monetary_delta(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         """
