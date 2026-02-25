@@ -2,5 +2,21 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {}
+  "missions": {
+    "WO-IMPL-HARDEN-LOCK": {
+      "key": "WO-IMPL-HARDEN-LOCK",
+      "title": "Hardening Simulation Lock Management",
+      "type": "jules",
+      "instruction_raw": "",
+      "command": "create",
+      "file_path": "C:/Users/Gram Pro/.gemini/antigravity/brain/7aca855c-502b-4c50-9b83-1da1d1fa8b93/MISSION_WO-IMPL-HARDEN-LOCK.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    }
+  }
 }

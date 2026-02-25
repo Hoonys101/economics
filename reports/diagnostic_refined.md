@@ -1,197 +1,100 @@
 # Refined Diagnostic Logs
 Critical events extracted for Gemini analysis.
 
-- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 253032292, Expected: 243083434, Delta: 9948858
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1600, Req: 52180.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4156193, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4156193, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4156193, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4156193, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4156193, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4156193, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4156193, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4156193, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4156193, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4156193, Req: 5000000.
-- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 460375242, Expected: 243083434, Delta: 217291808
-- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 660265083, Expected: 438885740, Delta: 221379343
-- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 860099356, Expected: 438885740, Delta: 421213616
-- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1059281600, Expected: 631048634, Delta: 428232966
-- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1217550174, Expected: 631048634, Delta: 586501540
-- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1417260979, Expected: 796350401, Delta: 620910578
-- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1616875611, Expected: 808261724, Delta: 808613887
-- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1821443841, Expected: 995970372, Delta: 825473469
-- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2026017062, Expected: 1012834457, Delta: 1013182605
-- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2230543164, Expected: 1200548258, Delta: 1029994906
-- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2435023210, Expected: 1217365432, Delta: 1217657778
-- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2639455716, Expected: 1405033370, Delta: 1234422346
-- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2843842386, Expected: 1421803236, Delta: 1422039150
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 820, Req: 28218.
-- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2752209268, Expected: 1421803236, Delta: 1330406032
-- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2961559387, Expected: 1517855518, Delta: 1443703869
-- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2821577263, Expected: 1517855518, Delta: 1303721745
-- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3030900719, Expected: 1517855518, Delta: 1513045201
-- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3240176055, Expected: 1667949910, Delta: 1572226145
-- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3449405174, Expected: 1727137041, Delta: 1722268133
-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3156621186, Expected: 1727137041, Delta: 1429484145
-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2802146077, Expected: 1727137041, Delta: 1075009036
-- **Tick 23** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.56 out of bounds [8.80, 11.92]
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 439901679, Expected: 240000969, Delta: 199900710
+- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 639803104, Expected: 439915841, Delta: 199887263
+- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 839650117, Expected: 439915841, Delta: 399734276
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 51533.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved and not in Estate. Buyer: 106 (Inactive=True), Seller: 1 (Inactive=False) for Transaction: emergency_buy
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 51533.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 958818, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 958818, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 958818, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 958818, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 958818, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 958818, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 958818, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 958818, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 958818, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 958818, Req: 5000000.
+- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 918991161, Expected: 480063146, Delta: 438928015
+- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1118723049, Expected: 678974897, Delta: 439748152
+- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1274265590, Expected: 678974897, Delta: 595290693
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 357260, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 357260, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 357260, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 357260, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 357260, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 357260, Req: 5000000.
+- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1361271135, Expected: 678974897, Delta: 682296238
+- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1560942905, Expected: 878394083, Delta: 682548822
+- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1765568480, Expected: 878394083, Delta: 887174397
+- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1970147527, Expected: 1070780941, Delta: 899366586
+- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2174679834, Expected: 1082977492, Delta: 1091702342
+- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2161757213, Expected: 1082977492, Delta: 1078779721
+- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2366237072, Expected: 1262440234, Delta: 1103796838
+- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2280007329, Expected: 1262440234, Delta: 1017567095
+- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2484450528, Expected: 1262440234, Delta: 1222010294
+- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2688847664, Expected: 1373120237, Delta: 1315727427
+- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2898197971, Expected: 1466842211, Delta: 1431355760
+- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3107501083, Expected: 1582474469, Delta: 1525026614
+- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3316757015, Expected: 1676149350, Delta: 1640607665
+- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3525968531, Expected: 1791734530, Delta: 1734234001
+- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3735134325, Expected: 1885365079, Delta: 1849769246
+- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3944253390, Expected: 2000904641, Delta: 1943348749
+- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4158325380, Expected: 2094488579, Delta: 2063836801
+- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4372349332, Expected: 2214980167, Delta: 2157369165
+- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4586325256, Expected: 2308516169, Delta: 2277809087
+- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4800254296, Expected: 2428959866, Delta: 2371294430
+- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5014133294, Expected: 2522449025, Delta: 2491684269
+- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5227966771, Expected: 2642842740, Delta: 2585124031
+- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5446390985, Expected: 2736286376, Delta: 2710104609
+- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 121 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
   - Details: agent_id=121
-- **Tick 23** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.56 out of bounds [8.80, 11.92]
-  - Details: agent_id=122
-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3011450062, Expected: 1727137041, Delta: 1284313021
-- **Tick 24** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.13 out of bounds [8.80, 11.92]
-  - Details: agent_id=121
-- **Tick 24** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.13 out of bounds [8.80, 11.92]
-  - Details: agent_id=122
-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2570563232, Expected: 1727137041, Delta: 843426191
-- **Tick 25** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.72 out of bounds [8.80, 11.92]
-  - Details: agent_id=121
-- **Tick 25** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.72 out of bounds [8.80, 11.92]
-  - Details: agent_id=122
-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2774878908, Expected: 1727137041, Delta: 1047741867
-- **Tick 26** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.33 out of bounds [8.80, 11.92]
-  - Details: agent_id=121
-- **Tick 26** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.33 out of bounds [8.80, 11.92]
-  - Details: agent_id=122
-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2984144090, Expected: 1727137041, Delta: 1257007049
-- **Tick 27** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.96 out of bounds [8.80, 11.93]
-  - Details: agent_id=121
-- **Tick 27** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.96 out of bounds [8.80, 11.93]
-  - Details: agent_id=122
-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3193354095, Expected: 1727137041, Delta: 1466217054
-- **Tick 28** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.61 out of bounds [8.80, 11.93]
-  - Details: agent_id=121
-- **Tick 28** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.61 out of bounds [8.80, 11.93]
-  - Details: agent_id=122
-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3402507360, Expected: 1727137041, Delta: 1675370319
-- **Tick 29** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.27 out of bounds [8.80, 11.93]
-  - Details: agent_id=121
-- **Tick 29** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.27 out of bounds [8.80, 11.93]
-  - Details: agent_id=122
-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3611600261, Expected: 1770614503, Delta: 1840985758
-- **Tick 30** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.95 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 30** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.95 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3820524699, Expected: 1936320049, Delta: 1884204650
-- **Tick 31** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.65 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 31** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.65 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4029480103, Expected: 1979651950, Delta: 2049828153
-- **Tick 32** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.36 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 32** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.36 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4243354857, Expected: 2145417538, Delta: 2097937319
-- **Tick 33** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.09 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 33** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.09 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4457087791, Expected: 2193704906, Delta: 2263382885
-- **Tick 34** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.83 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 34** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.83 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4670716796, Expected: 2359376033, Delta: 2311340763
-- **Tick 35** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.58 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 35** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.58 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4884275901, Expected: 2407619902, Delta: 2476655999
-- **Tick 36** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.35 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 36** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.35 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5097692533, Expected: 2573298287, Delta: 2524394246
-- **Tick 37** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.13 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 37** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.13 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5310837155, Expected: 2621498322, Delta: 2689338833
-- **Tick 38** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.92 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 38** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.92 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5528879890, Expected: 2787030843, Delta: 2741849047
-- **Tick 39** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.72 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 39** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.72 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5746619251, Expected: 2840289256, Delta: 2906329995
-- **Tick 40** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.53 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 40** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.53 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5964101341, Expected: 3005724764, Delta: 2958376577
-- **Tick 41** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.35 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 41** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.35 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6181201269, Expected: 3058990014, Delta: 3122211255
-- **Tick 42** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.18 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 42** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.18 out of bounds [8.81, 11.93]
-  - Details: agent_id=122
-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 122 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
-  - Details: agent_id=122
-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6399804224, Expected: 3224381428, Delta: 3175422796
-- **Tick 43** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 3.02 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 123 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
-  - Details: agent_id=123
-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6623404380, Expected: 3277628493, Delta: 3345775887
-- **Tick 44** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 2.86 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
+- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5665182320, Expected: 2861269782, Delta: 2803912538
+- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5883917017, Expected: 2955081285, Delta: 2928835732
+- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6102553437, Expected: 3080007923, Delta: 3022545514
+- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6321193615, Expected: 3173721180, Delta: 3147472435
+- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6539785808, Expected: 3298651513, Delta: 3241134295
 - **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 120 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
   - Details: agent_id=120
-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6846960311, Expected: 3448019999, Delta: 3398940312
-- **Tick 45** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 2.71 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7070509497, Expected: 3501226947, Delta: 3569282550
-- **Tick 46** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 2.57 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7293958583, Expected: 3671615674, Delta: 3622342909
-- **Tick 47** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 2.44 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7517358485, Expected: 3724727107, Delta: 3792631378
-- **Tick 48** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 2.31 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7740760123, Expected: 3895071660, Delta: 3845688463
-- **Tick 49** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 2.19 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7969111563, Expected: 3948190305, Delta: 4020921258
-- **Tick 50** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 2.08 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8197411205, Expected: 4123489683, Delta: 4073921522
-- **Tick 51** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 1.97 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8425658443, Expected: 4176563121, Delta: 4249095322
-- **Tick 52** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 1.87 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8653852551, Expected: 4351817321, Delta: 4302035230
-- **Tick 53** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 1.77 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8881992796, Expected: 4404845549, Delta: 4477147247
-- **Tick 54** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 1.68 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9115078310, Expected: 4580054565, Delta: 4535023745
-- **Tick 55** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 1.59 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9348004472, Expected: 4638036572, Delta: 4709967900
-- **Tick 56** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 1.51 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9580924364, Expected: 4813096683, Delta: 4767827681
-- **Tick 57** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 1.43 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9813836898, Expected: 4871083830, Delta: 4942753068
-- **Tick 58** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 1.35 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10046638155, Expected: 5046149094, Delta: 5000489061
-- **Tick 59** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 1.28 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10279378148, Expected: 5104038691, Delta: 5175339457
-- **Tick 60** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 1.21 out of bounds [8.81, 11.93]
-  - Details: agent_id=121
-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10517106826, Expected: 5279057732, Delta: 5238049094
+- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 123 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+  - Details: agent_id=123
+- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6763440395, Expected: 3392316657, Delta: 3371123738
+- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6987039383, Expected: 3522309858, Delta: 3464729525
+- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6164844528, Expected: 3522309858, Delta: 2642534670
+- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6383497904, Expected: 3522309858, Delta: 2861188046
+- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6602157953, Expected: 3522309858, Delta: 3079848095
+- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6825773221, Expected: 3522309858, Delta: 3303463363
+- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7049342717, Expected: 3522309858, Delta: 3527032859
+- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7272866448, Expected: 3658068968, Delta: 3614797480
+- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7496344428, Expected: 3745838818, Delta: 3750505610
+- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7719776638, Expected: 3881552475, Delta: 3838224163
+- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7948163117, Expected: 3969276859, Delta: 3978886258
+- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8176451496, Expected: 4109944105, Delta: 4066507391
+- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8404744535, Expected: 4197570722, Delta: 4207173813
+- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8632990848, Expected: 4338242970, Delta: 4294747878
+- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8861087694, Expected: 4425823223, Delta: 4435264471
+- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9089240598, Expected: 4566346398, Delta: 4522894200
+- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9322295433, Expected: 4653983085, Delta: 4668312348
+- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9555353910, Expected: 4799407614, Delta: 4755946296
+- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9788313344, Expected: 4887048353, Delta: 4901264991
+- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10021122426, Expected: 5032374308, Delta: 4988748118
+- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10253935162, Expected: 5119865190, Delta: 5134069972
+- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10491802835, Expected: 5265195276, Delta: 5226607559
+- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10729570457, Expected: 5357740591, Delta: 5371829866
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 821, Req: 981.
+- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9173641677, Expected: 5357740591, Delta: 3815901086
+- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9406719892, Expected: 5357740591, Delta: 4048979301

@@ -147,6 +147,11 @@ class OrderBookMarket(Market):
             extra={"market_id": self.id, "tags": ["market_clear"]},
         )
 
+    @property
+    def price_history(self) -> Dict[str, Any]:
+        """Exposes price history from the circuit breaker for signals/orchestration."""
+        return getattr(self.circuit_breaker, 'price_history', {})
+
     def cancel_orders(self, agent_id: str) -> None:
         """
         Cancels all orders for the specified agent.
