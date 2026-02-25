@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-MODULAR-SYSTEM": {
-      "key": "WO-IMPL-MODULAR-SYSTEM",
-      "title": "Modular: System Registry Hardening (ID 0 Fix)",
-      "type": "jules",
-      "instruction_raw": "Refactor AgentRegistry and Initializer to handle Agent 0 (Central Bank) as valid and truthy. Ensure system agents are explicitly registered.",
-      "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-IMPL-MODULAR-SYSTEM.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-IMPL-MODULAR-MARKET": {
       "key": "WO-IMPL-MODULAR-MARKET",
       "title": "Modular: Market Relaxation (Circuit Breaker)",
