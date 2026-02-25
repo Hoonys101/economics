@@ -9,7 +9,7 @@ Testing Strategy:
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 from simulation.markets.stock_market import StockMarket
-from modules.market.api import OrderDTO
+from modules.market.api import OrderDTO, IIndexCircuitBreaker
 from simulation.models import Transaction
 
 @pytest.fixture
@@ -26,7 +26,10 @@ def mock_config(golden_config):
 @pytest.fixture
 def stock_market(mock_config):
     registry = MagicMock()
-    return StockMarket(config_module=mock_config, shareholder_registry=registry)
+    mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+    mock_breaker.check_market_health.return_value = True
+    mock_breaker.is_active.return_value = False
+    return StockMarket(config_module=mock_config, shareholder_registry=registry, index_circuit_breaker=mock_breaker)
 
 @pytest.fixture
 def sample_buy_order_dto():

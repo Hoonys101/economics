@@ -10,7 +10,7 @@ from collections import defaultdict
 from dataclasses import dataclass, replace
 from simulation.models import Transaction, Order
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper, OrderTelemetrySchema
+from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper, OrderTelemetrySchema, IIndexCircuitBreaker
 from modules.finance.api import IShareholderRegistry, IShareholderView
 from simulation.markets.matching_engine import StockMatchingEngine
 logger = logging.getLogger(__name__)
@@ -31,11 +31,12 @@ class StockMarket(Market):
     실제 거래는 호가 매칭으로 이루어집니다.
     """
 
-    def __init__(self, config_module: Any, shareholder_registry: IShareholderRegistry, logger: Optional[logging.Logger]=None):
+    def __init__(self, config_module: Any, shareholder_registry: IShareholderRegistry, logger: Optional[logging.Logger]=None, index_circuit_breaker: Optional[IIndexCircuitBreaker]=None):
         self.id = 'stock_market'
         self.config_module = config_module
         self.logger = logger or logging.getLogger(__name__)
         self.shareholder_registry = shareholder_registry
+        self.index_circuit_breaker = index_circuit_breaker
         self.matched_transactions: List[Transaction] = []
         self.buy_orders: Dict[int, List[ManagedOrder]] = defaultdict(list)
         self.sell_orders: Dict[int, List[ManagedOrder]] = defaultdict(list)
@@ -169,6 +170,26 @@ class StockMarket(Market):
         모든 기업의 주식 주문을 매칭하여 거래를 성사시킵니다.
         Delegates to Stateless Matching Engine.
         """
+        # WO-IMPL-INDEX-BREAKER: Check Market Health
+        if self.index_circuit_breaker:
+            # Calculate Market Index (Sum of all stock prices)
+            # Use last_prices, fallback to reference_prices
+            total_price_index = 0.0
+            # Iterate over all known firms (keys in reference_prices usually cover active firms)
+            known_firms = set(self.reference_prices.keys()) | set(self.last_prices.keys())
+
+            for firm_id in known_firms:
+                price = self.last_prices.get(firm_id, self.reference_prices.get(firm_id, 0.0))
+                total_price_index += price
+
+            market_stats = {'market_index': total_price_index}
+
+            if not self.index_circuit_breaker.check_market_health(market_stats, tick):
+                self.logger.warning(
+                    f"MARKET_HALT | StockMarket halted by IndexCircuitBreaker",
+                    extra={'tick': tick, 'market_id': self.id, 'market_index': total_price_index}
+                )
+                return []
 
         def to_dto_with_metadata(managed: ManagedOrder) -> CanonicalOrderDTO:
             dto = replace(managed.order, quantity=managed.remaining_quantity)

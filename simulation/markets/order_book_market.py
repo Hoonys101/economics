@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, ICircuitBreaker
+from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, ICircuitBreaker, IIndexCircuitBreaker
 from simulation.markets.matching_engine import OrderBookMatchingEngine
 from simulation.markets.circuit_breaker import DynamicCircuitBreaker
 
@@ -65,7 +65,7 @@ class OrderBookMarket(Market):
     매수/매도 주문을 접수하고, 가격 우선 및 시간 우선 원칙에 따라 주문을 매칭하여 거래를 체결합니다.
     """
 
-    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, circuit_breaker: Optional[ICircuitBreaker] = None):
+    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, circuit_breaker: Optional[ICircuitBreaker] = None, index_circuit_breaker: Optional['IIndexCircuitBreaker'] = None):
         """OrderBookMarket을 초기화합니다.
 
         Args:
@@ -73,6 +73,7 @@ class OrderBookMarket(Market):
             config_module (Any, optional): 시뮬레이션 설정 모듈.
             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
             circuit_breaker (ICircuitBreaker, optional): 주입된 서킷 브레이커 인스턴스.
+            index_circuit_breaker (IIndexCircuitBreaker, optional): 주입된 인덱스 서킷 브레이커 인스턴스.
         """
         super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
         self.id = market_id
@@ -95,6 +96,7 @@ class OrderBookMarket(Market):
 
         # WO-136: Dynamic Circuit Breakers (Modular)
         self.circuit_breaker = circuit_breaker or DynamicCircuitBreaker(config_module, self.logger)
+        self.index_circuit_breaker = index_circuit_breaker
 
         # Phase 10: Stateless Matching Engine
         self.matching_engine = OrderBookMatchingEngine()
@@ -227,6 +229,22 @@ class OrderBookMarket(Market):
         현재 틱의 모든 주문을 매칭하고 거래를 실행합니다.
         각 아이템별로 주문 매칭을 수행합니다.
         """
+        # WO-IMPL-INDEX-BREAKER: Check Market Health
+        if self.index_circuit_breaker:
+            # Calculate simple equal-weighted index of last traded prices
+            if self.last_traded_prices:
+                current_index = sum(self.last_traded_prices.values()) / len(self.last_traded_prices)
+            else:
+                current_index = 0.0
+
+            market_stats = {'market_index': current_index}
+            if not self.index_circuit_breaker.check_market_health(market_stats, current_time):
+                self.logger.warning(
+                    f"MARKET_HALT | OrderBookMarket {self.id} halted by IndexCircuitBreaker",
+                    extra={'tick': current_time, 'market_id': self.id}
+                )
+                return []
+
         all_transactions: List[Transaction] = []
 
         # Get all unique item_ids from both buy and sell orders
