@@ -3,13 +3,28 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-FINANCIAL-FIX-PH33": {
-      "key": "WO-IMPL-FINANCIAL-FIX-PH33",
-      "title": "Implementation of Financial Integrity & M2 SSoT",
+    "WO-IMPL-FIN-HANDLER-FIX": {
+      "key": "WO-IMPL-FIN-HANDLER-FIX",
+      "title": "Fix Monetary Expansion Handler Noise",
       "type": "jules",
-      "instruction_raw": "Implement the unified M2 definition via IMonetaryLedger, refactor WorldState/TickOrchestrator, and fix agent registration leaks.",
+      "instruction_raw": "Silence 'No handler' warnings by flagging audit transactions as executed.",
       "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-SPEC-FINANCIAL-FIX-PH33_PLAN.md",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-SPEC-FIN-HANDLER-FIX_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-IMPL-FIN-M2-CALC-FIX": {
+      "key": "WO-IMPL-FIN-M2-CALC-FIX",
+      "title": "Refine M2 Calculation Definition",
+      "type": "jules",
+      "instruction_raw": "Fix 4B+ penny delta by eliminating double-counting in SettlementSystem.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-SPEC-FIN-M2-CALC-FIX_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
