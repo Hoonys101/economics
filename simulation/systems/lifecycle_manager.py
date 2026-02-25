@@ -25,6 +25,7 @@ from modules.finance.api import IShareholderRegistry
 from modules.simulation.api import IEstateRegistry
 
 # New Imports
+from simulation.systems.lifecycle.api import LifecycleConfigDTO
 from simulation.systems.lifecycle.aging_system import AgingSystem
 from simulation.systems.lifecycle.birth_system import BirthSystem
 from simulation.systems.lifecycle.death_system import DeathSystem
@@ -67,7 +68,9 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         )
 
         # Instantiate Sub-Systems
-        self.aging_system = AgingSystem(config_module, demographic_manager, logger)
+        # DTO Injection for AgingSystem
+        lifecycle_config = LifecycleConfigDTO.from_config_module(config_module)
+        self.aging_system = AgingSystem(lifecycle_config, demographic_manager, logger)
 
         if household_factory is None:
              raise ValueError("IHouseholdFactory is mandatory for AgentLifecycleManager.")
