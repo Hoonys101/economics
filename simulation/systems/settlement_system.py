@@ -248,6 +248,28 @@ class SettlementSystem(IMonetaryAuthority):
 
         return total_m2
 
+    def _is_m2_agent(self, agent: Any) -> bool:
+        """
+        Determines if an agent is part of the M2 Money Supply.
+        M2 Excludes: System Agents (Central Bank, Gov, etc.) and Commercial Banks.
+        """
+        if not agent:
+            return False
+
+        # 1. Check ID Exclusion
+        if str(agent.id) in {str(uid) for uid in NON_M2_SYSTEM_AGENT_IDS}:
+            return False
+
+        # 2. Check Bank ID (if bank reference exists)
+        if self.bank and str(agent.id) == str(self.bank.id):
+             return False
+
+        # 3. Check Type Exclusion (IBank implementation)
+        if isinstance(agent, IBank):
+            return False
+
+        return True
+
     def get_assets_by_currency(self) -> Dict[str, int]:
         """
         Implements ICurrencyHolder for M2 verification.
@@ -613,6 +635,18 @@ class SettlementSystem(IMonetaryAuthority):
                  if self.panic_recorder:
                      self.panic_recorder.record_withdrawal(amount)
 
+             # WO-IMPL-FINANCIAL-INTEGRITY-FIX: M2 Boundary Detection
+             if self.monetary_ledger:
+                 is_debit_m2 = self._is_m2_agent(debit_agent)
+                 is_credit_m2 = self._is_m2_agent(credit_agent)
+
+                 if not is_debit_m2 and is_credit_m2:
+                     # Injection (Non-M2 -> M2)
+                     self.monetary_ledger.record_monetary_expansion(amount, source=memo, currency=currency)
+                 elif is_debit_m2 and not is_credit_m2:
+                     # Leakage (M2 -> Non-M2)
+                     self.monetary_ledger.record_monetary_contraction(amount, source=memo, currency=currency)
+
              self._emit_zero_sum_check(debit_agent.id, credit_agent.id, amount)
              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
         elif result.status == 'FAILED':
@@ -737,6 +771,12 @@ class SettlementSystem(IMonetaryAuthority):
         if buyer_id is None or seller_id is None:
              return None
 
+        metadata = {"memo": memo}
+
+        # WO-IMPL-FINANCIAL-INTEGRITY-FIX: Mark creation/destruction as executed
+        if transaction_type in ["money_creation", "money_destruction"]:
+            metadata["executed"] = True
+
         return Transaction(
             buyer_id=buyer_id,
             seller_id=seller_id,
@@ -747,7 +787,7 @@ class SettlementSystem(IMonetaryAuthority):
             market_id="settlement",
             transaction_type=transaction_type,
             time=tick,
-            metadata={"memo": memo}
+            metadata=metadata
         )
 
     def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = "god_mode_injection") -> bool:

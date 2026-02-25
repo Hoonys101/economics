@@ -169,8 +169,9 @@ class TransactionProcessor(SystemInterface):
 
             # Fallback
             if handler is None:
-                if tx.transaction_type in ["credit_creation", "credit_destruction"]:
-                    continue  # Symbolic, no-op
+                # WO-IMPL-FINANCIAL-INTEGRITY-FIX: Explicitly ignore M2 Ops and Symbolic Ops
+                if tx.transaction_type in ["credit_creation", "credit_destruction", "money_creation", "money_destruction"]:
+                    continue  # Symbolic, no-op or handled by SettlementSystem
 
                 if default_handler:
                     handler = default_handler
