@@ -52,6 +52,7 @@
 | **TD-TEST-LIFECYCLE-STALE-MOCK** | Testing | **Stale Method Access**: `test_engine.py` calls deprecated `_handle_agent_liquidation`. | **Medium**: Failure. | **NEW (AUDIT)** |
 | **TD-ARCH-GOD-CMD-DIVERGENCE** | Architecture | **Naming Drift**: `god_command_queue` (deque) vs `god_commands` (list). | **Low**: Confusion. | **NEW (AUDIT)** |
 | **TD-ARCH-GOV-DYNAMIC** | Architecture | **Fragile Injection**: `state.government` rely on dynamic `__setattr__` in initializer. | **Medium**: Flakiness. | **NEW (AUDIT)** |
+| **TD-LIFECYCLE-CONFIG-PARITY** | Lifecycle | **Config Parity**: Birth/Death systems still use raw config vs DTO. | **Medium**: Inconsistency. | **NEW (PH34)** |
 
 ---
 
@@ -201,6 +202,17 @@
 - **Symptom**: `tests/system/test_engine.py` attempts to call `_handle_agent_liquidation` which was refactored into `DeathSystem`.
 - **Risk**: Test failures in the system engine suite.
 - **Solution**: Realign test logic to use `DeathSystem` or mock the new lifecycle components accurately.
+
+---
+
+## Lifecycle & Configuration
+---
+### ID: TD-LIFECYCLE-CONFIG-PARITY
+- **Title**: Lifecycle Subsystem Config Parity
+- **Symptom**: `AgingSystem` uses a strictly typed `LifecycleConfigDTO`, while `BirthSystem` and `DeathSystem` in `AgentLifecycleManager` still depend on the raw `config_module` object.
+- **Risk**: Inconsistent configuration access patterns across lifecycle subsystems, leading to mixed float/penny math boundaries and potential runtime type errors in death/birth execution paths.
+- **Solution**: Implement `BirthConfigDTO` and `DeathConfigDTO` to fully decouple all lifecycle systems from the global config module, completing the dependency injection refactoring.
+- **Status**: NEW (Phase 34)
 
 ---
 > [!NOTE]

@@ -5,9 +5,9 @@
   "missions": {
     "WO-IMPL-MARKET-DTO-ALIGNMENT": {
       "key": "WO-IMPL-MARKET-DTO-ALIGNMENT",
-      "title": "Implementation: OrderBookMarket DTO Integration",
+      "title": "OrderBookMarket DTO Alignment Refactor",
       "type": "jules",
-      "instruction_raw": "\uba85\uc138\uc11c\uc5d0 \ub530\ub77c OrderBookMarket\uc758 \uc124\uc815\uc744 MarketConfigDTO \uae30\ubc18\uc73c\ub85c \uc804\ud658\ud558\uc2ed\uc2dc\uc624.",
+      "instruction_raw": "\uc2a4\ud399 \ud30c\uc77c\uc744 \ucc38\uc870\ud558\uc5ec MarketConfigDTO \ud655\uc7a5, OrderBookMarket \ubc0f MatchingEngine \ub9ac\ud329\ud1a0\ub9c1, \ucd08\uae30\ud654 \ub85c\uc9c1 \uc815\ub82c\uc744 \uc21c\ucc28\uc801\uc73c\ub85c \uc218\ud589\ud558\uc2ed\uc2dc\uc624. \ubaa8\ub4e0 getattr \ud638\ucd9c\uc744 \uc81c\uac70\ud558\uace0 DTO \uae30\ubc18 \uc811\uadfc\uc73c\ub85c \uc644\uc804 \uc804\ud658\ud574\uc57c \ud569\ub2c8\ub2e4.",
       "command": "create",
       "file_path": "gemini-output/spec/MISSION_MARKET_DTO_ALIGNMENT_SPEC.md",
       "wait": false,
