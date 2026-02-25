@@ -14,11 +14,7 @@ def test_audit_total_m2_logic():
 
     # 1. Standard Agent (Household)
     hh = MagicMock(spec=Household)
-<<<<<<< HEAD
     hh.id = 101  # Use ID > 100 to avoid collision with System Agents (ID_GOVERNMENT=1)
-=======
-    hh.id = 101
->>>>>>> origin/WO-IMPL-MODULAR-DB-migration-11846482357826686637
     # Household implements IFinancialEntity via protocol/duck typing, ensure property exists
     type(hh).balance_pennies = PropertyMock(return_value=100)
     hh.get_balance.return_value = 100
