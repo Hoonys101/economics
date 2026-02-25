@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import List, Any, Dict, Protocol, runtime_checkable, Optional
 import logging
-from simulation.systems.lifecycle.api import IAgingSystem, IAgingFirm, IFinanceEngine
+from simulation.systems.lifecycle.api import IAgingSystem, IAgingFirm, IFinanceEngine, LifecycleConfigDTO
 from simulation.dtos.api import SimulationState
 from simulation.models import Transaction
-from simulation.systems.demographic_manager import DemographicManager
+from modules.demographics.api import IDemographicManager
 from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
 from simulation.interfaces.market_interface import IMarket
 from modules.finance.api import IFinancialEntity
@@ -14,8 +14,8 @@ class AgingSystem(IAgingSystem):
     Handles aging, needs updates, and distress/grace protocol checks for agents.
     Strictly follows Protocol Purity and Integer Math.
     """
-    def __init__(self, config_module: Any, demographic_manager: DemographicManager, logger: logging.Logger):
-        self.config = config_module
+    def __init__(self, config: LifecycleConfigDTO, demographic_manager: IDemographicManager, logger: logging.Logger):
+        self.config = config
         self.demographic_manager = demographic_manager
         self.logger = logger
 
@@ -44,10 +44,10 @@ class AgingSystem(IAgingSystem):
         Refactored for Protocol Purity.
         """
         # Config values (converted to pennies where applicable)
-        assets_threshold_pennies = int(getattr(self.config, "ASSETS_CLOSURE_THRESHOLD", 0.0) * 100)
-        closure_turns_threshold = getattr(self.config, "FIRM_CLOSURE_TURNS_THRESHOLD", 5)
-        liquidity_inc_rate = getattr(self.config, "LIQUIDITY_NEED_INCREASE_RATE", 1.0)
-        grace_period = getattr(self.config, "DISTRESS_GRACE_PERIOD", 5)
+        assets_threshold_pennies = self.config.assets_closure_threshold_pennies
+        closure_turns_threshold = self.config.firm_closure_turns_threshold
+        liquidity_inc_rate = self.config.liquidity_need_increase_rate
+        grace_period = self.config.distress_grace_period
 
         for firm in state.firms:
             if not isinstance(firm, IAgingFirm) or not firm.is_active:
@@ -115,9 +115,9 @@ class AgingSystem(IAgingSystem):
         WO-167: Handles distress checks for households.
         Triggers emergency liquidation if starving but solvent.
         """
-        survival_threshold = getattr(self.config, "SURVIVAL_NEED_DEATH_THRESHOLD", 100.0)
+        survival_threshold = self.config.survival_need_death_threshold
         distress_threshold = survival_threshold * 0.9
-        grace_period = getattr(self.config, "DISTRESS_GRACE_PERIOD", 5)
+        grace_period = self.config.distress_grace_period
 
         for household in state.households:
             # Direct access to _bio_state is unavoidable without DTO setter,
@@ -208,8 +208,7 @@ class AgingSystem(IAgingSystem):
         """
         total_pennies = 0
         # MIGRATION: Use integer default price (Penny Standard)
-        raw_price = getattr(self.config, "DEFAULT_FALLBACK_PRICE", 1000)
-        default_price_pennies = int(raw_price)
+        default_price_pennies = self.config.default_fallback_price_pennies
 
         for item_id, qty in inventory.items():
             price_pennies = default_price_pennies

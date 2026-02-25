@@ -1,11 +1,12 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.systems.lifecycle.aging_system import AgingSystem
-from simulation.systems.lifecycle.api import IAgingFirm, IFinanceEngine
+from simulation.systems.lifecycle.api import IAgingFirm, IFinanceEngine, LifecycleConfigDTO
 from simulation.dtos.api import SimulationState
 from simulation.interfaces.market_interface import IMarket
 from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
 from modules.finance.api import IFinancialEntity
+from modules.demographics.api import IDemographicManager
 
 class MockMarket:
     def __init__(self):
@@ -51,19 +52,21 @@ class MockFirm:
 
 class TestAgingSystem:
     @pytest.fixture
-    def aging_system(self):
-        config = MagicMock()
-        config.ASSETS_CLOSURE_THRESHOLD = 0.0 # Pennies will be 0
-        config.FIRM_CLOSURE_TURNS_THRESHOLD = 5
-        config.LIQUIDITY_NEED_INCREASE_RATE = 1.0
-        config.DISTRESS_GRACE_PERIOD = 5
-        config.GOODS_INITIAL_PRICE = {"default": 10.0}
-        config.SURVIVAL_NEED_DEATH_THRESHOLD = 100.0
+    def default_config(self):
+        return LifecycleConfigDTO(
+            assets_closure_threshold_pennies=0,
+            firm_closure_turns_threshold=5,
+            liquidity_need_increase_rate=1.0,
+            distress_grace_period=5,
+            survival_need_death_threshold=100.0,
+            default_fallback_price_pennies=1000
+        )
 
-        demographic_manager = MagicMock()
+    @pytest.fixture
+    def aging_system(self, default_config):
+        demographic_manager = MagicMock(spec=IDemographicManager)
         logger = MagicMock()
-
-        return AgingSystem(config, demographic_manager, logger)
+        return AgingSystem(default_config, demographic_manager, logger)
 
     def test_execute_delegation(self, aging_system):
         state = MagicMock()
@@ -93,8 +96,19 @@ class TestAgingSystem:
         assert firm.finance_state.distress_tick_counter == 1
         assert isinstance(result, list)
 
-    def test_firm_grace_period_config(self, aging_system):
-        aging_system.config.DISTRESS_GRACE_PERIOD = 10
+    def test_firm_grace_period_config(self, default_config):
+        # Override config
+        config = LifecycleConfigDTO(
+            assets_closure_threshold_pennies=0,
+            firm_closure_turns_threshold=5,
+            liquidity_need_increase_rate=1.0,
+            distress_grace_period=10, # Modified
+            survival_need_death_threshold=100.0,
+            default_fallback_price_pennies=1000
+        )
+        demographic_manager = MagicMock(spec=IDemographicManager)
+        logger = MagicMock()
+        aging_system = AgingSystem(config, demographic_manager, logger)
 
         firm = MockFirm(balance=-1000, distress=True, counter=9)
 
@@ -112,13 +126,25 @@ class TestAgingSystem:
         assert firm.finance_state.distress_tick_counter == 10
         assert firm.is_active is True
 
-    def test_solvency_gate_active(self, aging_system):
+    def test_solvency_gate_active(self, default_config):
         """
         Verify a firm with high assets but high loss turns is NOT closed (Solvency Gate).
         """
         # Threshold is 0.0 (0 pennies). Let's set it to 100.0 (10000 pennies)
-        aging_system.config.ASSETS_CLOSURE_THRESHOLD = 100.0
-        threshold_pennies = 10000
+        config = LifecycleConfigDTO(
+            assets_closure_threshold_pennies=10000, # Modified: 100.0 * 100
+            firm_closure_turns_threshold=5,
+            liquidity_need_increase_rate=1.0,
+            distress_grace_period=5,
+            survival_need_death_threshold=100.0,
+            default_fallback_price_pennies=1000
+        )
+
+        demographic_manager = MagicMock(spec=IDemographicManager)
+        logger = MagicMock()
+        aging_system = AgingSystem(config, demographic_manager, logger)
+
+        assets_threshold_pennies = 10000
 
         # Solvent if > 2 * threshold = 20000 pennies
         firm = MockFirm(balance=25000) # 250.00
@@ -137,12 +163,24 @@ class TestAgingSystem:
 
         assert firm.is_active is True # Should survive due to Solvency Gate
 
-    def test_solvency_gate_inactive(self, aging_system):
+    def test_solvency_gate_inactive(self, default_config):
         """
         Verify a firm with low assets AND high loss turns IS closed.
         """
-        aging_system.config.ASSETS_CLOSURE_THRESHOLD = 100.0
-        threshold_pennies = 10000
+        config = LifecycleConfigDTO(
+            assets_closure_threshold_pennies=10000, # Modified: 100.0 * 100
+            firm_closure_turns_threshold=5,
+            liquidity_need_increase_rate=1.0,
+            distress_grace_period=5,
+            survival_need_death_threshold=100.0,
+            default_fallback_price_pennies=1000
+        )
+
+        demographic_manager = MagicMock(spec=IDemographicManager)
+        logger = MagicMock()
+        aging_system = AgingSystem(config, demographic_manager, logger)
+
+        assets_threshold_pennies = 10000
 
         # Not solvent if <= 2 * threshold = 20000 pennies
         firm = MockFirm(balance=15000) # 150.00 (Between 1x and 2x threshold, technically solvent by strict def? No, strict is > 2x)

@@ -1,9 +1,8 @@
-
 """
 Demographics Module API
 Defines the interface for Population Management and Statistical Aggregation.
 """
-from typing import Protocol, Dict, List, Any, TypedDict, runtime_checkable
+from typing import Protocol, Dict, List, Any, TypedDict, runtime_checkable, Optional
 from enum import Enum
 
 # --- Data Transfer Objects ---
@@ -66,5 +65,11 @@ class IDemographicManager(Protocol):
     def sync_stats(self, agents: List[Any]) -> None:
         """
         Force-rebuilds the internal cache from a list of agents.
+        """
+        ...
+
+    def process_aging(self, agents: List[Any], current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Processes aging for a list of agents.
         """
         ...
