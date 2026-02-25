@@ -72,7 +72,11 @@ class DeathSystem(IDeathSystem):
 
             # 2. Currency Registry
             if isinstance(firm, ICurrencyHolder):
-                state.unregister_currency_holder(firm)
+                if state.currency_registry_handler:
+                    state.currency_registry_handler.unregister_currency_holder(firm)
+                elif state.currency_holders is not None:
+                     if firm in state.currency_holders:
+                         state.currency_holders.remove(firm)
 
             # 3. Settlement Index
             if self.settlement_system:
@@ -104,7 +108,11 @@ class DeathSystem(IDeathSystem):
 
              # Cleanup
              if isinstance(household, ICurrencyHolder):
-                state.unregister_currency_holder(household)
+                if state.currency_registry_handler:
+                    state.currency_registry_handler.unregister_currency_holder(household)
+                elif state.currency_holders is not None:
+                     if household in state.currency_holders:
+                         state.currency_holders.remove(household)
 
              if self.settlement_system:
                 self.settlement_system.remove_agent_from_all_accounts(household.id)

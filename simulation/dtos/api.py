@@ -7,8 +7,7 @@ from simulation.models import Order
 from simulation.dtos.decision_dtos import DecisionOutputDTO
 from modules.finance.api import IFinancialAgent
 from modules.simulation.api import AgentID
-from modules.governance.api import SystemCommand
-from simulation.dtos.commands import GodCommandDTO
+from modules.system.command_pipeline.api import CommandBatchDTO
 
 # Renamed to enforce explicit usage of CanonicalOrderDTO vs Legacy Order
 LegacySimulationOrder = Order
@@ -286,9 +285,8 @@ class SimulationState:
     saga_orchestrator: Optional[Any] = None
     monetary_ledger: Optional["IMonetaryLedger"] = None
 
-    # TD-255: System Command Pipeline
-    system_commands: List[SystemCommand] = field(default_factory=list)
-    god_command_snapshot: List[GodCommandDTO] = field(default_factory=list) # Renamed from god_commands
+    # TD-255: Unified Command Pipeline
+    command_batch: Optional[CommandBatchDTO] = None
 
     # --- NEW TRANSIENT FIELDS ---
     # From Phase 1 (Decisions)
@@ -308,26 +306,9 @@ class SimulationState:
     public_manager: Optional[Any] = None # PublicManager (Added for TransactionProcessor)
     politics_system: Optional[PoliticsSystem] = None # Phase 4.4: Political Orchestrator
 
-    def register_currency_holder(self, holder: Any) -> None:
-        if self.currency_registry_handler:
-            self.currency_registry_handler.register_currency_holder(holder)
-        elif self.currency_holders is not None:
-             self.currency_holders.append(holder) # Fallback
-
-    def unregister_currency_holder(self, holder: Any) -> None:
-        if self.currency_registry_handler:
-            self.currency_registry_handler.unregister_currency_holder(holder)
-        elif self.currency_holders is not None:
-             if holder in self.currency_holders:
-                 self.currency_holders.remove(holder) # Fallback
-
     def __post_init__(self) -> None:
         if self.transactions is None:
             self.transactions = []
-        if self.system_commands is None:
-            self.system_commands = []
-        if self.god_command_snapshot is None:
-            self.god_command_snapshot = []
         if self.inter_tick_queue is None:
             self.inter_tick_queue = []
         if self.effects_queue is None:
@@ -346,6 +327,9 @@ class SimulationState:
             self.planned_consumption = {}
         if self.household_leisure_effects is None:
             self.household_leisure_effects = {}
+        # Ensure command_batch is initialized if not provided (though orchestrator should provide it)
+        if self.command_batch is None:
+            self.command_batch = CommandBatchDTO(tick=self.time)
 
 
 # ------------------------------------------------------------------------------

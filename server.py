@@ -160,8 +160,8 @@ async def command_endpoint(websocket: WebSocket):
 
                 command = CockpitCommand.model_validate(data)
 
-                if sim and hasattr(sim, 'command_service'):
-                    sim.command_service.enqueue_command(command)
+                if sim and hasattr(sim, 'command_ingress'):
+                    sim.command_ingress.enqueue_command(command)
                     # Optional: Send ack? For now, fire and forget.
                 else:
                     logger.warning("Simulation not ready to accept commands.")

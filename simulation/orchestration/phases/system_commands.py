@@ -23,15 +23,15 @@ class Phase_SystemCommands(IPhaseStrategy):
         self.processor = SystemCommandProcessor()
 
     def execute(self, state: SimulationState) -> SimulationState:
-        if not state.system_commands:
+        if not state.command_batch or not state.command_batch.system_commands:
             return state
 
         logger.info(
-            f"SYSTEM_COMMANDS_PHASE | Processing {len(state.system_commands)} commands.",
-            extra={"tick": state.time, "count": len(state.system_commands)}
+            f"SYSTEM_COMMANDS_PHASE | Processing {len(state.command_batch.system_commands)} commands.",
+            extra={"tick": state.time, "count": len(state.command_batch.system_commands)}
         )
 
-        for command in state.system_commands:
+        for command in state.command_batch.system_commands:
             try:
                 state = self.processor.execute(command, state)
             except Exception as e:
@@ -41,7 +41,5 @@ class Phase_SystemCommands(IPhaseStrategy):
                     extra={"tick": state.time, "command": command}
                 )
 
-        # Clear commands after processing to prevent re-execution if state is reused (though usually recreated)
-        state.system_commands.clear()
-
+        # Commands are part of the tick batch, no need to clear as the batch is discarded next tick
         return state

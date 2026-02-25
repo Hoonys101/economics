@@ -150,9 +150,11 @@ class SimulationInitializer(SimulationInitializerInterface):
         estate_registry = EstateRegistry()
         settlement_system = SettlementSystem(logger=self.logger, agent_registry=agent_registry)
         from modules.system.services.command_service import CommandService
+        from modules.system.command_pipeline.service import CommandIngressService
         command_service = CommandService(registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry)
+        command_ingress = CommandIngressService()
 
-        sim = Simulation(config_manager=self.config_manager, config_module=self.config, logger=self.logger, repository=self.repository, registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry, command_service=command_service)
+        sim = Simulation(config_manager=self.config_manager, config_module=self.config, logger=self.logger, repository=self.repository, registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry, command_service=command_service, command_ingress=command_ingress)
 
         sim.lock_manager = lock_manager
         sim.event_bus = EventBus()

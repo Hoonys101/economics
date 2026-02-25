@@ -11,9 +11,6 @@ from modules.system.constants import ID_CENTRAL_BANK
 from simulation.finance.api import ISettlementSystem, IFinancialAgent, IMonetaryAuthority
 from modules.simulation.api import IInventoryHandler
 from modules.finance.api import IBank
-
-from modules.governance.cockpit.api import CockpitCommand, CockpitCommandType, ICommandService, SetTaxRatePayload, SetBaseRatePayload
-from modules.governance.api import SystemCommand, SetTaxRateCommand, SetInterestRateCommand
 from modules.api.protocols import ISectorAgent
 
 logger = logging.getLogger(__name__)
@@ -62,79 +59,6 @@ class CommandService:
         self.settlement_system = settlement_system
         self.agent_registry = agent_registry
         self.undo_stack = UndoStack()
-        self._command_queue: deque = deque()
-        self._system_command_queue: deque = deque()
-
-    def enqueue_command(self, command: CockpitCommand) -> None:
-        """
-        Implements ICommandService.
-        Maps CockpitCommand to either GodCommandDTO (System Control) or SystemCommand (Governance).
-        Uses strictly typed payload validation where possible.
-        """
-        logger.info(f"CommandService received CockpitCommand: {command.type}")
-
-        if command.type == "PAUSE":
-             self.queue_command(GodCommandDTO(
-                 target_domain="System",
-                 parameter_key="PAUSE_STATE",
-                 new_value=True,
-                 command_type="PAUSE_STATE"
-             ))
-        elif command.type == "RESUME":
-             self.queue_command(GodCommandDTO(
-                 target_domain="System",
-                 parameter_key="PAUSE_STATE",
-                 new_value=False,
-                 command_type="PAUSE_STATE"
-             ))
-        elif command.type == "STEP":
-             self.queue_command(GodCommandDTO(
-                 target_domain="System",
-                 parameter_key="STEP",
-                 new_value=None,
-                 command_type="TRIGGER_EVENT"
-             ))
-        elif command.type == "SET_TAX_RATE":
-             try:
-                 # Validate payload strictly using constructor (works for V1 and V2)
-                 payload_dto = SetTaxRatePayload(**command.payload)
-                 sys_cmd = SetTaxRateCommand(
-                     tax_type=payload_dto.tax_type,
-                     new_rate=payload_dto.rate
-                 )
-                 self._system_command_queue.append(sys_cmd)
-             except Exception as e:
-                 logger.error(f"Failed to map SET_TAX_RATE: {e}")
-
-        elif command.type == "SET_BASE_RATE":
-             try:
-                 # Validate payload strictly using constructor
-                 payload_dto = SetBaseRatePayload(**command.payload)
-                 sys_cmd = SetInterestRateCommand(
-                     rate_type="base_rate",
-                     new_rate=payload_dto.rate
-                 )
-                 self._system_command_queue.append(sys_cmd)
-             except Exception as e:
-                 logger.error(f"Failed to map SET_BASE_RATE: {e}")
-        else:
-            logger.warning(f"Unknown CockpitCommand type: {command.type}")
-
-    def pop_system_commands(self) -> List[SystemCommand]:
-        """Drains the internal system command queue."""
-        commands = list(self._system_command_queue)
-        self._system_command_queue.clear()
-        return commands
-
-    def queue_command(self, command: GodCommandDTO) -> None:
-        """Adds a command to the internal queue for later processing."""
-        self._command_queue.append(command)
-
-    def pop_commands(self) -> List[GodCommandDTO]:
-        """Drains the internal command queue and returns the list of pending commands."""
-        commands = list(self._command_queue)
-        self._command_queue.clear()
-        return commands
 
     def execute_command_batch(self, commands: List[GodCommandDTO], tick: int, baseline_m2: int) -> List[GodResponseDTO]:
         """
@@ -171,7 +95,7 @@ class CommandService:
                 elif cmd.command_type == "TRIGGER_EVENT":
                     self._handle_trigger_event(cmd, tick)
                 elif cmd.command_type == "PAUSE_STATE":
-                    logger.info(f"Command {cmd.command_type} received but handler pending.")
+                    self._handle_pause_state(cmd)
                 else:
                     logger.warning(f"Unknown command type: {cmd.command_type}")
 
@@ -424,8 +348,17 @@ class CommandService:
             self._handle_force_withdraw_all(cmd, tick)
         elif event_type == "DESTROY_INVENTORY":
             self._handle_destroy_inventory(cmd, tick)
+        elif event_type == "STEP":
+             self.registry.set("system.step_requested", True, origin=OriginType.GOD_MODE)
         else:
             logger.warning(f"Unknown event type: {event_type}")
+
+    def _handle_pause_state(self, cmd: GodCommandDTO):
+         # cmd.new_value is boolean
+         # Default to False if None
+         val = bool(cmd.new_value)
+         self.registry.set("system.is_paused", val, origin=OriginType.GOD_MODE)
+         logger.info(f"CommandService: system.is_paused set to {val}")
 
     def _handle_force_withdraw_all(self, cmd: GodCommandDTO, tick: int):
         """

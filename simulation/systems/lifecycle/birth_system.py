@@ -144,7 +144,10 @@ class BirthSystem(IBirthSystem):
             agent.decision_engine.goods_data = state.goods_data
 
             # WO-218: Track new agent as currency holder for M2 integrity
-            state.register_currency_holder(agent)
+            if state.currency_registry_handler:
+                state.currency_registry_handler.register_currency_holder(agent)
+            elif state.currency_holders is not None:
+                state.currency_holders.append(agent)
 
             # Ensure agent has settlement system
             # Dynamic injection for systems that need it (e.g. HousingConnector)

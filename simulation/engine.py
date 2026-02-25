@@ -15,8 +15,9 @@ from simulation.models import Transaction
 from simulation.dtos.commands import GodCommandDTO
 from modules.system.services.command_service import CommandService
 from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
-from modules.system.api import DEFAULT_CURRENCY, IGlobalRegistry, IAgentRegistry
+from modules.system.api import DEFAULT_CURRENCY, IGlobalRegistry, IAgentRegistry, OriginType
 from modules.finance.api import ISettlementSystem
+from modules.system.command_pipeline.api import ICommandIngressService
 
 from simulation.db.logger import SimulationLogger
 import simulation
@@ -36,7 +37,8 @@ class Simulation:
         registry: IGlobalRegistry,
         settlement_system: ISettlementSystem,
         agent_registry: IAgentRegistry,
-        command_service: CommandService
+        command_service: CommandService,
+        command_ingress: Optional[ICommandIngressService] = None
     ) -> None:
         """
         초기화된 구성 요소들을 할당받습니다.
@@ -57,12 +59,26 @@ class Simulation:
         self.agent_registry = agent_registry
         self.settlement_system = settlement_system
         self.command_service = command_service
+        self.command_ingress = command_ingress
 
         self.action_processor = ActionProcessor(self.world_state)
-        self.tick_orchestrator = TickOrchestrator(self.world_state, self.action_processor)
 
-        self.is_paused = False
-        self.step_requested = False
+        # TickOrchestrator now requires command_ingress and command_service
+        if self.command_ingress and self.command_service:
+            self.tick_orchestrator = TickOrchestrator(
+                self.world_state,
+                self.action_processor,
+                self.command_ingress,
+                self.command_service
+            )
+        else:
+            # Fallback for robustness (though Initializer provides them)
+            self.tick_orchestrator = TickOrchestrator(
+                self.world_state,
+                self.action_processor,
+                self.command_ingress, # type: ignore
+                self.command_service
+            )
 
         # Initialize SimulationLogger
         db_path = self.world_state.config_manager.get("simulation.database_name", "simulation_data.db")
@@ -80,17 +96,39 @@ class Simulation:
             self.world_state.repository.migrate()
         logger.info("Simulation initialized and database schema verified.")
 
+    @property
+    def is_paused(self) -> bool:
+        return self.world_state.global_registry.get("system.is_paused", False)
+
+    @is_paused.setter
+    def is_paused(self, value: bool) -> None:
+        self.world_state.global_registry.set("system.is_paused", value, origin=OriginType.SYSTEM)
+
+    @property
+    def step_requested(self) -> bool:
+        return self.world_state.global_registry.get("system.step_requested", False)
+
+    @step_requested.setter
+    def step_requested(self, value: bool) -> None:
+        self.world_state.global_registry.set("system.step_requested", value, origin=OriginType.SYSTEM)
+
     def __getattr__(self, name: str) -> Any:
         return getattr(self.world_state, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
+        # Check for property setter first to support properties like is_paused
+        prop = getattr(type(self), name, None)
+        if isinstance(prop, property) and prop.fset:
+            prop.fset(self, value)
+            return
+
         # Avoid infinite recursion for internal components
-        if name in ["world_state", "tick_orchestrator", "action_processor", "simulation_logger", "is_paused", "step_requested", "settlement_system", "agent_registry", "command_service"]:
+        if name in ["world_state", "tick_orchestrator", "action_processor", "simulation_logger", "settlement_system", "agent_registry", "command_service", "command_ingress"]:
             super().__setattr__(name, value)
             return
 
         # Delegate to world_state if it has the attribute or if we are setting it dynamically
-        if hasattr(self, "world_state"):
+        if hasattr(self, "world_state") and (hasattr(self.world_state, name) or name not in self.__dict__):
              setattr(self.world_state, name, value)
         else:
              super().__setattr__(name, value)
@@ -119,99 +157,19 @@ class Simulation:
             except Exception as e:
                 self.world_state.logger.error(f"Failed to release simulation.lock: {e}")
 
-    def _process_commands(self) -> None:
-        """Processes all pending commands from the world state command queue."""
-        commands = []
-        # Check External Queue (from Dashboard/Server)
-        if hasattr(self.world_state, "command_queue") and self.world_state.command_queue:
-            while not self.world_state.command_queue.empty():
-                try:
-                    cmd = self.world_state.command_queue.get_nowait()
-
-                    # Handle Control Commands locally
-                    # Map PAUSE_STATE to Pause/Resume
-                    if cmd.command_type == "PAUSE_STATE":
-                        # new_value should be boolean: True = Pause, False = Resume
-                        should_pause = bool(cmd.new_value)
-                        self.is_paused = should_pause
-                        logger.info(f"Simulation {'PAUSED' if should_pause else 'RESUMED'} by command.")
-
-                    # Map TRIGGER_EVENT: STEP
-                    elif cmd.command_type == "TRIGGER_EVENT" and cmd.parameter_key == "STEP":
-                        self.step_requested = True
-                        logger.info("Simulation STEP requested.")
-
-                    # Forward everything else (including other TRIGGER_EVENTs) to commands list
-                    else:
-                        commands.append(cmd)
-                except Exception:
-                    break
-
-        # Also drain god_command_queue if it's being used for ingestion
-        if hasattr(self.world_state, "god_command_queue") and self.world_state.god_command_queue:
-            while self.world_state.god_command_queue:
-                commands.append(self.world_state.god_command_queue.popleft())
-
-        # Drain God Commands from CommandService (Source: Cockpit/GodMode)
-        service_god_commands = self.command_service.pop_commands()
-        if service_god_commands:
-            # We must handle PAUSE/STEP here too if they came via CommandService
-            for cmd in list(service_god_commands): # Iterate copy to allow removal
-                if cmd.command_type == "PAUSE_STATE":
-                    should_pause = bool(cmd.new_value)
-                    self.is_paused = should_pause
-                    logger.info(f"Simulation {'PAUSED' if should_pause else 'RESUMED'} by CommandService.")
-                    service_god_commands.remove(cmd)
-                elif cmd.command_type == "TRIGGER_EVENT" and cmd.parameter_key == "STEP":
-                    self.step_requested = True
-                    logger.info("Simulation STEP requested by CommandService.")
-                    service_god_commands.remove(cmd)
-
-            commands.extend(service_god_commands)
-
-        # Drain System Commands from CommandService and push to WorldState (Source: Cockpit Governance)
-        # These are executed by TickOrchestrator -> Phase_SystemCommands
-        system_commands = self.command_service.pop_system_commands()
-        if system_commands:
-            if not self.world_state.system_commands:
-                self.world_state.system_commands = []
-            self.world_state.system_commands.extend(system_commands)
-            logger.info(f"System Commands Queued for Tick {self.world_state.time}: {len(system_commands)}")
-
-        if not commands:
-            return
-
-        # 2. Execute batch via CommandService
-        tick = self.world_state.time
-        baseline_m2 = getattr(self.world_state, "baseline_money_supply", 0)
-        
-        results = self.command_service.execute_command_batch(commands, tick, baseline_m2)
-
-        # Log results and Update Baseline
-        total_net_injection = 0
-        all_success = True
-
-        for result in results:
-            if not result.success:
-                logger.error(f"Command {result.command_id} failed: {result.failure_reason}")
-                all_success = False
-            else:
-                logger.info(f"Command {result.command_id} succeeded.")
-                if result.audit_report and "m2_delta" in result.audit_report:
-                     total_net_injection += result.audit_report["m2_delta"]
-
-        if all_success and total_net_injection != 0:
-             # Update Baseline
-             self.world_state.baseline_money_supply += total_net_injection
-             logger.info(
-                 f"Baseline Money Supply updated by {total_net_injection}. New Baseline: {self.world_state.baseline_money_supply}"
-             )
-
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
-        self._process_commands()
+        # 1. Process Control Commands (Pause/Resume/Step) via Ingress
+        if self.command_ingress:
+            control_cmds = self.command_ingress.drain_control_commands()
+            if control_cmds:
+                baseline = getattr(self.world_state, "baseline_money_supply", 0)
+                self.command_service.execute_command_batch(control_cmds, self.world_state.time, baseline)
 
+        # 2. Check Pause State (Managed via Registry)
+        # Note: Registry access logic is encapsulated in properties is_paused / step_requested
         if self.is_paused:
             if self.step_requested:
+                # Consume step request
                 self.step_requested = False
             else:
                 return
@@ -236,7 +194,8 @@ class Simulation:
         )
         
         # DIRECTIVE ALPHA OPTIMIZER: Conditional Flush
-        if self.world_state.time % self.batch_save_interval == 0:
+        batch_save_interval = getattr(self, 'batch_save_interval', 10)
+        if self.world_state.time % batch_save_interval == 0:
             self.simulation_logger.flush()
 
     def get_all_agents(self) -> List[Any]:
