@@ -5,10 +5,10 @@ from collections import defaultdict
 from modules.system.api import (
     IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO,
     PublicManagerReportDTO, CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder,
-    AssetBuyoutRequestDTO, AssetBuyoutResultDTO, ISystemFinancialAgent
+    AssetBuyoutRequestDTO, AssetBuyoutResultDTO, ISystemFinancialAgent, IAgentRegistry
 )
 from modules.finance.api import IFinancialAgent, InsufficientFundsError, ILiquidator, ISettlementSystem
-from modules.simulation.api import IConfigurable
+from modules.simulation.api import IInventoryHandler, IConfigurable
 from modules.system.constants import ID_PUBLIC_MANAGER
 from simulation.models import Order
 
@@ -28,7 +28,7 @@ class PublicManager(IAssetRecoverySystem, ILiquidator, ICurrencyHolder, IFinanci
         self.managed_inventory: Dict[str, float] = defaultdict(float)
         self.system_treasury: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
         self.settlement_system: Optional[ISettlementSystem] = None
-        self.logger = logging.getLogger('PublicManager')
+        self.agent_registry: Optional[IAgentRegistry] = None
         self.last_tick_recovered_assets: Dict[str, float] = defaultdict(float)
         self.last_tick_revenue: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
         self.total_revenue_lifetime: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
@@ -145,6 +145,72 @@ class PublicManager(IAssetRecoverySystem, ILiquidator, ICurrencyHolder, IFinanci
             items_acquired=acquired_items,
             buyer_id=self.id
         )
+
+    def rollback_asset_buyout(self, request: AssetBuyoutRequestDTO) -> bool:
+        """
+        Reverses an asset buyout by returning assets from PublicManager's inventory.
+        Also reclaims the currency paid.
+        """
+        total_value = 0
+        returned_items = {}
+
+        # 1. Calculate and reverse inventory
+        for item_id, quantity in request.inventory.items():
+            if quantity <= 0:
+                continue
+
+            # Check if we actually have enough in managed inventory to return (Safety)
+            current_pm_qty = self.managed_inventory.get(item_id, 0.0)
+            qty_to_return = min(quantity, current_pm_qty)
+
+            if qty_to_return > 0:
+                self.managed_inventory[item_id] = current_pm_qty - qty_to_return
+                returned_items[item_id] = qty_to_return
+
+                # Reverse transient tracking if possible
+                if item_id in self.last_tick_recovered_assets:
+                     self.last_tick_recovered_assets[item_id] = max(0.0, self.last_tick_recovered_assets[item_id] - qty_to_return)
+
+            # Calculate valuation for currency reversal
+            price = request.market_prices.get(item_id, 0)
+            value = int(price * quantity * request.distress_discount)
+            total_value += value
+
+        # 2. Re-distribute assets to seller if they exist
+        if self.agent_registry and returned_items:
+             seller = self.agent_registry.get_agent(request.seller_id)
+             if seller and isinstance(seller, IInventoryHandler):
+                  for item_id, qty in returned_items.items():
+                       seller.add_item(item_id, qty, reason="ROLLBACK_BAILOUT")
+                  self.logger.info(f"Returned {len(returned_items)} items to Seller {request.seller_id}")
+
+        # 3. Currency Reversal (Seller -> PublicManager)
+        if self.settlement_system and total_value > 0:
+             seller = None
+             if self.agent_registry:
+                  seller = self.agent_registry.get_agent(request.seller_id)
+
+             if seller and isinstance(seller, IFinancialAgent):
+                  success = self.settlement_system.transfer(
+                       debit_agent=seller,
+                       credit_agent=self,
+                       amount=total_value,
+                       memo="ROLLBACK_BAILOUT_RECLAIM",
+                       currency=DEFAULT_CURRENCY
+                  )
+                  if success:
+                       # Reverse cumulative deficit
+                       self.cumulative_deficit = max(0, self.cumulative_deficit - total_value)
+                       self.logger.info(f"Reclaimed {total_value} pennies from Agent {request.seller_id}")
+                  else:
+                       self.logger.warning(f"Failed to reclaim {total_value} pennies from Agent {request.seller_id} during rollback.")
+
+        self.logger.info(f"Rolled back Asset Buyout from Agent {request.seller_id}. Total Value: {total_value}")
+        return True
+
+    def set_agent_registry(self, registry: IAgentRegistry) -> None:
+        """Injects the Agent Registry for lookups during rollback."""
+        self.agent_registry = registry
 
     def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
         """

@@ -29,3 +29,26 @@ def test_bailout_handler_execute_success():
 
     assert result == expected_result
     mock_system.execute_asset_buyout.assert_called_with(request)
+
+def test_bailout_handler_rollback_success():
+    mock_system = Mock(spec=IAssetRecoverySystem)
+    mock_system.rollback_asset_buyout.return_value = True
+
+    handler = BailoutHandler(mock_system)
+    request = AssetBuyoutRequestDTO(1, {"item1": 10.0}, {"item1": 100}, 0.5)
+
+    # Rollback expects the request in context for stateless handler
+    success = handler.rollback("tx1", request)
+
+    assert success is True
+    mock_system.rollback_asset_buyout.assert_called_with(request)
+
+def test_bailout_handler_rollback_fail_invalid_context():
+    mock_system = Mock(spec=IAssetRecoverySystem)
+    handler = BailoutHandler(mock_system)
+
+    # Rollback with invalid context (not a DTO)
+    success = handler.rollback("tx1", "invalid_context")
+
+    assert success is False
+    mock_system.rollback_asset_buyout.assert_not_called()

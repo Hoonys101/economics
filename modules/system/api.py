@@ -392,6 +392,19 @@ class IAssetRecoverySystem(Protocol):
         """
         ...
 
+    def rollback_asset_buyout(self, request: AssetBuyoutRequestDTO) -> bool:
+        """
+        Reverses an asset buyout by returning assets from the recovery system's inventory.
+        Also attempts to return currency to the recovery system.
+        """
+        ...
+
+    def set_agent_registry(self, registry: IAgentRegistry) -> None:
+        """
+        Injects the Agent Registry for lookups during rollback.
+        """
+        ...
+
     def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
         """
         Receives inventory from a firm undergoing liquidation (Asset Buyout).

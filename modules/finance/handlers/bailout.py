@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 from modules.finance.api import ITransactionHandler
 from modules.system.api import AssetBuyoutRequestDTO, IAssetRecoverySystem, AssetBuyoutResultDTO
@@ -9,6 +10,7 @@ class BailoutHandler(ITransactionHandler):
     """
     def __init__(self, asset_recovery_system: IAssetRecoverySystem):
         self.asset_recovery_system = asset_recovery_system
+        self.logger = logging.getLogger(__name__)
 
     def validate(self, request: Any, context: Any) -> bool:
         """
@@ -33,8 +35,11 @@ class BailoutHandler(ITransactionHandler):
 
     def rollback(self, transaction_id: str, context: Any) -> bool:
         """
-        Rollback for bailouts is complex (returning assets).
-        Currently not supported/implemented for Phase 1.
+        Rollback for bailouts reverses the asset buyout in the recovery system.
+        Expects AssetBuyoutRequestDTO in the context.
         """
-        # TODO: Implement generic rollback
-        return False
+        if not isinstance(context, AssetBuyoutRequestDTO):
+            self.logger.error(f"Rollback failed for transaction {transaction_id}. Invalid context type: {type(context)}. Expected AssetBuyoutRequestDTO.")
+            return False
+
+        return self.asset_recovery_system.rollback_asset_buyout(context)

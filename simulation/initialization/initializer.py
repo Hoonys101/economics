@@ -266,6 +266,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.public_manager = PublicManager(config=self.config)
         # Inject Settlement System (WO-IMPL-MODULAR-LIQUIDATION)
         sim.public_manager.set_settlement_system(sim.settlement_system)
+        sim.public_manager.set_agent_registry(sim.agent_registry)
 
         if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
             sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
