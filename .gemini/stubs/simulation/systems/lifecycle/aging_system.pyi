@@ -1,11 +1,10 @@
 import logging
 from _typeshed import Incomplete
+from modules.demographics.api import IDemographicManager as IDemographicManager
 from simulation.dtos.api import SimulationState as SimulationState
 from simulation.interfaces.market_interface import IMarket as IMarket
 from simulation.models import Transaction as Transaction
-from simulation.systems.demographic_manager import DemographicManager as DemographicManager
-from simulation.systems.lifecycle.api import IAgingFirm as IAgingFirm, IAgingSystem as IAgingSystem, IFinanceEngine as IFinanceEngine
-from typing import Any
+from simulation.systems.lifecycle.api import IAgingFirm as IAgingFirm, IAgingSystem as IAgingSystem, IFinanceEngine as IFinanceEngine, LifecycleConfigDTO as LifecycleConfigDTO
 
 class AgingSystem(IAgingSystem):
     """
@@ -15,7 +14,7 @@ class AgingSystem(IAgingSystem):
     config: Incomplete
     demographic_manager: Incomplete
     logger: Incomplete
-    def __init__(self, config_module: Any, demographic_manager: DemographicManager, logger: logging.Logger) -> None: ...
+    def __init__(self, config: LifecycleConfigDTO, demographic_manager: IDemographicManager, logger: logging.Logger) -> None: ...
     def execute(self, state: SimulationState) -> list[Transaction]:
         """
         Executes the aging phase.

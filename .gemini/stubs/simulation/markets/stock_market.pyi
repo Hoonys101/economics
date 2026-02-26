@@ -2,7 +2,7 @@ import logging
 from _typeshed import Incomplete
 from dataclasses import dataclass
 from modules.finance.api import IShareholderRegistry as IShareholderRegistry, IShareholderView as IShareholderView
-from modules.market.api import CanonicalOrderDTO, IIndexCircuitBreaker as IIndexCircuitBreaker, OrderTelemetrySchema
+from modules.market.api import CanonicalOrderDTO, IIndexCircuitBreaker as IIndexCircuitBreaker, OrderTelemetrySchema, StockMarketConfigDTO as StockMarketConfigDTO
 from simulation.core_markets import Market as Market
 from simulation.markets.matching_engine import StockMatchingEngine as StockMatchingEngine
 from simulation.models import Order as Order, Transaction as Transaction
@@ -26,7 +26,7 @@ class StockMarket(Market):
     실제 거래는 호가 매칭으로 이루어집니다.
     """
     id: str
-    config_module: Incomplete
+    config_dto: Incomplete
     logger: Incomplete
     shareholder_registry: Incomplete
     index_circuit_breaker: Incomplete
@@ -39,7 +39,7 @@ class StockMarket(Market):
     daily_high: dict[int, float]
     daily_low: dict[int, float]
     matching_engine: Incomplete
-    def __init__(self, config_module: Any, shareholder_registry: IShareholderRegistry, logger: logging.Logger | None = None, index_circuit_breaker: IIndexCircuitBreaker | None = None) -> None: ...
+    def __init__(self, config_dto: StockMarketConfigDTO, shareholder_registry: IShareholderRegistry, logger: logging.Logger | None = None, index_circuit_breaker: IIndexCircuitBreaker | None = None) -> None: ...
     def update_shareholder(self, agent_id: int, firm_id: int, quantity: float) -> None:
         """
         주주 명부를 갱신합니다. (보유량 설정)

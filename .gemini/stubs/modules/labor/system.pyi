@@ -1,11 +1,10 @@
 from _typeshed import Incomplete
 from modules.common.enums import IndustryDomain as IndustryDomain
 from modules.labor.api import ILaborMarket as ILaborMarket, JobOfferDTO as JobOfferDTO, JobSeekerDTO as JobSeekerDTO, LaborConfigDTO as LaborConfigDTO, LaborMarketMatchResultDTO as LaborMarketMatchResultDTO
-from modules.market.api import CanonicalOrderDTO as CanonicalOrderDTO, OrderTelemetrySchema as OrderTelemetrySchema
+from modules.market.api import CanonicalOrderDTO as CanonicalOrderDTO, LaborMarketConfigDTO as LaborMarketConfigDTO, OrderTelemetrySchema as OrderTelemetrySchema
 from modules.simulation.api import AgentID as AgentID
 from simulation.interfaces.market_interface import IMarket
 from simulation.models import Transaction
-from typing import Any
 
 logger: Incomplete
 
@@ -15,7 +14,7 @@ class LaborMarket(ILaborMarket, IMarket):
     """
     id: Incomplete
     config: Incomplete
-    def __init__(self, market_id: str = 'labor', config_module: Any = None) -> None: ...
+    def __init__(self, market_id: str = 'labor', config_dto: LaborMarketConfigDTO | None = None) -> None: ...
     def configure(self, config: LaborConfigDTO) -> None:
         """
         Injects configuration into the Labor Market.

@@ -34,5 +34,16 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "WO-FIX-MONETARY-DELTA": {
+        "title": "Stage 4: Monetary Supply Delta Analytical Audit",
+        "worker": "audit",
+        "instruction": "Analyze the -618M penny delta anomaly starting at Tick 1. Audit WorldState.calculate_total_money perimeter vs Bootstrapper injections.",
+        "context_files": [
+            "simulation/world_state.py",
+            "simulation/initialization/initializer.py",
+            "simulation/systems/bootstrapper.py",
+            "reports/diagnostic_refined.md"
+        ],
+        "output_path": "reports/MONETARY_AUDIT_REPORT.md"
+    },
 }

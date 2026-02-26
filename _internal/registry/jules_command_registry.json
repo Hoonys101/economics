@@ -33,13 +33,13 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-FIX-PLATFORM-TESTS": {
-      "key": "WO-FIX-PLATFORM-TESTS",
-      "title": "Emergency: Platform Robustness Fix",
+    "WO-FIX-MARKET-TESTS": {
+      "key": "WO-FIX-MARKET-TESTS",
+      "title": "Emergency: Market API Test Alignment",
       "type": "jules",
       "instruction_raw": "",
       "command": "create",
-      "file_path": "gemini-output/spec/MISSION_FIX_PLATFORM_TESTS_SPEC.md",
+      "file_path": "gemini-output/spec/MISSION_FIX_MARKET_TESTS_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
@@ -48,13 +48,28 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-FIX-MARKET-TESTS": {
-      "key": "WO-FIX-MARKET-TESTS",
-      "title": "Emergency: Market API Test Alignment",
+    "WO-REBIRTH-BUFFERED-DB": {
+      "key": "WO-REBIRTH-BUFFERED-DB",
+      "title": "Stage 3: Buffered Persistence API Implementation",
       "type": "jules",
       "instruction_raw": "",
       "command": "create",
-      "file_path": "gemini-output/spec/MISSION_FIX_MARKET_TESTS_SPEC.md",
+      "file_path": "gemini-output/spec/MISSION_REBIRTH_BUFFERED_DB_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-REBIRTH-SCENARIO-LOADER": {
+      "key": "WO-REBIRTH-SCENARIO-LOADER",
+      "title": "Stage 3: High-Performance Scenario Loader Implementation",
+      "type": "jules",
+      "instruction_raw": "",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_REBIRTH_SCENARIO_LOADER_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
