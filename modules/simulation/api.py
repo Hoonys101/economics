@@ -99,6 +99,7 @@ class EconomicIndicatorsDTO:
     """
     gdp: float
     cpi: float
+    unemployment_rate: float = 0.0
 
 @dataclass
 class SystemStateDTO:
