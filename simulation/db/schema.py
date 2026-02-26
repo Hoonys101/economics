@@ -15,7 +15,8 @@ def create_tables(conn: sqlite3.Connection):
             start_time TEXT NOT NULL,
             end_time TEXT,
             description TEXT,
-            config_hash TEXT NOT NULL
+            config_hash TEXT NOT NULL,
+            seed INTEGER
         )
     """)
 
@@ -56,6 +57,7 @@ def create_tables(conn: sqlite3.Connection):
             num_employees INTEGER,
             education_xp REAL,
             generation INTEGER,
+            state_json TEXT,
             FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
         )
     """)

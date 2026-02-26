@@ -82,6 +82,9 @@ class AgentStateData:
     time_leisure: Optional[float] = None
     market_insight: Optional[float] = 0.5 # Phase 4.1: Perception & Adaptive Logic
 
+    # Phase 34: Full State Persistence
+    state_json: Optional[str] = None
+
 @dataclass
 class EconomicIndicatorData:
     run_id: int

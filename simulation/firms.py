@@ -1841,3 +1841,67 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             return effort, payment
 
         return None
+
+    def get_persistence_dto(self) -> FirmPersistenceDTO:
+        snapshot = self.get_snapshot_dto()
+        return FirmPersistenceDTO(
+            snapshot=snapshot,
+            distress_tick_counter=self.distress_tick_counter,
+            credit_frozen_until_tick=self.credit_frozen_until_tick
+        )
+
+    def restore_from_persistence_dto(self, dto: FirmPersistenceDTO):
+        """Restores state from a persistence DTO."""
+        self.distress_tick_counter = dto.distress_tick_counter
+        self.credit_frozen_until_tick = dto.credit_frozen_until_tick
+
+        snap = dto.snapshot
+
+        # 1. Finance
+        f = snap.finance
+        self.finance_state.retained_earnings_pennies = f.retained_earnings_pennies
+        self.finance_state.dividends_paid_last_tick_pennies = f.dividends_paid_last_tick_pennies
+        self.finance_state.consecutive_loss_turns = f.consecutive_loss_turns
+        self.finance_state.current_profit = f.current_profit.copy()
+        self.finance_state.revenue_this_turn = f.revenue_this_turn.copy()
+        self.finance_state.cost_this_turn = f.cost_this_turn.copy()
+
+        # 2. Production
+        p = snap.production
+        self.production_state.capital_stock = p.capital_stock
+        self.production_state.production_target = p.production_target
+        self.production_state.current_production = p.current_production
+        self.production_state.productivity_factor = p.productivity_factor
+        self.production_state.automation_level = p.automation_level
+        self.production_state.sector = p.sector
+        self.production_state.specialization = p.specialization
+
+        # 3. Sales
+        s = snap.sales
+        self.sales_state.marketing_budget_pennies = getattr(s, 'marketing_budget_pennies', 0)
+        self.sales_state.marketing_budget_rate = getattr(s, 'marketing_budget_rate', 0.05)
+        self.sales_state.prev_awareness = s.prev_awareness
+        self.sales_state.adstock = getattr(s, 'adstock', 0.0)
+        self.sales_state.brand_awareness = getattr(s, 'brand_awareness', 0.0)
+        self.sales_state.perceived_quality = getattr(s, 'perceived_quality', 0.0)
+        self.sales_state.last_prices = s.last_prices.copy()
+
+        # 4. HR
+        h = snap.hr
+        # Temporarily store IDs in employees list (will be resolved later)
+        # Assuming h.employees is List[str] (IDs)
+        self.hr_state.employees = h.employees
+        self.hr_state.employee_wages = {int(k): v for k, v in h.employee_wages.items()}
+
+    def resolve_employee_references(self, registry: Any):
+        """Resolves employee IDs into object references."""
+        new_employees = []
+        for emp_ref in self.hr_state.employees:
+            # It might be an ID (str/int) or already an object (if not from persistence)
+            if isinstance(emp_ref, (str, int)):
+                agent = registry.get_agent(int(emp_ref))
+                if agent:
+                    new_employees.append(agent)
+            else:
+                new_employees.append(emp_ref) # Already object
+        self.hr_state.employees = new_employees

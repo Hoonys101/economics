@@ -4,6 +4,8 @@ import logging
 import hashlib
 import json
 import os
+import random
+import numpy as np
 from collections import deque
 if TYPE_CHECKING:
     from simulation.engine import Simulation
@@ -11,7 +13,7 @@ from modules.platform.infrastructure.lock_manager import PlatformLockManager, Lo
 from modules.common.config_manager.api import ConfigManager
 from simulation.initialization.api import SimulationInitializerInterface
 from simulation.models import Order, RealEstateUnit
-from modules.simulation.api import AgentID
+from modules.simulation.api import AgentID, AgentCoreConfigDTO
 from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder, OriginType
 from modules.system.constants import ID_CENTRAL_BANK, ID_GOVERNMENT, ID_BANK, ID_ESCROW, ID_PUBLIC_MANAGER
 from simulation.core_agents import Household
@@ -89,7 +91,21 @@ from simulation.registries.estate_registry import EstateRegistry
 from modules.household.api import HouseholdFactoryContext
 from simulation.factories.household_factory import HouseholdFactory
 from simulation.utils.config_factory import create_config_dto
-from modules.simulation.dtos.api import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO, FirmConfigDTO
+from simulation.models import Talent
+from simulation.ai.enums import Personality
+from simulation.decisions.rule_based_household_engine import RuleBasedHouseholdDecisionEngine
+from simulation.decisions.rule_based_firm_engine import RuleBasedFirmDecisionEngine
+from simulation.utils.serializer import deserialize_state
+from simulation.dtos.persistence import HouseholdPersistenceDTO, FirmPersistenceDTO
+from modules.household.dtos import BioStateDTO, EconStateDTO, SocialStateDTO, HouseholdSnapshotDTO
+from modules.finance.wallet.wallet import Wallet
+from simulation.portfolio import Portfolio
+from modules.firm.api import FirmSnapshotDTO
+from modules.simulation.dtos.api import FirmStateDTO
+from modules.market.api import IndustryDomain
+from simulation.utils.deep_merge import deep_merge
+from simulation.dtos.shock import ShockDTO
 
 class SimulationInitializer(SimulationInitializerInterface):
     """Simulation 인스턴스 생성 및 모든 구성 요소의 초기화를 전담합니다."""
@@ -645,3 +661,300 @@ class SimulationInitializer(SimulationInitializerInterface):
             # Fallback if no default in json
             config = PriceLimitConfigDTO(id=f"{market_id}_safety", is_enabled=True, mode='DYNAMIC')
         return PriceLimitEnforcer(config)
+
+    def _load_shocks(self, strategy: Any) -> None:
+        """Loads mid-tick shocks from config/shocks.json if present."""
+        shocks_path = 'config/shocks.json'
+        if os.path.exists(shocks_path):
+            try:
+                with open(shocks_path, 'r') as f:
+                    data = json.load(f)
+
+                # Case 1: List of ShockDTOs (Event Shocks)
+                if isinstance(data, list):
+                    count = 0
+                    for s in data:
+                        # Validate required fields
+                        if 'tick' not in s or 'type' not in s or 'value' not in s:
+                            continue
+
+                        shock = ShockDTO(
+                            tick=s['tick'],
+                            type=s['type'],
+                            target=s.get('target', 'ALL'),
+                            value=s['value'],
+                            duration=s.get('duration', 1),
+                            parameters=s.get('parameters', {})
+                        )
+                        strategy.shocks.append(shock)
+                        count += 1
+                    self.logger.info(f"Loaded {count} shocks from {shocks_path}")
+
+                # Case 2: Dict (Strategy Parameter Overrides)
+                elif isinstance(data, dict):
+                    self.logger.info(f"Loading strategy overrides from {shocks_path}")
+                    # Deep Merge into Strategy
+                    # Strategy is a dataclass, so we iterate keys
+                    for key, value in data.items():
+                        if hasattr(strategy, key):
+                            current_val = getattr(strategy, key)
+                            if isinstance(current_val, dict) and isinstance(value, dict):
+                                # Deep Merge for nested dicts (e.g. exogenous_productivity_shock)
+                                deep_merge(current_val, value)
+                            else:
+                                setattr(strategy, key, value)
+                        else:
+                            self.logger.warning(f"Unknown strategy parameter in shocks.json: {key}")
+
+            except json.JSONDecodeError:
+                self.logger.error(f"Failed to parse {shocks_path}: Invalid JSON.")
+            except Exception as e:
+                self.logger.error(f"Error loading shocks: {e}")
+
+    def batch_load_from_db(self, source_run_id: int) -> Simulation:
+        """
+        Loads agent states from a previous run and initializes a 'Rebirth' simulation.
+        """
+        # 1. Fetch Run Info
+        run_info = self.repository.runs.get_run_info(source_run_id)
+        if not run_info:
+            raise ValueError(f"Run ID {source_run_id} not found.")
+
+        seed = run_info.get("seed")
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+            self.logger.info(f"Restored RNG seed: {seed}")
+
+        # 2. Fetch States
+        max_tick = self.repository.agents.get_max_tick(source_run_id)
+        self.logger.info(f"Loading simulation state from tick {max_tick}")
+
+        agent_states_data = self.repository.agents.get_all_agents_at_tick(source_run_id, max_tick)
+
+        # 3. Initialize Phases 1-3
+        sim = self._init_phase1_infrastructure()
+        self._load_shocks(sim.strategy)
+        self._init_phase2_system_agents(sim)
+        self._init_phase3_markets_systems(sim)
+
+        # 4. Reconstitution
+        sim.households = []
+        sim.firms = []
+        # System agents are already in sim.agents
+
+        household_config = create_config_dto(self.config, HouseholdConfigDTO)
+        firm_config = create_config_dto(self.config, FirmConfigDTO)
+
+        for data in agent_states_data:
+            agent = self._reconstitute_agent(data, household_config, firm_config)
+            if agent:
+                sim.agents[agent.id] = agent
+                sim.agent_registry.register(agent)
+
+                # Link Settlement
+                sim.settlement_system.register_account(sim.bank.id, agent.id)
+                agent.settlement_system = sim.settlement_system
+
+                if isinstance(agent, Household):
+                    sim.households.append(agent)
+                    agent.demographic_manager = sim.demographic_manager
+                elif isinstance(agent, Firm):
+                    sim.firms.append(agent)
+
+        # Resolve Firm References (Employees)
+        for firm in sim.firms:
+            if hasattr(firm, 'resolve_employee_references'):
+                firm.resolve_employee_references(sim.agent_registry)
+
+        sim.next_agent_id = max([a.id for a in sim.agents.values()] + [100]) + 1
+
+        # Sync Demographics
+        sim.demographic_manager.sync_stats(sim.households)
+        sim.demographic_manager.set_world_state(sim.world_state)
+
+        # 5. Genesis Variant
+        sim.time = max_tick
+
+        # Create new run record
+        config_content = str(self.config.__dict__)
+        config_hash = hashlib.sha256(config_content.encode()).hexdigest()
+        desc = f"Rebirth from Run {source_run_id} Tick {max_tick}"
+        sim.run_id = self.repository.runs.save_simulation_run(config_hash=config_hash, description=desc, seed=seed)
+        sim.persistence_manager.run_id = sim.run_id
+        sim.crisis_monitor.run_id = sim.run_id
+
+        # Initialize buffers
+        sim.inflation_buffer = deque(maxlen=10)
+        sim.unemployment_buffer = deque(maxlen=10)
+        sim.gdp_growth_buffer = deque(maxlen=10)
+        sim.wage_buffer = deque(maxlen=10)
+        sim.approval_buffer = deque(maxlen=10)
+
+        self.logger.info(f"Rebirth complete. New Run ID: {sim.run_id}")
+        return sim
+
+    def _reconstitute_agent(self, data: Dict[str, Any], hh_config: HouseholdConfigDTO, firm_config: FirmConfigDTO) -> Any:
+        agent_type = data.get('agent_type')
+        agent_id = data.get('agent_id')
+        state_json = data.get('state_json')
+
+        if not state_json:
+            return None
+
+        if agent_type == 'household':
+            core_config = AgentCoreConfigDTO(
+                id=agent_id,
+                name=f"Household_{agent_id}",
+                initial_needs={},
+                logger=self.logger,
+                memory_interface=None,
+                value_orientation="NEUTRAL"
+            )
+            engine = RuleBasedHouseholdDecisionEngine(self.config, self.logger)
+            agent = Household(
+                core_config=core_config,
+                engine=engine,
+                talent=Talent(1.0, 1.0, 1.0),
+                goods_data=self.goods_data,
+                personality=Personality.BALANCED,
+                config_dto=hh_config
+            )
+
+            dto_dict = deserialize_state(state_json, HouseholdPersistenceDTO)
+            dto = self._hydrate_household_dto(dto_dict, hh_config)
+            agent.restore_from_persistence_dto(dto)
+            return agent
+
+        elif agent_type == 'firm':
+            core_config = AgentCoreConfigDTO(
+                id=agent_id,
+                name=f"Firm_{agent_id}",
+                initial_needs={},
+                logger=self.logger,
+                memory_interface=None,
+                value_orientation="PROFIT"
+            )
+            engine = RuleBasedFirmDecisionEngine(self.config, self.logger)
+            agent = Firm(
+                core_config=core_config,
+                engine=engine,
+                specialization="GENERIC",
+                productivity_factor=1.0,
+                config_dto=firm_config
+            )
+
+            dto_dict = deserialize_state(state_json, FirmPersistenceDTO)
+            dto = self._hydrate_firm_dto(dto_dict, firm_config)
+            agent.restore_from_persistence_dto(dto)
+            return agent
+
+        return None
+
+    def _hydrate_household_dto(self, data: Dict[str, Any], config: HouseholdConfigDTO) -> HouseholdPersistenceDTO:
+        snap_data = data.get('snapshot', {})
+
+        # Bio
+        bio_data = snap_data.get('bio_state', {})
+        bio_state = BioStateDTO(**bio_data) # Simple fields match
+
+        # Social
+        soc_data = snap_data.get('social_state', {})
+        if 'personality' in soc_data:
+            try:
+                soc_data['personality'] = Personality[soc_data['personality']]
+            except (KeyError, ValueError):
+                soc_data['personality'] = Personality.BALANCED
+        social_state = SocialStateDTO(**soc_data)
+
+        # Econ
+        econ_data = snap_data.get('econ_state', {})
+
+        # Wallet Reconstruction
+        wallet_data = econ_data.get('wallet', {})
+
+        # I'll construct a new Wallet.
+        wallet = Wallet(econ_data.get('id', 0), econ_data.get('wallet', {}).get('balances', {}))
+
+        # Reconstructing EconStateDTO
+        if 'housing_price_history' in econ_data:
+            econ_data['housing_price_history'] = deque(econ_data['housing_price_history'])
+        if 'market_wage_history' in econ_data:
+            econ_data['market_wage_history'] = deque(econ_data['market_wage_history'])
+
+        ph_data = econ_data.get('price_history', {})
+
+        # Portfolio
+        port_data = econ_data.get('portfolio', {})
+        portfolio = Portfolio(econ_data.get('id', 0))
+
+        econ_data['wallet'] = wallet
+        econ_data['portfolio'] = portfolio
+
+        # Handle Talent/Skills
+        if 'talent' in econ_data and isinstance(econ_data['talent'], dict):
+            econ_data['talent'] = Talent(**econ_data['talent'])
+
+        # Handle Major (Enum Conversion)
+        if 'major' in econ_data and isinstance(econ_data['major'], str):
+            try:
+                econ_data['major'] = IndustryDomain(econ_data['major'])
+            except ValueError:
+                 self.logger.warning(f"Invalid IndustryDomain: {econ_data['major']}. Defaulting to None.")
+                 econ_data['major'] = None
+
+        econ_state = EconStateDTO(**econ_data)
+
+        # Hydrate Snapshot Major
+        snap_major = snap_data.get('major')
+        if isinstance(snap_major, str):
+            try:
+                snap_major = IndustryDomain(snap_major)
+            except ValueError:
+                snap_major = None
+
+        snapshot = HouseholdSnapshotDTO(
+            id=snap_data['id'],
+            bio_state=bio_state,
+            econ_state=econ_state,
+            social_state=social_state,
+            major=snap_major
+        )
+
+        return HouseholdPersistenceDTO(
+            snapshot=snapshot,
+            distress_tick_counter=data.get('distress_tick_counter', 0),
+            credit_frozen_until_tick=data.get('credit_frozen_until_tick', 0)
+        )
+
+    def _hydrate_firm_dto(self, data: Dict[str, Any], config: FirmConfigDTO) -> FirmPersistenceDTO:
+        snap_data = data.get('snapshot', {})
+
+        fin_data = snap_data.get('finance', {})
+        finance = FinanceStateDTO(**fin_data)
+
+        prod_data = snap_data.get('production', {})
+        production = ProductionStateDTO(**prod_data)
+
+        sales_data = snap_data.get('sales', {})
+        sales = SalesStateDTO(**sales_data)
+
+        hr_data = snap_data.get('hr', {})
+        hr = HRStateDTO(**hr_data)
+
+        snapshot = FirmSnapshotDTO(
+            id=snap_data['id'],
+            is_active=snap_data['is_active'],
+            config=config, # Inject fresh config
+            finance=finance,
+            production=production,
+            sales=sales,
+            hr=hr
+        )
+
+        return FirmPersistenceDTO(
+            snapshot=snapshot,
+            credit_frozen_until_tick=data.get('credit_frozen_until_tick', 0),
+            market_insight=data.get('market_insight', 0.5),
+            sales_volume_this_tick=data.get('sales_volume_this_tick', 0.0)
+        )

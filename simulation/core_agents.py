@@ -54,6 +54,8 @@ from modules.household.dtos import (
     BioStateDTO, EconStateDTO, SocialStateDTO,
     HouseholdSnapshotDTO, DurableAssetDTO
 )
+from simulation.dtos.persistence import HouseholdPersistenceDTO
+from modules.market.api import IndustryDomain
 from modules.analytics.dtos import AgentTickAnalyticsDTO
 from modules.household.services import HouseholdSnapshotAssembler
 from modules.household.mixins._state_access import HouseholdStateAccessMixin
@@ -1235,3 +1237,20 @@ class Household(
             primary_grievance=primary_grievance,
             political_weight=weight
         )
+
+    def get_persistence_dto(self) -> HouseholdPersistenceDTO:
+        snapshot = self.create_snapshot_dto()
+        return HouseholdPersistenceDTO(
+            snapshot=snapshot,
+            distress_tick_counter=self.distress_tick_counter,
+            credit_frozen_until_tick=self.credit_frozen_until_tick
+        )
+
+    def restore_from_persistence_dto(self, dto: HouseholdPersistenceDTO):
+        """Restores state from a persistence DTO."""
+        self.distress_tick_counter = dto.distress_tick_counter
+        self.credit_frozen_until_tick = dto.credit_frozen_until_tick
+
+        self._bio_state = dto.snapshot.bio_state
+        self._econ_state = dto.snapshot.econ_state
+        self._social_state = dto.snapshot.social_state

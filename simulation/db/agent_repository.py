@@ -26,8 +26,8 @@ class AgentRepository(BaseRepository):
             self.cursor.execute(
                 """
                 INSERT INTO agent_states (run_id, time, agent_id, agent_type, assets, is_active, is_employed, employer_id,
-                                          needs_survival, needs_labor, inventory_food, current_production, num_employees, education_xp, generation)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                          needs_survival, needs_labor, inventory_food, current_production, num_employees, education_xp, generation, state_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     data.run_id,
@@ -45,6 +45,7 @@ class AgentRepository(BaseRepository):
                     data.num_employees,
                     data.education_xp,
                     data.generation,
+                    data.state_json,
                 ),
             )
             self.conn.commit()
@@ -83,13 +84,14 @@ class AgentRepository(BaseRepository):
                         state_data.num_employees,
                         state_data.education_xp,
                         state_data.generation,
+                        state_data.state_json,
                     )
                 )
             self.cursor.executemany(
                 """
                 INSERT INTO agent_states (run_id, time, agent_id, agent_type, assets, is_active, is_employed, employer_id,
-                                          needs_survival, needs_labor, inventory_food, current_production, num_employees, education_xp, generation)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                          needs_survival, needs_labor, inventory_food, current_production, num_employees, education_xp, generation, state_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 data_to_insert,
             )
@@ -239,6 +241,26 @@ class AgentRepository(BaseRepository):
         except sqlite3.Error as e:
             logger.error(f"Error getting birth counts: {e}")
             return 0
+
+    def get_max_tick(self, run_id: int) -> int:
+        """Retrieves the maximum tick recorded for a run."""
+        try:
+            self.cursor.execute("SELECT MAX(time) FROM agent_states WHERE run_id = ?", (run_id,))
+            result = self.cursor.fetchone()
+            return result[0] if result and result[0] is not None else 0
+        except sqlite3.Error as e:
+            logger.error(f"Error getting max tick: {e}")
+            return 0
+
+    def get_all_agents_at_tick(self, run_id: int, tick: int) -> List[Dict[str, Any]]:
+        """Retrieves all agent states for a specific run and tick."""
+        try:
+            self.cursor.execute("SELECT * FROM agent_states WHERE run_id = ? AND time = ?", (run_id, tick))
+            columns = [description[0] for description in self.cursor.description]
+            return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
+        except sqlite3.Error as e:
+            logger.error(f"Error fetching agents at tick {tick}: {e}")
+            return []
 
     def clear_data(self):
         """

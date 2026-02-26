@@ -29,8 +29,8 @@ class SimulationRepository:
     Provides access to domain-specific repositories sharing the same database connection.
     """
 
-    def __init__(self):
-        self.conn = get_db_connection()
+    def __init__(self, connection: Optional[sqlite3.Connection] = None):
+        self.conn = connection if connection else get_db_connection()
 
         # Initialize sub-repositories sharing the same connection
         self.agents = AgentRepository(self.conn)
