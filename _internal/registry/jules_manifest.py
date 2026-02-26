@@ -22,17 +22,5 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "WO-FIX-MARKET-TESTS": {
-        "title": "Emergency: Market API Test Alignment",
-        "file": "gemini-output/spec/MISSION_FIX_MARKET_TESTS_SPEC.md"
-    },
-    "WO-FIX-LIFECYCLE-MOCKS": {
-        "title": "Emergency: Lifecycle Mock Hardening",
-        "file": "gemini-output/spec/MISSION_FIX_LIFECYCLE_MOCKS_SPEC.md"
-    },
-    "WO-FIX-PLATFORM-TESTS": {
-        "title": "Emergency: Platform Robustness Fix",
-        "file": "gemini-output/spec/MISSION_FIX_PLATFORM_TESTS_SPEC.md"
-    },
     # Add missions here
 }

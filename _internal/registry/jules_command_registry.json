@@ -62,6 +62,21 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "WO-FIX-MARKET-TESTS": {
+      "key": "WO-FIX-MARKET-TESTS",
+      "title": "Emergency: Market API Test Alignment",
+      "type": "jules",
+      "instruction_raw": "",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_FIX_MARKET_TESTS_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }
