@@ -33,21 +33,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-LIQUIDATE-ESTATE": {
-      "key": "WO-LIQUIDATE-ESTATE",
-      "title": "Module Implementation: Estate & Settlement Registry",
-      "type": "jules",
-      "instruction_raw": "Formalize EstateRegistry integration and remove revival logic from SettlementSystem.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_ESTATE_LIQUIDATION_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-LIQUIDATE-FINANCE": {
       "key": "WO-LIQUIDATE-FINANCE",
       "title": "Module Implementation: Finance & Accounting Hardening",
