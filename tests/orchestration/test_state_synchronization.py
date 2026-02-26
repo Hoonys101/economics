@@ -28,7 +28,7 @@ class TestStateSynchronization:
         ws.effects_queue = []
         ws.inter_tick_queue = []
         ws.transactions = []
-        ws.god_command_queue = deque()
+        ws.god_commands = []
         ws.system_commands = []
         ws.command_queue = None
         ws.inactive_agents = {}
@@ -79,7 +79,7 @@ class TestStateSynchronization:
             state.transactions.append("tx_B")
 
         # Create Orchestrator
-        orchestrator = TickOrchestrator(world_state, action_processor)
+        orchestrator = TickOrchestrator(world_state, action_processor, MagicMock(), MagicMock())
 
         # Inject Mock Phases
         orchestrator.phases = [
@@ -109,7 +109,7 @@ class TestStateSynchronization:
         def action_bad(state):
             state.agents = {} # Re-assignment!
 
-        orchestrator = TickOrchestrator(world_state, action_processor)
+        orchestrator = TickOrchestrator(world_state, action_processor, MagicMock(), MagicMock())
         orchestrator.phases = [MockPhase(action_bad)]
 
         with pytest.raises(RuntimeError, match="CRITICAL: 'agents' collection was re-assigned"):

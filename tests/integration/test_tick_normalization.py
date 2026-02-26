@@ -70,7 +70,7 @@ class TestTickNormalization:
         state.technology_manager = MagicMock()
 
         # Command Queues - Explicitly initialize to prevent MagicMock infinite loops
-        state.god_command_queue = deque()
+        state.god_commands = []
         state.system_commands = []
         state.command_queue = MagicMock()
         state.command_queue.empty.return_value = True
@@ -137,7 +137,7 @@ class TestTickNormalization:
              MockPhaseConsumption.return_value.execute.side_effect = side_effect
              MockPhase5.return_value.execute.side_effect = side_effect
 
-             orch = TickOrchestrator(mock_world_state, processor)
+             orch = TickOrchestrator(mock_world_state, processor, MagicMock(), MagicMock())
 
              # Store mock phases on the orchestrator instance for access in tests
              orch.mock_phases = {

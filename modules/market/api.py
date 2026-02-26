@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from modules.finance.api import IBank, ISettlementSystem
     from modules.simulation.api import IAgent
     from modules.government.api import IGovernment
+from modules.common.enums import IndustryDomain
 
 class MarketSide(str, Enum):
     BUY = "BUY"

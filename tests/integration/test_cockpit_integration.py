@@ -6,6 +6,7 @@ from simulation.dtos.commands import GodCommandDTO
 from modules.system.services.command_service import CommandService
 from modules.system.api import IGlobalRegistry, IAgentRegistry, OriginType
 from simulation.finance.api import ISettlementSystem
+from modules.system.command_pipeline.api import ICommandIngressService
 from modules.system.server_bridge import CommandQueue
 from uuid import uuid4
 
@@ -29,14 +30,14 @@ def mock_simulation_deps():
     world_state.government = MagicMock()
     world_state.government.corporate_tax_rate = 0.2
     world_state.government.income_tax_rate = 0.1
-    world_state.god_command_queue = []
+    world_state.god_commands = []
     world_state.time = 0
     world_state.baseline_money_supply = 100000.0
 
     from collections import deque
     # Initialize queues as real objects to allow draining
     world_state.command_queue = CommandQueue()
-    world_state.god_command_queue = deque()
+    world_state.god_commands = []
 
     return config_manager, config_module, logger, repository, registry, settlement_system, agent_registry, world_state
 
@@ -54,10 +55,13 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
         settle = MagicMock(spec=ISettlementSystem)
         agent_reg = MagicMock(spec=IAgentRegistry)
         cmd_service = MagicMock(spec=CommandService)
+        command_ingress = MagicMock(spec=ICommandIngressService)
 
-        sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service)
+        sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service, command_ingress)
         # Force world_state to be our mock
         sim.world_state = ws
+        # Configure global_registry mock on world_state
+        sim.world_state.global_registry.get.return_value = False
 
         # Verify initial state
         assert sim.is_paused is False
@@ -70,11 +74,24 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
             new_value=True,
             command_id=uuid4()
         )
-        ws.command_queue.put(cmd)
+        command_ingress.drain_control_commands.return_value = [cmd]
 
         # Run tick (should process command locally in _process_commands)
         sim.run_tick()
+
+        # Verify CommandService was called
+        cmd_service.execute_command_batch.assert_called()
+        args, _ = cmd_service.execute_command_batch.call_args
+        assert len(args[0]) == 1
+        assert args[0][0].command_type == "PAUSE_STATE"
+        assert args[0][0].new_value is True
+
+        # Manually simulate state change since CommandService is mocked
+        sim.world_state.global_registry.get.return_value = True
         assert sim.is_paused is True
+
+        # Reset mock
+        cmd_service.execute_command_batch.reset_mock()
 
         # Enqueue RESUME
         cmd = GodCommandDTO(
@@ -84,10 +101,20 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
             new_value=False,
             command_id=uuid4()
         )
-        ws.command_queue.put(cmd)
+        command_ingress.drain_control_commands.return_value = [cmd]
 
         # Run tick
         sim.run_tick()
+
+        # Verify CommandService was called
+        cmd_service.execute_command_batch.assert_called()
+        args, _ = cmd_service.execute_command_batch.call_args
+        assert len(args[0]) == 1
+        assert args[0][0].command_type == "PAUSE_STATE"
+        assert args[0][0].new_value is False
+
+        # Manually simulate state change
+        sim.world_state.global_registry.get.return_value = False
         assert sim.is_paused is False
 
 def test_simulation_processes_set_base_rate(mock_simulation_deps):
@@ -101,7 +128,9 @@ def test_simulation_processes_set_base_rate(mock_simulation_deps):
 
         cmd_service = MagicMock(spec=CommandService)
         cmd_service.execute_command_batch.return_value = []
-        sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service)
+        command_ingress = MagicMock(spec=ICommandIngressService)
+
+        sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service, command_ingress)
         sim.world_state = ws
 
         # Enqueue SET_PARAM central_bank.base_rate
@@ -112,12 +141,13 @@ def test_simulation_processes_set_base_rate(mock_simulation_deps):
             new_value=0.15,
             command_id=uuid4()
         )
-        ws.command_queue.put(cmd1)
+        # We mock drain_control_commands to force Simulation to execute it via command_service
+        command_ingress.drain_control_commands.return_value = [cmd1]
 
         sim.run_tick()
 
         # Verify Execution: Queue drained, CommandService called
-        assert len(ws.god_command_queue) == 0
+        assert len(ws.god_commands) == 0
         cmd_service.execute_command_batch.assert_called()
         # Verify the batch contained our command
         args, _ = cmd_service.execute_command_batch.call_args
@@ -133,13 +163,13 @@ def test_simulation_processes_set_base_rate(mock_simulation_deps):
             parameter_key="base_rate",
             new_value=0.15
         )
-        ws.command_queue.put(cmd2)
+        command_ingress.drain_control_commands.return_value = [cmd2]
 
         # Run tick
         sim.run_tick()
 
         # Verify Execution
-        assert len(ws.god_command_queue) == 0
+        assert len(ws.god_commands) == 0
         cmd_service.execute_command_batch.assert_called()
         args, _ = cmd_service.execute_command_batch.call_args
         assert len(args[0]) == 1
@@ -156,7 +186,9 @@ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
 
         cmd_service = MagicMock(spec=CommandService)
         cmd_service.execute_command_batch.return_value = []
-        sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service)
+        command_ingress = MagicMock(spec=ICommandIngressService)
+
+        sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service, command_ingress)
         sim.world_state = ws
 
         # Enqueue SET_TAX_RATE (Corporate)
@@ -167,11 +199,11 @@ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
             new_value=0.25,
             command_id=uuid4()
         )
-        ws.command_queue.put(cmd)
+        command_ingress.drain_control_commands.return_value = [cmd]
 
         sim.run_tick()
 
-        assert len(ws.god_command_queue) == 0
+        assert len(ws.god_commands) == 0
         cmd_service.execute_command_batch.assert_called()
         args, _ = cmd_service.execute_command_batch.call_args
         assert len(args[0]) == 1
@@ -187,11 +219,11 @@ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
             new_value=0.15,
             command_id=uuid4()
         )
-        ws.command_queue.put(cmd)
+        command_ingress.drain_control_commands.return_value = [cmd]
 
         sim.run_tick()
 
-        assert len(ws.god_command_queue) == 0
+        assert len(ws.god_commands) == 0
         cmd_service.execute_command_batch.assert_called()
         args, _ = cmd_service.execute_command_batch.call_args
         assert len(args[0]) == 1

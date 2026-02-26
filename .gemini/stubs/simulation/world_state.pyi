@@ -98,7 +98,7 @@ class WorldState:
     effects_queue: list[dict[str, Any]]
     inactive_agents: dict[int, Any]
     system_commands: list[SystemCommand]
-    god_command_queue: deque[GodCommandDTO]
+    god_commands: list[GodCommandDTO]
     command_queue: CommandQueue | None
     telemetry_exchange: TelemetryExchange | None
     dashboard_service: DashboardService | None
