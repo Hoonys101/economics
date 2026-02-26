@@ -609,6 +609,29 @@ class SettlementSystem(IMonetaryAuthority):
              self.logger.error("SETTLEMENT_FAIL | Null agents.")
              return None
 
+        # Check Estate Registry Interception (Post-Mortem Settlement)
+        if self.estate_registry:
+            dead_agent = self.estate_registry.get_agent(credit_agent.id)
+            if dead_agent:
+                tx = Transaction(
+                    buyer_id=debit_agent.id,
+                    seller_id=credit_agent.id,
+                    item_id="currency",
+                    quantity=1.0,
+                    price=amount / 100.0,
+                    total_pennies=amount,
+                    market_id="settlement",
+                    transaction_type="transfer",
+                    time=tick,
+                    metadata={"memo": memo},
+                    currency=currency
+                )
+                # EstateRegistry MUST implement intercept_transaction(tx, settlement_system)
+                if hasattr(self.estate_registry, 'intercept_transaction'):
+                    interception_result = self.estate_registry.intercept_transaction(tx, self)
+                    if interception_result:
+                        return interception_result
+
         # Prepare Funds
         if not self._prepare_seamless_funds(debit_agent, amount, currency):
             return None

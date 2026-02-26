@@ -8,6 +8,7 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.common.interfaces import IPropertyOwner
 from modules.finance.api import IFinancialAgent
 from modules.market.safety_dtos import PriceLimitConfigDTO, ValidationResultDTO
+from modules.common.enums import IndustryDomain
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
