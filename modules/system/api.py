@@ -5,6 +5,10 @@ from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from pydantic import BaseModel, Field
 
+if TYPE_CHECKING:
+    from modules.simulation.dtos.api import MoneySupplyDTO
+    from modules.simulation.api import EconomicIndicatorsDTO
+
 # Define Currency Code (Usually String "USD")
 CurrencyCode = str
 DEFAULT_CURRENCY: CurrencyCode = "USD"
@@ -16,7 +20,25 @@ class IAgent(Protocol):
     is_active: bool
 
 @runtime_checkable
-class IWorldState(Protocol):
+class IWorldStateMetricsProvider(Protocol):
+    """
+    Protocol extension for IWorldState to safely provide metrics to Scenario Judges
+    without exposing God Class internals or mutable Trackers.
+    """
+    def calculate_total_money(self) -> MoneySupplyDTO:
+        """Provides Physics-tier monetary aggregates (M2, System Debt) in integer pennies."""
+        ...
+
+    def get_economic_indicators(self) -> EconomicIndicatorsDTO:
+        """Provides Macro-tier indicators (GDP, CPI, Unemployment) safely."""
+        ...
+
+    def get_market_panic_index(self) -> float:
+        """Provides Micro-tier sentiment and panic indices safely."""
+        ...
+
+@runtime_checkable
+class IWorldState(IWorldStateMetricsProvider, Protocol):
     """Module B: Protocol for decoupled world state management."""
     def get_agent(self, agent_id: AgentID) -> Optional[IAgent]:
         """Retrieves an agent by ID or None if not found."""

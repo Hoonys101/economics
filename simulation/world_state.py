@@ -48,7 +48,7 @@ from modules.market.api import IIndexCircuitBreaker
 from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
 from modules.finance.api import IShareholderRegistry, IBank
-from modules.simulation.api import AgentID, IEstateRegistry
+from modules.simulation.api import AgentID, IEstateRegistry, EconomicIndicatorsDTO
 from modules.governance.api import SystemCommand
 from simulation.dtos.commands import GodCommandDTO
 from modules.simulation.dtos.api import MoneySupplyDTO
@@ -257,6 +257,25 @@ class WorldState:
                 process_agent(agent)
 
         return MoneySupplyDTO(total_m2_pennies, system_debt_pennies, DEFAULT_CURRENCY)
+
+    def get_economic_indicators(self) -> EconomicIndicatorsDTO:
+        """
+        Provides Macro-tier indicators (GDP, CPI, Unemployment) safely.
+        """
+        if self.tracker:
+            data = self.tracker.get_latest_indicators()
+            return EconomicIndicatorsDTO(
+                gdp=data.get('gdp', 0.0),
+                cpi=data.get('goods_price_index', 0.0),
+                unemployment_rate=data.get('unemployment_rate', 0.0)
+            )
+        return EconomicIndicatorsDTO(gdp=0.0, cpi=0.0, unemployment_rate=0.0)
+
+    def get_market_panic_index(self) -> float:
+        """
+        Provides Micro-tier sentiment and panic indices safely.
+        """
+        return self.market_panic_index
 
     def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = "USD") -> float:
         """

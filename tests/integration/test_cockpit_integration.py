@@ -39,6 +39,14 @@ def mock_simulation_deps():
     world_state.command_queue = CommandQueue()
     world_state.god_commands = []
 
+    # Configure config_manager to return a valid string for database path
+    # to avoid sqlite3.OperationalError when DBManager is initialized with a Mock
+    def config_get_side_effect(key, default=None):
+        if key in ["simulation.database_name", "simulation.db_path"]:
+            return ":memory:"
+        return default
+    config_manager.get.side_effect = config_get_side_effect
+
     return config_manager, config_module, logger, repository, registry, settlement_system, agent_registry, world_state
 
 def test_simulation_processes_pause_resume(mock_simulation_deps):
