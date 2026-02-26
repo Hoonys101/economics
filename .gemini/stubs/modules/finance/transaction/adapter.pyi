@@ -4,6 +4,8 @@ from modules.finance.transaction.api import IAccountAccessor as IAccountAccessor
 from modules.system.api import CurrencyCode as CurrencyCode, DEFAULT_CURRENCY as DEFAULT_CURRENCY, IAgentRegistry as IAgentRegistry, ISystemFinancialAgent as ISystemFinancialAgent
 from typing import Any
 
+logger: Incomplete
+
 class FinancialEntityAdapter:
     """
     Adapter for IFinancialEntity to ITransactionParticipant.

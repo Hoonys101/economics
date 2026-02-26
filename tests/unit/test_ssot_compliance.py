@@ -35,6 +35,8 @@ class TestSSoTCompliance:
         h._econ_state = MagicMock()
         # Initial cash: 500.0 -> 50000 pennies ideally, but current code uses float assets
         h._econ_state.assets = {DEFAULT_CURRENCY: 500.0}
+        h._econ_state.wallet = MagicMock()
+        h._econ_state.wallet.owner_id = 101  # Required for shared wallet check
         h._econ_state.portfolio.holdings = {}
         h._bio_state.children_ids = []
         h._bio_state.is_active = False # Deceased

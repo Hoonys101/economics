@@ -34,5 +34,23 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "ECON_FRAGILITY_AUDIT": {
+        "title": "Economic Fragility Audit",
+        "worker": "audit",
+        "instruction": """
+        Diagnostic logs show systemic SETTLEMENT_FAIL (Cash: 0) and rapid firm extinction (Zombie Firms).
+        1. Analyze 'Bootstrapper.inject_initial_liquidity' and 'distribute_initial_wealth'. Is the initial money supply reaching firms?
+        2. Analyze 'Bank' loan issuance logic. Is there a structural barrier to lending (TD-BANK-RESERVE-CRUNCH)?
+        3. Review 'basic_food' sector survival constraints. Why are they insolvent within 30-60 ticks?
+        4. Check 'SettlementSystem' for logic flaws in handling 'Insufficient funds' that might be worsening the crunch.
+        """,
+        "context_files": [
+            "simulation/initialization/initializer.py",
+            "simulation/systems/bootstrapper.py",
+            "simulation/bank.py",
+            "simulation/firms.py",
+            "simulation/systems/settlement_system.py",
+            "reports/diagnostic_refined.md"
+        ]
+    }
 }

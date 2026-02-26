@@ -1,0 +1,14 @@
+{
+  "id": "female_labor_participation",
+  "category": "SOCIAL",
+  "description": "Verification of Female Labor Participation increase driven by technology (Formula and Appliances).",
+  "config_params": {
+    "FORMULA_TECH_LEVEL": 1.0,
+    "home_quality_score": 2.0
+  },
+  "duration_ticks": 200,
+  "judges": [
+    "MacroHealthJudge",
+    "MicroSentimentJudge"
+  ]
+}

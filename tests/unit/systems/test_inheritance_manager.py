@@ -42,6 +42,8 @@ class TestInheritanceManager:
         h._econ_state = MagicMock()
         h._bio_state = MagicMock()
         h._econ_state.assets = assets
+        h._econ_state.wallet = MagicMock()
+        h._econ_state.wallet.owner_id = id  # Required for shared wallet check
         h._econ_state.portfolio = Portfolio(id)
         h._econ_state.owned_properties = []
         h._bio_state.is_active = True

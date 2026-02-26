@@ -3,23 +3,25 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-SPEC-SCENARIO-CORE": {
-      "key": "WO-SPEC-SCENARIO-CORE",
-      "title": "Phase 34: Scenario Framework Core API/DTO Spec",
+    "M2_BOUNDARY_AUDIT": {
+      "key": "M2_BOUNDARY_AUDIT",
+      "title": "M2 Boundary Leakage Audit",
       "type": "gemini",
-      "instruction_raw": "Design the core API and DTOs for the Unified Scenario Framework. Follow the Architect Prime verdict: Type-safe Builder pattern, BaseJudge abstract class, and 5 categories (M/S/T/C/P). Define ScenarioOutcome DTOs and IScenarioBuilder protocols. Ensure Zero-Sum Integrity (Tier 1) is hardcoded as a mandatory check.",
+      "instruction_raw": "\n        Handover report indicates a 5.7B penny M2 leakage despite existing boundary logic.\n        1. Analyze 'SettlementSystem.transfer', 'execute_multiparty_settlement', and 'settle_atomic' for bypasses.\n        2. Check if 'TransactionProcessor' or handlers (Financial, GovernmentSpending) are bypassing the 'MonetaryLedger' notification.\n        3. Verify the 'NON_M2_SYSTEM_AGENT_IDS' list in 'modules/system/constants.py' for completeness.\n        4. Identify the exact code path failure causing the leakage.\n        5. Output a detailed report: 'M2_BOUNDARY_AUDIT_REPORT.md'.\n        ",
       "command": null,
       "file_path": null,
       "wait": false,
       "session_id": null,
-      "worker": "spec",
+      "worker": "audit",
       "context_files": [
-        "simulation/scenarios/framework.py",
-        "modules/simulation/dtos/api.py",
-        "simulation/dtos/strategy.py",
-        "simulation/world_state.py"
+        "simulation/systems/settlement_system.py",
+        "modules/finance/kernel/ledger.py",
+        "modules/system/constants.py",
+        "simulation/systems/transaction_processor.py",
+        "simulation/systems/handlers/financial_handler.py",
+        "simulation/systems/handlers/government_spending_handler.py"
       ],
-      "output_path": "gemini-output/spec/MISSION_REBIRTH_SCENARIO_CORE_SPEC.md",
+      "output_path": null,
       "model": null,
       "audit_requirements": null
     }
