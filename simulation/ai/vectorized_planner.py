@@ -15,7 +15,11 @@ class VectorizedHouseholdPlanner:
         self.fertility_rate = getattr(config, "BIOLOGICAL_FERTILITY_RATE", 0.15)
 
         # Consumption Constants
-        self.survival_threshold = getattr(config, "SURVIVAL_NEED_CONSUMPTION_THRESHOLD", 50.0)
+        try:
+            self.survival_threshold = float(getattr(config, "SURVIVAL_NEED_CONSUMPTION_THRESHOLD", 50.0))
+        except (TypeError, ValueError):
+            self.survival_threshold = 50.0
+
         self.food_consumption_qty = getattr(config, "FOOD_CONSUMPTION_QUANTITY", 1.0)
         self.max_purchase_qty = getattr(config, "FOOD_PURCHASE_MAX_PER_TICK", 5.0)
 
@@ -109,6 +113,7 @@ class VectorizedHouseholdPlanner:
 
         # A. Consumption Decision
         # Need > Threshold AND Inventory > 0
+
         should_consume = (survival_needs > self.survival_threshold) & (inventories > 0)
         # Quantity: 1.0 (Fixed by Config usually, simplifying to 1.0 for vector speed)
         consume_amounts = np.where(should_consume, self.food_consumption_qty, 0.0)

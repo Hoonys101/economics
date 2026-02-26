@@ -210,6 +210,7 @@ class SettlementSystem(IMonetaryAuthority):
         """
         total_m2 = 0
         processed_ids = set()
+        processed_wallets = set()
 
         # System Agents to Exclude
         # Use set comprehension to ensure all IDs are strings for comparison
@@ -220,10 +221,20 @@ class SettlementSystem(IMonetaryAuthority):
         def process_agent_balance(agent: Any) -> int:
             if not agent: return 0
 
-            # 0. Deduplication
+            # 0. Deduplication (Agent ID)
             if agent.id in processed_ids:
                 return 0
             processed_ids.add(agent.id)
+
+            # 0.1 Deduplication (Shared Wallet Identity)
+            # Fixes M2 Double Counting when spouses share a wallet object
+            if hasattr(agent, "_econ_state") and hasattr(agent._econ_state, "wallet"):
+                # Use object identity (memory address) to detect shared instances
+                wallet_id = id(agent._econ_state.wallet)
+                if wallet_id in processed_wallets:
+                    # self.logger.debug(f"M2_CALC | Deduplicated Shared Wallet {wallet_id} for Agent {agent.id}")
+                    return 0
+                processed_wallets.add(wallet_id)
 
             # 1. ID Check
             if str(agent.id) in excluded_ids:
@@ -245,6 +256,14 @@ class SettlementSystem(IMonetaryAuthority):
             # Fallback to ICurrencyHolder
             elif isinstance(agent, ICurrencyHolder):
                  balance = agent.get_assets_by_currency().get(currency, 0)
+
+            # Debug high balances or specific tick
+            if balance > 10000000:
+                 wallet_id = "N/A"
+                 if hasattr(agent, "_econ_state") and hasattr(agent._econ_state, "wallet"):
+                     wallet_id = str(id(agent._econ_state.wallet))
+
+                 self.logger.info(f"M2_AUDIT | Agent {agent.id} | Balance: {balance} | Active: {getattr(agent, 'is_active', '?')} | WalletID: {wallet_id} | AgentID: {id(agent)}")
 
             return balance
 
@@ -394,6 +413,19 @@ class SettlementSystem(IMonetaryAuthority):
             self.logger.error("MULTIPARTY_FAIL | Batch execution failed.")
             return False
 
+        if all_success and self.monetary_ledger:
+            for debit, credit, amount in transfers:
+                 is_debit_m2 = self._is_m2_agent(debit)
+                 is_credit_m2 = self._is_m2_agent(credit)
+
+                 if not is_debit_m2 and is_credit_m2:
+                     # Injection (Non-M2 -> M2)
+                     # Note: Multiparty usually doesn't have memo per tx, constructing one.
+                     self.monetary_ledger.record_monetary_expansion(amount, source="multiparty_settlement", currency=DEFAULT_CURRENCY)
+                 elif is_debit_m2 and not is_credit_m2:
+                     # Leakage (M2 -> Non-M2)
+                     self.monetary_ledger.record_monetary_contraction(amount, source="multiparty_settlement", currency=DEFAULT_CURRENCY)
+
         return True
 
     def settle_atomic(
@@ -450,7 +482,27 @@ class SettlementSystem(IMonetaryAuthority):
             self.logger.error("SETTLEMENT_ATOMIC_FAIL | Engine init failed.")
             return False
 
-        return all(r.status == 'COMPLETED' for r in results)
+        all_success = all(r.status == 'COMPLETED' for r in results)
+
+        if all_success and self.monetary_ledger:
+            is_debit_m2 = self._is_m2_agent(debit_agent)
+
+            for credit_agent, amount, memo in credits_list:
+                if amount <= 0: continue
+                is_credit_m2 = self._is_m2_agent(credit_agent)
+
+                if not is_debit_m2 and is_credit_m2:
+                     # Injection (Non-M2 -> M2)
+                     self.monetary_ledger.record_monetary_expansion(amount, source=memo, currency=DEFAULT_CURRENCY)
+                elif is_debit_m2 and not is_credit_m2:
+                     # Leakage (M2 -> Non-M2)
+                     self.monetary_ledger.record_monetary_contraction(amount, source=memo, currency=DEFAULT_CURRENCY)
+
+                     if "escheatment" in memo:
+                         final_bal = debit_agent.get_balance(DEFAULT_CURRENCY)
+                         self.logger.info(f"SETTLEMENT_DEBUG | Escheatment Check | Agent {debit_agent.id} | Balance: {final_bal}")
+
+        return all_success
 
     def _validate_memo(self, memo: str) -> bool:
         if not isinstance(memo, str):
@@ -725,7 +777,9 @@ class SettlementSystem(IMonetaryAuthority):
                 )
 
                 # SSoT Update: Record Expansion
-                if self.monetary_ledger:
+                # Only record M2 expansion if the destination is an M2 agent (e.g. Household/Firm)
+                # Minting to Banks (Reserves) or Gov (Treasury) is M0, not M2.
+                if self.monetary_ledger and self._is_m2_agent(destination):
                     self.monetary_ledger.record_monetary_expansion(amount, source=reason, currency=currency)
 
                 return tx

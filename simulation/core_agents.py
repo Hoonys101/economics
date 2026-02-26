@@ -164,7 +164,7 @@ class Household(
 
         temp_wallet = Wallet(core_config.id, {})
 
-        self._econ_state = EconStateDTO(
+        self._econ_state_internal = EconStateDTO(
             wallet=temp_wallet,
             inventory={},
             inventory_quality={},
@@ -326,6 +326,14 @@ class Household(
             f"HOUSEHOLD_INIT | Household {self.id} initialized (Engine-based).",
             extra={"tags": ["household_init"]}
         )
+
+    @property
+    def _econ_state(self) -> EconStateDTO:
+        return self._econ_state_internal
+
+    @_econ_state.setter
+    def _econ_state(self, value: EconStateDTO):
+        self._econ_state_internal = value
 
     @property
     def state(self) -> HouseholdStateContainer:
@@ -701,6 +709,7 @@ class Household(
         budget_output = self.budget_engine.allocate_budget(budget_input)
 
         self._econ_state = budget_output.econ_state
+
         budget_plan = budget_output.budget_plan
         housing_action = budget_output.housing_action
 

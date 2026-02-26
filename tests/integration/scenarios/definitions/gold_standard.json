@@ -1,0 +1,12 @@
+{
+  "id": "gold_standard_conservation",
+  "category": "MONETARY",
+  "duration_ticks": 50,
+  "config_params": {
+    "GOLD_STANDARD_MODE": true,
+    "INITIAL_MONEY_SUPPLY": 100000.0,
+    "NUM_HOUSEHOLDS": 10,
+    "NUM_FIRMS": 2,
+    "BATCH_SAVE_INTERVAL": 100
+  }
+}

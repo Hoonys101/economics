@@ -17,7 +17,6 @@ class LaborTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        print(f"DEBUG_LABOR_HANDLER | Handling {tx.transaction_type} for {buyer.id} -> {seller.id}")
         try:
             # SSoT: Use total_pennies directly (Strict Schema Enforced)
             trade_value = tx.total_pennies
@@ -104,9 +103,7 @@ class LaborTransactionHandler(ITransactionHandler):
 
             return settlement_success
         except Exception as e:
-            print(f"DEBUG_LABOR_HANDLER | ERROR: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Failed to handle labor transaction: {e}", exc_info=True)
             return False
 
     def _apply_labor_effects(self, tx: Transaction, buyer: Any, seller: Any, seller_net_income: int, buyer_total_cost: int, context: TransactionContext):

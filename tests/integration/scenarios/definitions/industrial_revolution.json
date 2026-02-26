@@ -1,0 +1,14 @@
+{
+  "id": "industrial_revolution_diffusion",
+  "category": "TECHNOLOGY",
+  "duration_ticks": 50,
+  "config_params": {
+    "NUM_HOUSEHOLDS": 50,
+    "NUM_FIRMS": 5,
+    "TECH_FERTILIZER_UNLOCK_TICK": 10,
+    "TECH_DIFFUSION_RATE": 0.2,
+    "FIRM_MIN_PRODUCTION_TARGET": 10.0,
+    "ENABLE_VANITY_SYSTEM": false,
+    "STOCK_MARKET_ENABLED": false
+  }
+}

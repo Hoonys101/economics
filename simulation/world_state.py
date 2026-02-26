@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
+from typing import List, Dict, Any, Optional, TYPE_CHECKING, Sequence
 import logging
 from collections import deque
 
@@ -302,3 +302,17 @@ class WorldState:
             ):
                 all_agents.append(agent)
         return all_agents
+
+    # --- NEW: Read-Only System Expositions for Scenario Judges ---
+
+    def get_technology_system(self) -> Any:
+        return self.technology_manager
+
+    def get_monetary_ledger(self) -> Any:
+        return self.monetary_ledger
+
+    def get_all_firms(self) -> Sequence[Any]:
+        return self.firms
+
+    def get_all_households(self) -> Sequence[Any]:
+        return self.households

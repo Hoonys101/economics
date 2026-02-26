@@ -40,11 +40,23 @@ class InheritanceManager:
 
         # 1. Valuation & Asset Gathering
         # ------------------------------------------------------------------
-        cash_raw = deceased._econ_state.assets
-        cash = cash_raw
-        if isinstance(cash_raw, dict):
-            cash = cash_raw.get(DEFAULT_CURRENCY, 0.0)
-        cash = round(cash, 2)
+        # NEW: Shared Wallet Protection (WO-IMPL-SCENARIO-MIGRATION)
+        # If the deceased shares a wallet owned by someone else (e.g. Spouse),
+        # we treat their personal cash holdings as 0.0 to prevent draining the survivor's funds.
+        is_shared_wallet_guest = False
+        if hasattr(deceased, '_econ_state') and hasattr(deceased._econ_state, 'wallet'):
+             if deceased._econ_state.wallet.owner_id != deceased.id:
+                 is_shared_wallet_guest = True
+                 self.logger.info(f"INHERITANCE_PROTECT | Agent {deceased.id} shares wallet owned by {deceased._econ_state.wallet.owner_id}. Skipping cash liquidation.")
+
+        if is_shared_wallet_guest:
+             cash = 0.0
+        else:
+            cash_raw = deceased._econ_state.assets
+            cash = cash_raw
+            if isinstance(cash_raw, dict):
+                cash = cash_raw.get(DEFAULT_CURRENCY, 0.0)
+            cash = round(cash, 2)
 
         self.logger.info(
             f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {cash:.2f}",
