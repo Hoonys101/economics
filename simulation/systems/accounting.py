@@ -54,7 +54,9 @@ class AccountingSystem(IAccountingSystem):
             # Firm-like entity
             if tx_type in ["labor", "research_labor", "interest_payment", "service"]:
                 buyer.record_expense(amount, transaction.currency)
-            # Raw materials (goods) are asset swaps (Inventory), not direct expense.
+            # WO-LIQUIDATE-FINANCE: Reciprocal expense for goods (Inputs)
+            elif tx_type == "goods":
+                buyer.record_expense(amount, transaction.currency)
 
         elif hasattr(buyer, 'add_consumption_expenditure'):
              # Household-like entity
