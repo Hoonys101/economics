@@ -60,6 +60,7 @@ from modules.firm.constants import (
     DEFAULT_LABOR_WAGE, DEFAULT_SURVIVAL_COST, DEFAULT_CORPORATE_TAX_RATE,
     PRODUCTIVITY_DIVIDER, DEFAULT_PRICE
 )
+from modules.common.enums import IndustryDomain
 
 from modules.agent_framework.components.inventory_component import InventoryComponent
 from modules.agent_framework.components.financial_component import FinancialComponent
@@ -1592,6 +1593,16 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             current_cash = self.financial_component.get_balance(DEFAULT_CURRENCY)
 
             if current_cash >= projected_cost:
+                # Convert major string to enum if needed
+                major_val = context.major
+                if isinstance(major_val, str):
+                    try:
+                        major_enum = IndustryDomain(major_val)
+                    except ValueError:
+                        major_enum = IndustryDomain.GENERAL
+                else:
+                    major_enum = major_val
+
                 orders.append(Order(
                     agent_id=self.id,
                     side='BUY',
@@ -1600,6 +1611,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
                     price_pennies=offered_wage,
                     price_limit=float(offered_wage)/100.0,
                     market_id='labor',
+                    major=major_enum,
                     metadata={
                         'major': context.major, # Phase 4.1: Use Major instead of Specialization
                         'specialization': context.specialization, # Keep specialization for debugging/specific matching if needed

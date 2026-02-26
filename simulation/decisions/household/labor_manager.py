@@ -3,6 +3,7 @@ import random
 from simulation.models import Order
 from simulation.decisions.household.api import LaborContext
 from modules.system.api import DEFAULT_CURRENCY
+from modules.common.enums import IndustryDomain
 
 class LaborManager:
     """
@@ -72,12 +73,22 @@ class LaborManager:
                 else:
                     agent_data = {}
 
+                # Convert major string to enum if needed
+                major_val = getattr(household, 'major', 'GENERAL')
+                if isinstance(major_val, str):
+                    try:
+                        major_enum = IndustryDomain(major_val)
+                    except ValueError:
+                        major_enum = IndustryDomain.GENERAL
+                else:
+                    major_enum = major_val
+
                 brand_info = {
                     'labor_skill': agent_data.get('labor_skill', 1.0),
                     'education_level': agent_data.get('education_level', 0),
                     'aptitude': agent_data.get('aptitude', 0.5),
                     'market_insight': agent_data.get('market_insight', 0.5),
-                    'major': getattr(household, 'major', 'GENERAL')
+                    'major': major_val
                 }
 
                 orders.append(Order(
@@ -88,6 +99,7 @@ class LaborManager:
                     price_pennies=int(reservation_wage * 100),
                     price_limit=reservation_wage,
                     market_id='labor',
+                    major=major_enum,
                     brand_info=brand_info
                 ))
         return orders

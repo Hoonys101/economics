@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional
 import logging
 from modules.labor.api import ILaborMarket, JobOfferDTO, JobSeekerDTO, LaborMarketMatchResultDTO, LaborConfigDTO
-from modules.market.api import CanonicalOrderDTO, OrderTelemetrySchema
+from modules.market.api import CanonicalOrderDTO, OrderTelemetrySchema, LaborMarketConfigDTO
 from simulation.models import Transaction
 from simulation.interfaces.market_interface import IMarket
 from modules.simulation.api import AgentID
@@ -14,12 +14,12 @@ class LaborMarket(ILaborMarket, IMarket):
     """
     Implementation of the Labor Market with Major-Matching logic.
     """
-    def __init__(self, market_id: str = "labor", config_module: Any = None):
+    def __init__(self, market_id: str = "labor", config_dto: Optional[LaborMarketConfigDTO] = None):
         self.id = market_id
         self._job_offers: List[JobOfferDTO] = []
         self._job_seekers: List[JobSeekerDTO] = []
         self._matched_transactions: List[Transaction] = []
-        self.config = config_module
+        self.config = config_dto or LaborMarketConfigDTO()
 
         # IMarket compatibility
         self._buy_orders_cache: Dict[str, List[CanonicalOrderDTO]] = {}
@@ -108,8 +108,8 @@ class LaborMarket(ILaborMarket, IMarket):
                     mult_mismatch = 0.8
                     mult_general = 1.0
 
-                    if self.config and hasattr(self.config, 'LABOR_MARKET'):
-                        compat_config = self.config.LABOR_MARKET.get('compatibility', {})
+                    if self.config:
+                        compat_config = self.config.compatibility
                         mult_perfect = compat_config.get('PERFECT', mult_perfect)
                         mult_partial = compat_config.get('PARTIAL', mult_partial)
                         mult_mismatch = compat_config.get('MISMATCH', mult_mismatch)
@@ -233,11 +233,16 @@ class LaborMarket(ILaborMarket, IMarket):
 
             # Convert to JobOffer
             metadata = order_dto.metadata or {}
-            major_str = metadata.get("major", "GENERAL")
-            try:
-                major_enum = IndustryDomain(major_str)
-            except ValueError:
-                major_enum = IndustryDomain.GENERAL
+
+            # Use DTO major if valid, otherwise fallback to metadata
+            major_enum = order_dto.major if order_dto.major != IndustryDomain.GENERAL else None
+
+            if not major_enum:
+                major_str = metadata.get("major", "GENERAL")
+                try:
+                    major_enum = IndustryDomain(major_str)
+                except ValueError:
+                    major_enum = IndustryDomain.GENERAL
 
             offer = JobOfferDTO(
                 firm_id=AgentID(int(order_dto.agent_id)),
@@ -255,11 +260,16 @@ class LaborMarket(ILaborMarket, IMarket):
 
             # Convert to JobSeeker
             metadata = order_dto.metadata or order_dto.brand_info or {} # Household uses brand_info for metadata, but metadata is also checked
-            major_str = metadata.get("major", "GENERAL")
-            try:
-                major_enum = IndustryDomain(major_str)
-            except ValueError:
-                major_enum = IndustryDomain.GENERAL
+
+            # Use DTO major if valid, otherwise fallback to metadata
+            major_enum = order_dto.major if order_dto.major != IndustryDomain.GENERAL else None
+
+            if not major_enum:
+                major_str = metadata.get("major", "GENERAL")
+                try:
+                    major_enum = IndustryDomain(major_str)
+                except ValueError:
+                    major_enum = IndustryDomain.GENERAL
 
             seeker = JobSeekerDTO(
                 household_id=AgentID(int(order_dto.agent_id)),
