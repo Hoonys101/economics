@@ -143,3 +143,26 @@ class PublicManagerTransactionHandler(ITransactionHandler):
                          context.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
              except:
                  pass
+
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses a Public Manager sale.
+        """
+        pm = context.public_manager
+        if not pm: return False
+
+        trade_value = tx.total_pennies
+
+        buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
+        if not buyer: return False
+
+        # Reverse Money: PM -> Buyer
+        success = context.settlement_system.transfer(pm, buyer, int(trade_value), f"rollback_pm_sale:{tx.id}")
+
+        # Reverse Inventory: Buyer -> PM
+        # If possible.
+        # PM inventory management for 'restock' via rollback is not explicitly exposed.
+        # We log warning.
+        context.logger.warning(f"Rollback for PM Sale {tx.id} executed (Financial only). Inventory restoration to PM not implemented.")
+
+        return success is not None

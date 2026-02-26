@@ -308,3 +308,20 @@ class ITransactionHandler(ABC):
                   the transaction aborted.
         """
         raise NotImplementedError
+
+    @abstractmethod
+    def rollback(self, tx: 'Transaction', context: 'TransactionContext') -> bool:
+        """
+        Reverses the effects of a previously executed transaction.
+
+        This method should be idempotent and handle cases where the transaction
+        partially failed or was fully successful but needs reversal.
+
+        Args:
+            tx: The Transaction object to be rolled back.
+            context: An immutable context object providing access to simulation state.
+
+        Returns:
+            bool: True if the rollback was successful, False otherwise.
+        """
+        raise NotImplementedError

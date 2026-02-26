@@ -87,3 +87,30 @@ class FinancialTransactionHandler(ITransactionHandler):
                  buyer.record_expense(int(trade_value), tx.currency)
 
         return success is not None
+
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses financial transactions by transferring funds back.
+        """
+        tx_type = tx.transaction_type
+        trade_value = tx.total_pennies
+
+        # Determine original Source (Buyer) and Destination (Seller/Gov)
+        # Rollback: Destination pays Source
+
+        source = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
+        destination = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
+
+        if tx_type == "tax":
+            destination = context.government
+
+        if not source or not destination:
+            context.logger.error(f"Rollback failed for {tx.id}: Agent missing. Source: {tx.buyer_id}, Dest: {tx.seller_id}")
+            return False
+
+        success = context.settlement_system.transfer(destination, source, int(trade_value), f"rollback:{tx_type}:{tx.id}")
+
+        if success and tx_type == "loan_repayment":
+            context.logger.warning(f"Rollback for loan_repayment {tx.id} executed (money returned), but loan ledger NOT updated (principal not restored).")
+
+        return success is not None

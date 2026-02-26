@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 from modules.finance.dtos import MoneyDTO
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.common.interfaces import IPropertyOwner
+from modules.common.enums import IndustryDomain
 from modules.finance.api import IFinancialAgent
 from modules.market.safety_dtos import PriceLimitConfigDTO, ValidationResultDTO
 

@@ -21,3 +21,21 @@ class GovernmentSpendingHandler(ITransactionHandler):
         )
 
         return success is not None
+
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses government spending.
+        """
+        trade_value = tx.total_pennies
+
+        # Original: Gov (Buyer) -> Agent (Seller)
+        # Rollback: Agent (Seller) -> Gov (Buyer)
+
+        source = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
+        destination = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
+
+        if not source or not destination:
+             return False
+
+        success = context.settlement_system.transfer(destination, source, int(trade_value), f"rollback_gov_spend:{tx.transaction_type}:{tx.id}")
+        return success is not None

@@ -82,3 +82,53 @@ class InheritanceHandler(ITransactionHandler):
             return success
 
         return True
+
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses inheritance distribution.
+        Heirs pay back the Estate.
+        """
+        deceased_agent_id = tx.buyer_id
+        estate_agent = context.agents.get(deceased_agent_id) or context.inactive_agents.get(deceased_agent_id)
+
+        if not estate_agent:
+             return False
+
+        heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
+        if not heir_ids:
+             return True
+
+        # Reconstruct amounts (assuming consistent state or using total_pennies from tx if accurate)
+        # Note: handle() uses current wallet balance. If we assume rollback happens immediately,
+        # we can't easily know exactly what was distributed unless we stored it in tx.metadata['distribution'].
+        # However, we can try to reverse using total_pennies if that was populated correctly.
+        # But handle() calculates assets_val dynamically and doesn't update tx.total_pennies necessarily?
+        # Let's assume for now that we can't perfectly rollback without detailed logs,
+        # so we log warning and fail safe, OR we assume total_pennies in tx is the amount.
+
+        amount = tx.total_pennies
+        if amount <= 0:
+             return True
+
+        count = len(heir_ids)
+        base_amount = amount // count
+        distributed_sum = 0
+
+        # Reverse transfers
+        success_all = True
+
+        for i, h_id in enumerate(heir_ids):
+             heir = context.agents.get(h_id)
+             if not heir: continue
+
+             repay_amount = base_amount
+             if i == count - 1:
+                 repay_amount = amount - distributed_sum
+
+             distributed_sum += base_amount
+
+             if repay_amount > 0:
+                 if not context.settlement_system.transfer(heir, estate_agent, repay_amount, f"rollback_inheritance:{tx.id}"):
+                      success_all = False
+
+        return success_all

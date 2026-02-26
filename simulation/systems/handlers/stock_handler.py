@@ -80,3 +80,55 @@ class StockTransactionHandler(ITransactionHandler):
             f"STOCK_TX | Buyer: {buyer.id}, Seller: {seller.id}, Firm: {firm_id}, Qty: {tx.quantity}, Price: {tx.price}",
             extra={"tick": context.time, "tags": ["stock_market", "transaction"]}
         )
+
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses a stock transaction.
+        Attempts to reverse money and share ownership.
+        """
+        trade_value = tx.total_pennies
+
+        buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
+        seller = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
+
+        if not buyer or not seller:
+            return False
+
+        # 1. Reverse Money: Seller -> Buyer
+        success = context.settlement_system.transfer(seller, buyer, int(trade_value), f"rollback_stock:{tx.item_id}:{tx.id}")
+
+        if not success:
+             return False
+
+        # 2. Reverse Shares: Buyer -> Seller
+        try:
+            firm_id = int(tx.item_id.split("_")[1])
+
+            # Remove from Buyer
+            if hasattr(buyer, "portfolio"):
+                buyer.portfolio.remove(firm_id, tx.quantity)
+
+            # Add to Seller
+            if hasattr(seller, "portfolio"):
+                # Price is approximate (original trade price)
+                price_pennies = int(trade_value / tx.quantity) if tx.quantity > 0 else 0
+                seller.portfolio.add(firm_id, tx.quantity, price_pennies)
+
+            # Registry Update
+            if context.stock_market:
+                # Sync Buyer
+                if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
+                     context.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
+                else:
+                     context.stock_market.update_shareholder(buyer.id, firm_id, 0.0)
+
+                # Sync Seller
+                if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
+                    context.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
+
+            context.logger.info(f"Rollback Stock {tx.id} executed.")
+            return True
+
+        except (IndexError, ValueError):
+            context.logger.error(f"Rollback Stock {tx.id} failed: Invalid item_id.")
+            return False

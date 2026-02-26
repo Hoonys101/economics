@@ -51,3 +51,10 @@ class EmergencyTransactionHandler(ITransactionHandler):
                     })
 
         return success
+
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses the effects of an emergency purchase.
+        """
+        context.logger.warning(f"Rollback requested for EmergencyTransactionHandler (ID: {getattr(tx, 'id', 'unknown')}). Not supported.")
+        return False

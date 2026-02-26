@@ -39,6 +39,47 @@ class TransactionProcessor(SystemInterface):
         """Registers a handler for Public Manager transactions (seller check)."""
         self._public_manager_handler = handler
 
+    def _build_context(self, state: SimulationState) -> TransactionContext:
+        """
+        Builds the TransactionContext from the SimulationState.
+        """
+        # Determine Public Manager from state if available
+        public_manager = getattr(state, "public_manager", None)
+
+        # Determine Bank and Central Bank from state
+        bank = getattr(state, "bank", None)
+        central_bank = getattr(state, "central_bank", None)
+
+        # Determine Taxation System (Should be in state or we create/access it?)
+        taxation_system = getattr(state, "taxation_system", None)
+        if not taxation_system:
+            if not hasattr(self, "taxation_system"):
+                # Lazy init if missing? Or rely on config.
+                from modules.government.taxation.system import TaxationSystem
+
+                self.taxation_system = TaxationSystem(self.config_module)
+            taxation_system = self.taxation_system
+
+        return TransactionContext(
+            agents=state.agents,
+            inactive_agents=getattr(state, "inactive_agents", {}),
+            government=state.primary_government,
+            settlement_system=state.settlement_system,
+            taxation_system=taxation_system,
+            stock_market=state.stock_market,
+            real_estate_units=state.real_estate_units,
+            market_data=state.market_data,
+            config_module=self.config_module,
+            logger=state.logger,
+            time=state.time,
+            bank=bank,
+            central_bank=central_bank,
+            public_manager=public_manager,
+            transaction_queue=[],  # Initialize empty queue for side-effects
+            shareholder_registry=state.shareholder_registry,
+            estate_registry=getattr(state, 'estate_registry', None)
+        )
+
     def _handle_public_manager(self, tx: Transaction, context: TransactionContext) -> Optional[SettlementResultDTO]:
         """
         Handles transactions where the seller is the Public Manager.
@@ -106,43 +147,7 @@ class TransactionProcessor(SystemInterface):
         """
         results: List[SettlementResultDTO] = []
 
-        # 1. Build TransactionContext
-        # Determine Public Manager from state if available
-        public_manager = getattr(state, "public_manager", None)
-
-        # Determine Bank and Central Bank from state
-        bank = getattr(state, "bank", None)
-        central_bank = getattr(state, "central_bank", None)
-
-        # Determine Taxation System (Should be in state or we create/access it?)
-        taxation_system = getattr(state, "taxation_system", None)
-        if not taxation_system:
-            if not hasattr(self, "taxation_system"):
-                # Lazy init if missing? Or rely on config.
-                from modules.government.taxation.system import TaxationSystem
-
-                self.taxation_system = TaxationSystem(self.config_module)
-            taxation_system = self.taxation_system
-
-        context = TransactionContext(
-            agents=state.agents,
-            inactive_agents=getattr(state, "inactive_agents", {}),
-            government=state.primary_government,
-            settlement_system=state.settlement_system,
-            taxation_system=taxation_system,
-            stock_market=state.stock_market,
-            real_estate_units=state.real_estate_units,
-            market_data=state.market_data,
-            config_module=self.config_module,
-            logger=state.logger,
-            time=state.time,
-            bank=bank,
-            central_bank=central_bank,
-            public_manager=public_manager,
-            transaction_queue=[],  # Initialize empty queue for side-effects
-            shareholder_registry=state.shareholder_registry,
-            estate_registry=getattr(state, 'estate_registry', None)
-        )
+        context = self._build_context(state)
 
         default_handler = self._handlers.get("default")
 
@@ -277,3 +282,36 @@ class TransactionProcessor(SystemInterface):
             state.transactions.extend(context.transaction_queue)
 
         return results
+
+    def rollback_transaction(self, tx: Transaction, state: SimulationState) -> bool:
+        """
+        Rolls back a transaction using the registered handler.
+        """
+        context = self._build_context(state)
+
+        # Check PM Handler first (Special Routing logic from handle)
+        is_pm_seller = (
+            tx.seller_id == ID_PUBLIC_MANAGER
+            or tx.seller_id == "PUBLIC_MANAGER"
+            or tx.seller_id == -1
+        )
+        is_systemic = tx.transaction_type in [
+            "inheritance_distribution",
+            "escheatment",
+        ]
+
+        if is_pm_seller and not is_systemic and self._public_manager_handler:
+             return self._public_manager_handler.rollback(tx, context)
+
+        # Standard Dispatch
+        handler = self._handlers.get(tx.transaction_type)
+        if handler:
+            return handler.rollback(tx, context)
+
+        # Default Handler?
+        default_handler = self._handlers.get("default")
+        if default_handler:
+             return default_handler.rollback(tx, context)
+
+        state.logger.warning(f"Rollback requested but no handler found for {tx.transaction_type}")
+        return False

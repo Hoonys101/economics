@@ -1,4 +1,4 @@
-from typing import List, Tuple, TYPE_CHECKING
+from typing import List, Tuple, TYPE_CHECKING, Dict, Any
 import logging
 from simulation.dtos import AgentStateData, TransactionData, EconomicIndicatorData, MarketHistoryData
 from simulation.core_agents import Household
@@ -35,35 +35,33 @@ class AnalyticsSystem:
             if not getattr(agent, "is_active", False):
                 continue
 
-            # Base DTO construction
-            # Use getattr for safety, though BaseAgent should have these
-            assets = agent.get_assets_by_currency() if hasattr(agent, 'get_assets_by_currency') else {DEFAULT_CURRENCY: 0.0}
+            # Initialize variables
+            assets: Dict[str, Any] = {DEFAULT_CURRENCY: 0.0}
+            agent_type = ""
+            generation = 0
 
-            agent_dto = AgentStateData(
-                run_id=run_id,
-                time=time,
-                agent_id=agent.id,
-                agent_type="",
-                assets=assets,
-                is_active=agent.is_active,
-                generation=getattr(agent, "generation", 0),
-            )
-
+            # Specific DTO Logic per Agent Type
             if isinstance(agent, Household):
-                agent_dto.agent_type = "household"
+                agent_type = "household"
                 # Phase 9.1 Refactor: Use snapshot DTO for safe observation
                 snapshot = agent.create_snapshot_dto()
                 
+                # Use assets from snapshot
+                assets = snapshot.econ_state.assets
+
                 # SnapshotDTO uses full names: econ_state, bio_state
-                agent_dto.is_employed = snapshot.econ_state.is_employed
-                agent_dto.employer_id = snapshot.econ_state.employer_id
+                is_employed = snapshot.econ_state.is_employed
+                employer_id = snapshot.econ_state.employer_id
 
                 # Needs
-                agent_dto.needs_survival = snapshot.bio_state.needs.get("survival", 0)
-                agent_dto.needs_labor = snapshot.bio_state.needs.get("labor_need", 0)
+                needs_survival = snapshot.bio_state.needs.get("survival", 0)
+                needs_labor = snapshot.bio_state.needs.get("labor_need", 0)
 
                 # Inventory (Using public protocol)
-                agent_dto.inventory_food = snapshot.econ_state.inventory.get("food", 0.0)
+                inventory_food = snapshot.econ_state.inventory.get("food", 0.0)
+
+                # Generation
+                generation = snapshot.bio_state.generation
 
                 # Time Allocation - world_state.household_time_allocation should also come from DTO if possible
                 # For now keeping it as it's a world state property, but checking if it's in snapshot
@@ -73,24 +71,73 @@ class AnalyticsSystem:
                 shopping_hours = getattr(agent.config, "SHOPPING_HOURS", 2.0)
                 hours_per_tick = getattr(agent.config, "HOURS_PER_TICK", 24.0)
 
-                agent_dto.time_leisure = time_leisure
-                agent_dto.time_worked = max(0.0, hours_per_tick - time_leisure - shopping_hours)
+                time_worked = max(0.0, hours_per_tick - time_leisure - shopping_hours)
+
+                agent_dto = AgentStateData(
+                    run_id=run_id,
+                    time=time,
+                    agent_id=agent.id,
+                    agent_type=agent_type,
+                    assets=assets,
+                    is_active=agent.is_active,
+                    generation=generation,
+                    is_employed=is_employed,
+                    employer_id=employer_id,
+                    needs_survival=needs_survival,
+                    needs_labor=needs_labor,
+                    inventory_food=inventory_food,
+                    time_leisure=time_leisure,
+                    time_worked=time_worked
+                )
 
             elif isinstance(agent, Firm):
-                agent_dto.agent_type = "firm"
+                agent_type = "firm"
                 # Phase 9.1 Refactor: Use state DTO for safe observation
                 state_dto = agent.get_state_dto()
                 
-                agent_dto.inventory_food = state_dto.production.inventory.get("food", 0.0)
-                agent_dto.current_production = state_dto.production.current_production
-                agent_dto.num_employees = len(state_dto.hr.employees)
+                # Use assets from state_dto (balance)
+                assets = {DEFAULT_CURRENCY: state_dto.finance.balance}
+
+                inventory_food = state_dto.production.inventory.get("food", 0.0)
+                current_production = state_dto.production.current_production
+                num_employees = len(state_dto.hr.employees)
                 
                 # Metadata extraction
-                agent_dto.generation = getattr(state_dto, "generation", 0)
+                generation = getattr(state_dto, "generation", getattr(agent, "generation", 0))
+
+                agent_dto = AgentStateData(
+                    run_id=run_id,
+                    time=time,
+                    agent_id=agent.id,
+                    agent_type=agent_type,
+                    assets=assets,
+                    is_active=agent.is_active,
+                    generation=generation,
+                    inventory_food=inventory_food,
+                    current_production=current_production,
+                    num_employees=num_employees
+                )
 
             else:
-                # Other agents (Bank, Gov, etc)
-                agent_dto.agent_type = agent.__class__.__name__.lower()
+                # Other agents (Bank, Gov, etc) - Fallback
+                agent_type = agent.__class__.__name__.lower()
+
+                # Base DTO construction
+                # Use getattr for safety, though BaseAgent should have these
+                if hasattr(agent, 'get_assets_by_currency'):
+                    assets = agent.get_assets_by_currency()
+
+                generation = getattr(agent, "generation", 0)
+
+                agent_dto = AgentStateData(
+                    run_id=run_id,
+                    time=time,
+                    agent_id=agent.id,
+                    agent_type=agent_type,
+                    assets=assets,
+                    is_active=agent.is_active,
+                    generation=generation,
+                )
 
             agent_states.append(agent_dto)
 

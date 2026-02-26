@@ -12,3 +12,10 @@ class DefaultTransferHandler(ITransactionHandler):
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
         # Transaction logic is already executed. Acknowledge for ledger.
         return True
+
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Default transfer handler is a pass-through for already settled transactions.
+        Rollback is assumed to be handled by the caller or SettlementSystem directly.
+        """
+        return True

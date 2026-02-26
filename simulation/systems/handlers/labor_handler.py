@@ -180,3 +180,75 @@ class LaborTransactionHandler(ITransactionHandler):
                 research_skill = seller.skills.get("research", Skill("research")).value
                 multiplier = getattr(context.config_module, "RND_PRODUCTIVITY_MULTIPLIER", 0.0)
                 buyer.productivity_factor += (research_skill * multiplier)
+
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses labor transactions.
+        For wages, it attempts to reverse the payment.
+        For hiring, it does not currently fire the employee but logs a warning.
+        """
+        if tx.transaction_type == "HIRE":
+             context.logger.warning(f"Rollback requested for HIRE {tx.id}. Reversing hiring state is not implemented.")
+             return False
+
+        # Wage Reversal
+        trade_value = tx.total_pennies
+
+        # Original: Firm (Buyer) -> Employee (Seller) + Gov
+        # Rollback: Employee -> Firm, Gov -> Firm
+
+        firm = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
+        employee = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
+
+        if not firm or not employee:
+            return False
+
+        # 1. Reverse Net Wage
+        # We don't know exact net wage easily without recalculating tax.
+        # But we can try to reverse what we can.
+        # If we use settle_atomic logic from handle, we know structure.
+        # But we need exact amounts.
+        # Assuming we can just reverse the total_pennies from Employee to Firm?
+        # No, total_pennies is Gross Wage. Employee received Net. Gov received Tax.
+
+        # Recalculate Tax to know split
+        if context.taxation_system:
+             intents = context.taxation_system.calculate_tax_intents(tx, firm, employee, context.government, context.market_data)
+
+             seller_net_amount = trade_value
+             seller_tax = 0
+             buyer_tax = 0
+
+             for intent in intents:
+                 amount = int(intent.amount)
+                 if intent.payer_id == employee.id:
+                     seller_net_amount -= amount
+                     seller_tax += amount
+                 elif intent.payer_id == firm.id:
+                     buyer_tax += amount
+
+             # Reverse Employee -> Firm (Net Wage)
+             if seller_net_amount > 0:
+                 context.settlement_system.transfer(employee, firm, seller_net_amount, f"rollback_wage_net:{tx.id}")
+
+             # Reverse Gov -> Firm (Buyer Tax)
+             # Reverse Gov -> Employee -> Firm? Or Gov -> Firm directly for withholding?
+             # Withholding was deducted from Seller. So Gov should pay Seller?
+             # But if we rollback, Seller pays back Net to Firm.
+             # Gov pays back Withholding to Firm (since Firm paid Gross - Withholding + Withholding = Gross).
+             # Wait.
+             # Firm paid: Net to Seller + Withholding to Gov + EmployerTax to Gov.
+             # To rollback:
+             # Seller pays Net to Firm.
+             # Gov pays Withholding to Firm.
+             # Gov pays EmployerTax to Firm.
+
+             if seller_tax > 0:
+                 context.settlement_system.transfer(context.government, firm, seller_tax, f"rollback_wage_withholding:{tx.id}")
+
+             if buyer_tax > 0:
+                 context.settlement_system.transfer(context.government, firm, buyer_tax, f"rollback_wage_emptax:{tx.id}")
+
+             return True
+
+        return False
