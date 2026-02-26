@@ -1,6 +1,7 @@
 from _typeshed import Incomplete
 from dataclasses import dataclass, field
 from enum import Enum
+from modules.common.enums import IndustryDomain as IndustryDomain
 from modules.common.interfaces import IPropertyOwner as IPropertyOwner
 from modules.finance.api import IBank as IBank, IFinancialAgent as IFinancialAgent, ISettlementSystem as ISettlementSystem
 from modules.finance.dtos import MoneyDTO as MoneyDTO
@@ -18,6 +19,17 @@ class MarketSide(str, Enum):
     BUY = 'BUY'
     SELL = 'SELL'
 
+class IndustryDomain(str, Enum):
+    GENERAL = 'GENERAL'
+    CONSTRUCTION = 'CONSTRUCTION'
+    AGRICULTURE = 'AGRICULTURE'
+    MANUFACTURING = 'MANUFACTURING'
+    SERVICES = 'SERVICES'
+    TECHNOLOGY = 'TECHNOLOGY'
+    HEALTHCARE = 'HEALTHCARE'
+    EDUCATION = 'EDUCATION'
+    FINANCE = 'FINANCE'
+
 @dataclass(frozen=True)
 class CanonicalOrderDTO:
     """
@@ -32,6 +44,7 @@ class CanonicalOrderDTO:
     quantity: float
     price_pennies: int
     market_id: str
+    major: IndustryDomain = ...
     price_limit: float = ...
     target_agent_id: int | None = ...
     brand_info: dict[str, Any] | None = ...
@@ -102,6 +115,31 @@ class MarketConfigDTO:
     transaction_fee: float = ...
     housing_max_ltv: float = ...
     housing_mortgage_term: int = ...
+    price_volatility_window: int = ...
+    labor_education_weight: float = ...
+    commodity_matching_mode: str = ...
+    labor_matching_mode: str = ...
+    initial_property_value: int | None = ...
+    initial_rent_price: int | None = ...
+
+@dataclass(frozen=True)
+class LaborMarketConfigDTO:
+    """Configuration DTO for the Labor Market."""
+    majors: list[IndustryDomain] = field(default_factory=list)
+    education_weight: float = ...
+    matching_mode: str = ...
+    min_reservation_wage_pennies: int = ...
+    compatibility: dict[str, float] = field(default_factory=dict)
+
+@dataclass(frozen=True)
+class StockMarketConfigDTO:
+    """Configuration DTO for the Stock Market."""
+    trading_fee_pennies: int = ...
+    circuit_breaker_threshold: float = ...
+    matching_mode: str = ...
+    book_value_multiplier: float = ...
+    price_limit_rate: float = ...
+    order_expiry_ticks: int = ...
 
 @dataclass
 class HousingTransactionContextDTO:
@@ -155,7 +193,7 @@ class MatchingResultDTO:
 
 class IMatchingEngine(Protocol):
     """Protocol for stateless market matching engines."""
-    def match(self, state: Any, current_tick: int) -> MatchingResultDTO:
+    def match(self, state: Any, current_tick: int, config: MarketConfigDTO | None = None) -> MatchingResultDTO:
         """Executes matching logic on the provided state snapshot."""
 
 class ISpecializedTransactionHandler(Protocol):

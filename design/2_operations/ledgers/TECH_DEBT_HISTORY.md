@@ -276,3 +276,53 @@ This document archives resolved technical debt items to keep the primary ledger 
 - **Title**: Government Budget Guardrails (Binary Gates)
 - **Status**: **Resolved** (Phase 23)
 - **Solution**: Implement `PartialExecutionResultDTO` and `SolvencyException` with proactive balance checks via `SettlementSystem`.
+
+---
+
+### ID: TD-ARCH-GOV-MISMATCH / TD-ARCH-GOV-DYNAMIC
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Synchronized `WorldState` to support `_governments` list and implemented a `@property government` facade for singleton access. Eliminated fragile dynamic injection.
+
+### ID: TD-INT-BANK-ROLLBACK
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Decoupled rollback logic from the `Bank` domain model. Moved to `TransactionProcessor` utilizing strict `ITransactionHandler.rollback` protocols.
+
+### ID: TD-SYS-ACCOUNTING-GAP
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Updated `CommerceSystem` and `AccountingSystem` to ensure reciprocal expense logging for B2B transactions, achieving double-entry alignment.
+
+### ID: TD-LABOR-METADATA
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Refactored `LaborMarket` and `CanonicalOrderDTO` to pass `major` as a first-class `IndustryDomain` enum rather than loose metadata dictionary entries.
+
+### ID: TD-SYS-ANALYTICS-DIRECT
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Enforcement of statelessness in `AnalyticsSystem`. All analytics pipelines now ingest `HouseholdSnapshotDTO` or `AgentStateDTO` instead of direct model access.
+
+### ID: TD-ARCH-ESTATE-REGISTRY
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Formalized `EstateRegistry` for post-mortem financial finalization. Removed "Resurrection Hack" from `SettlementSystem` in favor of claim interception.
+
+### ID: TD-SPEC-DTO-INT-MIGRATION
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Hardened `SettlementResultDTO` and related telemetry DTOs to strictly use `int` (Pennies), eliminating float precision drift in reporting.
+
+### ID: TD-ARCH-GOD-CMD-DIVERGENCE
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Synchronized naming from `god_command_queue` to `god_commands` (List) across `WorldState` and `SimulationState` for parity.
+
+### ID: TD-LIFECYCLE-CONFIG-PARITY
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Implemented `BirthConfigDTO` and `DeathConfigDTO`, decoupling lifecycle subsystems from the raw global configuration module.
+
+### ID: TD-MARKET-LEGACY-CONFIG
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Implemented `LaborMarketConfigDTO` and `StockMarketConfigDTO` ensuring strict DTO injection for all core markets.
+
+### ID: TD-CRIT-FLOAT-CORE
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Forced quantization in `MAManager` via `round_to_pennies()` before initiating mergers, preventing float-to-penny conversion crashes.
+
+### ID: TD-ECON-M2-INV
+- **Status**: **Resolved** (Phase 34 - Mass Liquidation)
+- **Solution**: Updated `calculate_total_money` logic to strictly separate liquidity sums from liability nets, preventing negative M2 inversion paradoxes.

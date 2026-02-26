@@ -25,8 +25,7 @@ from simulation.loan_market import LoanMarket as LoanMarket
 from simulation.models import Order as Order, Skill as Skill, Talent as Talent
 from simulation.portfolio import Portfolio as Portfolio
 from simulation.systems.api import ILearningAgent as ILearningAgent, LearningUpdateContext as LearningUpdateContext, LifecycleContext as LifecycleContext, MarketInteractionContext as MarketInteractionContext
-from typing import Any
-from typing_extensions import override
+from typing import Any, override
 
 logger: Incomplete
 

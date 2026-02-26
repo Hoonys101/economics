@@ -235,3 +235,18 @@ class ITransactionHandler(ABC, metaclass=abc.ABCMeta):
                   indicates a failure at some point, and the system should consider
                   the transaction aborted.
         '''
+    @abstractmethod
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses the effects of a previously executed transaction.
+
+        This method should be idempotent and handle cases where the transaction
+        partially failed or was fully successful but needs reversal.
+
+        Args:
+            tx: The Transaction object to be rolled back.
+            context: An immutable context object providing access to simulation state.
+
+        Returns:
+            bool: True if the rollback was successful, False otherwise.
+        """
