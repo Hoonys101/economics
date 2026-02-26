@@ -18,21 +18,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-FIX-LIFECYCLE-MOCKS": {
-      "key": "WO-FIX-LIFECYCLE-MOCKS",
-      "title": "Emergency: Lifecycle Mock Hardening",
-      "type": "jules",
-      "instruction_raw": "",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_FIX_LIFECYCLE_MOCKS_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-FIX-COCKPIT-TESTS": {
       "key": "WO-FIX-COCKPIT-TESTS",
       "title": "Emergency: Cockpit API Test Sync",
