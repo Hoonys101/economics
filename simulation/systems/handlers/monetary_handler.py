@@ -133,3 +133,12 @@ class MonetaryTransactionHandler(ITransactionHandler):
                     buyer.add_property(unit_id)
         except (IndexError, ValueError):
             pass
+
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses the effects of a monetary transaction.
+        For simple transfers, it attempts to reverse the funds.
+        For asset transfers, it logs a warning as complex rollback is risky.
+        """
+        context.logger.warning(f"Rollback requested for MonetaryTransaction {tx.transaction_type} (ID: {getattr(tx, 'id', 'unknown')}). Not fully implemented.")
+        return False

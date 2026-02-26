@@ -86,3 +86,12 @@ class AssetTransferHandler(ITransactionHandler):
                 context.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
             else:
                 context.stock_market.update_shareholder(seller.id, firm_id, 0.0)
+
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses the asset transfer.
+        Ideally should reverse both money and asset ownership.
+        Currently not implemented for complex asset transfers.
+        """
+        context.logger.warning(f"Rollback requested for AssetTransferHandler (ID: {getattr(tx, 'id', 'unknown')}). Not supported.")
+        return False

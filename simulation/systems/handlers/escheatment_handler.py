@@ -65,3 +65,18 @@ class EscheatmentHandler(ITransactionHandler):
             ))
 
         return success
+
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses an escheatment transaction.
+        Transfers funds back from Government to the original owner.
+        """
+        if context.government:
+            amount = tx.total_pennies
+            # Reverse: Government pays Agent
+            # But Agent might be dead/inactive. EstateRegistry handles this.
+            # We need to find the agent again.
+            agent = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
+            if agent:
+                 return context.settlement_system.transfer(context.government, agent, amount, f"rollback_escheatment:{tx.id}") is not None
+        return False
