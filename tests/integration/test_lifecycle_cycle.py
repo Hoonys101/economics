@@ -20,7 +20,7 @@ class TestLifecycleCycle:
         state.transactions = []
         state.inter_tick_queue = []
         state.system_commands = []
-        state.god_command_queue = deque()
+        state.god_commands = []
         state.command_queue = MagicMock()
         state.command_queue.empty.return_value = True
 
@@ -105,7 +105,7 @@ class TestLifecycleCycle:
     @pytest.fixture
     def orchestrator(self, mock_world_state):
         processor = MagicMock()
-        return TickOrchestrator(mock_world_state, processor)
+        return TickOrchestrator(mock_world_state, processor, MagicMock(), MagicMock())
 
     def test_lifecycle_transactions_processed_in_next_tick_strong_verify(self, orchestrator, mock_world_state):
         # Capture processed transactions
