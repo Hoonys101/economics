@@ -106,7 +106,7 @@ class EstateRegistry:
                     )
                     if tx:
                         transactions.append(tx)
-                    distributed = True
+                        distributed = True
                 else:
                     logger.warning(f"ESTATE_DISTRIBUTE: Heir {heir_id} not found/active.")
 

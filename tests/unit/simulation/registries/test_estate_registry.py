@@ -24,6 +24,9 @@ class TestEstateRegistry:
         heir_agent.id = 777
         mock_settlement_system.agent_registry.get_agent.side_effect = lambda uid: heir_agent if uid == 777 else None
 
+        # Mock Transfer Success
+        mock_settlement_system.transfer.return_value = MagicMock() # Successful transfer returns a TX
+
         # Execute Distribution with TICK
         current_tick = 123
         registry.process_estate_distribution(dead_agent, mock_settlement_system, tick=current_tick)
@@ -52,6 +55,9 @@ class TestEstateRegistry:
         gov_agent = MagicMock(spec=IFinancialAgent)
         gov_agent.id = ID_PUBLIC_MANAGER
         mock_settlement_system.agent_registry.get_agent.side_effect = lambda uid: gov_agent if uid == ID_PUBLIC_MANAGER else None
+
+        # Mock Transfer Success
+        mock_settlement_system.transfer.return_value = MagicMock()
 
         # Execute Distribution with TICK
         current_tick = 456
@@ -86,6 +92,7 @@ class TestEstateRegistry:
             return None
 
         mock_settlement_system.agent_registry.get_agent.side_effect = get_agent_side_effect
+        mock_settlement_system.transfer.return_value = MagicMock()
 
         registry.process_estate_distribution(dead_agent, mock_settlement_system, tick=789)
 
@@ -93,3 +100,50 @@ class TestEstateRegistry:
         args, kwargs = mock_settlement_system.transfer.call_args
         assert kwargs['credit_agent'] == gov_agent
         assert kwargs['tick'] == 789
+
+    def test_wealth_orphanage_fix_heir_transfer_fail_triggers_escheatment(self):
+        registry = EstateRegistry()
+        mock_settlement_system = MagicMock()
+
+        # Setup Dead Agent with Balance and Heir
+        dead_agent = MagicMock(spec=IFinancialEntity)
+        dead_agent.id = 666
+        type(dead_agent).balance_pennies = PropertyMock(return_value=500)
+        dead_agent.children_ids = [777]
+        registry.add_to_estate(dead_agent)
+
+        # Setup Heir
+        heir_agent = MagicMock(spec=IFinancialAgent)
+        heir_agent.id = 777
+
+        # Setup Gov
+        gov_agent = MagicMock(spec=IFinancialAgent)
+        gov_agent.id = ID_PUBLIC_MANAGER
+
+        mock_settlement_system.agent_registry.get_agent.side_effect = lambda uid: heir_agent if uid == 777 else (gov_agent if uid == ID_PUBLIC_MANAGER else None)
+
+        # Mock Heir Transfer FAILURE (returns None)
+        # Mock Gov Transfer SUCCESS (returns Mock)
+        def transfer_side_effect(**kwargs):
+            if kwargs['credit_agent'] == heir_agent:
+                return None
+            if kwargs['credit_agent'] == gov_agent:
+                return MagicMock()
+            return None
+
+        mock_settlement_system.transfer.side_effect = transfer_side_effect
+
+        # Execute
+        registry.process_estate_distribution(dead_agent, mock_settlement_system, tick=111)
+
+        # Verify calls
+        assert mock_settlement_system.transfer.call_count == 2
+
+        # First call: Attempt to Heir
+        call1 = mock_settlement_system.transfer.call_args_list[0]
+        assert call1[1]['credit_agent'] == heir_agent
+
+        # Second call: Fallback to Gov (Escheatment) because first failed
+        call2 = mock_settlement_system.transfer.call_args_list[1]
+        assert call2[1]['credit_agent'] == gov_agent
+        assert call2[1]['memo'] == "escheatment"

@@ -28,7 +28,7 @@ class TestSettlementSystemAtomic:
 
         return system, mock_agent_registry, mock_estate_registry, mock_logger
 
-    def test_transaction_to_dead_agent_triggers_post_distribution(self, setup_system):
+    def test_transaction_to_dead_agent_triggers_post_distribution_and_buffers_tx(self, setup_system):
         system, mock_agent_registry, mock_estate_registry, mock_logger = setup_system
 
         # Setup Agents
@@ -103,3 +103,13 @@ class TestSettlementSystemAtomic:
 
         # 4. Verify Ghost Transaction Logging (Interim Fix)
         mock_logger.info.assert_any_call("ESTATE_DISTRIBUTION_EFFECT: Generated 1 side-effect transactions.")
+
+        # 5. Verify Internal Queue Buffering
+        assert len(system._internal_tx_queue) == 1
+        assert system._internal_tx_queue[0] == ghost_tx
+
+        # 6. Verify Drain Method
+        drained = system.drain_internal_transactions()
+        assert len(drained) == 1
+        assert drained[0] == ghost_tx
+        assert len(system._internal_tx_queue) == 0 # Cleared

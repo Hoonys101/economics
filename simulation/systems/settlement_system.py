@@ -62,6 +62,10 @@ class SettlementSystem(IMonetaryAuthority):
         # TD-INT-STRESS-SCALE: Account Registry for Bank Run Simulation
         self.account_registry = account_registry or AccountRegistry()
 
+        # Internal buffer for side-effect transactions (e.g., Estate Distribution)
+        # Addressed by TD-ARCH-GHOST-TRANSACTIONS
+        self._internal_tx_queue: List[Transaction] = []
+
     def set_monetary_ledger(self, ledger: IMonetaryLedger) -> None:
         self.monetary_ledger = ledger
 
@@ -75,6 +79,15 @@ class SettlementSystem(IMonetaryAuthority):
     def set_metrics_service(self, service: IEconomicMetricsService) -> None:
         """Sets the economic metrics service for recording system-wide financial events."""
         self.metrics_service = service
+
+    def drain_internal_transactions(self) -> List[Transaction]:
+        """
+        Returns and clears the internal buffer of side-effect transactions.
+        Called by the TickOrchestrator to inject these into the global transaction log.
+        """
+        drained = list(self._internal_tx_queue)
+        self._internal_tx_queue.clear()
+        return drained
 
     def _get_engine(self, context_agents: Optional[List[Any]] = None) -> LedgerEngine:
         """
@@ -657,6 +670,7 @@ class SettlementSystem(IMonetaryAuthority):
                            distribution_txs = self.estate_registry.process_estate_distribution(credit_agent, self, tick)
                            if distribution_txs:
                                self.logger.info(f"ESTATE_DISTRIBUTION_EFFECT: Generated {len(distribution_txs)} side-effect transactions.")
+                               self._internal_tx_queue.extend(distribution_txs)
 
              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
         elif result.status == 'FAILED':
