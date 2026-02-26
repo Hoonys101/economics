@@ -72,8 +72,8 @@ class TestLaborConfigMigration:
         assert labor_market is not None
         assert hasattr(labor_market, "config")
         assert labor_market.config is not None
-        assert hasattr(labor_market.config, "LABOR_MARKET")
-        assert labor_market.config.LABOR_MARKET["compatibility"]["PERFECT"] == 1.2
+        assert hasattr(labor_market.config, "compatibility")
+        assert labor_market.config.compatibility["PERFECT"] == 1.2
 
     def test_firm_config_dto_has_labor_market(self):
         """Verify that FirmConfigDTO has labor_market populated."""

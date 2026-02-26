@@ -144,12 +144,14 @@ class PlatformLockManager(ILockManager):
 
     def _acquire_windows(self) -> None:
         if not msvcrt:
-             self.logger.warning("msvcrt module not found on Windows. Locking disabled.")
-             return
+             # Robustness Fix: Fail loudly if locking primitives are missing
+             raise LockAcquisitionError("msvcrt module not found on Windows. Locking unavailable.")
 
         try:
             # LK_NBLCK: Non-blocking lock
             # Lock 1 byte at the beginning of the file
+            # Robustness Fix: Seek to 0 to ensure consistent locking region regardless of file mode (a+)
+            self._lock_file.seek(0)
             fd = self._lock_file.fileno()
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
         except IOError:
@@ -158,8 +160,8 @@ class PlatformLockManager(ILockManager):
 
     def _acquire_unix(self) -> None:
         if not fcntl:
-             self.logger.warning("fcntl module not found on Unix. Locking disabled.")
-             return
+             # Robustness Fix: Fail loudly if locking primitives are missing
+             raise LockAcquisitionError("fcntl module not found on Unix. Locking unavailable.")
 
         try:
             # LOCK_EX: Exclusive
