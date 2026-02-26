@@ -1,8 +1,6 @@
 from modules.finance.shareholder_registry import ShareholderRegistry
 from simulation.markets.stock_market import StockMarket
-
-class MockConfig:
-    STOCK_BOOK_VALUE_MULTIPLIER = 1.0
+from modules.market.api import StockMarketConfigDTO
 
 def test_registry_basic_operations():
     registry = ShareholderRegistry()
@@ -36,7 +34,7 @@ def test_registry_basic_operations():
 
 def test_stock_market_integration():
     registry = ShareholderRegistry()
-    market = StockMarket(config_module=MockConfig(), shareholder_registry=registry)
+    market = StockMarket(config_dto=StockMarketConfigDTO(book_value_multiplier=1.0), shareholder_registry=registry)
 
     # Initial state
     market.update_shareholder(agent_id=201, firm_id=2, quantity=500.0)

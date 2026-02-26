@@ -16,21 +16,21 @@ def goods_market_instance():
     mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
     mock_breaker.check_market_health.return_value = True
     mock_breaker.is_active.return_value = False
-    return OrderBookMarket(market_id='goods_market', index_circuit_breaker=mock_breaker)
+    return OrderBookMarket(market_id='goods_market', circuit_breaker=mock_breaker)
 
 @pytest.fixture
 def labor_market_instance(mock_logger):
     mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
     mock_breaker.check_market_health.return_value = True
     mock_breaker.is_active.return_value = False
-    return OrderBookMarket(market_id='labor_market', logger=mock_logger, index_circuit_breaker=mock_breaker)
+    return OrderBookMarket(market_id='labor_market', logger=mock_logger, circuit_breaker=mock_breaker)
 
 @pytest.fixture
 def order_book_market_instance():
     mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
     mock_breaker.check_market_health.return_value = True
     mock_breaker.is_active.return_value = False
-    return OrderBookMarket(market_id='test_market', index_circuit_breaker=mock_breaker)
+    return OrderBookMarket(market_id='test_market', circuit_breaker=mock_breaker)
 
 @pytest.fixture
 def sample_buy_order():
