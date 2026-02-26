@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.systems.lifecycle.death_system import DeathSystem
+from simulation.systems.lifecycle.api import DeathConfigDTO
 from simulation.firms import Firm
 from simulation.core_agents import Household
 from modules.finance.api import ILiquidatable
@@ -8,7 +9,9 @@ from modules.finance.api import ILiquidatable
 class TestDeathSystemPerformance:
     @pytest.fixture
     def death_system(self):
-        config = MagicMock()
+        config = MagicMock(spec=DeathConfigDTO)
+        config.default_fallback_price_pennies = 1000
+
         inheritance_manager = MagicMock()
         liquidation_manager = MagicMock()
         settlement_system = MagicMock()

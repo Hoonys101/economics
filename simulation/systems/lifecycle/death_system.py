@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Any, Optional
 import logging
-from simulation.systems.lifecycle.api import IDeathSystem
+from simulation.systems.lifecycle.api import IDeathSystem, DeathConfigDTO
 from simulation.dtos.api import SimulationState
 from simulation.models import Transaction
 from simulation.systems.inheritance_manager import InheritanceManager
@@ -17,14 +17,14 @@ class DeathSystem(IDeathSystem):
     Handles agent death, liquidation of assets, and inheritance processing.
     Refactored for Protocol Purity and Integer Math.
     """
-    def __init__(self, config_module: Any,
+    def __init__(self, config: DeathConfigDTO,
                  inheritance_manager: InheritanceManager,
                  liquidation_manager: LiquidationManager,
                  settlement_system: ISettlementSystem,
                  public_manager: IAssetRecoverySystem,
                  logger: logging.Logger,
                  estate_registry: Optional[IEstateRegistry] = None):
-        self.config = config_module
+        self.config = config
         self.inheritance_manager = inheritance_manager
         self.liquidation_manager = liquidation_manager
         self.settlement_system = settlement_system
@@ -237,8 +237,7 @@ class DeathSystem(IDeathSystem):
         # Prepare Market Prices
         market_prices = {}
         # Simple Logic: Get price from market or default
-        default_price_float = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
-        default_price_pennies = int(default_price_float * 100)
+        default_price_pennies = self.config.default_fallback_price_pennies
 
         for item_id in inventory.keys():
              price_pennies = default_price_pennies
@@ -311,8 +310,7 @@ class DeathSystem(IDeathSystem):
         Calculates total inventory value in integer pennies.
         """
         total_pennies = 0
-        default_price_float = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
-        default_price_pennies = int(default_price_float * 100)
+        default_price_pennies = self.config.default_fallback_price_pennies
 
         for item_id, qty in inventory.items():
             price_pennies = default_price_pennies

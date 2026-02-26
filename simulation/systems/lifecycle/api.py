@@ -42,6 +42,8 @@ class BirthConfigDTO:
     reproduction_rate: float
     immigration_rate: float
     max_population_cap: int
+    reproduction_age_start: int
+    reproduction_age_end: int
 
     @classmethod
     def from_config_module(cls, config_module: Any) -> "BirthConfigDTO":
@@ -49,7 +51,9 @@ class BirthConfigDTO:
             initial_household_assets_pennies=int(getattr(config_module, "INITIAL_HOUSEHOLD_ASSETS", 100000) * 100),
             reproduction_rate=float(getattr(config_module, "REPRODUCTION_RATE", 0.01)),
             immigration_rate=float(getattr(config_module, "IMMIGRATION_RATE", 0.005)),
-            max_population_cap=int(getattr(config_module, "MAX_POPULATION_CAP", 5000))
+            max_population_cap=int(getattr(config_module, "MAX_POPULATION_CAP", 5000)),
+            reproduction_age_start=int(getattr(config_module, "REPRODUCTION_AGE_START", 20)),
+            reproduction_age_end=int(getattr(config_module, "REPRODUCTION_AGE_END", 45))
         )
 
 @dataclass(frozen=True)
@@ -58,13 +62,16 @@ class DeathConfigDTO:
     death_tax_rate: float
     min_inheritance_pennies: int
     liquidation_fee_pennies: int
+    default_fallback_price_pennies: int
 
     @classmethod
     def from_config_module(cls, config_module: Any) -> "DeathConfigDTO":
+        default_price_float = getattr(config_module, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
         return cls(
             death_tax_rate=float(getattr(config_module, "DEATH_TAX_RATE", 0.1)),
             min_inheritance_pennies=int(getattr(config_module, "MIN_INHERITANCE", 1000) * 100),
-            liquidation_fee_pennies=int(getattr(config_module, "LIQUIDATION_FEE", 500) * 100)
+            liquidation_fee_pennies=int(getattr(config_module, "LIQUIDATION_FEE", 500) * 100),
+            default_fallback_price_pennies=int(default_price_float * 100)
         )
 
 @runtime_checkable

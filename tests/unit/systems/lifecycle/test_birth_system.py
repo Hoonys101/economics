@@ -1,16 +1,23 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.systems.lifecycle.birth_system import BirthSystem
+from simulation.systems.lifecycle.api import BirthConfigDTO
 from simulation.dtos.api import SimulationState
 from simulation.core_agents import Household
 from modules.system.api import ICurrencyHolder, DEFAULT_CURRENCY
+from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 
 class TestBirthSystem:
     @pytest.fixture
     def birth_system(self):
-        config = MagicMock()
-        config.REPRODUCTION_AGE_START = 20
-        config.REPRODUCTION_AGE_END = 40
+        # Config DTO Mock
+        config = MagicMock(spec=BirthConfigDTO)
+        config.reproduction_age_start = 20
+        config.reproduction_age_end = 40
+
+        # Planner Mock
+        breeding_planner = MagicMock(spec=VectorizedHouseholdPlanner)
+
         demographic_manager = MagicMock()
         immigration_manager = MagicMock()
         firm_system = MagicMock()
@@ -20,8 +27,16 @@ class TestBirthSystem:
 
         immigration_manager.process_immigration.return_value = []
 
-        system = BirthSystem(config, demographic_manager, immigration_manager, firm_system, settlement_system, logger, household_factory)
-        system.breeding_planner = MagicMock()
+        system = BirthSystem(
+            config,
+            breeding_planner,
+            demographic_manager,
+            immigration_manager,
+            firm_system,
+            settlement_system,
+            logger,
+            household_factory
+        )
         return system
 
     def test_process_births_with_factory_zero_sum(self, birth_system):
