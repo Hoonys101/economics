@@ -1,6 +1,5 @@
 import logging
 from _typeshed import Incomplete
-from collections import deque
 from modules.analysis.crisis_monitor import CrisisMonitor as CrisisMonitor
 from modules.common.config_manager.api import ConfigManager as ConfigManager
 from modules.finance.api import ISettlementSystem as ISettlementSystem, IShareholderRegistry as IShareholderRegistry
@@ -68,7 +67,6 @@ class WorldState:
     next_agent_id: int
     markets: dict[str, Market]
     bank: Bank | None
-    government: Government | None
     central_bank: CentralBank | None
     stock_market: StockMarket | None
     tracker: EconomicIndicatorTracker | None
@@ -98,7 +96,7 @@ class WorldState:
     effects_queue: list[dict[str, Any]]
     inactive_agents: dict[int, Any]
     system_commands: list[SystemCommand]
-    god_command_queue: deque[GodCommandDTO]
+    god_commands: list[GodCommandDTO]
     command_queue: CommandQueue | None
     telemetry_exchange: TelemetryExchange | None
     dashboard_service: DashboardService | None
@@ -137,6 +135,11 @@ class WorldState:
     tick_withdrawal_pennies: int
     market_panic_index: float
     def __init__(self, config_manager: ConfigManager, config_module: Any, logger: logging.Logger, repository: SimulationRepository) -> None: ...
+    @property
+    def government(self) -> Government | None:
+        """Facade to provide the primary government instance (TD-ARCH-GOV-MISMATCH)."""
+    @government.setter
+    def government(self, value: Government) -> None: ...
     def record_withdrawal(self, amount_pennies: int) -> None:
         """Records a withdrawal event for panic index calculation."""
     def calculate_base_money(self) -> dict[CurrencyCode, int]:

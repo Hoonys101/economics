@@ -1,0 +1,6 @@
+from _internal.scripts.core.context_injector.api import ContextNodeDTO as ContextNodeDTO, FormattedContextNodeDTO, IContextFormatter
+from pathlib import Path
+
+class ContextFormatter(IContextFormatter):
+    def format_node(self, node: ContextNodeDTO, raw_content: str) -> FormattedContextNodeDTO: ...
+    def build_context_block(self, nodes: list[ContextNodeDTO], base_dir: Path) -> str: ...

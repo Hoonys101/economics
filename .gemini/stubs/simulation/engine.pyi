@@ -4,6 +4,7 @@ from modules.common.config_manager.api import ConfigManager as ConfigManager
 from modules.finance.api import ISettlementSystem as ISettlementSystem
 from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
 from modules.system.api import IAgentRegistry as IAgentRegistry, IGlobalRegistry as IGlobalRegistry
+from modules.system.command_pipeline.api import ICommandIngressService as ICommandIngressService
 from modules.system.services.command_service import CommandService as CommandService
 from simulation.action_processor import ActionProcessor as ActionProcessor
 from simulation.db.logger import SimulationLogger as SimulationLogger
@@ -25,12 +26,11 @@ class Simulation:
     agent_registry: Incomplete
     settlement_system: Incomplete
     command_service: Incomplete
+    command_ingress: Incomplete
     action_processor: Incomplete
     tick_orchestrator: Incomplete
-    is_paused: bool
-    step_requested: bool
     simulation_logger: SimulationLogger
-    def __init__(self, config_manager: ConfigManager, config_module: Any, logger: logging.Logger, repository: SimulationRepository, registry: IGlobalRegistry, settlement_system: ISettlementSystem, agent_registry: IAgentRegistry, command_service: CommandService) -> None:
+    def __init__(self, config_manager: ConfigManager, config_module: Any, logger: logging.Logger, repository: SimulationRepository, registry: IGlobalRegistry, settlement_system: ISettlementSystem, agent_registry: IAgentRegistry, command_service: CommandService, command_ingress: ICommandIngressService | None = None) -> None:
         """
         초기화된 구성 요소들을 할당받습니다.
         실제 생성 로직은 SimulationInitializer에 의해 외부에서 수행됩니다.
@@ -40,6 +40,14 @@ class Simulation:
         Final initialization step for the Simulation facade.
         Ensures the database schema is up-to-date before any processing begins.
         """
+    @property
+    def is_paused(self) -> bool: ...
+    @is_paused.setter
+    def is_paused(self, value: bool) -> None: ...
+    @property
+    def step_requested(self) -> bool: ...
+    @step_requested.setter
+    def step_requested(self, value: bool) -> None: ...
     def __getattr__(self, name: str) -> Any: ...
     def __setattr__(self, name: str, value: Any) -> None: ...
     def finalize_simulation(self) -> None:
