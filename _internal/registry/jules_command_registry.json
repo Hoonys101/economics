@@ -33,21 +33,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-LIQUIDATE-ISOLATION": {
-      "key": "WO-LIQUIDATE-ISOLATION",
-      "title": "Module Implementation: System Isolation & Analytics Purity",
-      "type": "jules",
-      "instruction_raw": "Decouple rollback logic from Bank class and enforce stateless consumption in AnalyticsSystem.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_ISOLATION_LIQUIDATION_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-LIQUIDATE-MOCKS": {
       "key": "WO-LIQUIDATE-MOCKS",
       "title": "Verification: Mock & Test Alignment",
