@@ -25,11 +25,12 @@ from modules.finance.api import IShareholderRegistry
 from modules.simulation.api import IEstateRegistry
 
 # New Imports
-from simulation.systems.lifecycle.api import LifecycleConfigDTO
+from simulation.systems.lifecycle.api import LifecycleConfigDTO, BirthConfigDTO, DeathConfigDTO
 from simulation.systems.lifecycle.aging_system import AgingSystem
 from simulation.systems.lifecycle.birth_system import BirthSystem
 from simulation.systems.lifecycle.death_system import DeathSystem
 from simulation.systems.lifecycle.marriage_system import MarriageSystem
+from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 
 class AgentLifecycleManager(AgentLifecycleManagerInterface):
     """
@@ -75,8 +76,14 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         if household_factory is None:
              raise ValueError("IHouseholdFactory is mandatory for AgentLifecycleManager.")
 
+        # Create DTOs and dependencies
+        birth_config = BirthConfigDTO.from_config_module(config_module)
+        death_config = DeathConfigDTO.from_config_module(config_module)
+        breeding_planner = VectorizedHouseholdPlanner(config_module)
+
         self.birth_system = BirthSystem(
-            config_module,
+            birth_config,
+            breeding_planner,
             demographic_manager,
             ImmigrationManager(config_module=config_module, settlement_system=settlement_system),
             firm_system,
@@ -86,7 +93,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         )
 
         self.death_system = DeathSystem(
-            config_module,
+            death_config,
             inheritance_manager,
             self.liquidation_manager,
             settlement_system,

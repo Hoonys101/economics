@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Any, Optional, Tuple, cast
 import logging
-from simulation.systems.lifecycle.api import IBirthSystem
+from simulation.systems.lifecycle.api import IBirthSystem, BirthConfigDTO
 from simulation.dtos.api import SimulationState
 from simulation.models import Transaction
 from simulation.core_agents import Household
@@ -19,14 +19,16 @@ class BirthSystem(IBirthSystem):
     Immigration, and Entrepreneurship (Firm creation).
     Adheres to Sacred Sequence by returning transactions for execution.
     """
-    def __init__(self, config_module: Any,
+    def __init__(self, config: BirthConfigDTO,
+                 breeding_planner: VectorizedHouseholdPlanner,
                  demographic_manager: DemographicManager,
                  immigration_manager: ImmigrationManager,
                  firm_system: FirmSystem,
                  settlement_system: ISettlementSystem,
                  logger: logging.Logger,
                  household_factory: IHouseholdFactory): # Mandatory
-        self.config = config_module
+        self.config = config
+        self.breeding_planner = breeding_planner
         self.demographic_manager = demographic_manager
         self.immigration_manager = immigration_manager
         self.firm_system = firm_system
@@ -35,7 +37,6 @@ class BirthSystem(IBirthSystem):
         if household_factory is None:
              raise ValueError("IHouseholdFactory is mandatory for BirthSystem.")
         self.household_factory = household_factory
-        self.breeding_planner = VectorizedHouseholdPlanner(config_module)
 
     def execute(self, state: SimulationState) -> List[Transaction]:
         """
@@ -77,7 +78,7 @@ class BirthSystem(IBirthSystem):
 
         for parent_agent in birth_requests:
             # Re-verify biological capability (sanity check)
-            if not (self.config.REPRODUCTION_AGE_START <= parent_agent.age <= self.config.REPRODUCTION_AGE_END):
+            if not (self.config.reproduction_age_start <= parent_agent.age <= self.config.reproduction_age_end):
                 continue
 
             new_id = state.next_agent_id
