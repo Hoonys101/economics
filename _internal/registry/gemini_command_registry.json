@@ -2,5 +2,26 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {}
+  "missions": {
+    "WO-SPEC-SCENARIO-CORE": {
+      "key": "WO-SPEC-SCENARIO-CORE",
+      "title": "Phase 34: Scenario Framework Core API/DTO Spec",
+      "type": "gemini",
+      "instruction_raw": "Design the core API and DTOs for the Unified Scenario Framework. Follow the Architect Prime verdict: Type-safe Builder pattern, BaseJudge abstract class, and 5 categories (M/S/T/C/P). Define ScenarioOutcome DTOs and IScenarioBuilder protocols. Ensure Zero-Sum Integrity (Tier 1) is hardcoded as a mandatory check.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "simulation/scenarios/framework.py",
+        "modules/simulation/dtos/api.py",
+        "simulation/dtos/strategy.py",
+        "simulation/world_state.py"
+      ],
+      "output_path": "gemini-output/spec/MISSION_REBIRTH_SCENARIO_CORE_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    }
+  }
 }

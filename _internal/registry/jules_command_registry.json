@@ -3,13 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-LIQUIDATE-MOCKS": {
-      "key": "WO-LIQUIDATE-MOCKS",
-      "title": "Verification: Mock & Test Alignment",
+    "WO-IMPL-SCENARIO-REPORTER": {
+      "key": "WO-IMPL-SCENARIO-REPORTER",
+      "title": "Module 2: 3-Tier Reporting Engine Implementation",
       "type": "jules",
-      "instruction_raw": "Sync all test mocks with the new WorldState properties and DTO schemas.",
+      "instruction_raw": "",
       "command": "create",
-      "file_path": "gemini-output/spec/MISSION_MOCK_ALIGNMENT_SPEC.md",
+      "file_path": "gemini-output/spec/MISSION_REBIRTH_SCENARIO_REPORTER_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
@@ -18,43 +18,13 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-FIX-COCKPIT-TESTS": {
-      "key": "WO-FIX-COCKPIT-TESTS",
-      "title": "Emergency: Cockpit API Test Sync",
+    "WO-IMPL-SCENARIO-MIGRATION": {
+      "key": "WO-IMPL-SCENARIO-MIGRATION",
+      "title": "Module 3: Legacy Verifier Migration & Orchestration",
       "type": "jules",
       "instruction_raw": "",
       "command": "create",
-      "file_path": "gemini-output/spec/MISSION_FIX_COCKPIT_TESTS_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
-    "WO-FIX-MARKET-TESTS": {
-      "key": "WO-FIX-MARKET-TESTS",
-      "title": "Emergency: Market API Test Alignment",
-      "type": "jules",
-      "instruction_raw": "",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_FIX_MARKET_TESTS_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
-    "WO-REBIRTH-SCENARIO-LOADER": {
-      "key": "WO-REBIRTH-SCENARIO-LOADER",
-      "title": "Stage 3: High-Performance Scenario Loader Implementation",
-      "type": "jules",
-      "instruction_raw": "",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_REBIRTH_SCENARIO_LOADER_SPEC.md",
+      "file_path": "gemini-output/spec/MISSION_REBIRTH_SCENARIO_MIGRATION_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,

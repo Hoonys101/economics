@@ -7,6 +7,7 @@ from modules.system.api import IAgentRegistry as IAgentRegistry, IGlobalRegistry
 from modules.system.command_pipeline.api import ICommandIngressService as ICommandIngressService
 from modules.system.services.command_service import CommandService as CommandService
 from simulation.action_processor import ActionProcessor as ActionProcessor
+from simulation.db.db_manager import DBManager as DBManager
 from simulation.db.logger import SimulationLogger as SimulationLogger
 from simulation.db.repository import SimulationRepository as SimulationRepository
 from simulation.dtos import GovernmentSensoryDTO as GovernmentSensoryDTO
@@ -30,6 +31,7 @@ class Simulation:
     action_processor: Incomplete
     tick_orchestrator: Incomplete
     simulation_logger: SimulationLogger
+    db_manager: Incomplete
     def __init__(self, config_manager: ConfigManager, config_module: Any, logger: logging.Logger, repository: SimulationRepository, registry: IGlobalRegistry, settlement_system: ISettlementSystem, agent_registry: IAgentRegistry, command_service: CommandService, command_ingress: ICommandIngressService | None = None) -> None:
         """
         초기화된 구성 요소들을 할당받습니다.
