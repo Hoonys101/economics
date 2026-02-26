@@ -94,7 +94,7 @@ from modules.simulation.dtos.api import HouseholdConfigDTO
 class SimulationInitializer(SimulationInitializerInterface):
     """Simulation 인스턴스 생성 및 모든 구성 요소의 초기화를 전담합니다."""
 
-    def __init__(self, config_manager: ConfigManager, config_module: Any, goods_data: List[Dict[str, Any]], repository: SimulationRepository, logger: logging.Logger, households: List[Household], firms: List[Firm], ai_trainer: AIEngineRegistry, initial_balances: Optional[Dict[int, float]]=None):
+    def __init__(self, config_manager: ConfigManager, config_module: Any, goods_data: List[Dict[str, Any]], repository: SimulationRepository, logger: logging.Logger, households: List[Household], firms: List[Firm], ai_trainer: AIEngineRegistry, initial_balances: Optional[Dict[int, float]]=None, strategy: Optional[Any]=None):
         self.config_manager = config_manager
         self.config = config_module
         self.goods_data = goods_data
@@ -104,6 +104,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         self.firms = firms
         self.ai_trainer = ai_trainer
         self.initial_balances = initial_balances or {}
+        self.strategy = strategy
 
     def build_simulation(self) -> Simulation:
         """
@@ -184,31 +185,36 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
 
         from simulation.dtos.strategy import ScenarioStrategy
-        active_scenario_name = self.config_manager.get('simulation.active_scenario')
-        strategy = ScenarioStrategy()
-        if active_scenario_name:
-            scenario_path = f'config/scenarios/{active_scenario_name}.json'
-            if os.path.exists(scenario_path):
-                try:
-                    with open(scenario_path, 'r') as f:
-                        scenario_data = json.load(f)
-                    params = scenario_data.get('parameters', {})
 
-                    def resolve(keys, default=None):
-                        for k in keys:
-                            if k in params and params[k] is not None:
-                                return params[k]
-                        return default
-                    strategy = ScenarioStrategy(name=active_scenario_name, is_active=scenario_data.get('is_active', False), start_tick=scenario_data.get('start_tick', 50), scenario_name=scenario_data.get('scenario_name', active_scenario_name), inflation_expectation_multiplier=resolve(['inflation_expectation_multiplier'], 1.0), hoarding_propensity_factor=resolve(['hoarding_propensity_factor'], 0.0), demand_shock_cash_injection=resolve(['demand_shock_cash_injection'], 0.0), panic_selling_enabled=resolve(['panic_selling_enabled'], False), debt_aversion_multiplier=resolve(['debt_aversion_multiplier'], 1.0), consumption_pessimism_factor=resolve(['consumption_pessimism_factor'], 0.0), asset_shock_reduction=resolve(['asset_shock_reduction'], 0.0), exogenous_productivity_shock=resolve(['exogenous_productivity_shock'], {}), monetary_shock_target_rate=resolve(['monetary_shock_target_rate', 'MONETARY_SHOCK_TARGET_RATE']), fiscal_shock_tax_rate=resolve(['fiscal_shock_tax_rate', 'FISCAL_SHOCK_TAX_RATE']), base_interest_rate_multiplier=resolve(['base_interest_rate_multiplier']), corporate_tax_rate_delta=resolve(['corporate_tax_rate_delta']), demand_shock_multiplier=resolve(['demand_shock_multiplier']), tfp_multiplier=resolve(['TFP_MULTIPLIER', 'food_tfp_multiplier'], 3.0), tech_fertilizer_unlock_tick=resolve(['TECH_FERTILIZER_UNLOCK_TICK'], 50), tech_diffusion_rate=resolve(['TECH_DIFFUSION_RATE'], 0.05), food_sector_config=resolve(['FOOD_SECTOR_CONFIG'], {}), market_config=resolve(['MARKET_CONFIG'], {}), deflationary_pressure_multiplier=resolve(['DEFLATIONARY_PRESSURE_MULTIPLIER'], 1.0), limits=resolve(['LIMITS'], {}), firm_decision_engine=resolve(['FIRM_DECISION_ENGINE']), household_decision_engine=resolve(['HOUSEHOLD_DECISION_ENGINE']), initial_base_interest_rate=resolve(['base_interest_rate', 'INITIAL_BASE_ANNUAL_RATE']), initial_corporate_tax_rate=resolve(['tax_rate_corporate', 'CORPORATE_TAX_RATE']), initial_income_tax_rate=resolve(['tax_rate_income', 'INCOME_TAX_RATE']), newborn_engine_type=resolve(['newborn_engine_type', 'NEWBORN_ENGINE_TYPE']), firm_decision_mode=resolve(['firm_decision_mode']), innovation_weight=resolve(['innovation_weight']), parameters=params)
-                    self.logger.info(f'Loaded Scenario Strategy: {strategy.name} (Active: {strategy.is_active})')
-                    if strategy.initial_corporate_tax_rate:
-                        self.logger.debug(f'Initial Corporate Tax Rate set to {strategy.initial_corporate_tax_rate} via strategy.')
-                    if strategy.tfp_multiplier:
-                        self.logger.debug(f'TFP Multiplier set to {strategy.tfp_multiplier} via strategy.')
-                except Exception as e:
-                    self.logger.error(f"Failed to load scenario file '{scenario_path}': {e}")
-            else:
-                self.logger.warning(f"Active scenario '{active_scenario_name}' requested but {scenario_path} not found.")
+        # Use injected strategy if available, otherwise load from config
+        if self.strategy:
+            strategy = self.strategy
+        else:
+            active_scenario_name = self.config_manager.get('simulation.active_scenario')
+            strategy = ScenarioStrategy()
+            if active_scenario_name:
+                scenario_path = f'config/scenarios/{active_scenario_name}.json'
+                if os.path.exists(scenario_path):
+                    try:
+                        with open(scenario_path, 'r') as f:
+                            scenario_data = json.load(f)
+                        params = scenario_data.get('parameters', {})
+
+                        def resolve(keys, default=None):
+                            for k in keys:
+                                if k in params and params[k] is not None:
+                                    return params[k]
+                            return default
+                        strategy = ScenarioStrategy(name=active_scenario_name, is_active=scenario_data.get('is_active', False), start_tick=scenario_data.get('start_tick', 50), scenario_name=scenario_data.get('scenario_name', active_scenario_name), inflation_expectation_multiplier=resolve(['inflation_expectation_multiplier'], 1.0), hoarding_propensity_factor=resolve(['hoarding_propensity_factor'], 0.0), demand_shock_cash_injection=resolve(['demand_shock_cash_injection'], 0.0), panic_selling_enabled=resolve(['panic_selling_enabled'], False), debt_aversion_multiplier=resolve(['debt_aversion_multiplier'], 1.0), consumption_pessimism_factor=resolve(['consumption_pessimism_factor'], 0.0), asset_shock_reduction=resolve(['asset_shock_reduction'], 0.0), exogenous_productivity_shock=resolve(['exogenous_productivity_shock'], {}), monetary_shock_target_rate=resolve(['monetary_shock_target_rate', 'MONETARY_SHOCK_TARGET_RATE']), fiscal_shock_tax_rate=resolve(['fiscal_shock_tax_rate', 'FISCAL_SHOCK_TAX_RATE']), base_interest_rate_multiplier=resolve(['base_interest_rate_multiplier']), corporate_tax_rate_delta=resolve(['corporate_tax_rate_delta']), demand_shock_multiplier=resolve(['demand_shock_multiplier']), tfp_multiplier=resolve(['TFP_MULTIPLIER', 'food_tfp_multiplier'], 3.0), tech_fertilizer_unlock_tick=resolve(['TECH_FERTILIZER_UNLOCK_TICK'], 50), tech_diffusion_rate=resolve(['TECH_DIFFUSION_RATE'], 0.05), food_sector_config=resolve(['FOOD_SECTOR_CONFIG'], {}), market_config=resolve(['MARKET_CONFIG'], {}), deflationary_pressure_multiplier=resolve(['DEFLATIONARY_PRESSURE_MULTIPLIER'], 1.0), limits=resolve(['LIMITS'], {}), firm_decision_engine=resolve(['FIRM_DECISION_ENGINE']), household_decision_engine=resolve(['HOUSEHOLD_DECISION_ENGINE']), initial_base_interest_rate=resolve(['base_interest_rate', 'INITIAL_BASE_ANNUAL_RATE']), initial_corporate_tax_rate=resolve(['tax_rate_corporate', 'CORPORATE_TAX_RATE']), initial_income_tax_rate=resolve(['tax_rate_income', 'INCOME_TAX_RATE']), newborn_engine_type=resolve(['newborn_engine_type', 'NEWBORN_ENGINE_TYPE']), firm_decision_mode=resolve(['firm_decision_mode']), innovation_weight=resolve(['innovation_weight']), parameters=params)
+                        self.logger.info(f'Loaded Scenario Strategy: {strategy.name} (Active: {strategy.is_active})')
+                        if strategy.initial_corporate_tax_rate:
+                            self.logger.debug(f'Initial Corporate Tax Rate set to {strategy.initial_corporate_tax_rate} via strategy.')
+                        if strategy.tfp_multiplier:
+                            self.logger.debug(f'TFP Multiplier set to {strategy.tfp_multiplier} via strategy.')
+                    except Exception as e:
+                            self.logger.error(f"Failed to load scenario file '{scenario_path}': {e}")
+                else:
+                    self.logger.warning(f"Active scenario '{active_scenario_name}' requested but {scenario_path} not found.")
 
         sim.strategy = strategy
         sim.stress_scenario_config = strategy

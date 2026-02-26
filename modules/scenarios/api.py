@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import List, Dict, Any, Protocol, runtime_checkable
+from pathlib import Path
 
 # Note: Using localized import to avoid circular dependencies in the future
 # if world_state starts depending on this api.
@@ -89,4 +90,27 @@ class IScenarioBuilder(Protocol):
         ...
 
     def build(self) -> IScenario:
+        ...
+
+@runtime_checkable
+class IScenarioLoader(Protocol):
+    """
+    Protocol for loading Scenario Strategies from external sources (e.g., JSON).
+    Strictly separates I/O from execution and logic.
+    """
+    def load_strategy(self, source_id: str, raw_data: Dict[str, Any]) -> ScenarioStrategy:
+        """Parses raw dictionary data into a valid frozen ScenarioStrategy."""
+        ...
+
+    def load_from_file(self, filepath: Path) -> ScenarioStrategy:
+        """Loads and parses a scenario configuration from a JSON file."""
+        ...
+
+@runtime_checkable
+class IJudgeFactory(Protocol):
+    """
+    Protocol for resolving and instantiating IScenarioJudge implementations
+    based on ScenarioStrategy parameters, preventing hardcoded imports and God classes.
+    """
+    def create_judges(self, strategy: ScenarioStrategy) -> List[IScenarioJudge]:
         ...

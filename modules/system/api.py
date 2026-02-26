@@ -52,6 +52,34 @@ class IWorldState(IWorldStateMetricsProvider, Protocol):
         """Returns the list of all active government entities."""
         ...
 
+    # --- NEW: Read-Only System Expositions for Scenario Judges ---
+
+    def get_technology_system(self) -> Any:
+        """
+        Provides read-only access to the technology diffusion state.
+        Replaces direct `sim.technology_manager` access in legacy verifiers.
+        """
+        ...
+
+    def get_monetary_ledger(self) -> Any:
+        """
+        Provides read-only access to the SSoT for money supply (M2) and debt.
+        Replaces direct `sim._calculate_total_money()` access.
+        """
+        ...
+
+    def get_all_firms(self) -> Sequence[Any]:
+        """
+        Returns a sequence of all firm agents adhering to IFirm protocol.
+        """
+        ...
+
+    def get_all_households(self) -> Sequence[Any]:
+        """
+        Returns a sequence of all household agents adhering to IHousehold protocol.
+        """
+        ...
+
 @runtime_checkable
 class IGovernmentRegistry(Protocol):
     """Module B: Protocol for specialized government lifecycle management."""

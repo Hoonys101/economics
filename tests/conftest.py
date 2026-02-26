@@ -3,7 +3,8 @@ from unittest.mock import Mock, MagicMock, patch
 import pytest
 
 # Mock missing dependencies for CI/Sandbox environments
-for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit", "pydantic", "fastapi", "fastapi.testclient", "uvicorn", "httpx", "starlette", "starlette.websockets", "starlette.status"]:
+# Removed "numpy" from mock list to fix TypeError in VectorizedHouseholdPlanner
+for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit", "pydantic", "fastapi", "fastapi.testclient", "uvicorn", "httpx", "starlette", "starlette.websockets", "starlette.status"]:
     if module_name in sys.modules:
         continue
     try:
@@ -14,19 +15,6 @@ for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model"
         # supporting submodule imports like 'websockets.asyncio'.
         mock.__path__ = []  # Ensure it is treated as a package
         mock.__spec__ = None # Ensure it satisfies import system expectations
-
-        if module_name == "numpy":
-            mock.bool_ = bool
-            mock.float64 = float
-            mock.max.return_value = 0
-
-            def _mock_array_factory(*args, **kwargs):
-                m = MagicMock()
-                m.shape = (0,)
-                return m
-
-            mock.zeros.side_effect = _mock_array_factory
-            mock.array.side_effect = _mock_array_factory
 
         if module_name == "yaml":
             mock.safe_load.return_value = {}

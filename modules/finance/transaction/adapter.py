@@ -2,6 +2,9 @@ from typing import Any, cast, Dict, Optional
 from modules.finance.transaction.api import IAccountAccessor, InvalidAccountError, ITransactionParticipant, ITransactionValidator
 from modules.finance.api import IFinancialAgent, IFinancialEntity
 from modules.system.api import IAgentRegistry, CurrencyCode, DEFAULT_CURRENCY, ISystemFinancialAgent
+import logging
+
+logger = logging.getLogger(__name__)
 
 class FinancialEntityAdapter:
     """
@@ -14,6 +17,7 @@ class FinancialEntityAdapter:
         self.entity.deposit(amount, currency)
 
     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "") -> None:
+        logger.info(f"ADAPTER_DEBUG | Entity {self.entity.id} Withdraw {amount}")
         self.entity.withdraw(amount, currency)
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
@@ -38,6 +42,7 @@ class FinancialAgentAdapter:
         self.agent._deposit(amount, currency)
 
     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "") -> None:
+        logger.info(f"ADAPTER_DEBUG | Agent {self.agent.id} Withdraw {amount}")
         self.agent._withdraw(amount, currency)
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:

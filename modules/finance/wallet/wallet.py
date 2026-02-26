@@ -6,6 +6,9 @@ from .api import IWallet, WalletOpLogDTO, CurrencyCode, DEFAULT_CURRENCY
 from .audit import GLOBAL_WALLET_LOG
 from modules.finance.api import InsufficientFundsError
 from modules.common.financial.dtos import MoneyDTO
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Wallet(IWallet):
     """
@@ -69,6 +72,7 @@ class Wallet(IWallet):
                 )
 
         self._balances[currency] -= amount
+        logger.info(f"WALLET_DEBUG | Agent {self.owner_id} | Subtract {amount} | New Balance: {self._balances[currency]} | Memo: {memo}")
         self._log_operation(tick, currency, -amount, memo)
 
     def _log_operation(self, tick: int, currency: CurrencyCode, delta: int, memo: str):

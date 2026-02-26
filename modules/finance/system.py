@@ -397,20 +397,11 @@ class FinanceSystem(IFinanceSystem):
                 logger.warning(f"BOND_ISSUANCE_FAILED | Settlement transfer failed for amount {amount}. Buyer: {buyer_id}")
                 return [], []
 
-            # SSoT Update: Record Expansion if Buyer is System Agent (CB/Bank Reserves)
-            # Government (Seller) IS in M2 in this simulation configuration.
-            # Bank Reserves and Central Bank are OUT of M2.
-            # Money moves from Non-M2 to M2 -> Expansion.
-            # Added explicit check to prevent M2 divergence if Households/Firms buy bonds in future.
-            is_system_buyer = hasattr(buyer_agent, 'id') and buyer_agent.id in {self.bank.id, self.central_bank.id}
-
-            if self.monetary_ledger and is_system_buyer:
-                self.monetary_ledger.record_monetary_expansion(
-                    amount_pennies=amount,
-                    source=f"bond_issuance_{bond_id}",
-                    currency=DEFAULT_CURRENCY
-                )
-
+            # SSoT Update: Corrected M2 Boundary Logic (Phase 34)
+            # Government is Non-M2 (Treasury). Bank is Non-M2 (Reserves).
+            # Transfer from Bank -> Government is Non-M2 -> Non-M2 (Neutral).
+            # M2 Expansion occurs only when Government SPENDS the money (Infrastructure/Welfare).
+            # SettlementSystem handles the Non-M2 -> M2 expansion recording automatically during spending.
         else:
              logger.warning("BOND_ISSUANCE_WARNING | No SettlementSystem attached. Wallet updates skipped.")
 
