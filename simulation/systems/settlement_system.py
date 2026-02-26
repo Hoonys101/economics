@@ -609,29 +609,6 @@ class SettlementSystem(IMonetaryAuthority):
              self.logger.error("SETTLEMENT_FAIL | Null agents.")
              return None
 
-        # Check Estate Registry Interception (Post-Mortem Settlement)
-        if self.estate_registry:
-            dead_agent = self.estate_registry.get_agent(credit_agent.id)
-            if dead_agent:
-                tx = Transaction(
-                    buyer_id=debit_agent.id,
-                    seller_id=credit_agent.id,
-                    item_id="currency",
-                    quantity=1.0,
-                    price=amount / 100.0,
-                    total_pennies=amount,
-                    market_id="settlement",
-                    transaction_type="transfer",
-                    time=tick,
-                    metadata={"memo": memo},
-                    currency=currency
-                )
-                # EstateRegistry MUST implement intercept_transaction(tx, settlement_system)
-                if hasattr(self.estate_registry, 'intercept_transaction'):
-                    interception_result = self.estate_registry.intercept_transaction(tx, self)
-                    if interception_result:
-                        return interception_result
-
         # Prepare Funds
         if not self._prepare_seamless_funds(debit_agent, amount, currency):
             return None
@@ -671,6 +648,14 @@ class SettlementSystem(IMonetaryAuthority):
                      self.monetary_ledger.record_monetary_contraction(amount, source=memo, currency=currency)
 
              self._emit_zero_sum_check(debit_agent.id, credit_agent.id, amount)
+
+             # Post-Mortem Distribution Hook (Post-Execution)
+             if self.estate_registry:
+                 # Check if credit agent is in estate
+                 if self.estate_registry.get_agent(credit_agent.id):
+                      if hasattr(self.estate_registry, 'process_estate_distribution'):
+                           self.estate_registry.process_estate_distribution(credit_agent, self)
+
              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
         elif result.status == 'FAILED':
              # Validation failure (e.g., missing account or insufficient funds)

@@ -124,6 +124,13 @@
 - **Solution**: Implement a formal `EstateRegistry` to manage financial finalization for liquidated agents without re-registration.
 - **Status**: SPECCED (Phase 33)
 
+### ID: TD-ARCH-ESTATE-ORPHANAGE
+- **Title**: Estate Distribution Wealth Orphanage
+- **Symptom**: `EstateRegistry._distribute_assets` aborts the inheritance transfer if the primary heir is missing or inactive, leaving funds permanently trapped in the deceased agent's account.
+- **Risk**: Slow deflationary leak in the M2 money supply over long simulation runs.
+- **Solution**: Implement a fallback Escheatment logic to transfer unclaimed estate assets to the Government (`ID_PUBLIC_MANAGER` or equivalent) if no valid heirs are found.
+- **Status**: NEW (Phase 33)
+
 ---
 
 ## Testing & Quality Assurance

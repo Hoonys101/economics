@@ -26,24 +26,19 @@ class TestSettlementSystemAtomic:
 
         return system, mock_agent_registry, mock_estate_registry
 
-    def test_transaction_to_dead_agent_intercepted(self, setup_system):
+    def test_transaction_to_dead_agent_triggers_post_distribution(self, setup_system):
         system, mock_agent_registry, mock_estate_registry = setup_system
 
         # Setup Agents
         alive_agent = MagicMock(spec=IFinancialAgent)
         alive_agent.id = 101
-        # Mock balance_pennies property for IFinancialEntity check
         type(alive_agent).balance_pennies = PropertyMock(return_value=1000)
-        # Also mock get_balance for IFinancialAgent check fallback
         alive_agent.get_balance.return_value = 1000
 
         dead_agent = MagicMock(spec=IFinancialAgent)
         dead_agent.id = 666
         type(dead_agent).balance_pennies = PropertyMock(return_value=0)
         dead_agent.get_balance.return_value = 0
-
-        # Dead agent is NOT in active registry (returns None or raises)
-        mock_agent_registry.get_agent.side_effect = lambda agent_id: alive_agent if agent_id == 101 else None
 
         # Dead agent IS in estate registry
         mock_estate_registry.get_agent.side_effect = lambda agent_id: dead_agent if agent_id == 666 else None
@@ -60,6 +55,7 @@ class TestSettlementSystemAtomic:
             description="Test Transfer to Dead Agent"
         )
 
+        # Engine execution MUST succeed for post-hook to run
         mock_engine.process_transaction.return_value = TransactionResultDTO(
             transaction=tx_dto,
             status='COMPLETED',
@@ -78,14 +74,19 @@ class TestSettlementSystemAtomic:
         )
 
         # Verification
-        # 1. Verify intercept_transaction was called
-        assert mock_estate_registry.intercept_transaction.called
 
-        # 2. Verify arguments passed to intercept_transaction
-        call_args = mock_estate_registry.intercept_transaction.call_args
+        # 1. Verify Transaction was PROCESSED normally (Success)
+        assert result is not None
+        mock_engine.process_transaction.assert_called_once()
+
+        # 2. Verify Post-Hook: process_estate_distribution was called
+        assert mock_estate_registry.process_estate_distribution.called
+
+        # 3. Verify arguments
+        call_args = mock_estate_registry.process_estate_distribution.call_args
         assert call_args is not None
-        tx_arg = call_args[0][0] # The 'tx' object
-        assert isinstance(tx_arg, Transaction)
-        assert tx_arg.buyer_id == alive_agent.id
-        assert tx_arg.seller_id == dead_agent.id
-        assert tx_arg.total_pennies == 100
+        # Args: (agent, settlement_system)
+        agent_arg = call_args[0][0]
+        sys_arg = call_args[0][1]
+        assert agent_arg == dead_agent
+        assert sys_arg == system

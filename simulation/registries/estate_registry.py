@@ -3,11 +3,11 @@ from typing import Dict, List, Optional, Any, TYPE_CHECKING
 import logging
 
 from modules.simulation.api import AgentID, IAgent
-from simulation.models import Transaction
-from modules.finance.transaction.api import TransactionResultDTO
+from modules.system.constants import ID_PUBLIC_MANAGER
+from modules.finance.api import IFinancialEntity, IFinancialAgent
 
 if TYPE_CHECKING:
-    from modules.finance.api import ISettlementSystem, ILiquidatable, IFinancialAgent
+    from modules.finance.api import ISettlementSystem
 
 logger = logging.getLogger(__name__)
 
@@ -48,95 +48,82 @@ class EstateRegistry:
         """Returns all agents currently in the estate."""
         return list(self._estate.values())
 
-    def intercept_transaction(self, tx: Transaction, settlement_system: 'ISettlementSystem') -> Optional[Transaction]:
-        """
-        Intercepts a transaction destined for a dead agent.
-        1. Executes the original transfer (to the estate agent) forcefully.
-        2. Triggers simplified distribution logic (Heir/Escheatment).
-
-        Returns the executed transaction if successful.
-        """
-        dead_agent_id = tx.receiver_id
-        dead_agent = self.get_agent(dead_agent_id)
-
-        if not dead_agent:
-            logger.error(f"ESTATE_INTERCEPT_FAIL: Agent {dead_agent_id} not found in estate.")
-            return None
-
-        logger.info(f"ESTATE_INTERCEPT: Processing transaction {tx.total_pennies} -> Dead Agent {dead_agent_id}")
-
-        # 1. Force Execute the Original Transfer (Sender -> Dead Agent)
-        # We use the lower-level engine to bypass SettlementSystem's recursive check
-        engine = settlement_system._get_engine(context_agents=[])
-
-        # Note: We rely on the engine's validation or assume sender has funds (SettlementSystem checked seamless funds)
-        result_dto = engine.process_transaction(
-            source_account_id=str(tx.sender_id),
-            destination_account_id=str(dead_agent_id),
-            amount=tx.total_pennies,
-            currency=tx.currency,
-            description=f"Estate Intercept: {tx.memo or ''}"
-        )
-
-        if result_dto.status != 'COMPLETED':
-            logger.error(f"ESTATE_INTERCEPT_FAIL: Engine execution failed: {result_dto.message}")
-            return None
-
-        # 2. Trigger Distribution
-        self._distribute_assets(dead_agent, settlement_system)
-
-        # Return the original transaction (now executed)
-        tx.metadata = tx.metadata or {}
-        tx.metadata['intercepted'] = True
-        return tx
-
-    def _distribute_assets(self, agent: IAgent, settlement_system: 'ISettlementSystem') -> None:
+    def process_estate_distribution(self, agent: IAgent, settlement_system: 'ISettlementSystem') -> None:
         """
         Distributes assets of the dead agent.
-        Priority: Taxes -> Creditors -> Heirs.
-        """
-        # Simplified Logic for Phase 1
-        # 1. Check if Household and has heirs
-        # We need to cast to access attributes safely or use getattr
+        Priority: Taxes -> Creditors -> Heirs -> Escheatment (Government).
 
-        # Check balance
+        This method is called POST-EXECUTION of an incoming transfer, so funds
+        are already in the dead agent's account.
+        """
+        # 1. Type Check & Balance Retrieval
         current_balance = 0
-        if hasattr(agent, 'balance_pennies'):
+
+        # Prefer IFinancialEntity for standardized balance access
+        if isinstance(agent, IFinancialEntity):
             current_balance = agent.balance_pennies
-        elif hasattr(agent, 'get_balance'):
+        elif isinstance(agent, IFinancialAgent):
             current_balance = agent.get_balance()
+        else:
+            # Fallback/Duck typing (discouraged but defensive)
+            if hasattr(agent, 'balance_pennies'):
+                current_balance = agent.balance_pennies
+            elif hasattr(agent, 'get_balance'):
+                current_balance = agent.get_balance()
 
         if current_balance <= 0:
             return
 
-        # Simple Heir Logic (Household)
+        logger.info(f"ESTATE_PROCESS: distributing {current_balance} from Agent {agent.id}")
+
+        # 2. Heir Logic (Household)
         children_ids = getattr(agent, 'children_ids', [])
+        distributed = False
+
         if children_ids:
             # Pay first child
             heir_id = children_ids[0]
-            # Verify heir exists? SettlementSystem.transfer will check.
-            # But heir needs to be an IFinancialAgent.
-            # We assume active registry handles getting the heir.
 
-            # We can't fetch the heir object here easily without active registry access.
-            # SettlementSystem.transfer needs OBJECTS.
-            # If we pass objects, we need to fetch them.
-
-            # Use settlement_system.agent_registry to fetch heir
+            # Use settlement_system.agent_registry to fetch heir (must be active)
             if settlement_system.agent_registry:
                 heir = settlement_system.agent_registry.get_agent(heir_id)
                 if heir:
                     logger.info(f"ESTATE_DISTRIBUTE: Transferring {current_balance} to Heir {heir_id}")
+                    # Note: We must ensure 'agent' (the dead one) is compatible with transfer
+                    # Assuming IFinancialEntity/Agent
                     settlement_system.transfer(
                         debit_agent=agent, # The dead agent
                         credit_agent=heir,
                         amount=current_balance,
                         memo="inheritance_distribution"
                     )
+                    distributed = True
                 else:
                     logger.warning(f"ESTATE_DISTRIBUTE: Heir {heir_id} not found/active.")
+
+        # 3. Fallback: Escheatment to Government
+        if not distributed:
+            self._escheat_to_government(agent, current_balance, settlement_system)
+
+    def _escheat_to_government(self, agent: IAgent, amount: int, settlement_system: 'ISettlementSystem') -> None:
+        """Transfers unclaimed assets to the Public Manager/Government."""
+        if not settlement_system.agent_registry:
+            logger.error("ESTATE_ESCHEAT_FAIL: No agent registry available.")
+            return
+
+        # Try to find Public Manager or Government
+        gov_agent = settlement_system.agent_registry.get_agent(ID_PUBLIC_MANAGER)
+        if not gov_agent:
+             # Try ID 1 (often government)
+             gov_agent = settlement_system.agent_registry.get_agent(1)
+
+        if gov_agent:
+            logger.info(f"ESTATE_ESCHEAT: Transferring {amount} from {agent.id} to Government/PublicManager {gov_agent.id}")
+            settlement_system.transfer(
+                debit_agent=agent,
+                credit_agent=gov_agent,
+                amount=amount,
+                memo="escheatment"
+            )
         else:
-            # Escheatment to Government?
-            # Need access to Gov agent.
-            # SettlementSystem might have access via agent_registry or hardcoded ID.
-            pass
+            logger.error("ESTATE_ESCHEAT_FAIL: PublicManager/Government agent not found.")
