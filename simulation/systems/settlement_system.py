@@ -654,7 +654,9 @@ class SettlementSystem(IMonetaryAuthority):
                  # Check if credit agent is in estate
                  if self.estate_registry.get_agent(credit_agent.id):
                       if hasattr(self.estate_registry, 'process_estate_distribution'):
-                           self.estate_registry.process_estate_distribution(credit_agent, self)
+                           distribution_txs = self.estate_registry.process_estate_distribution(credit_agent, self)
+                           if distribution_txs:
+                               self.logger.info(f"ESTATE_DISTRIBUTION_EFFECT: Generated {len(distribution_txs)} side-effect transactions.")
 
              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
         elif result.status == 'FAILED':

@@ -16,18 +16,20 @@ class TestSettlementSystemAtomic:
         mock_agent_registry = MagicMock()
         mock_estate_registry = MagicMock(spec=EstateRegistry)
         mock_metrics_service = MagicMock()
+        mock_logger = MagicMock()
 
         # Instantiate SettlementSystem
         system = SettlementSystem(
             agent_registry=mock_agent_registry,
             estate_registry=mock_estate_registry,
-            metrics_service=mock_metrics_service
+            metrics_service=mock_metrics_service,
+            logger=mock_logger
         )
 
-        return system, mock_agent_registry, mock_estate_registry
+        return system, mock_agent_registry, mock_estate_registry, mock_logger
 
     def test_transaction_to_dead_agent_triggers_post_distribution(self, setup_system):
-        system, mock_agent_registry, mock_estate_registry = setup_system
+        system, mock_agent_registry, mock_estate_registry, mock_logger = setup_system
 
         # Setup Agents
         alive_agent = MagicMock(spec=IFinancialAgent)
@@ -42,6 +44,11 @@ class TestSettlementSystemAtomic:
 
         # Dead agent IS in estate registry
         mock_estate_registry.get_agent.side_effect = lambda agent_id: dead_agent if agent_id == 666 else None
+
+        # Mock Distribution Return (Ghost Transactions)
+        # Assuming we return 1 transaction (inheritance)
+        ghost_tx = MagicMock(spec=Transaction)
+        mock_estate_registry.process_estate_distribution.return_value = [ghost_tx]
 
         # Mock Engine execution (mock _get_engine)
         mock_engine = MagicMock()
@@ -90,3 +97,8 @@ class TestSettlementSystemAtomic:
         sys_arg = call_args[0][1]
         assert agent_arg == dead_agent
         assert sys_arg == system
+
+        # 4. Verify Ghost Transaction Logging (Interim Fix)
+        # Check that logger was called with the ghost transaction info
+        # We expect: self.logger.info(f"ESTATE_DISTRIBUTION_EFFECT: Generated {len(distribution_txs)} side-effect transactions.")
+        mock_logger.info.assert_any_call("ESTATE_DISTRIBUTION_EFFECT: Generated 1 side-effect transactions.")

@@ -3,11 +3,12 @@ from typing import Dict, List, Optional, Any, TYPE_CHECKING
 import logging
 
 from modules.simulation.api import AgentID, IAgent
-from modules.system.constants import ID_PUBLIC_MANAGER
+from modules.system.constants import ID_PUBLIC_MANAGER, ID_GOVERNMENT
 from modules.finance.api import IFinancialEntity, IFinancialAgent
 
 if TYPE_CHECKING:
     from modules.finance.api import ISettlementSystem
+    from simulation.models import Transaction
 
 logger = logging.getLogger(__name__)
 
@@ -48,14 +49,19 @@ class EstateRegistry:
         """Returns all agents currently in the estate."""
         return list(self._estate.values())
 
-    def process_estate_distribution(self, agent: IAgent, settlement_system: 'ISettlementSystem') -> None:
+    def process_estate_distribution(self, agent: IAgent, settlement_system: 'ISettlementSystem') -> List[Transaction]:
         """
         Distributes assets of the dead agent.
         Priority: Taxes -> Creditors -> Heirs -> Escheatment (Government).
 
         This method is called POST-EXECUTION of an incoming transfer, so funds
         are already in the dead agent's account.
+
+        Returns:
+            List[Transaction]: A list of transactions generated during distribution.
         """
+        transactions = []
+
         # 1. Type Check & Balance Retrieval
         current_balance = 0
 
@@ -72,7 +78,7 @@ class EstateRegistry:
                 current_balance = agent.get_balance()
 
         if current_balance <= 0:
-            return
+            return transactions
 
         logger.info(f"ESTATE_PROCESS: distributing {current_balance} from Agent {agent.id}")
 
@@ -91,39 +97,49 @@ class EstateRegistry:
                     logger.info(f"ESTATE_DISTRIBUTE: Transferring {current_balance} to Heir {heir_id}")
                     # Note: We must ensure 'agent' (the dead one) is compatible with transfer
                     # Assuming IFinancialEntity/Agent
-                    settlement_system.transfer(
+                    tx = settlement_system.transfer(
                         debit_agent=agent, # The dead agent
                         credit_agent=heir,
                         amount=current_balance,
                         memo="inheritance_distribution"
                     )
+                    if tx:
+                        transactions.append(tx)
                     distributed = True
                 else:
                     logger.warning(f"ESTATE_DISTRIBUTE: Heir {heir_id} not found/active.")
 
         # 3. Fallback: Escheatment to Government
         if not distributed:
-            self._escheat_to_government(agent, current_balance, settlement_system)
+            escheat_txs = self._escheat_to_government(agent, current_balance, settlement_system)
+            transactions.extend(escheat_txs)
 
-    def _escheat_to_government(self, agent: IAgent, amount: int, settlement_system: 'ISettlementSystem') -> None:
+        return transactions
+
+    def _escheat_to_government(self, agent: IAgent, amount: int, settlement_system: 'ISettlementSystem') -> List[Transaction]:
         """Transfers unclaimed assets to the Public Manager/Government."""
+        transactions = []
         if not settlement_system.agent_registry:
             logger.error("ESTATE_ESCHEAT_FAIL: No agent registry available.")
-            return
+            return transactions
 
         # Try to find Public Manager or Government
         gov_agent = settlement_system.agent_registry.get_agent(ID_PUBLIC_MANAGER)
         if not gov_agent:
-             # Try ID 1 (often government)
-             gov_agent = settlement_system.agent_registry.get_agent(1)
+             # Fallback to ID_GOVERNMENT
+             gov_agent = settlement_system.agent_registry.get_agent(ID_GOVERNMENT)
 
         if gov_agent:
             logger.info(f"ESTATE_ESCHEAT: Transferring {amount} from {agent.id} to Government/PublicManager {gov_agent.id}")
-            settlement_system.transfer(
+            tx = settlement_system.transfer(
                 debit_agent=agent,
                 credit_agent=gov_agent,
                 amount=amount,
                 memo="escheatment"
             )
+            if tx:
+                transactions.append(tx)
         else:
             logger.error("ESTATE_ESCHEAT_FAIL: PublicManager/Government agent not found.")
+
+        return transactions
