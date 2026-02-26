@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-SCENARIO-REPORTER": {
-      "key": "WO-IMPL-SCENARIO-REPORTER",
-      "title": "Module 2: 3-Tier Reporting Engine Implementation",
-      "type": "jules",
-      "instruction_raw": "",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_REBIRTH_SCENARIO_REPORTER_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-IMPL-SCENARIO-MIGRATION": {
       "key": "WO-IMPL-SCENARIO-MIGRATION",
       "title": "Module 3: Legacy Verifier Migration & Orchestration",
