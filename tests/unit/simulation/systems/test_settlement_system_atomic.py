@@ -89,16 +89,17 @@ class TestSettlementSystemAtomic:
         # 2. Verify Post-Hook: process_estate_distribution was called
         assert mock_estate_registry.process_estate_distribution.called
 
-        # 3. Verify arguments
+        # 3. Verify arguments (including TICK)
         call_args = mock_estate_registry.process_estate_distribution.call_args
         assert call_args is not None
-        # Args: (agent, settlement_system)
+        # Args: (agent, settlement_system, tick)
         agent_arg = call_args[0][0]
         sys_arg = call_args[0][1]
+        tick_arg = call_args[0][2]
+
         assert agent_arg == dead_agent
         assert sys_arg == system
+        assert tick_arg == 10 # Verify tick propagation
 
         # 4. Verify Ghost Transaction Logging (Interim Fix)
-        # Check that logger was called with the ghost transaction info
-        # We expect: self.logger.info(f"ESTATE_DISTRIBUTION_EFFECT: Generated {len(distribution_txs)} side-effect transactions.")
         mock_logger.info.assert_any_call("ESTATE_DISTRIBUTION_EFFECT: Generated 1 side-effect transactions.")

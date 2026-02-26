@@ -49,7 +49,7 @@ class EstateRegistry:
         """Returns all agents currently in the estate."""
         return list(self._estate.values())
 
-    def process_estate_distribution(self, agent: IAgent, settlement_system: 'ISettlementSystem') -> List[Transaction]:
+    def process_estate_distribution(self, agent: IAgent, settlement_system: 'ISettlementSystem', tick: int = 0) -> List[Transaction]:
         """
         Distributes assets of the dead agent.
         Priority: Taxes -> Creditors -> Heirs -> Escheatment (Government).
@@ -101,7 +101,8 @@ class EstateRegistry:
                         debit_agent=agent, # The dead agent
                         credit_agent=heir,
                         amount=current_balance,
-                        memo="inheritance_distribution"
+                        memo="inheritance_distribution",
+                        tick=tick
                     )
                     if tx:
                         transactions.append(tx)
@@ -111,12 +112,12 @@ class EstateRegistry:
 
         # 3. Fallback: Escheatment to Government
         if not distributed:
-            escheat_txs = self._escheat_to_government(agent, current_balance, settlement_system)
+            escheat_txs = self._escheat_to_government(agent, current_balance, settlement_system, tick)
             transactions.extend(escheat_txs)
 
         return transactions
 
-    def _escheat_to_government(self, agent: IAgent, amount: int, settlement_system: 'ISettlementSystem') -> List[Transaction]:
+    def _escheat_to_government(self, agent: IAgent, amount: int, settlement_system: 'ISettlementSystem', tick: int = 0) -> List[Transaction]:
         """Transfers unclaimed assets to the Public Manager/Government."""
         transactions = []
         if not settlement_system.agent_registry:
@@ -135,7 +136,8 @@ class EstateRegistry:
                 debit_agent=agent,
                 credit_agent=gov_agent,
                 amount=amount,
-                memo="escheatment"
+                memo="escheatment",
+                tick=tick
             )
             if tx:
                 transactions.append(tx)
