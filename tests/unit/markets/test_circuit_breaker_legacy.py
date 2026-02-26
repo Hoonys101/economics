@@ -67,15 +67,19 @@ class TestOrderBookMarketIntegration:
         return config
 
     def test_place_order_delegates_to_circuit_breaker(self, config):
-        mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
-        mock_breaker.check_market_health.return_value = True
-        mock_breaker.is_active.return_value = False
-        market = OrderBookMarket("test_market", config_module=config, index_circuit_breaker=mock_breaker)
-        # Note: OrderBookMarket creates its own DynamicCircuitBreaker if not provided
+        # 1. Setup Halt Breaker (Index Circuit Breaker)
+        mock_halt_breaker = MagicMock(spec=IIndexCircuitBreaker)
+        mock_halt_breaker.check_market_health.return_value = True
+        mock_halt_breaker.is_active.return_value = False
 
-        # Manually populate history in the internal circuit breaker
+        # 2. Setup Dynamic Breaker (Legacy) - Injected as Enforcer
+        dynamic_breaker = DynamicCircuitBreaker(config_module=config)
+
+        market = OrderBookMarket("test_market", circuit_breaker=mock_halt_breaker, enforcer=dynamic_breaker)
+
+        # Manually populate history in the injected dynamic breaker (enforcer)
         for _ in range(10):
-            market.circuit_breaker.update_price_history("item1", 100.0)
+            dynamic_breaker.update_price_history("item1", 100.0)
 
         # Try place order out of bounds (bounds are [85, 115])
         order = CanonicalOrderDTO(
@@ -90,7 +94,7 @@ class TestOrderBookMarketIntegration:
 
         # Should reject (log warning) and not add to orders
         market.place_order(order, 100)
-        assert len(market._buy_orders.get("item1", [])) == 0
+        assert len(market.buy_orders.get("item1", [])) == 0
 
         # Try place order within bounds
         order_valid = CanonicalOrderDTO(
@@ -103,4 +107,4 @@ class TestOrderBookMarketIntegration:
             price_limit=100.0
         )
         market.place_order(order_valid, 100)
-        assert len(market._buy_orders.get("item1", [])) == 1
+        assert len(market.buy_orders.get("item1", [])) == 1
