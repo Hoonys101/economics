@@ -9,8 +9,18 @@ class DBManager:
         self.db_path = db_path
         self.conn = None
         self.cursor = None
+        self._pending_count = 0
+        self.threshold = 500
         self._connect()
         self._create_tables()
+
+    def flush(self):
+        """
+        Commits pending changes to the database.
+        """
+        if self._pending_count > 0:
+            self.conn.commit()
+            self._pending_count = 0
 
     def _connect(self):
         try:
@@ -89,7 +99,7 @@ class DBManager:
         """)
         self.conn.commit()
 
-    def save_simulation_run(self, start_time, config_hash, description=None):
+    def save_simulation_run(self, start_time, config_hash, description=None, buffered=False):
         self.cursor.execute(
             """
             INSERT INTO simulation_runs (start_time, config_hash, description)
@@ -97,20 +107,30 @@ class DBManager:
         """,
             (start_time, config_hash, description),
         )
-        self.conn.commit()
+        if buffered:
+            self._pending_count += 1
+            if self._pending_count >= self.threshold:
+                self.flush()
+        else:
+            self.conn.commit()
         return self.cursor.lastrowid
 
-    def update_simulation_run_end_time(self, run_id, end_time):
+    def update_simulation_run_end_time(self, run_id, end_time, buffered=False):
         self.cursor.execute(
             """
             UPDATE simulation_runs SET end_time = ? WHERE run_id = ?
         """,
             (end_time, run_id),
         )
-        self.conn.commit()
+        if buffered:
+            self._pending_count += 1
+            if self._pending_count >= self.threshold:
+                self.flush()
+        else:
+            self.conn.commit()
 
     def save_simulation_state(
-        self, run_id, tick, timestamp, global_economic_indicators
+        self, run_id, tick, timestamp, global_economic_indicators, buffered=True
     ):
         self.cursor.execute(
             """
@@ -119,7 +139,12 @@ class DBManager:
         """,
             (run_id, tick, timestamp, json.dumps(global_economic_indicators)),
         )
-        self.conn.commit()
+        if buffered:
+            self._pending_count += 1
+            if self._pending_count >= self.threshold:
+                self.flush()
+        else:
+            self.conn.commit()
 
     def save_agent_state(
         self,
@@ -136,6 +161,7 @@ class DBManager:
         production_targets=None,
         current_production=None,
         ai_model_state=None,
+        buffered=True,
     ):
         self.cursor.execute(
             """
@@ -161,7 +187,12 @@ class DBManager:
                 json.dumps(ai_model_state) if ai_model_state else None,
             ),
         )
-        self.conn.commit()
+        if buffered:
+            self._pending_count += 1
+            if self._pending_count >= self.threshold:
+                self.flush()
+        else:
+            self.conn.commit()
 
     def save_transaction(
         self,
@@ -174,6 +205,7 @@ class DBManager:
         price,
         transaction_type,
         loan_id=None,
+        buffered=True,
     ):
         self.cursor.execute(
             """
@@ -193,7 +225,12 @@ class DBManager:
                 loan_id,
             ),
         )
-        self.conn.commit()
+        if buffered:
+            self._pending_count += 1
+            if self._pending_count >= self.threshold:
+                self.flush()
+        else:
+            self.conn.commit()
 
     def save_ai_decision(
         self,
@@ -204,6 +241,7 @@ class DBManager:
         decision_details=None,
         predicted_reward=None,
         actual_reward=None,
+        buffered=True,
     ):
         self.cursor.execute(
             """
@@ -221,7 +259,12 @@ class DBManager:
                 actual_reward,
             ),
         )
-        self.conn.commit()
+        if buffered:
+            self._pending_count += 1
+            if self._pending_count >= self.threshold:
+                self.flush()
+        else:
+            self.conn.commit()
 
     def get_simulation_run(self, run_id):
         self.cursor.execute("SELECT * FROM simulation_runs WHERE run_id = ?", (run_id,))
@@ -287,6 +330,7 @@ class DBManager:
 
     def close(self):
         if self.conn:
+            self.flush()
             self.conn.close()
             self.conn = None
             self.cursor = None
