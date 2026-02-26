@@ -63,257 +63,312 @@ class InheritanceManager:
             extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
         )
 
-        deceased_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
-        real_estate_value = sum(u.estimated_value for u in deceased_units)
-        real_estate_value = round(real_estate_value, 2)
+        try:
+            deceased_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
+            real_estate_value = sum(u.estimated_value for u in deceased_units)
+            real_estate_value = round(real_estate_value, 2)
 
-        portfolio_holdings = deceased._econ_state.portfolio.holdings.copy() # dict of firm_id -> Share
-        stock_value = 0.0
-        current_prices = {}
-        if simulation.stock_market:
-            for firm_id, share in portfolio_holdings.items():
-                price = simulation.stock_market.get_daily_avg_price(firm_id)
-                if price <= 0:
-                    price = share.acquisition_price
-                price = round(price, 2)
-                current_prices[firm_id] = price
-                stock_value += share.quantity * price
+            portfolio_holdings = deceased._econ_state.portfolio.holdings.copy() # dict of firm_id -> Share
+            stock_value = 0.0
+            current_prices = {}
+            if simulation.stock_market:
+                for firm_id, share in portfolio_holdings.items():
+                    price = simulation.stock_market.get_daily_avg_price(firm_id)
+                    if price <= 0:
+                        price = share.acquisition_price
+                    price = round(price, 2)
+                    current_prices[firm_id] = price
+                    stock_value += share.quantity * price
 
-        stock_value = round(stock_value, 2)
-        total_wealth = round(cash + real_estate_value + stock_value, 2)
+            stock_value = round(stock_value, 2)
+            total_wealth = round(cash + real_estate_value + stock_value, 2)
 
-        # 1.5 Debt Repayment (Phase 4.1)
-        # ------------------------------------------------------------------
-        bank = getattr(simulation, 'bank', None)
-        if bank and hasattr(bank, 'get_debt_status'):
-            debt_status = bank.get_debt_status(deceased.id)
-            if debt_status.total_outstanding_pennies > 0:
-                for loan in debt_status.loans:
-                    if loan.outstanding_balance > 0 and cash > 0:
-                        repay_amount = min(cash, loan.outstanding_balance)
-                        repay_pennies = int(repay_amount) # Convert back to pennies
+            # 1.5 Debt Repayment (Phase 4.1)
+            # ------------------------------------------------------------------
+            bank = getattr(simulation, 'bank', None)
+            if bank and hasattr(bank, 'get_debt_status'):
+                debt_status = bank.get_debt_status(deceased.id)
+                if debt_status.total_outstanding_pennies > 0:
+                    for loan in debt_status.loans:
+                        if loan.outstanding_balance > 0 and cash > 0:
+                            repay_amount = min(cash, loan.outstanding_balance)
+                            repay_pennies = int(repay_amount) # Convert back to pennies
 
-                        if repay_pennies > 0:
-                            # Create Repayment Transaction
-                            tx = Transaction(
-                                buyer_id=deceased.id,
-                                seller_id=bank.id,
-                                item_id=loan.loan_id,
-                                quantity=1,
-                                price=repay_amount,
-                                total_pennies=repay_pennies,
-                                market_id="financial",
-                                transaction_type="loan_repayment",
-                                time=current_tick
-                            )
-                            results = simulation.transaction_processor.execute(simulation, [tx])
-                            if results and results[0].success:
-                                transactions.append(tx)
-                                cash -= repay_amount
-                                self.logger.info(f"DEBT_REPAID | Repaid {repay_amount} on loan {loan.loan_id}")
+                            if repay_pennies > 0:
+                                # Create Repayment Transaction
+                                tx = Transaction(
+                                    buyer_id=deceased.id,
+                                    seller_id=bank.id,
+                                    item_id=loan.loan_id,
+                                    quantity=1,
+                                    price=repay_amount,
+                                    total_pennies=repay_pennies,
+                                    market_id="financial",
+                                    transaction_type="loan_repayment",
+                                    time=current_tick
+                                )
+                                results = simulation.transaction_processor.execute(simulation, [tx])
+                                if results and results[0].success:
+                                    transactions.append(tx)
+                                    cash -= repay_amount
+                                    self.logger.info(f"DEBT_REPAID | Repaid {repay_amount} on loan {loan.loan_id}")
 
-        # 2. Liquidation for Tax (if needed)
-        # ------------------------------------------------------------------
-        tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.4)
-        deduction = getattr(self.config_module, "INHERITANCE_DEDUCTION", 10000.0)
-        taxable_base = max(0.0, total_wealth - deduction)
-        tax_amount = round(taxable_base * tax_rate, 2)
+            # 2. Liquidation for Tax (if needed)
+            # ------------------------------------------------------------------
+            tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.4)
+            deduction = getattr(self.config_module, "INHERITANCE_DEDUCTION", 10000.0)
+            taxable_base = max(0.0, total_wealth - deduction)
+            tax_amount = round(taxable_base * tax_rate, 2)
 
-        if cash < tax_amount:
-            # Need to liquidate assets to pay tax.
-            # We liquidate to Government (Simulated Buyback) for simplicity and speed (Atomic).
+            if cash < tax_amount:
+                # Need to liquidate assets to pay tax.
+                # We liquidate to Government (Simulated Buyback) for simplicity and speed (Atomic).
 
-            needed = tax_amount - cash
+                needed = tax_amount - cash
 
-            # A. Stock Liquidation
-            if needed > 0 and stock_value > 0:
-                for firm_id, share in list(portfolio_holdings.items()):
-                    price = current_prices.get(firm_id, 0.0)
-                    proceeds = round(share.quantity * price, 2)
+                # A. Stock Liquidation
+                if needed > 0 and stock_value > 0:
+                    for firm_id, share in list(portfolio_holdings.items()):
+                        price = current_prices.get(firm_id, 0.0)
+                        proceeds = round(share.quantity * price, 2)
 
-                    # TD-232: Use TransactionProcessor for atomic execution + side effects
-                    tx = Transaction(
-                        buyer_id=government.id,
-                        seller_id=deceased.id,
-                        item_id=f"stock_{firm_id}",
-                        quantity=share.quantity,
-                        price=price,
-                        total_pennies=int(proceeds * 100),
-                        market_id="stock_market",
-                        transaction_type="asset_liquidation",
-                        time=current_tick,
-                        metadata={"executed": False}
-                    )
+                        # TD-232: Use TransactionProcessor for atomic execution + side effects
+                        tx = Transaction(
+                            buyer_id=government.id,
+                            seller_id=deceased.id,
+                            item_id=f"stock_{firm_id}",
+                            quantity=share.quantity,
+                            price=price,
+                            total_pennies=int(proceeds * 100),
+                            market_id="stock_market",
+                            transaction_type="asset_liquidation",
+                            time=current_tick,
+                            metadata={"executed": False}
+                        )
 
-                    results = simulation.transaction_processor.execute(simulation, [tx])
+                        results = simulation.transaction_processor.execute(simulation, [tx])
 
-                    if results and results[0].success:
-                        # Success - proceeds have been transferred and assets moved by Handler
-                        if firm_id in portfolio_holdings:
-                             del portfolio_holdings[firm_id] # Keep local copy in sync
+                        if results and results[0].success:
+                            # Success - proceeds have been transferred and assets moved by Handler
+                            if firm_id in portfolio_holdings:
+                                del portfolio_holdings[firm_id] # Keep local copy in sync
 
-                        # Mark as executed for reporting
-                        tx.metadata["executed"] = True
-                        transactions.append(tx)
+                            # Mark as executed for reporting
+                            tx.metadata["executed"] = True
+                            transactions.append(tx)
 
-                        cash += proceeds
-                        needed -= proceeds
-                        if needed <= 0:
-                            break
+                            cash += proceeds
+                            needed -= proceeds
+                            if needed <= 0:
+                                break
 
-            # B. Real Estate Liquidation
-            if needed > 0 and real_estate_value > 0:
-                fire_sale_ratio = 0.9
-                for unit in list(deceased_units):
-                    sale_price = round(unit.estimated_value * fire_sale_ratio, 2)
+                # B. Real Estate Liquidation
+                if needed > 0 and real_estate_value > 0:
+                    fire_sale_ratio = 0.9
+                    for unit in list(deceased_units):
+                        sale_price = round(unit.estimated_value * fire_sale_ratio, 2)
 
-                    # TD-232: Use TransactionProcessor
-                    tx = Transaction(
-                        buyer_id=government.id,
-                        seller_id=deceased.id,
-                        item_id=f"real_estate_{unit.id}",
-                        quantity=1.0,
-                        price=sale_price,
-                        total_pennies=int(sale_price * 100),
-                        market_id="real_estate_market",
-                        transaction_type="asset_liquidation",
-                        time=current_tick,
-                        metadata={"executed": False}
-                    )
+                        # TD-232: Use TransactionProcessor
+                        tx = Transaction(
+                            buyer_id=government.id,
+                            seller_id=deceased.id,
+                            item_id=f"real_estate_{unit.id}",
+                            quantity=1.0,
+                            price=sale_price,
+                            total_pennies=int(sale_price * 100),
+                            market_id="real_estate_market",
+                            transaction_type="asset_liquidation",
+                            time=current_tick,
+                            metadata={"executed": False}
+                        )
 
-                    results = simulation.transaction_processor.execute(simulation, [tx])
+                        results = simulation.transaction_processor.execute(simulation, [tx])
 
-                    if results and results[0].success:
-                        deceased_units.remove(unit)
-                        tx.metadata["executed"] = True
-                        transactions.append(tx)
+                        if results and results[0].success:
+                            deceased_units.remove(unit)
+                            tx.metadata["executed"] = True
+                            transactions.append(tx)
 
-                        cash += sale_price
-                        needed -= sale_price
-                        if needed <= 0:
-                            break
+                            cash += sale_price
+                            needed -= sale_price
+                            if needed <= 0:
+                                break
 
-        # 3. TD-232: Removed explicit Settlement Account creation.
-        # Assets remain on Deceased agent until moved by TransactionProcessor.
+            # 3. TD-232: Removed explicit Settlement Account creation.
+            # Assets remain on Deceased agent until moved by TransactionProcessor.
 
-        # 4. Plan Distribution & Execution
-        # ------------------------------------------------------------------
+            # 4. Plan Distribution & Execution
+            # ------------------------------------------------------------------
 
-        # A. Tax
-        tax_to_pay = min(cash, tax_amount)
-        if tax_to_pay > 0:
-            tx = Transaction(
-                buyer_id=deceased.id, # Payer
-                seller_id=government.id, # Payee
-                item_id="inheritance_tax",
-                quantity=1.0,
-                price=tax_to_pay,
-                total_pennies=int(tax_to_pay * 100),
-                market_id="system",
-                transaction_type="tax",
-                time=current_tick
-            )
-            results = simulation.transaction_processor.execute(simulation, [tx])
-            if results and results[0].success:
-                transactions.append(tx)
-                cash -= tax_to_pay
-
-        # B. Heirs & Escheatment
-        heirs = []
-        for child_id in deceased._bio_state.children_ids:
-            child = simulation.agents.get(child_id)
-            if child and child._bio_state.is_active:
-                heirs.append(child)
-
-        if not heirs:
-            # Escheatment (To Gov)
-            if cash > 0:
-                # TD-232: Escheatment via TransactionProcessor
-                # Note: EscheatmentHandler transfers ALL assets.
-                # Since we already paid tax, remaining cash is escheated.
+            # A. Tax
+            tax_to_pay = min(cash, tax_amount)
+            if tax_to_pay > 0:
                 tx = Transaction(
-                    buyer_id=deceased.id,
-                    seller_id=government.id,
-                    item_id="escheatment",
+                    buyer_id=deceased.id, # Payer
+                    seller_id=government.id, # Payee
+                    item_id="inheritance_tax",
                     quantity=1.0,
-                    price=cash, # Used for record, handler takes all
-                    total_pennies=int(cash * 100),
+                    price=tax_to_pay,
+                    total_pennies=int(tax_to_pay * 100),
                     market_id="system",
-                    transaction_type="escheatment",
+                    transaction_type="tax",
                     time=current_tick
                 )
                 results = simulation.transaction_processor.execute(simulation, [tx])
                 if results and results[0].success:
                     transactions.append(tx)
+                    cash -= tax_to_pay
 
-            # Escheat remaining Real Estate (Execute Synchronously)
-            for unit in deceased_units:
-                 tx = Transaction(
-                        buyer_id=government.id,
-                        seller_id=deceased.id,
-                        item_id=f"real_estate_{unit.id}",
+            # B. Heirs & Escheatment
+            heirs = []
+            for child_id in deceased._bio_state.children_ids:
+                child = simulation.agents.get(child_id)
+                if child and child._bio_state.is_active:
+                    heirs.append(child)
+
+            if not heirs:
+                # Escheatment (To Gov)
+                if cash > 0:
+                    # TD-232: Escheatment via TransactionProcessor
+                    # Note: EscheatmentHandler transfers ALL assets.
+                    # Since we already paid tax, remaining cash is escheated.
+                    tx = Transaction(
+                        buyer_id=deceased.id,
+                        seller_id=government.id,
+                        item_id="escheatment",
                         quantity=1.0,
-                        price=0.0,
-                        total_pennies=0,
-                        market_id="real_estate_market",
-                        transaction_type="asset_transfer",
-                        time=current_tick,
-                        metadata={"executed": False}
-                     )
+                        price=cash, # Used for record, handler takes all
+                        total_pennies=int(cash * 100),
+                        market_id="system",
+                        transaction_type="escheatment",
+                        time=current_tick
+                    )
+                    results = simulation.transaction_processor.execute(simulation, [tx])
+                    if results and results[0].success:
+                        transactions.append(tx)
 
-                 results = simulation.transaction_processor.execute(simulation, [tx])
-                 if results and results[0].success:
-                     tx.metadata["executed"] = True
-                     transactions.append(tx)
+                # Escheat remaining Real Estate (Execute Synchronously)
+                for unit in deceased_units:
+                    tx = Transaction(
+                            buyer_id=government.id,
+                            seller_id=deceased.id,
+                            item_id=f"real_estate_{unit.id}",
+                            quantity=1.0,
+                            price=0.0,
+                            total_pennies=0,
+                            market_id="real_estate_market",
+                            transaction_type="asset_transfer",
+                            time=current_tick,
+                            metadata={"executed": False}
+                        )
 
-        else:
-            # Distribute to Heirs
-            # Cash & Portfolio via InheritanceHandler (Single Transaction)
-            if cash > 0:
-                tx = Transaction(
-                    buyer_id=deceased.id,
-                    seller_id=ID_SYSTEM, # System distribution (Fixed COLLISION with PublicManager -1)
-                    item_id="estate_distribution",
-                    quantity=1.0,
-                    price=cash, # Informational
-                    total_pennies=int(cash * 100),
-                    market_id="system",
-                    transaction_type="inheritance_distribution",
-                    time=current_tick,
-                    metadata={"heir_ids": [h.id for h in heirs]}
-                )
-                results = simulation.transaction_processor.execute(simulation, [tx])
-                if results and results[0].success:
-                    transactions.append(tx)
+                    results = simulation.transaction_processor.execute(simulation, [tx])
+                    if results and results[0].success:
+                        tx.metadata["executed"] = True
+                        transactions.append(tx)
 
-            # Distribute Real Estate (Round Robin - Synchronous)
-            count = len(heirs)
-            for i, unit in enumerate(deceased_units):
-                recipient = heirs[i % count]
-
-                tx = Transaction(
-                        buyer_id=recipient.id,
-                        seller_id=deceased.id,
-                        item_id=f"real_estate_{unit.id}",
+            else:
+                # Distribute to Heirs
+                # Cash & Portfolio via InheritanceHandler (Single Transaction)
+                if cash > 0:
+                    tx = Transaction(
+                        buyer_id=deceased.id,
+                        seller_id=ID_SYSTEM, # System distribution (Fixed COLLISION with PublicManager -1)
+                        item_id="estate_distribution",
                         quantity=1.0,
-                        price=0.0,
-                        total_pennies=0,
-                        market_id="real_estate_market",
-                        transaction_type="asset_transfer",
+                        price=cash, # Informational
+                        total_pennies=int(cash * 100),
+                        market_id="system",
+                        transaction_type="inheritance_distribution",
                         time=current_tick,
-                        metadata={"executed": False}
-                     )
+                        metadata={"heir_ids": [h.id for h in heirs]}
+                    )
+                    results = simulation.transaction_processor.execute(simulation, [tx])
+                    if results and results[0].success:
+                        transactions.append(tx)
 
-                results = simulation.transaction_processor.execute(simulation, [tx])
-                if results and results[0].success:
-                    tx.metadata["executed"] = True
-                    transactions.append(tx)
+                # Distribute Real Estate (Round Robin - Synchronous)
+                count = len(heirs)
+                for i, unit in enumerate(deceased_units):
+                    recipient = heirs[i % count]
 
-        # 5. TD-232: Removed execute_settlement as we dispatched transactions directly.
+                    tx = Transaction(
+                            buyer_id=recipient.id,
+                            seller_id=deceased.id,
+                            item_id=f"real_estate_{unit.id}",
+                            quantity=1.0,
+                            price=0.0,
+                            total_pennies=0,
+                            market_id="real_estate_market",
+                            transaction_type="asset_transfer",
+                            time=current_tick,
+                            metadata={"executed": False}
+                        )
 
-        # 6. TD-232: Removed verify_and_close as no Settlement Account was created.
+                    results = simulation.transaction_processor.execute(simulation, [tx])
+                    if results and results[0].success:
+                        tx.metadata["executed"] = True
+                        transactions.append(tx)
 
-        return transactions
+            # 5. TD-232: Removed execute_settlement as we dispatched transactions directly.
+
+            # 6. TD-232: Removed verify_and_close as no Settlement Account was created.
+
+            return transactions
+
+        finally:
+            # 7. SAFETY SWEEP (WO-124: Anti-Leak)
+            # Ensure no funds remain on the deceased agent if the pipeline failed or left dust.
+            try:
+                final_balance = 0
+                if hasattr(deceased, 'balance_pennies'):
+                    final_balance = deceased.balance_pennies
+                elif isinstance(deceased, Household) and hasattr(deceased, '_econ_state'):
+                     final_balance = deceased._econ_state.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(deceased._econ_state.assets, dict) else deceased._econ_state.assets
+
+                # Handle float vs int
+                if isinstance(final_balance, float):
+                     final_balance_pennies = int(final_balance * 100) if final_balance < 1000000000 else int(final_balance) # Heuristic for pennies/dollars confusion
+                else:
+                     final_balance_pennies = int(final_balance)
+
+                # SSoT Check via SettlementSystem if possible, else rely on Agent state
+                # SettlementSystem check is safer but requires ID.
+                # Assuming simulation.settlement_system exists
+                if simulation.settlement_system:
+                    final_balance_pennies = simulation.settlement_system.get_balance(deceased.id, DEFAULT_CURRENCY)
+
+                if final_balance_pennies > 0:
+                    self.logger.warning(
+                        f"INHERITANCE_LEAK_DETECTED | Agent {deceased.id} has residual {final_balance_pennies} pennies after death. Force Escheating.",
+                        extra={"agent_id": deceased.id, "amount": final_balance_pennies}
+                    )
+
+                    # Force Escheat Transaction
+                    leak_tx = Transaction(
+                        buyer_id=deceased.id,
+                        seller_id=government.id,
+                        item_id="force_escheat_leak",
+                        quantity=1.0,
+                        price=final_balance_pennies / 100.0,
+                        total_pennies=final_balance_pennies,
+                        market_id="system",
+                        transaction_type="escheatment",
+                        time=current_tick,
+                        metadata={"executed": False, "reason": "leak_prevention"}
+                    )
+
+                    # Use TransactionProcessor if available
+                    if simulation.transaction_processor:
+                         simulation.transaction_processor.execute(simulation, [leak_tx])
+                    elif simulation.settlement_system:
+                         # Fallback direct transfer if processor fails (last resort)
+                         simulation.settlement_system.transfer(
+                             deceased, government, final_balance_pennies, "force_escheat_leak", tick=current_tick
+                         )
+
+            except Exception as e:
+                self.logger.critical(f"INHERITANCE_CLEANUP_FAIL | Failed to cleanup agent {deceased.id}: {e}", exc_info=True)
 
     def _dict_to_transaction(self, tx_dict: dict) -> Transaction:
          # Deprecated but kept if needed by other methods not shown

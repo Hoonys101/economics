@@ -164,7 +164,8 @@ class CommerceSystem(ICommerceSystem):
                                 total_pennies=total_pennies,
                                 market_id="system",
                                 transaction_type="emergency_buy",
-                                time=current_time
+                                time=current_time,
+                                metadata={"tax_rate": tax_rate}
                             )
                             transactions.append(tx)
 

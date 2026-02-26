@@ -27,8 +27,22 @@ class GoodsTransactionHandler(ITransactionHandler):
 
 
         # 1. Prepare Settlement (Calculate tax intents)
-        # Assuming taxation_system is available in context
-        intents = context.taxation_system.calculate_tax_intents(tx, buyer, seller, context.government, context.market_data)
+        # Check metadata for pre-calculated tax (Consistency Priority)
+        # If metadata has 'tax_rate' or 'expected_tax', we prioritize it or reconcile.
+        # Ideally, transaction creation should set strict intents.
+
+        intents = []
+        if hasattr(tx, 'metadata') and tx.metadata and 'tax_rate' in tx.metadata:
+             # Fast-Path: Use metadata rate or pre-calculated amount if available
+             # Currently CommerceSystem sets 'tax_rate'. Re-calculate to match exactly.
+             # Or rely on TaxationSystem as SSoT if metadata is missing.
+             # We will allow TaxationSystem to be the authority, but double check consistency if needed.
+             # For now, sticking to TaxationSystem to avoid logic duplication,
+             # assuming CommerceSystem used same SSoT for checking.
+             intents = context.taxation_system.calculate_tax_intents(tx, buyer, seller, context.government, context.market_data)
+        else:
+             # Fallback
+             intents = context.taxation_system.calculate_tax_intents(tx, buyer, seller, context.government, context.market_data)
 
         credits: List[Tuple[Any, int, str]] = []
 
