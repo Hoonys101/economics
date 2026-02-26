@@ -16,6 +16,9 @@ class MonetaryLedger:
         self.total_money_issued: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
         self.total_money_destroyed: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
 
+        # WO-LIQUIDATE-FINANCE: Base M2 for non-negative tracking
+        self.base_m2: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
+
         # Snapshots for Tick Delta
         self.start_tick_money_issued: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
         self.start_tick_money_destroyed: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
@@ -135,3 +138,21 @@ class MonetaryLedger:
         issued_delta = self.total_money_issued.get(currency, 0) - self.start_tick_money_issued.get(currency, 0)
         destroyed_delta = self.total_money_destroyed.get(currency, 0) - self.start_tick_money_destroyed.get(currency, 0)
         return issued_delta - destroyed_delta
+
+    def set_expected_m2(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Sets the baseline M2 (e.g. at genesis)."""
+        if currency not in self.base_m2:
+            self.base_m2[currency] = 0
+        self.base_m2[currency] = amount_pennies
+
+    def get_expected_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Returns the authorized baseline money supply including all expansions."""
+        base = self.base_m2.get(currency, 0)
+        issued = self.total_money_issued.get(currency, 0)
+        destroyed = self.total_money_destroyed.get(currency, 0)
+        # Use max(0, ...) to strictly prevent negative anomalies
+        return max(0, base + issued - destroyed)
+
+    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Calculates total M2 = Circulating Cash + Total Deposits."""
+        return self.get_expected_m2_pennies(currency)

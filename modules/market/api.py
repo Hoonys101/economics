@@ -22,6 +22,17 @@ class MarketSide(str, Enum):
     BUY = "BUY"
     SELL = "SELL"
 
+class IndustryDomain(str, Enum):
+    GENERAL = "GENERAL"
+    CONSTRUCTION = "CONSTRUCTION"
+    AGRICULTURE = "AGRICULTURE"
+    MANUFACTURING = "MANUFACTURING"
+    SERVICES = "SERVICES"
+    TECHNOLOGY = "TECHNOLOGY"
+    HEALTHCARE = "HEALTHCARE"
+    EDUCATION = "EDUCATION"
+    FINANCE = "FINANCE"
+
 @dataclass(frozen=True)
 class CanonicalOrderDTO:
     """

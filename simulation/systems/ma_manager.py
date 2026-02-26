@@ -3,6 +3,7 @@ import logging
 import random
 from modules.finance.api import IMonetaryAuthority
 from modules.system.api import DEFAULT_CURRENCY
+from modules.finance.utils.currency_math import round_to_pennies
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -136,7 +137,7 @@ class MAManager:
                 # Check if Predator can afford
                 target_valuation = prey.valuation # int pennies
                 offer_price_float = target_valuation * friendly_premium
-                offer_price_pennies = int(offer_price_float)
+                offer_price_pennies = round_to_pennies(offer_price_float)
                 
                 # Check Cash Requirement
                 min_cash_ratio = getattr(self.config, "MIN_ACQUISITION_CASH_RATIO", 1.5)
@@ -161,7 +162,7 @@ class MAManager:
 
         # market_cap is in pennies (float), convert to int pennies for settlement
         offer_price_float = market_cap * premium
-        offer_price_pennies = int(offer_price_float)
+        offer_price_pennies = round_to_pennies(offer_price_float)
 
         # Success Probability
         success_prob = getattr(self.config, "HOSTILE_TAKEOVER_SUCCESS_PROB", 0.6)
@@ -241,9 +242,9 @@ class MAManager:
                      m = self.simulation.markets[item]
                      if hasattr(m, "avg_price"): price = m.avg_price
                  # Convert to pennies
-                 inv_value_pennies += int(qty * price * 100) # Assuming price is dollars
+                 inv_value_pennies += round_to_pennies(qty * price * 100) # Assuming price is dollars
 
-        capital_value_pennies = int(firm.capital_stock * 100) # Assuming 1 unit of capital = $1 ? Or verify?
+        capital_value_pennies = round_to_pennies(firm.capital_stock * 100) # Assuming 1 unit of capital = $1 ? Or verify?
         # Typically capital_stock is value in dollars or units.
         # If it's value, we treat as dollars. If units, we need a price.
         # Assuming value in dollars for now as per previous logic.
