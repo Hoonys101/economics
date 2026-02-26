@@ -23,7 +23,7 @@ from simulation.agents.central_bank import CentralBank
 from simulation.loan_market import LoanMarket
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.markets.market_circuit_breaker import IndexCircuitBreaker
-from modules.market.api import IndexCircuitBreakerConfigDTO, MarketConfigDTO
+from modules.market.api import IndexCircuitBreakerConfigDTO, MarketConfigDTO, LaborMarketConfigDTO, StockMarketConfigDTO
 from simulation.markets.stock_market import StockMarket
 from modules.market.safety.price_limit import PriceLimitEnforcer
 from modules.market.safety_dtos import PriceLimitConfigDTO
@@ -332,7 +332,14 @@ class SimulationInitializer(SimulationInitializerInterface):
                  circuit_breaker=sim.world_state.index_circuit_breaker
              )
 
-        sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
+        labor_config = LaborMarketConfigDTO(
+            majors=getattr(self.config, 'MAJORS', []),
+            education_weight=getattr(self.config, 'LABOR_EDUCATION_WEIGHT', 0.1),
+            matching_mode=getattr(self.config, 'LABOR_MATCHING_MODE', "BID"),
+            min_reservation_wage_pennies=getattr(self.config, 'MIN_RESERVATION_WAGE_PENNIES', 1000),
+            compatibility=getattr(self.config, 'LABOR_MARKET', {}).get('compatibility', {})
+        )
+        sim.markets['labor'] = LaborMarket(market_id='labor', config_dto=labor_config)
 
         sec_enforcer = self._create_enforcer('security_market', safety_configs)
         safety_manager.register_enforcer('security_market', sec_enforcer)
@@ -348,7 +355,15 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.markets['loan_market'] = LoanMarket(market_id='loan_market', bank=sim.bank, config_module=self.config)
         sim.markets['loan_market'].agents_ref = sim.agents
         if getattr(self.config, 'STOCK_MARKET_ENABLED', False):
-            sim.stock_market = StockMarket(config_module=self.config, shareholder_registry=sim.shareholder_registry, logger=self.logger, index_circuit_breaker=sim.world_state.index_circuit_breaker)
+            stock_config = StockMarketConfigDTO(
+                trading_fee_pennies=getattr(self.config, 'STOCK_TRADING_FEE', 100),
+                circuit_breaker_threshold=getattr(self.config, 'STOCK_CIRCUIT_BREAKER_THRESHOLD', 0.1),
+                matching_mode=getattr(self.config, 'STOCK_MATCHING_MODE', "MIDPOINT"),
+                book_value_multiplier=getattr(self.config, 'STOCK_BOOK_VALUE_MULTIPLIER', 1.0),
+                price_limit_rate=getattr(self.config, 'STOCK_PRICE_LIMIT_RATE', 0.1),
+                order_expiry_ticks=getattr(self.config, 'STOCK_ORDER_EXPIRY_TICKS', 5)
+            )
+            sim.stock_market = StockMarket(config_dto=stock_config, shareholder_registry=sim.shareholder_registry, logger=self.logger, index_circuit_breaker=sim.world_state.index_circuit_breaker)
             sim.stock_tracker = StockMarketTracker(config_module=self.config)
             sim.markets['stock_market'] = sim.stock_market
             for firm in sim.firms:

@@ -8,6 +8,7 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.common.interfaces import IPropertyOwner
 from modules.finance.api import IFinancialAgent
 from modules.market.safety_dtos import PriceLimitConfigDTO, ValidationResultDTO
+from modules.common.enums import IndustryDomain
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
@@ -221,6 +222,7 @@ class LaborMarketConfigDTO:
     education_weight: float = 0.1
     matching_mode: str = "BID"
     min_reservation_wage_pennies: int = 1000
+    compatibility: Dict[str, float] = field(default_factory=dict)
 
 @dataclass(frozen=True)
 class StockMarketConfigDTO:
@@ -228,6 +230,9 @@ class StockMarketConfigDTO:
     trading_fee_pennies: int = 100
     circuit_breaker_threshold: float = 0.1
     matching_mode: str = "MIDPOINT"
+    book_value_multiplier: float = 1.0
+    price_limit_rate: float = 0.1
+    order_expiry_ticks: int = 5
 
 @dataclass
 class HousingTransactionContextDTO:

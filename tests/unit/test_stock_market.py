@@ -9,19 +9,18 @@ Testing Strategy:
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 from simulation.markets.stock_market import StockMarket
-from modules.market.api import OrderDTO, IIndexCircuitBreaker
+from modules.market.api import OrderDTO, IIndexCircuitBreaker, StockMarketConfigDTO
 from simulation.models import Transaction
 
 @pytest.fixture
 def mock_config(golden_config):
-    config = golden_config if golden_config is not None else Mock()
-    config.STOCK_MARKET_ENABLED = True
-    config.STOCK_PRICE_LIMIT_RATE = 0.15
-    config.STOCK_BOOK_VALUE_MULTIPLIER = 1.0
-    config.STOCK_MIN_ORDER_QUANTITY = 1.0
-    config.STOCK_ORDER_EXPIRY_TICKS = 5
-    config.STOCK_TRANSACTION_FEE_RATE = 0.001
-    return config
+    # Construct StockMarketConfigDTO instead of raw config
+    return StockMarketConfigDTO(
+        price_limit_rate=0.15,
+        book_value_multiplier=1.0,
+        order_expiry_ticks=5,
+        trading_fee_pennies=10 # Example fee
+    )
 
 @pytest.fixture
 def stock_market(mock_config):
@@ -29,7 +28,7 @@ def stock_market(mock_config):
     mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
     mock_breaker.check_market_health.return_value = True
     mock_breaker.is_active.return_value = False
-    return StockMarket(config_module=mock_config, shareholder_registry=registry, index_circuit_breaker=mock_breaker)
+    return StockMarket(config_dto=mock_config, shareholder_registry=registry, index_circuit_breaker=mock_breaker)
 
 @pytest.fixture
 def sample_buy_order_dto():
@@ -132,7 +131,14 @@ class TestStockOrderMatching:
 class TestOrderExpiry:
 
     def test_clear_expired_orders(self, stock_market, mock_config):
-        mock_config.STOCK_ORDER_EXPIRY_TICKS = 3
+        # We need to recreate market with new config or modify the existing config_dto if it's mutable/mocked?
+        # StockMarketConfigDTO is frozen. We should construct a new market or mock the DTO if we want to change it.
+        # But stock_market fixture uses mock_config.
+        # Let's just create a new market with desired config for this test.
+        new_config = StockMarketConfigDTO(order_expiry_ticks=3)
+        registry = MagicMock()
+        stock_market = StockMarket(config_dto=new_config, shareholder_registry=registry)
+
         firm_id = 100
         stock_market.reference_prices[firm_id] = 50.0
         o1 = OrderDTO(agent_id=1, side='BUY', item_id=f'stock_{firm_id}', quantity=5.0, price_limit=50.0, price_pennies=5000, market_id='stock')

@@ -10,7 +10,7 @@ from collections import defaultdict
 from dataclasses import dataclass, replace
 from simulation.models import Transaction, Order
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper, OrderTelemetrySchema, IIndexCircuitBreaker
+from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper, OrderTelemetrySchema, IIndexCircuitBreaker, StockMarketConfigDTO
 from modules.finance.api import IShareholderRegistry, IShareholderView
 from simulation.markets.matching_engine import StockMatchingEngine
 logger = logging.getLogger(__name__)
@@ -31,9 +31,9 @@ class StockMarket(Market):
     실제 거래는 호가 매칭으로 이루어집니다.
     """
 
-    def __init__(self, config_module: Any, shareholder_registry: IShareholderRegistry, logger: Optional[logging.Logger]=None, index_circuit_breaker: Optional[IIndexCircuitBreaker]=None):
+    def __init__(self, config_dto: StockMarketConfigDTO, shareholder_registry: IShareholderRegistry, logger: Optional[logging.Logger]=None, index_circuit_breaker: Optional[IIndexCircuitBreaker]=None):
         self.id = 'stock_market'
-        self.config_module = config_module
+        self.config_dto = config_dto
         self.logger = logger or logging.getLogger(__name__)
         self.shareholder_registry = shareholder_registry
         self.index_circuit_breaker = index_circuit_breaker
@@ -61,7 +61,7 @@ class StockMarket(Market):
         Args:
             firms: 기업 ID -> Firm 객체 맵
         """
-        multiplier = getattr(self.config_module, 'STOCK_BOOK_VALUE_MULTIPLIER', 1.0)
+        multiplier = self.config_dto.book_value_multiplier
         for firm_id, firm in firms.items():
             if not getattr(firm, 'is_active', True):
                 continue
@@ -143,7 +143,7 @@ class StockMarket(Market):
         except ValueError:
             self.logger.error(f"Invalid item_id format for stock order: {order.item_id}. Expected 'stock_<firm_id>'")
             return
-        limit_rate = getattr(self.config_module, 'STOCK_PRICE_LIMIT_RATE', 0.1)
+        limit_rate = self.config_dto.price_limit_rate
         ref_price = self.reference_prices.get(firm_id, order.price_limit)
         min_price = ref_price * (1 - limit_rate)
         max_price = ref_price * (1 + limit_rate)
@@ -226,7 +226,7 @@ class StockMarket(Market):
         Returns:
             제거된 주문 수
         """
-        expiry_ticks = getattr(self.config_module, 'STOCK_ORDER_EXPIRY_TICKS', 5)
+        expiry_ticks = self.config_dto.order_expiry_ticks
         removed_count = 0
         for firm_id in list(self.buy_orders.keys()):
             original_count = len(self.buy_orders[firm_id])
