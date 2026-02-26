@@ -47,7 +47,7 @@ class SettlementSystem(IMonetaryAuthority):
         estate_registry: Optional[Any] = None
     ):
         self.logger = logger if logger else logging.getLogger(__name__)
-        self.bank = bank # TD-179: Reference to Bank for Seamless Payments
+        self._bank = bank # TD-179: Reference to Bank for Seamless Payments
         self.metrics_service = metrics_service
         self.total_liquidation_losses: int = 0
         self.agent_registry = agent_registry # Injected by SimulationInitializer
@@ -65,6 +65,29 @@ class SettlementSystem(IMonetaryAuthority):
         # Internal buffer for side-effect transactions (e.g., Estate Distribution)
         # Addressed by TD-ARCH-GHOST-TRANSACTIONS
         self._internal_tx_queue: List[Transaction] = []
+
+        # Performance Cache for M2 Exclusions
+        self._excluded_m2_ids: Set[Any] = set()
+        self._update_excluded_m2_ids()
+
+    @property
+    def bank(self) -> Optional[IBank]:
+        return self._bank
+
+    @bank.setter
+    def bank(self, value: Optional[IBank]) -> None:
+        self._bank = value
+        self._update_excluded_m2_ids()
+
+    def _update_excluded_m2_ids(self) -> None:
+        """Updates the cached set of IDs excluded from M2 calculations."""
+        # Include both raw IDs and their string representations for O(1) lookups
+        # without needing to cast agent.id in tight loops.
+        self._excluded_m2_ids = {uid for uid in NON_M2_SYSTEM_AGENT_IDS}
+        self._excluded_m2_ids.update({str(uid) for uid in NON_M2_SYSTEM_AGENT_IDS})
+        if self._bank:
+            self._excluded_m2_ids.add(self._bank.id)
+            self._excluded_m2_ids.add(str(self._bank.id))
 
     def set_monetary_ledger(self, ledger: IMonetaryLedger) -> None:
         self.monetary_ledger = ledger
@@ -212,12 +235,6 @@ class SettlementSystem(IMonetaryAuthority):
         processed_ids = set()
         processed_wallets = set()
 
-        # System Agents to Exclude
-        # Use set comprehension to ensure all IDs are strings for comparison
-        excluded_ids = {str(uid) for uid in NON_M2_SYSTEM_AGENT_IDS}
-        if self.bank:
-             excluded_ids.add(str(self.bank.id))
-
         def process_agent_balance(agent: Any) -> int:
             if not agent: return 0
 
@@ -236,8 +253,8 @@ class SettlementSystem(IMonetaryAuthority):
                     return 0
                 processed_wallets.add(wallet_id)
 
-            # 1. ID Check
-            if str(agent.id) in excluded_ids:
+            # 1. ID Check (Optimized: O(1) cache lookup)
+            if agent.id in self._excluded_m2_ids:
                 return 0
 
             # 2. Type Check (Exclude Banks - Reserves are M0)
@@ -288,15 +305,11 @@ class SettlementSystem(IMonetaryAuthority):
         if not agent:
             return False
 
-        # 1. Check ID Exclusion
-        if str(agent.id) in {str(uid) for uid in NON_M2_SYSTEM_AGENT_IDS}:
+        # 1. Check ID Exclusion (Optimized: O(1) cache lookup)
+        if agent.id in self._excluded_m2_ids:
             return False
 
-        # 2. Check Bank ID (if bank reference exists)
-        if self.bank and str(agent.id) == str(self.bank.id):
-             return False
-
-        # 3. Check Type Exclusion (IBank implementation)
+        # 2. Check Type Exclusion (IBank implementation)
         if isinstance(agent, IBank):
             return False
 
