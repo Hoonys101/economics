@@ -20,6 +20,7 @@ from modules.finance.api import ISettlementSystem
 from modules.system.command_pipeline.api import ICommandIngressService
 
 from simulation.db.logger import SimulationLogger
+from simulation.db.db_manager import DBManager
 import simulation
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,9 @@ class Simulation:
         # Expose via global module attribute for access by agents
         simulation.logger = self.simulation_logger
 
+        # Initialize DBManager for Rebirth Pipeline (Buffered Persistence)
+        self.db_manager = DBManager(db_path)
+
     def initialize(self) -> None:
         """
         Final initialization step for the Simulation facade.
@@ -141,6 +145,7 @@ class Simulation:
         self.world_state.repository.runs.update_simulation_run_end_time(self.world_state.run_id)
         self.world_state.repository.close()
         self.simulation_logger.close()
+        self.db_manager.close()
         self.world_state.logger.info("Simulation finalized and Repository connection closed.")
 
         # Release application-level lock if exists
@@ -197,6 +202,9 @@ class Simulation:
         batch_save_interval = getattr(self, 'batch_save_interval', 10)
         if self.world_state.time % batch_save_interval == 0:
             self.simulation_logger.flush()
+
+        # REBIRTH PIPELINE: Flush DBManager buffer at the end of each tick
+        self.db_manager.flush()
 
     def get_all_agents(self) -> List[Any]:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
