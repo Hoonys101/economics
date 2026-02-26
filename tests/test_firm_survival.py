@@ -44,11 +44,13 @@ class MockFirm(IAgingFirm):
 @pytest.fixture
 def aging_system():
     config = MagicMock()
-    config.ASSETS_CLOSURE_THRESHOLD = 0.0 # 0 pennies
-    config.FIRM_CLOSURE_TURNS_THRESHOLD = 20
-    config.LIQUIDITY_NEED_INCREASE_RATE = 0.0
-    config.DISTRESS_GRACE_PERIOD = 5
-    config.GOODS_INITIAL_PRICE = {"default": 10.0}
+    # Use lowercase attributes to match LifecycleConfigDTO and set primitive values
+    config.assets_closure_threshold_pennies = 0
+    config.firm_closure_turns_threshold = 20
+    config.liquidity_need_increase_rate = 0.0
+    config.distress_grace_period = 5
+    config.default_fallback_price_pennies = 1000
+    config.survival_need_death_threshold = 100.0
 
     demographic_manager = MagicMock()
     logger = MagicMock()

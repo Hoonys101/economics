@@ -77,6 +77,14 @@ def mock_config_module():
     mock_config.TAX_MODE = "FLAT" # Simplified for test
     mock_config.ASSETS_DEATH_THRESHOLD = 0.0
     mock_config.HOUSEHOLD_DEATH_TURNS_THRESHOLD = 4
+    mock_config.DEFAULT_FALLBACK_PRICE = 1000
+    mock_config.DISTRESS_GRACE_PERIOD = 5
+    mock_config.REPRODUCTION_AGE_START = 20
+    mock_config.REPRODUCTION_AGE_END = 45
+    mock_config.REPRODUCTION_RATE = 0.01
+    mock_config.IMMIGRATION_RATE = 0.005
+    mock_config.MAX_POPULATION_CAP = 5000
+    mock_config.INITIAL_HOUSEHOLD_ASSETS = 1000
 
     # Central Bank
     mock_config.CB_UPDATE_INTERVAL = 10
