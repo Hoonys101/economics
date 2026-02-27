@@ -53,9 +53,10 @@ class InheritanceManager:
              cash = 0.0
         else:
             cash_raw = deceased._econ_state.assets
-            cash = cash_raw
             if isinstance(cash_raw, dict):
-                cash = cash_raw.get(DEFAULT_CURRENCY, 0.0)
+                cash = float(cash_raw.get(DEFAULT_CURRENCY, 0.0))
+            else:
+                cash = float(cash_raw)
             cash = round(cash, 2)
 
         self.logger.info(

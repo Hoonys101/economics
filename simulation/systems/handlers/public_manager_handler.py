@@ -38,13 +38,13 @@ class PublicManagerTransactionHandler(ITransactionHandler):
             # TD-233: Calculate Tax Atomically
             intents = context.taxation_system.calculate_tax_intents(tx, buyer, pm, context.government, context.market_data)
 
-            credits: List[Tuple[Any, float, str]] = []
-            credits.append((pm, trade_value, f"public_sale:{tx.item_id}"))
+            credits: List[Tuple[Any, int, str]] = []
+            credits.append((pm, int(trade_value), f"public_sale:{tx.item_id}"))
 
             # Note: total_cost calculation removed as it's not used here, settle_atomic handles total debit.
 
             for intent in intents:
-                credits.append((context.government, intent.amount, intent.reason))
+                credits.append((context.government, int(intent.amount), intent.reason))
 
             success = context.settlement_system.settle_atomic(buyer, credits, context.time)
 

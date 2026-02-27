@@ -9,6 +9,7 @@ def test_phase_housing_saga_execution():
     phase = Phase_HousingSaga(mock_world_state)
 
     mock_state = MagicMock(spec=SimulationState)
+    mock_state.time = 1
     mock_saga_orchestrator = MagicMock()
     mock_state.saga_orchestrator = mock_saga_orchestrator
 
@@ -16,7 +17,7 @@ def test_phase_housing_saga_execution():
     phase.execute(mock_state)
 
     # Verify
-    mock_saga_orchestrator.process_sagas.assert_called_once()
+    mock_saga_orchestrator.process_sagas.assert_called_once_with(1)
 
 def test_phase_housing_saga_execution_fallback():
     # Setup
@@ -24,6 +25,7 @@ def test_phase_housing_saga_execution_fallback():
     phase = Phase_HousingSaga(mock_world_state)
 
     mock_state = MagicMock(spec=SimulationState)
+    mock_state.time = 1
     mock_state.saga_orchestrator = None
     mock_settlement_system = MagicMock()
     mock_state.settlement_system = mock_settlement_system
@@ -40,6 +42,7 @@ def test_phase_housing_saga_no_settlement_system():
     phase = Phase_HousingSaga(mock_world_state)
 
     mock_state = MagicMock(spec=SimulationState)
+    mock_state.time = 1
     mock_state.settlement_system = None
 
     # Execute (should not raise error)
@@ -54,6 +57,7 @@ def test_phase_housing_saga_system_no_method():
     phase = Phase_HousingSaga(mock_world_state)
 
     mock_state = MagicMock(spec=SimulationState)
+    mock_state.time = 1
     mock_settlement_system = MagicMock()
     # Ensure hasattr(..., 'process_sagas') returns False
     # MagicMock usually creates attributes on access, so we need to be careful.

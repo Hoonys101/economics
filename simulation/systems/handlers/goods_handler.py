@@ -33,11 +33,11 @@ class GoodsTransactionHandler(ITransactionHandler):
         credits: List[Tuple[Any, int, str]] = []
 
         # 1a. Main Trade Credit (Seller)
-        credits.append((seller, trade_value, f"goods_trade:{tx.item_id}"))
+        credits.append((seller, int(trade_value), f"goods_trade:{tx.item_id}"))
 
         # 1b. Tax Credits (Government)
         # Initialize total_cost (from buyer perspective) with base trade value
-        total_cost = trade_value
+        total_cost = int(trade_value)
 
         for intent in intents:
             # Tax amounts are already rounded by TaxationSystem and are ints

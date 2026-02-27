@@ -936,6 +936,8 @@ class SettlementSystem(IMonetaryAuthority):
         """
         current_m2 = self.get_total_m2_pennies(DEFAULT_CURRENCY)
 
+        self.logger.info(f"AUDIT_DEBUG | M2 Calculation triggered. Total: {current_m2}")
+
         if expected_total is not None:
             if current_m2 != expected_total:
                 self.logger.critical(
