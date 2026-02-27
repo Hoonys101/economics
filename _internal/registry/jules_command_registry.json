@@ -3,17 +3,25 @@
     "version": "1.0"
   },
   "missions": {
-    "FIX_TEST_COLLECTION_RECOVERY_V2": {
-      "key": "FIX_TEST_COLLECTION_RECOVERY_V2",
-      "title": "Pytest Collection Root Cause Recovery (Wave 2)",
+    "RECOVER_PYTEST_COLLECTION_HANG": {
+      "key": "RECOVER_PYTEST_COLLECTION_HANG",
+      "title": "Recover Pytest Collection: Diagnosis & Structural Fix",
       "type": "jules",
-      "instruction_raw": "",
+      "instruction_raw": "\n        Pytest collection is experiencing a terminal 'stuck' point (hang) that occurs BEFORE root conftest.py telemetry can even log.\n        This is not a simple performance bottleneck, but a structural block.\n\n        1. [Diagnosis] Identify the 'Entry Point' block: Analyze 'main.py', 'config/__init__.py', and root-level '__init__.py' files for global initialization code.\n        2. [Fix] Hypothesis - Deadlock/Global Contention: If you find file locks (PlatformLockManager), singletons, or DB connections triggered during import, ISOLATE them.\n        3. [Fix] Audit 'pytest.ini' & Dependencies: Ensure heavy deps (sklearn, joblib) don't deadlock during test discovery.\n        4. [Mandate] Implement a structural fix to ensure core initialization ONLY triggers during runtime, not during test discovery.\n        5. [Verification] Run 'pytest --collect-only' to confirm the hang is resolved.\n        ",
       "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_TEST_COLLECTION_RECOVERY_V2.md",
+      "file_path": null,
       "wait": false,
       "session_id": null,
       "worker": null,
-      "context_files": [],
+      "context_files": [
+        "pytest.ini",
+        "tests/conftest.py",
+        "main.py",
+        "config/__init__.py",
+        "modules/platform/infrastructure/lock_manager.py",
+        "simulation/initialization/initializer.py",
+        "requirements.txt"
+      ],
       "output_path": null,
       "model": null,
       "audit_requirements": null

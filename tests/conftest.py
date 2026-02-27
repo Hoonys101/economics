@@ -1,6 +1,9 @@
 import sys
 from unittest.mock import Mock, MagicMock, patch
 import pytest
+import time
+
+print(f"DEBUG: [conftest.py] Root conftest loading at {time.strftime('%H:%M:%S')}")
 
 # Mock missing dependencies for CI/Sandbox environments
 # Note: "numpy" is included here to allow collection in envs where it's missing.
@@ -9,9 +12,13 @@ import pytest
 for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit", "pydantic", "fastapi", "fastapi.testclient", "uvicorn", "httpx", "starlette", "starlette.websockets", "starlette.status", "numpy"]:
     if module_name in sys.modules:
         continue
+    print(f"DEBUG: [conftest.py] Attempting to import/mock: {module_name}...", end=" ", flush=True)
+    start_time = time.time()
     try:
         __import__(module_name)
+        print(f"DONE ({time.time() - start_time:.2f}s)")
     except ImportError:
+        print("MOCKING")
         mock = MagicMock()
         # IMPORTANT: Setting __path__ = [] allows the mock to be treated as a package,
         # supporting submodule imports like 'websockets.asyncio'.
@@ -28,12 +35,21 @@ for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklear
             mock.validator = MagicMock(return_value=lambda x: x)
 
         sys.modules[module_name] = mock
+    except Exception as e:
+        print(f"FAILED ({e})")
+
+print(f"DEBUG: [conftest.py] Import phase complete at {time.strftime('%H:%M:%S')}")
 
 import config
 from simulation.agents.government import Government
 from modules.finance.system import FinanceSystem
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
 from modules.finance.api import ISettlementSystem, IMonetaryAuthority
+
+def pytest_collect_file(file_path, path, parent):
+    """Log file collection progress to help debug hangs."""
+    if file_path.suffix == ".py":
+        print(f"DEBUG: [pytest] Collecting: {file_path}")
 
 @pytest.fixture(autouse=True)
 def mock_platform_lock_manager(request):

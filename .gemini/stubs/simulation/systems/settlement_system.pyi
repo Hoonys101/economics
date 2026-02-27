@@ -36,6 +36,11 @@ class SettlementSystem(IMonetaryAuthority):
     def set_panic_recorder(self, recorder: IPanicRecorder) -> None: ...
     def set_metrics_service(self, service: IEconomicMetricsService) -> None:
         """Sets the economic metrics service for recording system-wide financial events."""
+    def drain_internal_transactions(self) -> list[Transaction]:
+        """
+        Returns and clears the internal buffer of side-effect transactions.
+        Called by the TickOrchestrator to inject these into the global transaction log.
+        """
     def register_account(self, bank_id: AgentID, agent_id: AgentID) -> None:
         """
         Registers an account link between a bank and an agent.

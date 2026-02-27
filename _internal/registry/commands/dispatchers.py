@@ -72,6 +72,14 @@ class GeminiDispatcher(ICommand):
         if model:
             cmd.extend(["--model", model])
         
+        # Isolated Mode: Always use --no-inject for audits to prevent bloat-induced timeouts
+        if mission.worker in ["audit", "report"]:
+            cmd.append("--no-inject")
+            
+        # User-driven isolation: if mission key ends with '_ISO'
+        if key.endswith("_ISO"):
+            cmd.append("--no-inject")
+
         res = run_command(cmd, cwd=ctx.base_dir)
         success = res and res.returncode == 0
         if success:

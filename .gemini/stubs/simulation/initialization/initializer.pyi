@@ -72,7 +72,8 @@ class SimulationInitializer(SimulationInitializerInterface):
     firms: Incomplete
     ai_trainer: Incomplete
     initial_balances: Incomplete
-    def __init__(self, config_manager: ConfigManager, config_module: Any, goods_data: list[dict[str, Any]], repository: SimulationRepository, logger: logging.Logger, households: list[Household], firms: list[Firm], ai_trainer: AIEngineRegistry, initial_balances: dict[int, float] | None = None) -> None: ...
+    strategy: Incomplete
+    def __init__(self, config_manager: ConfigManager, config_module: Any, goods_data: list[dict[str, Any]], repository: SimulationRepository, logger: logging.Logger, households: list[Household], firms: list[Firm], ai_trainer: AIEngineRegistry, initial_balances: dict[int, float] | None = None, strategy: Any | None = None) -> None: ...
     def build_simulation(self) -> Simulation:
         """
         Simulation 인스턴스를 생성하고 모든 구성 요소를 조립합니다.
