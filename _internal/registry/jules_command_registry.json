@@ -3,13 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "FIX_TEST_COLLECTION_RECOVERY": {
-      "key": "FIX_TEST_COLLECTION_RECOVERY",
-      "title": "Iterative Recovery of Pytest Collection",
+    "FIX_TEST_COLLECTION_RECOVERY_V2": {
+      "key": "FIX_TEST_COLLECTION_RECOVERY_V2",
+      "title": "Pytest Collection Root Cause Recovery (Wave 2)",
       "type": "jules",
-      "instruction_raw": "\uc804\uccb4 \ud14c\uc2a4\ud2b8\uac00 \ubaa8\ub450 \uc218\uc9d1\ub420 \uc218 \uc788\ub3c4\ub85d \uc218\uc9d1 \uc54c\uace0\ub9ac\uc998\uc744 \uc218\uc815\ud569\ub2c8\ub2e4.",
+      "instruction_raw": "",
       "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_TEST_COLLECTION_RECOVERY.md",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_TEST_COLLECTION_RECOVERY_V2.md",
       "wait": false,
       "session_id": null,
       "worker": null,
