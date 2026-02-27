@@ -1,7 +1,5 @@
 import logging
 from typing import Optional, Dict, List, Any, TYPE_CHECKING
-from simulation.core_agents import Household
-from simulation.agents.government import Government
 from simulation.models import Order, Transaction
 from simulation.portfolio import Portfolio
 from modules.system.api import DEFAULT_CURRENCY
@@ -11,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
+    from simulation.core_agents import Household
+    from simulation.agents.government import Government
 
 class InheritanceManager:
     """
@@ -22,7 +22,7 @@ class InheritanceManager:
         self.config_module = config_module
         self.logger = logging.getLogger("simulation.systems.inheritance_manager")
 
-    def process_death(self, deceased: Household, government: Government, simulation: "SimulationState") -> List[Transaction]:
+    def process_death(self, deceased: "Household", government: "Government", simulation: "SimulationState") -> List[Transaction]:
         """
         Executes the inheritance pipeline using SettlementSystem (Atomic).
 
