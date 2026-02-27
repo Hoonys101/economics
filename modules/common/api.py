@@ -40,22 +40,32 @@ class IndicatorSubscriptionDTO:
 
 @runtime_checkable
 class IAgent(Protocol):
-    id: int # Using int as AgentID is typically int in this codebase
+    @property
+    def id(self) -> int: ... # Using int as AgentID is typically int in this codebase
 
 @runtime_checkable
 class IFirm(IAgent, Protocol):
-    inventory: dict
-    capital: float
+    @property
+    def inventory(self) -> dict: ...
+
+    @property
+    def capital(self) -> float: ...
+
     # Added for FirmMapper compatibility (which accesses capital_stock)
-    capital_stock: float
+    # Using @property ensures isinstance checks for existence at runtime if Python < 3.12
+    # (actually Python Protocol checks are limited for properties, but it's better semantics)
+    @property
+    def capital_stock(self) -> float: ...
 
     def get_all_items(self) -> Dict[str, int]: ...
 
 @runtime_checkable
 class IHousehold(IAgent, Protocol):
-    wealth: float
-    skills: dict
-    # Added for HouseholdMapper if needed, but keeping minimal for now
+    @property
+    def wealth(self) -> float: ...
+
+    @property
+    def skills(self) -> dict: ...
 
 @runtime_checkable
 class ISimulationRepository(Protocol):

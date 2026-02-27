@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, create_autospec
+from unittest.mock import MagicMock, create_autospec, PropertyMock
 from modules.common.services.public_service import PublicSimulationService
 from modules.common.api import (
     ISimulationRepository, IEventBroker, IMetricsProvider, IndicatorSubscriptionDTO,
@@ -28,10 +28,13 @@ class TestPublicSimulationService:
         # Setup
         firm_id = "101"
         mock_firm = MagicMock(spec=IFirm)
-        mock_firm.id = 101
-        # Set attributes required by FirmMapper
-        mock_firm.capital_stock = 5000.0 # Used by Mapper
-        mock_firm.capital = 5000.0 # Used by Protocol check (if checked)
+        # Use PropertyMock for protocol properties
+        type(mock_firm).id = PropertyMock(return_value=101)
+        type(mock_firm).capital = PropertyMock(return_value=5000.0)
+        type(mock_firm).capital_stock = PropertyMock(return_value=5000.0)
+        type(mock_firm).inventory = PropertyMock(return_value={})
+
+        # Configure methods
         mock_firm.get_all_items.return_value = {"item1": 10, "item2": 5}
 
         mock_repo.get_agent.return_value = mock_firm
@@ -51,15 +54,43 @@ class TestPublicSimulationService:
         with pytest.raises(AgentNotFoundError):
             service.get_firm_status("999")
 
-    def test_get_firm_status_protocol_violation(self, service, mock_repo):
-        # Return an agent that is NOT a firm
-
-        # Using a class that lacks required attributes
+    def test_get_firm_status_protocol_violation_isinstance(self, service, mock_repo):
+        # Case 1: Object fails isinstance check (e.g. completely different type)
         class NotAFirm:
-            id = 101
-            # Missing capital, inventory
+            pass
 
         mock_repo.get_agent.return_value = NotAFirm()
+
+        with pytest.raises(ProtocolViolationError):
+            service.get_firm_status("101")
+
+    def test_get_firm_status_protocol_integrity_missing_attr(self, service, mock_repo):
+        # Case 2: Object passes isinstance (mock) but misses attributes required by Mapper
+        # This simulates the "Leaky Boundary" where Service passes but Mapper catches it.
+
+        # Create a mock that satisfies IFirm for isinstance (due to spec)
+        # but DELETE the attributes at runtime to trigger Mapper's firewall.
+        mock_firm = MagicMock(spec=IFirm)
+
+        # Ensure it passes isinstance check in Service
+        # (MagicMock(spec=IFirm) usually passes strict isinstance if attributes exist)
+
+        # But we want to fail inside Mapper.
+        # So we delete 'capital_stock' from the instance.
+        del mock_firm.capital_stock
+        # Also ensure id is present so it doesn't fail there first
+        type(mock_firm).id = PropertyMock(return_value=101)
+
+        mock_repo.get_agent.return_value = mock_firm
+
+        # The Service calls isinstance(agent, IFirm).
+        # If this passes, Mapper is called.
+        # Mapper checks hasattr(agent, 'capital_stock').
+        # This should raise ProtocolViolationError.
+
+        # Note: If isinstance fails first, we get ProtocolViolationError from Service.
+        # If isinstance passes, we get ProtocolViolationError from Mapper.
+        # Either way, we want ProtocolViolationError.
 
         with pytest.raises(ProtocolViolationError):
             service.get_firm_status("101")
