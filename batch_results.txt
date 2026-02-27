@@ -1,0 +1,65 @@
+Batch 1: tests/unit\agents\test_government.py ... tests/unit\decisions\test_hr_rules.py
+Checking batch: 20 files
+  OK (4.65s)
+Batch 2: tests/unit\decisions\test_production_rules.py ... tests/unit\markets\test_circuit_breaker_legacy.py
+Checking batch: 20 files
+  OK (4.29s)
+Batch 3: tests/unit\markets\test_housing_transaction_handler.py ... tests/unit\modules\finance\test_sovereign_debt.py
+Checking batch: 20 files
+  OK (5.38s)
+Batch 4: tests/unit\modules\finance\test_system.py ... tests/unit\modules\system\test_command_service_unit.py
+Checking batch: 20 files
+  OK (4.93s)
+Batch 5: tests/unit\modules\system\test_config_bridge.py ... tests/unit\systems\lifecycle\test_aging_system.py
+Checking batch: 20 files
+  OK (4.29s)
+Batch 6: tests/unit\systems\lifecycle\test_birth_system.py ... tests/unit\systems\test_sensory_system.py
+Checking batch: 20 files
+  OK (4.30s)
+Batch 7: tests/unit\systems\test_settlement_saga_integration.py ... tests/unit\test_firm_profit.py
+Checking batch: 20 files
+  TIMEOUT
+!!! Error in batch 7
+Checking individually: tests/unit\systems\test_settlement_saga_integration.py
+Checking batch: 1 files
+  OK (3.58s)
+Checking individually: tests/unit\systems\test_settlement_security.py
+Checking batch: 1 files
+  OK (3.50s)
+Checking individually: tests/unit\systems\test_settlement_system.py
+Checking batch: 1 files
+  OK (3.68s)
+Checking individually: tests/unit\systems\test_social_system.py
+Checking batch: 1 files
+  OK (3.55s)
+Checking individually: tests/unit\systems\test_system_effects_major_choice.py
+Checking batch: 1 files
+  OK (4.23s)
+Checking individually: tests/unit\systems\test_tax_agency.py
+Checking batch: 1 files
+  OK (4.66s)
+Checking individually: tests/unit\systems\test_technology_manager.py
+Checking batch: 1 files
+  OK (4.61s)
+Checking individually: tests/unit\test_agent_registry_id_zero.py
+Checking batch: 1 files
+  OK (4.23s)
+Checking individually: tests/unit\test_ai_driven_firm_engine.py
+Checking batch: 1 files
+  OK (4.06s)
+Checking individually: tests/unit\test_ai_training_manager.py
+Checking batch: 1 files
+  OK (4.03s)
+Checking individually: tests/unit\test_api_extensions.py
+Checking batch: 1 files
+  OK (4.14s)
+Checking individually: tests/unit\test_api_history.py
+Checking batch: 1 files
+  OK (4.50s)
+Checking individually: tests/unit\test_bank.py
+Checking batch: 1 files
+  OK (4.44s)
+Checking individually: tests/unit\test_bank_decomposition.py
+Checking batch: 1 files
+  TIMEOUT
+FOUND POISON FILE: tests/unit\test_bank_decomposition.py

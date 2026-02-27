@@ -28,6 +28,15 @@
 - **[2026-02-19] Lifecycle-Settlement Atomicity**
     - **Insight**: Economic continuity requires that legal existence (Registration) strictly precedes financial existence (Capitalization). Reversing this order creates "Ghost Destinations" that crash the settlement layer.
     - [Insight Report](../_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md)
+- **[2026-02-28] Unified Command Pipeline via `CommandBatchDTO`**
+    - **Insight**: Deterministic simulation requires a single entry point for all state mutations. By consolidating fragmented inputs (`god_commands`, `system_commands`) and weakly-typed side-effects (`effects_queue`) into a strictly-typed `CommandBatchDTO`, we ensure execution atomicity and auditability.
+    - **Benefit**: This architecture allows for perfect replayability and simplifies the transition to multi-threaded or distributed execution patterns.
+    - [Insight Report](../../gemini-output/review/pr_review_impl-m2-hardening-10053793811427194491.md)
+- **[2026-02-28] Harmonized M2 Perimeter & Phase Consolidation**
+    - **Insight**: Macroeconomic stability depends on the clear demarcation between public money (M2) and system-internal liquidity. Redundant execution phases in the orchestrator cause race conditions and double-counting.
+    - **Solution**: Merged all monetary processing into a single atomic phase and explicitly excluded non-public system sinks (`PublicManager`, `SystemAgent`) from money supply calculations.
+    - [Insight Report](../../gemini-output/review/pr_review_settlement-sync-oracle-14873643742728355701.md)
+
 
 ---
 
@@ -70,11 +79,14 @@
 - **[2026-02-14] Zero-Sum Bank Runs**
     - Validated that `FORCE_WITHDRAW_ALL` events must strictly follow a two-step process: 1) Liability Reduction (Deposit write-down), 2) Asset Transfer (Cash payout). This prevents "Magic Money" creation where agent cash increases without a corresponding bank liability decrease.
     - [Insight Report](../_archive/insights/2026-02-14_Macro_Shock_Stress_Test.md)
-- **[2026-02-25] Mint-to-Buy Liquidation Pattern (PublicManager)**
-    - **Phenomenon**: Firm bankruptcies frequently aborted (`LIQUIDATION_ASSET_SALE_FAIL`) because the `PublicManager` lacked sufficient treasury funds to execute the asset buyout, leading to an "Asset-Rich, Cash-Poor" liquidity trap.
-    - **Root Cause**: The `PublicManager` was constrained by standard market transfer mechanics, unable to perform its duty as a receiver without a heavily pre-funded treasury.
-    - **Solution**: The `PublicManager` was elevated to implement the `ILiquidator` protocol. The `SettlementSystem`'s `create_and_transfer` logic was expanded to recognize `ILiquidator` instances alongside the `ICentralBank` as authorized authorities for targeted monetary expansion.
-    - **Lesson Learned**: During systemic distress, Asset Recovery Systems must act as Liquidity Providers of Last Resort. By explicitly coupling asset recovery to scoped M2 expansion ("Mint-to-Buy"), we prevent unintended systemic liquidity contraction while maintaining transparent SSoT records via the `MonetaryLedger`.
+- **Lesson Learned**: During systemic distress, Asset Recovery Systems must act as Liquidity Providers of Last Resort. By explicitly coupling asset recovery to scoped M2 expansion ("Mint-to-Buy"), we prevent unintended systemic liquidity contraction while maintaining transparent SSoT records via the `MonetaryLedger`.
+
+- **[2026-02-28] M2 Leakage and "Ghost Money" (Transaction Injection Pattern)**
+    - **Phenomenon**: M2 calculations showed persistent leakage despite no obvious code bugs.
+    - **Root Cause**: "Ghost money" was being created during implicit system operations (e.g., LLR injections) that used `SettlementSystem` but failed to propagate transaction records to the global `WorldState` ledger.
+    - **Solution**: Implemented the **Transaction Injection Pattern** where system agents are initialized with a direct reference to the global transaction queue, ensuring every credit/debit event is globally visible and auditable.
+    - **Lesson Learned**: All implicit money generation/destruction mechanisms MUST emit a globally visible `Transaction` object to maintain zero-sum transparency.
+
 
 ---
 

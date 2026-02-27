@@ -1,0 +1,5474 @@
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 
+.FullName : The term '.FullNa
+me' is not recognized as the 
+name of a cmdlet, function, s
+cript file, or operable progr
+am. Check the spelling of the
+ name, or if a path was inclu
+ded, verify that the path is 
+correct and try again.
+At line:1 char:73
++ ... -Path tests\unit -Filte
+r *.py -Recurse | ForEach-Obj
+ect { .FullName }
++                            
+                             
+      ~~~~~~~~~
+    + CategoryInfo           
+   : ObjectNotFound: (.Full  
+  Name:String) [], Command   
+ NotFoundException
+    + FullyQualifiedErrorId  
+   : CommandNotFoundExcepti  
+  on
+ 

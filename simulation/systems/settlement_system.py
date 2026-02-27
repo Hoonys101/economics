@@ -113,9 +113,9 @@ class SettlementSystem(IMonetaryAuthority):
                 self._transaction_engine = LedgerEngine(validator, executor, ledger)
             
             # Inject Estate Registry into Account Accessor if available
-            if self.estate_registry and hasattr(self._transaction_engine.validator.accessor, 'set_estate_registry'):
-                self._transaction_engine.validator.accessor.set_estate_registry(self.estate_registry)
-                self._transaction_engine.executor.accessor.set_estate_registry(self.estate_registry)
+            if self.estate_registry and hasattr(self._transaction_engine.validator.account_accessor, 'set_estate_registry'):
+                self._transaction_engine.validator.account_accessor.set_estate_registry(self.estate_registry)
+                self._transaction_engine.executor.account_accessor.set_estate_registry(self.estate_registry)
 
             return self._transaction_engine
 

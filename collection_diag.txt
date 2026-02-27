@@ -1,0 +1,389 @@
+Found 192 test files.
+Checking: tests/unit\agents\test_government.py
+  OK: tests/unit\agents\test_government.py
+Checking: tests/unit\ai\test_debt_constraints.py
+  OK: tests/unit\ai\test_debt_constraints.py
+Checking: tests/unit\analysis\test_scenario_verifier.py
+  OK: tests/unit\analysis\test_scenario_verifier.py
+Checking: tests/unit\components\test_agent_lifecycle.py
+  OK: tests/unit\components\test_agent_lifecycle.py
+Checking: tests/unit\components\test_demographics_component.py
+  OK: tests/unit\components\test_demographics_component.py
+Checking: tests/unit\components\test_engines.py
+  OK: tests/unit\components\test_engines.py
+Checking: tests/unit\components\test_market_component.py
+  OK: tests/unit\components\test_market_component.py
+Checking: tests/unit\corporate\test_corporate_orchestrator.py
+  OK: tests/unit\corporate\test_corporate_orchestrator.py
+Checking: tests/unit\corporate\test_financial_strategy.py
+  OK: tests/unit\corporate\test_financial_strategy.py
+Checking: tests/unit\corporate\test_hr_strategy.py
+  OK: tests/unit\corporate\test_hr_strategy.py
+Checking: tests/unit\corporate\test_production_strategy.py
+  OK: tests/unit\corporate\test_production_strategy.py
+Checking: tests/unit\corporate\test_sales_manager.py
+  OK: tests/unit\corporate\test_sales_manager.py
+Checking: tests/unit\dashboard\components\test_controls.py
+  OK: tests/unit\dashboard\components\test_controls.py
+Checking: tests/unit\dashboard\test_registry_service.py
+  OK: tests/unit\dashboard\test_registry_service.py
+Checking: tests/unit\dashboard\test_socket_manager.py
+  OK: tests/unit\dashboard\test_socket_manager.py
+Checking: tests/unit\decisions\test_animal_spirits_phase2.py
+  OK: tests/unit\decisions\test_animal_spirits_phase2.py
+Checking: tests/unit\decisions\test_finance_rules.py
+  OK: tests/unit\decisions\test_finance_rules.py
+Checking: tests/unit\decisions\test_household_engine_refactor.py
+  OK: tests/unit\decisions\test_household_engine_refactor.py
+Checking: tests/unit\decisions\test_household_integration_new.py
+  HANG: tests/unit\decisions\test_household_integration_new.py
+
+Potential culprit identified: tests/unit\decisions\test_household_integration_new.py
+Checking: tests/unit\decisions\test_hr_rules.py
+  OK: tests/unit\decisions\test_hr_rules.py
+Checking: tests/unit\decisions\test_production_rules.py
+  OK: tests/unit\decisions\test_production_rules.py
+Checking: tests/unit\decisions\test_sales_rules.py
+  OK: tests/unit\decisions\test_sales_rules.py
+Checking: tests/unit\finance\call_market\test_service.py
+  OK: tests/unit\finance\call_market\test_service.py
+Checking: tests/unit\finance\engines\test_finance_engines.py
+  OK: tests/unit\finance\engines\test_finance_engines.py
+Checking: tests/unit\finance\test_bank_service_interface.py
+  OK: tests/unit\finance\test_bank_service_interface.py
+Checking: tests/unit\finance\test_credit_scoring.py
+  OK: tests/unit\finance\test_credit_scoring.py
+Checking: tests/unit\finance\test_finance_system_refactor.py
+  OK: tests/unit\finance\test_finance_system_refactor.py
+Checking: tests/unit\finance\test_monetary_ledger_debt.py
+  OK: tests/unit\finance\test_monetary_ledger_debt.py
+Checking: tests/unit\finance\test_settlement_system_overdraft.py
+  OK: tests/unit\finance\test_settlement_system_overdraft.py
+Checking: tests/unit\finance\test_utils.py
+  OK: tests/unit\finance\test_utils.py
+Checking: tests/unit\firm\test_firm_actions.py
+  OK: tests/unit\firm\test_firm_actions.py
+Checking: tests/unit\firm\test_production_int_math.py
+  OK: tests/unit\firm\test_production_int_math.py
+Checking: tests/unit\governance\test_judicial_ssot.py
+  OK: tests/unit\governance\test_judicial_ssot.py
+Checking: tests/unit\governance\test_judicial_system.py
+  OK: tests/unit\governance\test_judicial_system.py
+Checking: tests/unit\government\test_monetary_ledger_units.py
+  OK: tests/unit\government\test_monetary_ledger_units.py
+Checking: tests/unit\handlers\test_bailout_handler.py
+  OK: tests/unit\handlers\test_bailout_handler.py
+Checking: tests/unit\handlers\test_bond_issuance_handler.py
+  OK: tests/unit\handlers\test_bond_issuance_handler.py
+Checking: tests/unit\household\test_housing_connector.py
+  OK: tests/unit\household\test_housing_connector.py
+Checking: tests/unit\household\test_snapshot_assembler.py
+  OK: tests/unit\household\test_snapshot_assembler.py
+Checking: tests/unit\markets\test_circuit_breaker_legacy.py
+  OK: tests/unit\markets\test_circuit_breaker_legacy.py
+Checking: tests/unit\markets\test_housing_transaction_handler.py
+  OK: tests/unit\markets\test_housing_transaction_handler.py
+Checking: tests/unit\markets\test_index_circuit_breaker.py
+  OK: tests/unit\markets\test_index_circuit_breaker.py
+Checking: tests/unit\markets\test_loan_market.py
+  OK: tests/unit\markets\test_loan_market.py
+Checking: tests/unit\markets\test_loan_market_mortgage.py
+  OK: tests/unit\markets\test_loan_market_mortgage.py
+Checking: tests/unit\markets\test_market_halt.py
+  OK: tests/unit\markets\test_market_halt.py
+Checking: tests/unit\markets\test_order_book_market.py
+  OK: tests/unit\markets\test_order_book_market.py
+Checking: tests/unit\markets\test_order_book_market_cancellation.py
+  OK: tests/unit\markets\test_order_book_market_cancellation.py
+Checking: tests/unit\markets\test_price_limit_enforcer.py
+  OK: tests/unit\markets\test_price_limit_enforcer.py
+Checking: tests/unit\markets\test_stock_market_cancellation.py
+  OK: tests/unit\markets\test_stock_market_cancellation.py
+Checking: tests/unit\modules\analysis\test_bubble_observatory.py
+  OK: tests/unit\modules\analysis\test_bubble_observatory.py
+Checking: tests/unit\modules\common\config\test_impl.py
+  OK: tests/unit\modules\common\config\test_impl.py
+Checking: tests/unit\modules\common\config_manager\test_config_manager.py
+  OK: tests/unit\modules\common\config_manager\test_config_manager.py
+Checking: tests/unit\modules\demographics\test_event_consistency.py
+  OK: tests/unit\modules\demographics\test_event_consistency.py
+Checking: tests/unit\modules\finance\central_bank\test_cb_service.py
+  OK: tests/unit\modules\finance\central_bank\test_cb_service.py
+Checking: tests/unit\modules\finance\test_corporate_finance.py
+  OK: tests/unit\modules\finance\test_corporate_finance.py
+Checking: tests/unit\modules\finance\test_double_entry.py
+  OK: tests/unit\modules\finance\test_double_entry.py
+Checking: tests/unit\modules\finance\test_monetary_engine.py
+  OK: tests/unit\modules\finance\test_monetary_engine.py
+Checking: tests/unit\modules\finance\test_qe.py
+  OK: tests/unit\modules\finance\test_qe.py
+Checking: tests/unit\modules\finance\test_settlement_purity.py
+  OK: tests/unit\modules\finance\test_settlement_purity.py
+Checking: tests/unit\modules\finance\test_sovereign_debt.py
+  OK: tests/unit\modules\finance\test_sovereign_debt.py
+Checking: tests/unit\modules\finance\test_system.py
+  OK: tests/unit\modules\finance\test_system.py
+Checking: tests/unit\modules\firm\test_engines.py
+  OK: tests/unit\modules\firm\test_engines.py
+Checking: tests/unit\modules\government\components\test_fiscal_policy_manager.py
+  OK: tests/unit\modules\government\components\test_fiscal_policy_manager.py
+Checking: tests/unit\modules\government\components\test_monetary_ledger_expansion.py
+  OK: tests/unit\modules\government\components\test_monetary_ledger_expansion.py
+Checking: tests/unit\modules\government\components\test_monetary_ledger_m2.py
+  OK: tests/unit\modules\government\components\test_monetary_ledger_m2.py
+Checking: tests/unit\modules\government\components\test_monetary_policy_manager.py
+  OK: tests/unit\modules\government\components\test_monetary_policy_manager.py
+Checking: tests/unit\modules\government\test_adaptive_gov_brain.py
+  OK: tests/unit\modules\government\test_adaptive_gov_brain.py
+Checking: tests/unit\modules\government\test_fiscal_bond_service.py
+  OK: tests/unit\modules\government\test_fiscal_bond_service.py
+Checking: tests/unit\modules\government\test_fiscal_engine.py
+  OK: tests/unit\modules\government\test_fiscal_engine.py
+Checking: tests/unit\modules\government\test_politics_system.py
+  OK: tests/unit\modules\government\test_politics_system.py
+Checking: tests/unit\modules\household\test_consumption_manager.py
+  OK: tests/unit\modules\household\test_consumption_manager.py
+Checking: tests/unit\modules\household\test_decision_unit.py
+  OK: tests/unit\modules\household\test_decision_unit.py
+Checking: tests/unit\modules\household\test_econ_component.py
+  OK: tests/unit\modules\household\test_econ_component.py
+Checking: tests/unit\modules\household\test_new_engines.py
+  OK: tests/unit\modules\household\test_new_engines.py
+Checking: tests/unit\modules\labor\test_bargaining.py
+  OK: tests/unit\modules\labor\test_bargaining.py
+Checking: tests/unit\modules\memory\test_memory_v2.py
+  OK: tests/unit\modules\memory\test_memory_v2.py
+Checking: tests/unit\modules\system\execution\test_public_manager.py
+  OK: tests/unit\modules\system\execution\test_public_manager.py
+Checking: tests/unit\modules\system\execution\test_public_manager_compliance.py
+  OK: tests/unit\modules\system\execution\test_public_manager_compliance.py
+Checking: tests/unit\modules\system\services\test_schema_loader.py
+  OK: tests/unit\modules\system\services\test_schema_loader.py
+Checking: tests/unit\modules\system\test_command_service_unit.py
+  OK: tests/unit\modules\system\test_command_service_unit.py
+Checking: tests/unit\modules\system\test_config_bridge.py
+  OK: tests/unit\modules\system\test_config_bridge.py
+Checking: tests/unit\modules\system\test_registry.py
+  OK: tests/unit\modules\system\test_registry.py
+Checking: tests/unit\modules\system\test_server_bridge.py
+  OK: tests/unit\modules\system\test_server_bridge.py
+Checking: tests/unit\modules\system\test_telemetry.py
+  OK: tests/unit\modules\system\test_telemetry.py
+Checking: tests/unit\modules\system\test_telemetry_robustness.py
+  OK: tests/unit\modules\system\test_telemetry_robustness.py
+Checking: tests/unit\modules\watchtower\test_agent_service.py
+  OK: tests/unit\modules\watchtower\test_agent_service.py
+Checking: tests/unit\orchestration\test_phase_housing_saga.py
+  OK: tests/unit\orchestration\test_phase_housing_saga.py
+Checking: tests/unit\registry\test_service.py
+  OK: tests/unit\registry\test_service.py
+Checking: tests/unit\sagas\test_orchestrator.py
+  OK: tests/unit\sagas\test_orchestrator.py
+Checking: tests/unit\sagas\test_saga_cleanup.py
+  OK: tests/unit\sagas\test_saga_cleanup.py
+Checking: tests/unit\scenarios\test_reporting_engine.py
+  OK: tests/unit\scenarios\test_reporting_engine.py
+Checking: tests/unit\simulation\orchestration\phases\test_intercept.py
+  OK: tests/unit\simulation\orchestration\phases\test_intercept.py
+Checking: tests/unit\simulation\registries\test_estate_registry.py
+  OK: tests/unit\simulation\registries\test_estate_registry.py
+Checking: tests/unit\simulation\systems\test_analytics_system_purity.py
+  OK: tests/unit\simulation\systems\test_analytics_system_purity.py
+Checking: tests/unit\simulation\systems\test_audit_total_m2.py
+  OK: tests/unit\simulation\systems\test_audit_total_m2.py
+Checking: tests/unit\simulation\systems\test_ma_manager_pennies.py
+  OK: tests/unit\simulation\systems\test_ma_manager_pennies.py
+Checking: tests/unit\simulation\systems\test_settlement_system_atomic.py
+  OK: tests/unit\simulation\systems\test_settlement_system_atomic.py
+Checking: tests/unit\systems\handlers\test_housing_handler.py
+  OK: tests/unit\systems\handlers\test_housing_handler.py
+Checking: tests/unit\systems\handlers\test_liquidation_handlers.py
+  OK: tests/unit\systems\handlers\test_liquidation_handlers.py
+Checking: tests/unit\systems\lifecycle\test_aging_system.py
+  OK: tests/unit\systems\lifecycle\test_aging_system.py
+Checking: tests/unit\systems\lifecycle\test_birth_system.py
+  OK: tests/unit\systems\lifecycle\test_birth_system.py
+Checking: tests/unit\systems\lifecycle\test_death_system.py
+  OK: tests/unit\systems\lifecycle\test_death_system.py
+Checking: tests/unit\systems\lifecycle\test_death_system_performance.py
+  OK: tests/unit\systems\lifecycle\test_death_system_performance.py
+Checking: tests/unit\systems\test_commerce_system.py
+  OK: tests/unit\systems\test_commerce_system.py
+Checking: tests/unit\systems\test_commerce_system_logging.py
+  OK: tests/unit\systems\test_commerce_system_logging.py
+Checking: tests/unit\systems\test_demographic_manager_newborn.py
+  OK: tests/unit\systems\test_demographic_manager_newborn.py
+Checking: tests/unit\systems\test_event_system.py
+  OK: tests/unit\systems\test_event_system.py
+Checking: tests/unit\systems\test_firm_management_leak.py
+  OK: tests/unit\systems\test_firm_management_leak.py
+Checking: tests/unit\systems\test_firm_management_refactor.py
+  OK: tests/unit\systems\test_firm_management_refactor.py
+Checking: tests/unit\systems\test_housing_service.py
+  OK: tests/unit\systems\test_housing_service.py
+Checking: tests/unit\systems\test_housing_system.py
+  OK: tests/unit\systems\test_housing_system.py
+Checking: tests/unit\systems\test_inheritance_manager.py
+  OK: tests/unit\systems\test_inheritance_manager.py
+Checking: tests/unit\systems\test_labor_market_analyzer.py
+  OK: tests/unit\systems\test_labor_market_analyzer.py
+Checking: tests/unit\systems\test_lifecycle_manager_integration.py
+  OK: tests/unit\systems\test_lifecycle_manager_integration.py
+Checking: tests/unit\systems\test_liquidation_manager.py
+  OK: tests/unit\systems\test_liquidation_manager.py
+Checking: tests/unit\systems\test_m2_integrity.py
+  OK: tests/unit\systems\test_m2_integrity.py
+Checking: tests/unit\systems\test_ma_manager.py
+  OK: tests/unit\systems\test_ma_manager.py
+Checking: tests/unit\systems\test_ministry_of_education.py
+  OK: tests/unit\systems\test_ministry_of_education.py
+Checking: tests/unit\systems\test_perception_system.py
+  OK: tests/unit\systems\test_perception_system.py
+Checking: tests/unit\systems\test_sensory_system.py
+  OK: tests/unit\systems\test_sensory_system.py
+Checking: tests/unit\systems\test_settlement_saga_integration.py
+  OK: tests/unit\systems\test_settlement_saga_integration.py
+Checking: tests/unit\systems\test_settlement_security.py
+  OK: tests/unit\systems\test_settlement_security.py
+Checking: tests/unit\systems\test_settlement_system.py
+  OK: tests/unit\systems\test_settlement_system.py
+Checking: tests/unit\systems\test_social_system.py
+  OK: tests/unit\systems\test_social_system.py
+Checking: tests/unit\systems\test_system_effects_major_choice.py
+  OK: tests/unit\systems\test_system_effects_major_choice.py
+Checking: tests/unit\systems\test_tax_agency.py
+  OK: tests/unit\systems\test_tax_agency.py
+Checking: tests/unit\systems\test_technology_manager.py
+  OK: tests/unit\systems\test_technology_manager.py
+Checking: tests/unit\test_agent_registry_id_zero.py
+  OK: tests/unit\test_agent_registry_id_zero.py
+Checking: tests/unit\test_ai_driven_firm_engine.py
+  OK: tests/unit\test_ai_driven_firm_engine.py
+Checking: tests/unit\test_ai_training_manager.py
+  OK: tests/unit\test_ai_training_manager.py
+Checking: tests/unit\test_api_extensions.py
+  OK: tests/unit\test_api_extensions.py
+Checking: tests/unit\test_api_history.py
+  OK: tests/unit\test_api_history.py
+Checking: tests/unit\test_bank.py
+  OK: tests/unit\test_bank.py
+Checking: tests/unit\test_bank_decomposition.py
+  HANG: tests/unit\test_bank_decomposition.py
+
+Potential culprit identified: tests/unit\test_bank_decomposition.py
+Checking: tests/unit\test_config_parity.py
+  OK: tests/unit\test_config_parity.py
+Checking: tests/unit\test_consumption_manager_survival.py
+  OK: tests/unit\test_consumption_manager_survival.py
+Checking: tests/unit\test_db_migration.py
+  OK: tests/unit\test_db_migration.py
+Checking: tests/unit\test_diagnostics.py
+  OK: tests/unit\test_diagnostics.py
+Checking: tests/unit\test_factories.py
+  OK: tests/unit\test_factories.py
+Checking: tests/unit\test_firm_profit.py
+  OK: tests/unit\test_firm_profit.py
+Checking: tests/unit\test_firms.py
+  OK: tests/unit\test_firms.py
+Checking: tests/unit\test_god_command_protocol.py
+  OK: tests/unit\test_god_command_protocol.py
+Checking: tests/unit\test_goods_handler_precision.py
+  OK: tests/unit\test_goods_handler_precision.py
+Checking: tests/unit\test_government_structure.py
+  OK: tests/unit\test_government_structure.py
+Checking: tests/unit\test_handlers_fix.py
+  OK: tests/unit\test_handlers_fix.py
+Checking: tests/unit\test_health_mechanics.py
+  OK: tests/unit\test_health_mechanics.py
+Checking: tests/unit\test_household_ai.py
+  OK: tests/unit\test_household_ai.py
+Checking: tests/unit\test_household_ai_insight.py
+  OK: tests/unit\test_household_ai_insight.py
+Checking: tests/unit\test_household_decision_engine_new.py
+  OK: tests/unit\test_household_decision_engine_new.py
+Checking: tests/unit\test_household_refactor.py
+  OK: tests/unit\test_household_refactor.py
+Checking: tests/unit\test_household_system2.py
+  OK: tests/unit\test_household_system2.py
+Checking: tests/unit\test_hr_engine_refactor.py
+  OK: tests/unit\test_hr_engine_refactor.py
+Checking: tests/unit\test_labor_market_system.py
+  OK: tests/unit\test_labor_market_system.py
+Checking: tests/unit\test_labor_thaw.py
+  OK: tests/unit\test_labor_thaw.py
+Checking: tests/unit\test_learning_tracker.py
+  OK: tests/unit\test_learning_tracker.py
+Checking: tests/unit\test_ledger_manager.py
+  OK: tests/unit\test_ledger_manager.py
+Checking: tests/unit\test_ledger_safety.py
+  OK: tests/unit\test_ledger_safety.py
+Checking: tests/unit\test_lifecycle_reset.py
+  OK: tests/unit\test_lifecycle_reset.py
+Checking: tests/unit\test_logger.py
+  OK: tests/unit\test_logger.py
+Checking: tests/unit\test_m2_integrity_new.py
+  OK: tests/unit\test_m2_integrity_new.py
+Checking: tests/unit\test_ma_pennies.py
+  OK: tests/unit\test_ma_pennies.py
+Checking: tests/unit\test_market_adapter.py
+  OK: tests/unit\test_market_adapter.py
+Checking: tests/unit\test_marketing_roi.py
+  OK: tests/unit\test_marketing_roi.py
+Checking: tests/unit\test_markets_v2.py
+  OK: tests/unit\test_markets_v2.py
+Checking: tests/unit\test_marriage_system.py
+  OK: tests/unit\test_marriage_system.py
+Checking: tests/unit\test_metrics_hardening.py
+  OK: tests/unit\test_metrics_hardening.py
+Checking: tests/unit\test_monetary_ledger_repayment.py
+  OK: tests/unit\test_monetary_ledger_repayment.py
+Checking: tests/unit\test_phase1_refactor.py
+  OK: tests/unit\test_phase1_refactor.py
+Checking: tests/unit\test_portfolio_macro.py
+  OK: tests/unit\test_portfolio_macro.py
+Checking: tests/unit\test_protocol_lockdown.py
+  OK: tests/unit\test_protocol_lockdown.py
+Checking: tests/unit\test_real_estate_lien.py
+  OK: tests/unit\test_real_estate_lien.py
+Checking: tests/unit\test_repository.py
+  OK: tests/unit\test_repository.py
+Checking: tests/unit\test_sales_engine_refactor.py
+  OK: tests/unit\test_sales_engine_refactor.py
+Checking: tests/unit\test_sensory_purity.py
+  OK: tests/unit\test_sensory_purity.py
+Checking: tests/unit\test_smart_leviathan_policy.py
+  OK: tests/unit\test_smart_leviathan_policy.py
+Checking: tests/unit\test_socio_tech.py
+  OK: tests/unit\test_socio_tech.py
+Checking: tests/unit\test_ssot_compliance.py
+  OK: tests/unit\test_ssot_compliance.py
+Checking: tests/unit\test_stock_market.py
+  OK: tests/unit\test_stock_market.py
+Checking: tests/unit\test_strict_mocking.py
+  OK: tests/unit\test_strict_mocking.py
+Checking: tests/unit\test_tax_collection.py
+  OK: tests/unit\test_tax_collection.py
+Checking: tests/unit\test_tax_incidence.py
+  OK: tests/unit\test_tax_incidence.py
+Checking: tests/unit\test_taxation_system.py
+  OK: tests/unit\test_taxation_system.py
+Checking: tests/unit\test_telemetry_purity.py
+  OK: tests/unit\test_telemetry_purity.py
+Checking: tests/unit\test_transaction_engine.py
+  OK: tests/unit\test_transaction_engine.py
+Checking: tests/unit\test_transaction_handlers.py
+  OK: tests/unit\test_transaction_handlers.py
+Checking: tests/unit\test_transaction_integrity.py
+  OK: tests/unit\test_transaction_integrity.py
+Checking: tests/unit\test_transaction_processor.py
+  OK: tests/unit\test_transaction_processor.py
+Checking: tests/unit\test_transaction_rollback.py
+  OK: tests/unit\test_transaction_rollback.py
+Checking: tests/unit\test_watchtower_hardening.py
+  OK: tests/unit\test_watchtower_hardening.py
+Checking: tests/unit\test_wave6_fiscal_masking.py
+  OK: tests/unit\test_wave6_fiscal_masking.py
+Checking: tests/unit\test_wo157_dynamic_pricing.py
+  OK: tests/unit\test_wo157_dynamic_pricing.py
+Checking: tests/unit\utils\test_config_factory.py
+  OK: tests/unit\utils\test_config_factory.py

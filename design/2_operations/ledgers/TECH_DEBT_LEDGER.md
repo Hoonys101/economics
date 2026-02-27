@@ -28,7 +28,8 @@
 | **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firms**: Race condition; capital injection attempted before registration. | **High**: Reliability. | **NEW (AUDIT)** |
 | **TD-ARCH-ORPHAN-SAGA** | Architecture | **Orphaned Sagas**: Sagas holding stale references to dead/failed agents. | **Medium**: Memory. | **NEW (AUDIT)** |
 | **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks. | **High**: Gap. | **NEW (AUDIT)** |
-| **TD-FIN-FLOAT-INCURSION** | Finance | **Float Incursion in Ledger**: Parsing metadata using `float()` risks integer math integrity. | **Critical**: Integrity. | **NEW (AUDIT)** |
+| **TD-FIN-FLOAT-INCURSION** | Finance | **Float Incursion in Ledger**: Parsing metadata using `float()` risks integer math integrity. | **Critical**: Integrity. | **RESOLVED** |
+32: | **TD-SYS-IMPLICIT-REGISTRY-LOOKUP** | Architecture | **Duck-Typed Agent Resolution**: `MonetaryLedger` uses `hasattr` to find registries. | **Medium**: Rigidity. | **NEW** |
 | **TD-TEST-DTO-MOCKING** | Testing | **DTO Mocking Anti-Pattern**: Replacing DTOs with MagicMocks breaks type safety and stability. | **Medium**: Quality. | **NEW (AUDIT)** |
 | **TD-ARCH-GOD-DTO** | Architecture | **SimulationState God DTO**: Monolithic dependency violating Interface Segregation. | **High**: Rigidity. | **NEW (AUDIT)** |
 | **TD-ARCH-PROTOCOL-EVASION** | Architecture | **Protocol Evasion**: `hasattr()` usage in lifecycle logic bypasses Protocol Purity. | **Medium**: Safety. | **NEW (AUDIT)** |
@@ -79,6 +80,20 @@
 - **Solution**: Harden protocols (`ISettlementSystem`, `IFirm`) to include these missing methods.
 - **Status**: NEW (AUDIT)
 
+### ID: TD-ARCH-GOD-CLASS
+- **Title**: God Classes in Core Agents
+- **Symptom**: `simulation/firms.py` (1800+ lines) and `core_agents.py` (1200+ lines) violate Single Responsibility Principle.
+- **Risk**: Maintenance nightmare; high cognitive load for new developers; fragile state management.
+- **Solution**: Decompose into trait-based Engines (e.g., `BirthComponent`, `EconComponent`).
+- **Status**: NEW (AUDIT)
+
+### ID: TD-SYS-ABS-LEAK
+- **Title**: Abstraction Leaks in System Services
+- **Symptom**: `WelfareService` and `GovernmentSystem` pass raw `Household` objects between modules.
+- **Risk**: Circular dependencies; tight coupling to simulation internals.
+- **Solution**: Ensure all inter-module communication uses strictly typed DTOs (e.g., `WelfareCandidateDTO`).
+- **Status**: NEW (AUDIT)
+
 ---
 
 ## Financial Systems (Finance & Transactions)
@@ -104,12 +119,33 @@
 - **Solution**: Modify `calculate_total_money` to sum `max(0, balance)` and track negative balances as `SystemDebt`.
 - **Status**: NEW (AUDIT)
 
+### ID: TD-FIN-FLOAT-RESIDUE
+- **Title**: Float Price Residue in Transaction model
+- **Symptom**: `Transaction` dataclass still defines `price: float` despite integer penny migration.
+- **Risk**: Confusion between `price: float` (dollars) and `total_pennies: int` (pennies), leading to conversion errors.
+- **Solution**: Completely remove `price: float` or rename it to `price_display: float` and mark as secondary.
+- **Status**: NEW (AUDIT)
+
 ### ID: TD-FIN-FLOAT-INCURSION
 - **Title**: Float Incursion during Ledger Metadata Parsing
 - **Symptom**: Ledger components using `float()` to parse monetary values from metadata dictionaries.
 - **Risk**: Float precision errors accumulating to violate Zero-Sum integrity (e.g. creating or destroying dust pennies).
 - **Solution**: Enforce strict `int()` casting for all monetary values in parsing logic and DTOs.
-- **Status**: NEW (AUDIT)
+- **Status**: **RESOLVED** (Enforced via `CommandBatchDTO` and strict `int` checks)
+
+### ID: TD-SYS-IMPLICIT-REGISTRY-LOOKUP
+- **Title**: Duck-Typed Agent Resolution in Ledger
+- **Symptom**: `MonetaryLedger._resolve_agent` utilizes `hasattr` chains to find `agent_registry` from `settlement_system` or `time_provider`.
+- **Risk**: Weak dependency coupling; overloads `time_provider` with unintended domain responsibilities.
+- **Solution**: Explicitly inject `IAgentRegistry` into `MonetaryLedger` and remove the fallback chain logic.
+- **Status**: NEW
+
+### ID: TD-ECON-GHOST-MONEY
+- **Title**: Ghost Money from Implicit System Operations
+- **Symptom**: M2 (Total Money Supply) calculations showed leakage during LLR injections.
+- **Risk**: Treasury/Central Bank operations were un-auditable.
+- **Solution**: Implemented **Transaction Injection Pattern** where `CentralBankSystem` directly appends to global ledger.
+- **Status**: **RESOLVED** (Merged in Settlement Sync)
 
 ---
 

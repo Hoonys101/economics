@@ -1,0 +1,80 @@
+Batch 1: tests/unit\agents\test_government.py ... tests/unit\components\test_demographics_component.py
+Checking batch: 5 files
+  OK (3.87s)
+Batch 2: tests/unit\components\test_engines.py ... tests/unit\corporate\test_hr_strategy.py
+Checking batch: 5 files
+  OK (3.55s)
+Batch 3: tests/unit\corporate\test_production_strategy.py ... tests/unit\dashboard\test_socket_manager.py
+Checking batch: 5 files
+  OK (4.09s)
+Batch 4: tests/unit\decisions\test_animal_spirits_phase2.py ... tests/unit\decisions\test_hr_rules.py
+Checking batch: 5 files
+  OK (4.04s)
+Batch 5: tests/unit\decisions\test_production_rules.py ... tests/unit\finance\test_bank_service_interface.py
+Checking batch: 5 files
+  OK (4.08s)
+Batch 6: tests/unit\finance\test_credit_scoring.py ... tests/unit\finance\test_utils.py
+Checking batch: 5 files
+  OK (3.70s)
+Batch 7: tests/unit\firm\test_firm_actions.py ... tests/unit\government\test_monetary_ledger_units.py
+Checking batch: 5 files
+  OK (3.90s)
+Batch 8: tests/unit\handlers\test_bailout_handler.py ... tests/unit\markets\test_circuit_breaker_legacy.py
+Checking batch: 5 files
+  OK (3.67s)
+Batch 9: tests/unit\markets\test_housing_transaction_handler.py ... tests/unit\markets\test_market_halt.py
+Checking batch: 5 files
+  OK (3.58s)
+Batch 10: tests/unit\markets\test_order_book_market.py ... tests/unit\modules\analysis\test_bubble_observatory.py
+Checking batch: 5 files
+  OK (3.67s)
+Batch 11: tests/unit\modules\common\config\test_impl.py ... tests/unit\modules\finance\test_corporate_finance.py
+Checking batch: 5 files
+  OK (3.86s)
+Batch 12: tests/unit\modules\finance\test_double_entry.py ... tests/unit\modules\finance\test_sovereign_debt.py
+Checking batch: 5 files
+  OK (3.61s)
+Batch 13: tests/unit\modules\finance\test_system.py ... tests/unit\modules\government\components\test_monetary_ledger_m2.py
+Checking batch: 5 files
+  OK (3.83s)
+Batch 14: tests/unit\modules\government\components\test_monetary_policy_manager.py ... tests/unit\modules\government\test_politics_system.py
+Checking batch: 5 files
+  OK (3.93s)
+Batch 15: tests/unit\modules\household\test_consumption_manager.py ... tests/unit\modules\labor\test_bargaining.py
+Checking batch: 5 files
+  OK (3.65s)
+Batch 16: tests/unit\modules\memory\test_memory_v2.py ... tests/unit\modules\system\test_command_service_unit.py
+Checking batch: 5 files
+  OK (3.97s)
+Batch 17: tests/unit\modules\system\test_config_bridge.py ... tests/unit\modules\system\test_telemetry_robustness.py
+Checking batch: 5 files
+  OK (3.84s)
+Batch 18: tests/unit\modules\watchtower\test_agent_service.py ... tests/unit\sagas\test_saga_cleanup.py
+Checking batch: 5 files
+  OK (4.38s)
+Batch 19: tests/unit\scenarios\test_reporting_engine.py ... tests/unit\simulation\systems\test_audit_total_m2.py
+Checking batch: 5 files
+  OK (4.56s)
+Batch 20: tests/unit\simulation\systems\test_ma_manager_pennies.py ... tests/unit\systems\lifecycle\test_aging_system.py
+Checking batch: 5 files
+  OK (4.47s)
+Batch 21: tests/unit\systems\lifecycle\test_birth_system.py ... tests/unit\systems\test_commerce_system_logging.py
+Checking batch: 5 files
+  OK (4.61s)
+Batch 22: tests/unit\systems\test_demographic_manager_newborn.py ... tests/unit\systems\test_housing_service.py
+Checking batch: 5 files
+  OK (4.87s)
+Batch 23: tests/unit\systems\test_housing_system.py ... tests/unit\systems\test_liquidation_manager.py
+Checking batch: 5 files
+  OK (4.17s)
+Batch 24: tests/unit\systems\test_m2_integrity.py ... tests/unit\systems\test_sensory_system.py
+Checking batch: 5 files
+  OK (3.98s)
+Batch 25: tests/unit\systems\test_settlement_saga_integration.py ... tests/unit\systems\test_system_effects_major_choice.py
+Checking batch: 5 files
+  OK (4.13s)
+Batch 26: tests/unit\systems\test_tax_agency.py ... tests/unit\test_ai_training_manager.py
+Checking batch: 5 files
+  OK (4.54s)
+Batch 27: tests/unit\test_api_extensions.py ... tests/unit\test_config_parity.py
+Checking batch: 5 files

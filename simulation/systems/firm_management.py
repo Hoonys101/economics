@@ -157,8 +157,12 @@ class FirmSystem:
         spirit = getattr(self.config, "ENTREPRENEURSHIP_SPIRIT", 0.05)
         capital_multiplier = getattr(self.config, "STARTUP_CAPITAL_MULTIPLIER", 1.5)
 
-        active_firms_count = sum(1 for f in simulation.firms if f.is_active)
-        max_firms = max(5, int(len(simulation.households) / 15))
+        from simulation.firms import Firm
+        active_firms_count = sum(1 for a in simulation.agents.values() if isinstance(a, Firm) and a.is_active)
+        
+        from simulation.core_agents import Household
+        households = [a for a in simulation.agents.values() if isinstance(a, Household) and a.is_active]
+        max_firms = max(5, int(len(households) / 15))
 
         if active_firms_count >= max_firms:
             return # Prevent over-creation of firms (Labor Dilution)
@@ -169,7 +173,7 @@ class FirmSystem:
             trigger_probability = spirit
 
         wealthy_households = []
-        for h in simulation.households:
+        for h in households:
             if not h.is_active:
                 continue
 

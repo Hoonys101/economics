@@ -1,0 +1,284 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0
+rootdir: C:\coding\economics
+configfile: pytest.ini
+plugins: anyio-4.12.0, asyncio-1.3.0, cov-7.0.0, mock-3.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\__init__.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\conftest.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\repro_td_issues.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_command_pipeline.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_db_migration.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_economic_tracker_precision.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_finance_hardening.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_firm_brain_scan.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_firm_inventory_slots.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_firm_surgical_separation.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_firm_survival.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_ghost_firm_prevention.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_ledger_manager.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_liquidation_math.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_lock_manager_robustness.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_policy_lockout.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_server_auth.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_wo_4_1_protocols.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\test_ws.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\verify_agents_api.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\__init__.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\factories.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_agent_registry_id_zero.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_ai_driven_firm_engine.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_ai_training_manager.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_api_extensions.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_api_history.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_bank.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_bank_decomposition.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_config_parity.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_consumption_manager_survival.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_db_migration.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_diagnostics.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_factories.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_firm_profit.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_firms.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_god_command_protocol.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_goods_handler_precision.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_government_structure.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_handlers_fix.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_health_mechanics.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_household_ai.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_household_ai_insight.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_household_decision_engine_new.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_household_refactor.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_household_system2.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_hr_engine_refactor.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_labor_market_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_labor_thaw.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_learning_tracker.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_ledger_manager.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_ledger_safety.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_lifecycle_reset.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_logger.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_m2_integrity_new.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_ma_pennies.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_market_adapter.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_marketing_roi.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_markets_v2.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_marriage_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_metrics_hardening.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_monetary_ledger_repayment.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_phase1_refactor.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_portfolio_macro.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_protocol_lockdown.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_real_estate_lien.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_repository.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_sales_engine_refactor.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_sensory_purity.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_smart_leviathan_policy.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_socio_tech.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_ssot_compliance.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_stock_market.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_strict_mocking.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_tax_collection.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_tax_incidence.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_taxation_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_telemetry_purity.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_transaction_engine.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_transaction_handlers.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_transaction_integrity.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_transaction_processor.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_transaction_rollback.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_watchtower_hardening.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_wave6_fiscal_masking.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\test_wo157_dynamic_pricing.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\__init__.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_commerce_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_commerce_system_logging.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_demographic_manager_newborn.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_event_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_firm_management_leak.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_firm_management_refactor.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_housing_service.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_housing_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_inheritance_manager.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_labor_market_analyzer.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_lifecycle_manager_integration.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_liquidation_manager.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_m2_integrity.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_ma_manager.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_ministry_of_education.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_perception_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_sensory_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_settlement_saga_integration.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_settlement_security.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_settlement_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_social_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_system_effects_major_choice.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_tax_agency.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\test_technology_manager.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\handlers\__init__.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\handlers\test_housing_handler.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\handlers\test_liquidation_handlers.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\lifecycle\test_aging_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\lifecycle\test_birth_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\lifecycle\test_death_system.py
+DEBUG: [pytest] Collecting: C:\coding\economics\tests\unit\systems\lifecycle\test_death_system_performance.py
+collected 102 items
+
+<Dir economics>
+  <Package tests>
+    <Package unit>
+      <Package systems>
+        <Package handlers>
+          <Module test_housing_handler.py>
+            <UnitTestCase TestHousingTransactionHandler>
+              <TestCaseFunction test_handle_disbursement_failure>
+              <TestCaseFunction test_handle_government_seller>
+              <TestCaseFunction test_handle_payment_failure>
+              <TestCaseFunction test_handle_purchase_success>
+          <Module test_liquidation_handlers.py>
+            <UnitTestCase TestInventoryLiquidationHandler>
+              <TestCaseFunction test_liquidate_fallback_price>
+              <TestCaseFunction test_liquidate_no_inventory>
+              <TestCaseFunction test_liquidate_no_public_manager>
+              <TestCaseFunction test_liquidate_payment_fail>
+              <TestCaseFunction test_liquidate_with_inventory>
+        <Dir lifecycle>
+          <Module test_aging_system.py>
+            <Class TestAgingSystem>
+              <Function test_execute_delegation>
+              <Function test_firm_distress>
+              <Function test_firm_grace_period_config>
+              <Function test_solvency_gate_active>
+              <Function test_solvency_gate_inactive>
+          <Module test_birth_system.py>
+            <Class TestBirthSystem>
+              <Function test_process_births_with_factory_zero_sum>
+              <Function test_birth_system_requires_valid_protocol_context>
+          <Module test_death_system.py>
+            <Class TestDeathSystem>
+              <Function test_firm_liquidation>
+              <Function test_firm_liquidation_cancels_orders>
+              <Function test_death_system_emits_settlement_transactions>
+          <Module test_death_system_performance.py>
+            <Class TestDeathSystemPerformance>
+              <Function test_localized_agent_removal>
+        <Module test_commerce_system.py>
+          <Function test_execute_consumption_and_leisure>
+          <Function test_fast_track_consumption_if_needed>
+        <Module test_commerce_system_logging.py>
+          <Function test_log_reject_when_stock_out_and_insolvent>
+          <Function test_log_reject_when_stock_out_but_solvent>
+        <Module test_demographic_manager_newborn.py>
+          <Function test_newborn_receives_initial_needs_from_config>
+        <Module test_event_system.py>
+          <Function test_inflation_shock>
+          <Function test_recession_shock>
+          <Function test_no_event>
+        <Module test_firm_management_leak.py>
+          <UnitTestCase TestFirmManagementLeak>
+            <TestCaseFunction test_spawn_firm_leak_detection>
+        <Module test_firm_management_refactor.py>
+          <UnitTestCase TestFirmManagementRefactor>
+            <TestCaseFunction test_spawn_firm_missing_settlement_system>
+            <TestCaseFunction test_spawn_firm_transfer_failure>
+        <Module test_housing_service.py>
+          <Function test_housing_service_handle_housing_updates_mortgage>
+          <Function test_housing_service_handle_housing_clears_mortgage_if_missing>
+        <Module test_housing_system.py>
+          <UnitTestCase TestHousingSystemRefactor>
+            <TestCaseFunction test_process_housing_maintenance_uses_transfer>
+            <TestCaseFunction test_process_housing_rent_collection_uses_transfer>
+        <Module test_inheritance_manager.py>
+          <Class TestInheritanceManager>
+            <Function test_distribution_transaction_generation>
+            <Function test_multiple_heirs_metadata>
+            <Function test_escheatment_when_no_heirs>
+            <Function test_zero_assets_distribution>
+            <Function test_tax_transaction_generation>
+        <Module test_labor_market_analyzer.py>
+          <Function test_update_market_history>
+          <Function test_calculate_shadow_reservation_wage_increase>
+          <Function test_calculate_shadow_reservation_wage_decay>
+          <Function test_calculate_shadow_reservation_wage_floor>
+        <Module test_lifecycle_manager_integration.py>
+          <Class TestAgentLifecycleManager>
+            <Function test_execute_delegation>
+        <Module test_liquidation_manager.py>
+          <UnitTestCase TestLiquidationManager>
+            <TestCaseFunction test_asset_liquidation_integration>
+            <TestCaseFunction test_bank_claim_handling>
+            <TestCaseFunction test_initiate_liquidation_orchestration>
+        <Module test_m2_integrity.py>
+          <Function test_transfer_m2_to_m2_no_expansion>
+          <Function test_transfer_non_m2_to_m2_expansion>
+          <Function test_transfer_m2_to_non_m2_contraction>
+          <Function test_transfer_non_m2_to_non_m2_no_effect>
+          <Function test_transaction_processor_ignores_money_creation>
+          <Function test_money_creation_metadata_executed>
+        <Module test_ma_manager.py>
+          <UnitTestCase TestMAManager>
+            <TestCaseFunction test_execute_bankruptcy_records_loss_in_ledger>
+        <Module test_ministry_of_education.py>
+          <UnitTestCase TestMinistryOfEducation>
+            <TestCaseFunction test_budget_constraints>
+            <TestCaseFunction test_run_public_education_basic_grant_legacy>
+            <TestCaseFunction test_run_public_education_basic_grant_settlement>
+            <TestCaseFunction test_run_public_education_scholarship_settlement>
+        <Module test_perception_system.py>
+          <Function test_perception_system_update>
+          <Function test_smart_money_filter>
+          <Function test_laggard_filter>
+          <Function test_lemon_filter>
+          <Function test_policy_filter>
+        <Module test_sensory_system.py>
+          <Function test_sensory_dto_generation>
+          <Function test_sensory_dto_missing_tracker>
+        <Module test_settlement_saga_integration.py>
+          <Class TestSettlementSagaIntegration>
+            <Function test_process_sagas_integration_initiated_to_credit_check>
+            <Function test_process_sagas_integration_cancellation>
+        <Module test_settlement_security.py>
+          <Function test_audit_total_m2_strict_protocol>
+          <Function test_transfer_memo_validation>
+          <Function test_transfer_invalid_agent>
+          <Function test_mint_and_distribute_security>
+          <Function test_settle_atomic_logging>
+        <Module test_settlement_system.py>
+          <Function test_transfer_success>
+          <Function test_transfer_insufficient_funds>
+          <Function test_create_and_transfer_minting>
+          <Function test_create_and_transfer_government_grant>
+          <Function test_transfer_and_destroy_burning>
+          <Function test_transfer_and_destroy_tax>
+          <Function test_record_liquidation>
+          <Function test_record_liquidation_escheatment>
+          <Function test_transfer_rollback>
+          <Function test_transfer_insufficient_cash_despite_bank_balance>
+          <Function test_transfer_insufficient_total_funds>
+          <Function test_execute_multiparty_settlement_success>
+          <Function test_execute_multiparty_settlement_rollback>
+          <Function test_settle_atomic_success>
+          <Function test_settle_atomic_rollback>
+          <Function test_settle_atomic_credit_fail_rollback>
+        <Module test_social_system.py>
+          <Function test_update_social_ranks>
+          <Function test_calculate_reference_standard>
+        <Module test_system_effects_major_choice.py>
+          <UnitTestCase TestSystemEffectsManagerMajorChoice>
+            <TestCaseFunction test_major_choice_on_education_upgrade>
+            <TestCaseFunction test_sunk_cost_major_choice>
+        <Module test_tax_agency.py>
+          <UnitTestCase TestTaxAgency>
+            <TestCaseFunction test_calculate_corporate_tax>
+            <TestCaseFunction test_calculate_income_tax_flat>
+            <TestCaseFunction test_calculate_income_tax_progressive_scaling>
+            <TestCaseFunction test_calculate_income_tax_progressive_with_brackets>
+            <TestCaseFunction test_collect_tax>
+        <Module test_technology_manager.py>
+          <Class TestTechnologyManager>
+            <Function test_effective_diffusion_rate>
+            <Function test_unlock_mechanism>
+            <Function test_diffusion_over_time>
+            <Function test_productivity_multiplier>
+
+======================== 102 tests collected in 0.34s =========================

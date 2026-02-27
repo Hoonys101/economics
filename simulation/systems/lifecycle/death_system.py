@@ -7,9 +7,9 @@ from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, DEFAULT_CU
 from simulation.interfaces.market_interface import IMarket
 from modules.simulation.api import IEstateRegistry
 
+from simulation.models import Transaction
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
-    from simulation.models import Transaction
     from simulation.systems.inheritance_manager import InheritanceManager
     from simulation.systems.liquidation_manager import LiquidationManager
     from simulation.finance.api import ISettlementSystem

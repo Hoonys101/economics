@@ -1,6 +1,6 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-02-25 (Foundation Hardening & Stabilization Complete)
+**최종 업데이트**: 2026-02-28 (M2 Hardening & Settlement Sync Complete)
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
 
@@ -15,7 +15,7 @@
 
 ## 1. 현재 개발 단계
 
-    - **`Phase 33: Foundation Hardening (Estate & DTO)`** 🛡️ ✅ (2026-02-25)
+    - **`Phase 33: Foundation Hardening (Estate & DTO)`** 🛡️ ✅ (2026-02-28)
         - **Goal**: Liquidate final high-priority technical debt: Estate Registry implementation and Telemetry DTO integer migration.
         - **Status**: COMPLETED (Pivoted to Project Rebirth)
             - [x] **Track A (Research & Planning)**: Updating Tech Debt Ledger and mapping Estate patterns. ✅
@@ -23,13 +23,15 @@
             - [x] **Track C (DTO Precision)**: Migrating `SettlementResultDTO` to strict `int`. ✅
             - [x] **Track D (Modular Kernel)**: Hardened System, Market, DB, and Liquidation. ✅
             - [x] **Track E (Platform Security)**: PID-based Lock Hardening. ✅
+            - [x] **Track F (M2 Hardening)**: Implementation of `CommandBatchDTO` and strict `int` enforcement. ✅ (2026-02-28)
 
-    - **`Phase 34: Project Rebirth (Batch Simulation & Reporting)`** 📈 🚀 (2026-02-26)
+    - **`Phase 34: Project Rebirth (Batch Simulation & Reporting)`** 📈 🚀 (2026-02-28)
         - **Goal**: Decommission failed "Cockpit" web infrastructure and pivot to a high-performance Batch Reporting pipeline.
         - **Status**: COMPLETED (Scenario Framework Implementation)
             - [x] **Step 1: Scorched Earth**: Purged `frontend/` and obsolete web services. ✅
             - [x] **Step 2: Strategic Design**: Established "Reactive War Room" paradigm & Scenario-as-Code. ✅
             - [x] **Step 3: Implementation**: Developed Universal Scenario Framework, Reporter, and Migration Logic. ✅
+            - [x] **Step 4: M2 Sync**: Resolved "Ghost Money" via Transaction Injection Pattern. ✅ (2026-02-28)
 
     - **`Phase 4.1: AI Logic & Simulation Re-architecture`** 🧠 ✅ (2026-02-22)
         - **Status**:

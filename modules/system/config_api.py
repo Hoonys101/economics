@@ -51,7 +51,7 @@ class ConfigProxy(IConfigurationRegistry):
         # Lazy Loading Callbacks
         self._lazy_loaders: List[Callable[[], None]] = []
         self._initialized = False
-        self._init_lock = threading.Lock()
+        self._init_lock = threading.RLock()
 
     def register_lazy_loader(self, loader: Callable[[], None]) -> None:
         """Registers a callback to load configuration lazily."""
@@ -60,14 +60,21 @@ class ConfigProxy(IConfigurationRegistry):
     def _ensure_initialized(self) -> None:
         """
         Executes all registered lazy loaders if not already initialized.
-        Uses double-checked locking for thread safety.
+        Uses double-checked locking for thread safety and prevents recursion.
         """
         if not self._initialized:
             with self._init_lock:
                 if not self._initialized:
-                    for loader in self._lazy_loaders:
-                        loader()
+                    # RECURSION GUARD: Set initialized to True BEFORE running loaders
+                    # to prevent infinite recursion if a loader calls current_config.set/get
                     self._initialized = True
+                    try:
+                        for loader in self._lazy_loaders:
+                            loader()
+                    except Exception as e:
+                        # Fallback: if loading fails, reset initialized flag or log it
+                        # For now, we prefer to keep it True to avoid repeated hangs
+                        sys.stderr.write(f"Error during ConfigProxy initialization: {e}\n")
 
     def bootstrap_from_module(self, module: ModuleType) -> None:
         """
