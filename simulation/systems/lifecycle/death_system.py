@@ -1,16 +1,18 @@
 from __future__ import annotations
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Union, TYPE_CHECKING
 import logging
-from simulation.systems.lifecycle.api import IDeathSystem, DeathConfigDTO
-from simulation.dtos.api import SimulationState
-from simulation.models import Transaction
-from simulation.systems.inheritance_manager import InheritanceManager
-from simulation.systems.liquidation_manager import LiquidationManager
-from simulation.finance.api import ISettlementSystem
+from simulation.systems.lifecycle.api import IDeathSystem, DeathConfigDTO, IDeathContext
 from modules.finance.api import ILiquidatable, IShareholderRegistry, IFinancialEntity
 from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, DEFAULT_CURRENCY, AssetBuyoutRequestDTO
 from simulation.interfaces.market_interface import IMarket
 from modules.simulation.api import IEstateRegistry
+
+if TYPE_CHECKING:
+    from simulation.dtos.api import SimulationState
+    from simulation.models import Transaction
+    from simulation.systems.inheritance_manager import InheritanceManager
+    from simulation.systems.liquidation_manager import LiquidationManager
+    from simulation.finance.api import ISettlementSystem
 
 class DeathSystem(IDeathSystem):
     """
@@ -32,7 +34,7 @@ class DeathSystem(IDeathSystem):
         self.logger = logger
         self.estate_registry = estate_registry
 
-    def execute(self, state: SimulationState) -> List[Transaction]:
+    def execute(self, state: Union[SimulationState, IDeathContext]) -> List[Transaction]:
         """
         Executes the death phase.
         1. Firm Liquidation (Bankruptcy)
@@ -40,7 +42,7 @@ class DeathSystem(IDeathSystem):
         """
         return self._handle_agent_liquidation(state)
 
-    def _handle_agent_liquidation(self, state: SimulationState) -> List[Transaction]:
+    def _handle_agent_liquidation(self, state: Union[SimulationState, IDeathContext]) -> List[Transaction]:
         transactions: List[Transaction] = []
 
         # --- Firm Liquidation ---
@@ -132,7 +134,7 @@ class DeathSystem(IDeathSystem):
 
         return transactions
 
-    def _decommission_agent(self, agent: Any, state: SimulationState) -> None:
+    def _decommission_agent(self, agent: Any, state: Union[SimulationState, IDeathContext]) -> None:
         """
         Standardized Decommission: Moves agent to estate and removes from global map.
         Note: List removal (households/firms) is handled in bulk for performance.
@@ -143,7 +145,7 @@ class DeathSystem(IDeathSystem):
         if agent.id in state.agents:
             del state.agents[agent.id]
 
-    def _recover_external_assets(self, agent_id: int, state: SimulationState, transactions: List[Transaction]) -> None:
+    def _recover_external_assets(self, agent_id: int, state: Union[SimulationState, IDeathContext], transactions: List[Transaction]) -> None:
         """
         Recovers assets from external accounts (Banks) before liquidation.
         """
@@ -200,7 +202,7 @@ class DeathSystem(IDeathSystem):
                     else:
                         self.logger.error(f"RECOVER_FAIL | Bank {bank_id} insolvent? Could not return {amount} to {agent_id}")
 
-    def _cancel_agent_orders(self, agent_id: str | int, state: SimulationState) -> None:
+    def _cancel_agent_orders(self, agent_id: str | int, state: Union[SimulationState, IDeathContext]) -> None:
         """
         Scrub agent orders from all markets to ensure atomicity.
         """
@@ -217,7 +219,7 @@ class DeathSystem(IDeathSystem):
                         f"ORDER_SCRUB_FAIL | Failed to cancel orders for agent {agent_id} in market {getattr(market, 'id', 'unknown')}: {e}"
                     )
 
-    def _liquidate_agent_inventory(self, agent: Any, state: SimulationState, transactions: List[Transaction]) -> None:
+    def _liquidate_agent_inventory(self, agent: Any, state: Union[SimulationState, IDeathContext], transactions: List[Transaction]) -> None:
         """
         Liquidates agent inventory by selling to Public Manager (Asset Buyout).
         Transfers cash to the agent and clears inventory.

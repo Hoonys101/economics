@@ -1,11 +1,14 @@
 from __future__ import annotations
-from typing import Protocol, List, Any, Dict, runtime_checkable, TYPE_CHECKING
+from typing import Protocol, List, Any, Dict, runtime_checkable, TYPE_CHECKING, Union, Optional
 from dataclasses import dataclass
 import logging
-from simulation.dtos.api import SimulationState
 from simulation.models import Transaction
 from modules.finance.api import IFinancialEntity
 from modules.demographics.api import IDemographicManager
+
+if TYPE_CHECKING:
+    from simulation.dtos.api import SimulationState
+    from modules.simulation.api import AgentID
 
 @dataclass(frozen=True)
 class LifecycleConfigDTO:
@@ -75,12 +78,27 @@ class DeathConfigDTO:
         )
 
 @runtime_checkable
+class IDeathContext(Protocol):
+    """
+    Scoped context for Lifecycle systems to prevent God DTO coupling.
+    """
+    time: int
+    households: List[Any]
+    firms: List[Any]
+    agents: Dict[Any, Any]
+    markets: Dict[str, Any]
+    primary_government: Optional[Any]
+    inactive_agents: Optional[Dict[Any, Any]]
+    currency_registry_handler: Optional[Any]
+    currency_holders: Optional[List[Any]]
+
+@runtime_checkable
 class ILifecycleSubsystem(Protocol):
     """
     Protocol for discrete lifecycle systems (Birth, Aging, Death).
-    Adheres to SEO Pattern: Stateless execution on State DTO.
+    Adheres to SEO Pattern: Stateless execution on Scoped Context.
     """
-    def execute(self, state: SimulationState) -> List[Transaction]:
+    def execute(self, state: Union[SimulationState, IDeathContext]) -> List[Transaction]:
         """
         Executes the lifecycle logic for the current tick.
         Returns a list of transactions (e.g., inheritance, fees) to be processed.

@@ -2,5 +2,81 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {}
+  "missions": {
+    "AUDIT_TEST_COLLECTION_RESIDUAL": {
+      "key": "AUDIT_TEST_COLLECTION_RESIDUAL",
+      "title": "Audit Residual Test Collection Hang",
+      "type": "jules",
+      "instruction_raw": "",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_AUDIT_TEST_COLLECTION_RESIDUAL_SPEC.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "DECOUPLE_LIFECYCLE": {
+      "key": "DECOUPLE_LIFECYCLE",
+      "title": "Decouple Lifecycle from God DTO (Wave 14)",
+      "type": "jules",
+      "instruction_raw": "",
+      "command": "create",
+      "file_path": "C:/Users/Gram Pro/.gemini/antigravity/brain/6e6cfbde-847a-4717-9f99-838ac8a1f992/implementation_plan_decoupling.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "IMPL_FINANCE_DECOUPLING": {
+      "key": "IMPL_FINANCE_DECOUPLING",
+      "title": "Module Implementation: Finance Decoupling (Wave 16)",
+      "type": "jules",
+      "instruction_raw": "Implement the decoupling of Finance module from ISimulationState as specified in MISSION_IMPACT_FINANCE_SPEC.md. Enforce Public DTO mapping and Protocol-based communication.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_IMPACT_FINANCE_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "IMPL_GOVERNMENT_DECOUPLING": {
+      "key": "IMPL_GOVERNMENT_DECOUPLING",
+      "title": "Module Implementation: Government Decoupling (Wave 16)",
+      "type": "jules",
+      "instruction_raw": "Refactor Government module to use Public API and stateless indicators as specified in MISSION_IMPACT_GOVERNMENT_SPEC.md. Decouple GovernmentDecisionEngine from concrete brain classes.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_IMPACT_GOVERNMENT_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "IMPL_LIFECYCLE_DECOUPLING": {
+      "key": "IMPL_LIFECYCLE_DECOUPLING",
+      "title": "Module Implementation: Lifecycle Decoupling (Wave 16)",
+      "type": "jules",
+      "instruction_raw": "Refactor Lifecycle systems to use context-based protocols (ILifecycleContext) as specified in MISSION_IMPACT_LIFECYCLE_SPEC.md. Eliminate all direct SimulationState dependencies.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_IMPACT_LIFECYCLE_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    }
+  }
 }

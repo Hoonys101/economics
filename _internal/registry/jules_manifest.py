@@ -22,9 +22,5 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "AUDIT_TEST_COLLECTION_RESIDUAL": {
-        "title": "Audit Residual Test Collection Hang",
-        "file": "gemini-output/spec/MISSION_AUDIT_TEST_COLLECTION_RESIDUAL_SPEC.md",
-        "wait": True
-    }
+    # Add missions here
 }

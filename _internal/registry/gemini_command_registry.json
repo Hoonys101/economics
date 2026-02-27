@@ -46,6 +46,44 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "M2_LEAKAGE_AUDIT": {
+      "key": "M2_LEAKAGE_AUDIT",
+      "title": "M2 Boundary Leakage Audit",
+      "type": "gemini",
+      "instruction_raw": "Analyze recent handover reports indicating 5.7B penny M2 leakage. Verify if DTO-level conversions (int to float) or missing settlement callbacks are causing monetary drift. Output AUDIT_M2_LEAKAGE.md.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "modules/finance/kernel/monetary_ledger.py",
+        "simulation/dtos/api.py",
+        "communications/insights/DYNAMIC_CONTEXT_LIMITS.md"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "ECONOMIC_FRAGILITY_AUDIT": {
+      "key": "ECONOMIC_FRAGILITY_AUDIT",
+      "title": "Economic Fragility Audit",
+      "type": "gemini",
+      "instruction_raw": "Analyze systemic SETTLEMENT_FAIL issues. Determine if agent liquidity snapshots via DTOs are lagging behind actual kernel state, causing false positive failures. Output AUDIT_FRAGILITY.md.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "simulation/engine.py",
+        "modules/system/command_pipeline/api.py",
+        "gemini-output/spec/DTO_SEGREGATION_SPEC.md"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }
