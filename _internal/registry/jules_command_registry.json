@@ -33,21 +33,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "IMPL_M2_HARDENING": {
-      "key": "IMPL_M2_HARDENING",
-      "title": "Impl: M2 Integrity & Typed Side-Effects",
-      "type": "jules",
-      "instruction_raw": "Implement the strict integer-based CommandBatchDTO system. Refactor all engine effect queues to use this batching system. Update all call sites to pass integers instead of floats for currency values.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_SPEC_M2_HARDENING_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "IMPL_SETTLEMENT_SYNC": {
       "key": "IMPL_SETTLEMENT_SYNC",
       "title": "Impl: Live Liquidity Oracle & DTO Sync",
