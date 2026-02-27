@@ -51,13 +51,17 @@ def _load_economy_params_yaml():
     except Exception as e:
         sys.stderr.write(f"Warning: Failed to load economy_params.yaml: {e}\n")
 
-# Load YAML immediately
-_load_simulation_yaml()
-_load_economy_params_yaml()
+def _lazy_load_yamls():
+    """Lazily loads all YAML configurations."""
+    _load_simulation_yaml()
+    _load_economy_params_yaml()
+
+# Register lazy loaders instead of calling immediately
+current_config.register_lazy_loader(_lazy_load_yamls)
 
 # Proxy for access
 def __getattr__(name):
-    # Delegate to ConfigProxy which handles None values correctly via get_entry
+    # Delegate to ConfigProxy which handles initialization and lazy loading
     # We must call getattr directly on the instance to trigger its __getattr__
     try:
         return getattr(current_config, name)

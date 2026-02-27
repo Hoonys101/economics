@@ -5,7 +5,7 @@ Defines the ConfigProxy and Configuration Registry APIs.
 Resolves TD-CONF-GHOST-BIND by enabling lazy-loading and runtime overrides of configuration constants.
 """
 from __future__ import annotations
-from typing import Any, Dict, Optional, Type, Union, TYPE_CHECKING, List
+from typing import Any, Dict, Optional, Type, Union, TYPE_CHECKING, List, Callable
 from dataclasses import dataclass, field
 from modules.system.api import IConfigurationRegistry, RegistryValueDTO, OriginType, RegistryObserver
 from modules.system.registry import GlobalRegistry
@@ -47,6 +47,20 @@ class ConfigProxy(IConfigurationRegistry):
         self._metadata: Dict[str, ConfigKeyMeta] = {}
         # Fallback module (legacy config/defaults.py)
         self._defaults_module: Optional[ModuleType] = None
+        # Lazy Loading Callbacks
+        self._lazy_loaders: List[Callable[[], None]] = []
+        self._initialized = False
+
+    def register_lazy_loader(self, loader: Callable[[], None]) -> None:
+        """Registers a callback to load configuration lazily."""
+        self._lazy_loaders.append(loader)
+
+    def _ensure_initialized(self) -> None:
+        """Executes all registered lazy loaders if not already initialized."""
+        if not self._initialized:
+            for loader in self._lazy_loaders:
+                loader()
+            self._initialized = True
 
     def bootstrap_from_module(self, module: ModuleType) -> None:
         """
@@ -68,6 +82,7 @@ class ConfigProxy(IConfigurationRegistry):
         """
         Retrieves a value. Delegate to GlobalRegistry.
         """
+        self._ensure_initialized() # Ensure config is loaded before access
         return self._registry.get(key, default)
 
     def __getattr__(self, name: str) -> Any:
@@ -77,6 +92,8 @@ class ConfigProxy(IConfigurationRegistry):
         # Avoid recursion for internal attributes
         if name.startswith("_"):
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
+        self._ensure_initialized() # Ensure config is loaded before access
 
         # Check registry first using get_entry to differentiate None value from missing key
         entry = self._registry.get_entry(name)
@@ -95,6 +112,8 @@ class ConfigProxy(IConfigurationRegistry):
         """
         Updates a value with origin tracking. Delegate to GlobalRegistry.
         """
+        self._ensure_initialized() # Ensure config is loaded before set? Maybe not strictly needed but safer.
+
         # Validate if metadata exists
         if key in self._metadata:
             meta = self._metadata[key]
@@ -109,6 +128,7 @@ class ConfigProxy(IConfigurationRegistry):
 
     def snapshot(self) -> Dict[str, Any]:
         """Returns a dict of current effective values."""
+        self._ensure_initialized()
         # GlobalRegistry.snapshot returns Dict[str, RegistryValueDTO]
         # We need to return Dict[str, Any] (values) to match IConfigurationRegistry signature if it implies values
         # But wait, IConfigurationRegistry.snapshot signature in api.py is Dict[str, Any]

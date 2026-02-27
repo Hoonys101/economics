@@ -8,37 +8,42 @@ from modules.common.utils.logging_manager import (
 import config
 from modules.system.builders.simulation_builder import create_simulation
 
+print("DEBUG: [main.py] Importing main.py...")
+
 main_logger = logging.getLogger(__name__)
 
 # --- Setup Logging ---
-setup_logging()  # Call the setup function
-logging.getLogger().setLevel(logging.DEBUG) # Force DEBUG level for all loggers
+def setup_app():
+    print("DEBUG: [main.py] Executing setup_logging()...")
+    setup_logging()  # Call the setup function
+    logging.getLogger().setLevel(logging.DEBUG) # Force DEBUG level for all loggers
 
-# Get the SamplingFilter instance and set sampling rates
-sampling_filter: SamplingFilter | None = None
-for handler in logging.root.handlers:
-    if isinstance(handler, logging.FileHandler):
-        for filter_obj in handler.filters:
-            if isinstance(filter_obj, SamplingFilter):
-                sampling_filter = filter_obj
-                break
-        else:
-            continue
-        break
+    # Get the SamplingFilter instance and set sampling rates
+    sampling_filter: SamplingFilter | None = None
+    for handler in logging.root.handlers:
+        if isinstance(handler, logging.FileHandler):
+            for filter_obj in handler.filters:
+                if isinstance(filter_obj, SamplingFilter):
+                    sampling_filter = filter_obj
+                    break
+            else:
+                continue
+            break
 
 
-if sampling_filter:
-    sampling_filter.sampling_rates["AIDecision"] = 0.1
-    sampling_filter.sampling_rates["ProduceDebug"] = 0.1
-    sampling_filter.sampling_rates["FoodConsumptionCalc"] = 0.1
-    sampling_filter.sampling_rates["FoodConsumptionControlled"] = 0.1
-    sampling_filter.sampling_rates["FoodConsumptionSkipped"] = 0.1
-    logging.info("Sampling rates applied to logging.", extra={"tags": ["setup"]})
-else:
-    logging.warning(
-        "SamplingFilter not found in logging handlers. Sampling rates not applied.",
-        extra={"tags": ["setup"]},
-    )
+    if sampling_filter:
+        sampling_filter.sampling_rates["AIDecision"] = 0.1
+        sampling_filter.sampling_rates["ProduceDebug"] = 0.1
+        sampling_filter.sampling_rates["FoodConsumptionCalc"] = 0.1
+        sampling_filter.sampling_rates["FoodConsumptionControlled"] = 0.1
+        sampling_filter.sampling_rates["FoodConsumptionSkipped"] = 0.1
+        logging.info("Sampling rates applied to logging.", extra={"tags": ["setup"]})
+    else:
+        logging.warning(
+            "SamplingFilter not found in logging handlers. Sampling rates not applied.",
+            extra={"tags": ["setup"]},
+        )
+    print("DEBUG: [main.py] setup_logging() complete.")
 
 # --- End Setup Logging ---
 
@@ -89,6 +94,7 @@ def run_simulation(
 
 
 if __name__ == "__main__":
+    setup_app()
     output_filename = "simulation_results.csv"
     if len(sys.argv) > 1:
         output_filename = sys.argv[1]

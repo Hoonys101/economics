@@ -84,10 +84,16 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
         self._scheduler = None
         # Load metadata schema on initialization
         self._metadata_map: Dict[str, ParameterSchemaDTO] = {}
-        self._load_metadata()
+        self._metadata_loaded = False # Flag for lazy loading
 
         if initial_data:
             self.migrate_from_dict(initial_data)
+
+    def _ensure_metadata_loaded(self) -> None:
+        """Lazily loads metadata schema."""
+        if not self._metadata_loaded:
+            self._load_metadata()
+            self._metadata_loaded = True
 
     def _load_metadata(self) -> None:
         schemas = SchemaLoader.load_schema()
@@ -115,10 +121,18 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
         return layers[max_origin]
 
     def get(self, key: str, default: Any = None) -> Any:
+        # We don't necessarily need metadata to get a value, but consistent behavior is good.
+        # However, metadata is mostly for validation/UI. Reading values should be fast.
+        # Let's verify if metadata loading is required for GET.
+        # Since SchemaLoader just reads a YAML file, it might be safer to lazy load it only when needed (e.g. get_metadata).
+        # But if get() relies on defaults from schema (not implemented here), we'd need it.
+        # Current impl doesn't use metadata in get(). So we can skip calling _ensure_metadata_loaded here for perf.
         entry = self._get_active_entry(key)
         return entry.value if entry else default
 
     def set(self, key: str, value: Any, origin: OriginType = OriginType.CONFIG) -> bool:
+        # Metadata validation might happen here in future, but currently validation logic is in ConfigProxy.
+        # So we can keep it light.
         active_entry = self._get_active_entry(key)
 
         # 1. Authority Check
@@ -221,6 +235,7 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
         return result
 
     def get_metadata(self, key: str) -> Optional[ParameterSchemaDTO]:
+        self._ensure_metadata_loaded() # Explicitly load metadata here
         return self._metadata_map.get(key)
 
     def get_entry(self, key: str) -> Optional[RegistryValueDTO]:
