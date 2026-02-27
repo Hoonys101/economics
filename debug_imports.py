@@ -1,15 +1,15 @@
-import sys
 import time
+print("Starting import check...")
+start = time.time()
 
-modules = ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit", "pydantic", "fastapi", "fastapi.testclient", "uvicorn", "httpx", "starlette", "starlette.websockets", "starlette.status"]
+print("Importing Firm...")
+from simulation.firms import Firm
+print(f"Firm imported in {time.time() - start:.4f}s")
 
-for m in modules:
-    print(f"Importing {m}...", end="", flush=True)
-    start = time.time()
-    try:
-        __import__(m)
-        print(f" DONE ({time.time() - start:.2f}s)")
-    except ImportError:
-        print(" FAILED (ImportError)")
-    except Exception as e:
-        print(f" FAILED ({e})")
+print("Importing Household...")
+from simulation.core_agents import Household
+print(f"Household imported in {time.time() - start:.4f}s")
+
+print("Importing DeathSystem...")
+from simulation.systems.lifecycle.death_system import DeathSystem
+print(f"DeathSystem imported in {time.time() - start:.4f}s")

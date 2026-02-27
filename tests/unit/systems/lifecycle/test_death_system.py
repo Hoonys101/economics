@@ -3,8 +3,19 @@ from unittest.mock import MagicMock
 from simulation.systems.lifecycle.death_system import DeathSystem
 from simulation.systems.lifecycle.api import DeathConfigDTO
 from simulation.dtos.api import SimulationState
-from simulation.firms import Firm
+# from simulation.firms import Firm # Removed Heavy Import
 from simulation.interfaces.market_interface import IMarket
+from typing import Protocol, runtime_checkable, Any, Dict
+
+# Lightweight Protocols
+@runtime_checkable
+class IFirm(Protocol):
+    id: int
+    is_active: bool
+    hr_state: Any
+    capital_stock: float
+    def get_all_items(self) -> Dict[str, float]: ...
+    def liquidate_assets(self, tick: int) -> Dict[str, float]: ...
 
 class TestDeathSystem:
     @pytest.fixture
@@ -21,7 +32,7 @@ class TestDeathSystem:
         return DeathSystem(config, inheritance_manager, liquidation_manager, settlement_system, public_manager, logger)
 
     def test_firm_liquidation(self, death_system):
-        firm = MagicMock(spec=Firm)
+        firm = MagicMock(spec=IFirm)
         firm.is_active = False
         firm.id = 1
         firm.get_all_items.return_value = {}
@@ -40,6 +51,8 @@ class TestDeathSystem:
         state.markets = {} # Ensure markets exists
         state.inactive_agents = None
         state.government = None # Prevent inheritance logic if any
+        state.currency_registry_handler = None
+        state.currency_holders = None
 
         death_system.execute(state)
 
@@ -49,7 +62,7 @@ class TestDeathSystem:
         assert firm not in state.firms
 
     def test_firm_liquidation_cancels_orders(self, death_system):
-        firm = MagicMock(spec=Firm)
+        firm = MagicMock(spec=IFirm)
         firm.is_active = False
         firm.id = 1
         firm.get_all_items.return_value = {}
@@ -75,6 +88,8 @@ class TestDeathSystem:
         state.markets = {"test_market": mock_market}
         state.inactive_agents = {}
         state.government = None
+        state.currency_registry_handler = None
+        state.currency_holders = None
 
         death_system.execute(state)
 

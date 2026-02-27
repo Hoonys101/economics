@@ -3,9 +3,21 @@ from unittest.mock import MagicMock
 from simulation.systems.lifecycle.birth_system import BirthSystem
 from simulation.systems.lifecycle.api import BirthConfigDTO
 from simulation.dtos.api import SimulationState
-from simulation.core_agents import Household
+# from simulation.core_agents import Household  # Removed heavy import
 from modules.system.api import ICurrencyHolder, DEFAULT_CURRENCY
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
+from typing import Protocol, runtime_checkable, Any, Dict, List
+
+@runtime_checkable
+class IHousehold(Protocol):
+    id: int
+    age: float
+    is_active: bool
+    children_ids: List[int]
+    portfolio: Any
+    decision_engine: Any
+    def get_balance(self, currency: str = "USD") -> float: ...
+    def get_assets_by_currency(self) -> Dict[str, float]: ...
 
 class TestBirthSystem:
     @pytest.fixture
@@ -41,8 +53,7 @@ class TestBirthSystem:
 
     def test_process_births_with_factory_zero_sum(self, birth_system):
         # Setup Parent with assets
-        # Use spec=Household to satisfy isinstance(parent, ICurrencyHolder)
-        parent = MagicMock(spec=Household)
+        parent = MagicMock(spec=IHousehold)
         parent.id = 1
         parent.age = 25
         parent.is_active = True
@@ -67,7 +78,7 @@ class TestBirthSystem:
         birth_system.breeding_planner.decide_breeding_batch.return_value = [True]
 
         # Mock Child
-        child = MagicMock(spec=Household)
+        child = MagicMock(spec=IHousehold)
         child.id = 100
         child.portfolio.holdings.items.return_value = []
         child.decision_engine = MagicMock() # Explicitly mock decision_engine

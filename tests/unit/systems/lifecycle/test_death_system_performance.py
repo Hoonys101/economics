@@ -2,9 +2,24 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.systems.lifecycle.death_system import DeathSystem
 from simulation.systems.lifecycle.api import DeathConfigDTO
-from simulation.firms import Firm
-from simulation.core_agents import Household
 from modules.finance.api import ILiquidatable
+from typing import Protocol, runtime_checkable, Any, Dict, List
+
+# Define lightweight protocols to replace heavy imports
+@runtime_checkable
+class IFirm(Protocol):
+    id: int
+    is_active: bool
+    hr_state: Any
+    def get_all_items(self) -> Dict[str, float]: ...
+
+@runtime_checkable
+class IHousehold(Protocol):
+    id: int
+    is_active: bool
+    inventory: Dict[str, float]
+    _econ_state: Any
+    def get_all_items(self) -> Dict[str, float]: ...
 
 class TestDeathSystemPerformance:
     @pytest.fixture
@@ -26,12 +41,12 @@ class TestDeathSystemPerformance:
         instead of rebuilding the entire agents dictionary (O(N)).
         """
         # Setup active firm
-        active_firm = MagicMock(spec=Firm)
+        active_firm = MagicMock(spec=IFirm)
         active_firm.is_active = True
         active_firm.id = 1
 
         # Setup dead firm
-        dead_firm = MagicMock(spec=Firm)
+        dead_firm = MagicMock(spec=IFirm)
         dead_firm.is_active = False
         dead_firm.id = 2
         dead_firm.get_all_items = MagicMock(return_value={})
@@ -39,12 +54,12 @@ class TestDeathSystemPerformance:
         dead_firm.hr_state.employees = []
 
         # Setup active household
-        active_hh = MagicMock(spec=Household)
+        active_hh = MagicMock(spec=IHousehold)
         active_hh.is_active = True
         active_hh.id = 101
 
         # Setup dead household
-        dead_hh = MagicMock(spec=Household)
+        dead_hh = MagicMock(spec=IHousehold)
         dead_hh.is_active = False
         dead_hh.id = 102
         dead_hh.get_all_items = MagicMock(return_value={})
@@ -70,6 +85,8 @@ class TestDeathSystemPerformance:
         state.markets = {}
         state.inactive_agents = {}
         state.government = None
+        state.currency_registry_handler = None
+        state.currency_holders = None
 
         # Mock settlement system interaction
         death_system.settlement_system.get_agent_banks.return_value = []
