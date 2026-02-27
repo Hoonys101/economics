@@ -7,12 +7,73 @@ from simulation.models import Order
 from simulation.dtos.decision_dtos import DecisionOutputDTO
 from modules.finance.api import IFinancialAgent
 from modules.simulation.api import AgentID
-from modules.system.command_pipeline.api import CommandBatchDTO
+from modules.system.api import AgentID, CurrencyCode, DEFAULT_CURRENCY
+from simulation.dtos.commands import GodCommandDTO
+
+if TYPE_CHECKING:
+    from simulation.core_agents import Household
+    from simulation.firms import Firm
+    from simulation.dtos.scenario import StressScenarioConfig
+    from modules.household.dtos import HouseholdStateDTO
+    from modules.finance.kernel.api import IMonetaryLedger
+    from modules.government.politics_system import PoliticsSystem
+    from modules.governance.api import SystemCommand
 
 # Renamed to enforce explicit usage of CanonicalOrderDTO vs Legacy Order
 LegacySimulationOrder = Order
 # Deprecated alias kept for backward compatibility until all consumers are updated
 OrderDTO = Order
+
+@dataclass(frozen=True)
+class FinancialTransferDTO:
+    """Represents a strictly balanced peer-to-peer transfer."""
+    source_id: AgentID
+    target_id: AgentID
+    amount_pennies: int
+    currency: CurrencyCode = DEFAULT_CURRENCY
+    reason: str = "general_transfer"
+
+    def __post_init__(self):
+        if not isinstance(self.amount_pennies, int):
+            raise TypeError(f"Float Incursion Detected: amount_pennies must be int, got {type(self.amount_pennies)}")
+        if self.amount_pennies < 0:
+            raise ValueError("Transfer amount cannot be negative.")
+
+@dataclass(frozen=True)
+class SystemLedgerMutationDTO:
+    """Represents an M2-altering operation (Mint/Burn) that must offset against System Debt."""
+    target_id: AgentID
+    amount_pennies: int  # Positive for Mint, Negative for Burn
+    currency: CurrencyCode = DEFAULT_CURRENCY
+    reason: str = "system_operation"
+
+    def __post_init__(self):
+        if not isinstance(self.amount_pennies, int):
+            raise TypeError(f"Float Incursion Detected: amount_pennies must be int, got {type(self.amount_pennies)}")
+
+@dataclass
+class CommandBatchDTO:
+    """
+    Replaces the legacy Dict[str, Any] effects_queue.
+    Encapsulates all state mutations for a given tick.
+    """
+    tick: int
+    transfers: List[FinancialTransferDTO] = field(default_factory=list)
+    mutations: List[SystemLedgerMutationDTO] = field(default_factory=list)
+    god_commands: List[GodCommandDTO] = field(default_factory=list)
+    system_commands: List['SystemCommand'] = field(default_factory=list)
+
+    def validate_pre_execution(self) -> None:
+        """
+        Structural validation only.
+        Zero-Sum enforcement occurs at the IMonetaryLedger level.
+        """
+        for t in self.transfers:
+            if not isinstance(t.amount_pennies, int):
+                raise TypeError("Float Incursion in transfers.")
+        for m in self.mutations:
+            if not isinstance(m.amount_pennies, int):
+                raise TypeError("Float Incursion in mutations.")
 
 @dataclass(frozen=True)
 class DepartmentContextDTO:
@@ -36,15 +97,6 @@ class MockFactoryDTO:
     target_protocol: str
     mock_id: str
     behavior_config: Dict[str, Any]
-
-
-if TYPE_CHECKING:
-    from simulation.core_agents import Household
-    from simulation.firms import Firm
-    from simulation.dtos.scenario import StressScenarioConfig
-    from modules.household.dtos import HouseholdStateDTO
-    from modules.finance.kernel.api import IMonetaryLedger
-    from modules.government.politics_system import PoliticsSystem
 
 @dataclass
 class TransactionData:

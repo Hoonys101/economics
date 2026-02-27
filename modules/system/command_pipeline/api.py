@@ -4,12 +4,7 @@ from dataclasses import dataclass, field
 from simulation.dtos.commands import GodCommandDTO
 from modules.governance.api import SystemCommand
 from modules.governance.cockpit.api import CockpitCommand
-
-@dataclass
-class CommandBatchDTO:
-    tick: int
-    god_commands: List[GodCommandDTO] = field(default_factory=list)
-    system_commands: List[SystemCommand] = field(default_factory=list)
+from simulation.dtos.api import CommandBatchDTO
 
 @runtime_checkable
 class ICommandIngressService(Protocol):

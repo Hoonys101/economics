@@ -1,12 +1,12 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Protocol, Union, runtime_checkable, TYPE_CHECKING, TypedDict
+from typing import Any, Dict, List, Optional, Protocol, Union, runtime_checkable, TYPE_CHECKING, TypedDict, Sequence
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
-    from modules.simulation.dtos.api import MoneySupplyDTO
+    from modules.simulation.dtos.api import MoneySupplyDTO, CommandBatchDTO
     from modules.simulation.api import EconomicIndicatorsDTO
 
 # Define Currency Code (Usually String "USD")
