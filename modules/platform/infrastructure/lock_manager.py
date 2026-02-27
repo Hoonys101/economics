@@ -40,8 +40,24 @@ class PlatformLockManager(ILockManager):
             return # Already acquired
 
         try:
+            # Before attempting to open/lock, check if there's a stale lock
+            # that needs to be cleared (e.g., process died without releasing).
+            try:
+                self._check_lock_status()
+            except LockAcquisitionError:
+                # Still running, handle below or let it raise here?
+                # Actually _check_lock_status raises if it IS running. If it's stale, it returns.
+                pass
+
             # Use 'a+' (append+read) to handle both checking stale content and overwriting
             self._lock_file = open(self.lock_file_path, 'a+')
+        except PermissionError:
+            # On Windows, opening a locked file with 'a+' can raise PermissionError
+            try:
+                self._check_lock_status()
+            except LockAcquisitionError as le:
+                raise le
+            raise LockAcquisitionError("Simulation is already running (Locked by another process)")
         except IOError as e:
             raise LockAcquisitionError(f"Could not open lock file: {e}")
 
@@ -81,7 +97,8 @@ class PlatformLockManager(ILockManager):
     def _check_lock_status(self) -> None:
         """
         Reads the PID from the lock file and checks if the process is running.
-        Raises LockAcquisitionError with detailed info.
+        Raises LockAcquisitionError with detailed info if active.
+        Clears the lock file if it is stale.
         """
         try:
             if not os.path.exists(self.lock_file_path):
@@ -106,10 +123,14 @@ class PlatformLockManager(ILockManager):
             if self._is_process_running(pid):
                 raise LockAcquisitionError(f"Simulation is already running (PID {pid})")
             else:
-                # PID found, but not running.
-                # However, the OS lock failed.
-                self.logger.warning(f"Lock held, but documented PID {pid} is not running. Potential stale PID or zombie process.")
-                raise LockAcquisitionError(f"Simulation is already running (Lock held, but PID {pid} inactive)")
+                # PID found, but not running. Stale lock.
+                self.logger.warning(f"Stale lock detected for PID {pid}. Process is not running. Clearing stale lock.")
+                try:
+                    os.remove(self.lock_file_path)
+                    self.logger.info("Cleared stale lock file.")
+                except OSError as e:
+                    self.logger.warning(f"Could not remove stale lock file: {e}")
+                # We return without error so caller can proceed to acquire lock.
 
         except IOError:
             pass # Can't read file

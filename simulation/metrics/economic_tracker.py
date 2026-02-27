@@ -447,11 +447,15 @@ class EconomicIndicatorTracker:
         for field in self.all_fieldnames:
             record.setdefault(field, 0)
 
-        # Store the record in metrics
+        # Store the record in metrics with bounded size to prevent OOM
         for key, value in record.items():
             if key != "time":
                 # Ensure we have a list for this key
-                self.metrics.setdefault(key, []).append(value)
+                lst = self.metrics.setdefault(key, [])
+                lst.append(value)
+                # Keep max 2000 points to bound memory usage
+                if len(lst) > 2000:
+                    lst.pop(0)
 
         # Update SMA Histories
         self.gdp_history.append(record.get("gdp", 0.0))

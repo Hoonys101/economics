@@ -5,6 +5,8 @@ import time
 
 print(f"DEBUG: [conftest.py] Root conftest loading at {time.strftime('%H:%M:%S')}")
 
+import importlib.util
+
 # Mock missing dependencies for CI/Sandbox environments
 # Note: "numpy" is included here to allow collection in envs where it's missing.
 # However, if numpy is missing, tests relying on actual array operations will fail at runtime.
@@ -12,36 +14,47 @@ print(f"DEBUG: [conftest.py] Root conftest loading at {time.strftime('%H:%M:%S')
 for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit", "pydantic", "fastapi", "fastapi.testclient", "uvicorn", "httpx", "starlette", "starlette.websockets", "starlette.status", "numpy"]:
     if module_name in sys.modules:
         continue
-    print(f"DEBUG: [conftest.py] Attempting to import/mock: {module_name}...", end=" ", flush=True)
-    start_time = time.time()
+
+    # We use importlib.util.find_spec to quickly check if a module exists.
+    # We only check the base module to avoid performance issues.
+    base_module = module_name.split(".")[0]
+
+    # Note: find_spec might not work perfectly for all namespace packages, but works well for most missing ones
     try:
-        __import__(module_name)
-        print(f"DONE ({time.time() - start_time:.2f}s)")
-    except ImportError:
-        print("MOCKING")
-        mock = MagicMock()
-        # IMPORTANT: Setting __path__ = [] allows the mock to be treated as a package,
-        # supporting submodule imports like 'websockets.asyncio'.
-        mock.__path__ = []  # Ensure it is treated as a package
-        mock.__spec__ = None # Ensure it satisfies import system expectations
+        spec = importlib.util.find_spec(base_module)
+        if spec is not None:
+            # It's installed, let the real import happen later.
+            continue
+    except ValueError:
+        # ValueError: sklearn.__spec__ is None (can happen if it is already partially loaded/mocked incorrectly)
+        # We will fallback to the import test
+        try:
+            __import__(module_name)
+            continue
+        except ImportError:
+            pass
 
-        if module_name == "yaml":
-            mock.safe_load.return_value = {}
+    mock = MagicMock()
+    # IMPORTANT: Setting __path__ = [] allows the mock to be treated as a package,
+    # supporting submodule imports like 'websockets.asyncio'.
+    mock.__path__ = []  # Ensure it is treated as a package
+    mock.__spec__ = None # Ensure it satisfies import system expectations
 
-        if module_name == "pydantic":
-            # Mock BaseModel to allow inheritance
-            mock.BaseModel = MagicMock
-            mock.Field = MagicMock(return_value=None)
-            mock.validator = MagicMock(return_value=lambda x: x)
+    if module_name == "yaml":
+        mock.safe_load.return_value = {}
 
-        if module_name == "numpy":
-            # Create a mock bool_ class for isinstance checks
-            class MockBool(int): pass
-            mock.bool_ = MockBool
+    if module_name == "pydantic":
+        # Mock BaseModel to allow inheritance
+        mock.BaseModel = MagicMock
+        mock.Field = MagicMock(return_value=None)
+        mock.validator = MagicMock(return_value=lambda x: x)
 
-        sys.modules[module_name] = mock
-    except Exception as e:
-        print(f"FAILED ({e})")
+    if module_name == "numpy":
+        # Create a mock bool_ class for isinstance checks
+        class MockBool(int): pass
+        mock.bool_ = MockBool
+
+    sys.modules[module_name] = mock
 
 print(f"DEBUG: [conftest.py] Import phase complete at {time.strftime('%H:%M:%S')}")
 

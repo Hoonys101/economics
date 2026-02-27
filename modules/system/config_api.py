@@ -52,6 +52,7 @@ class ConfigProxy(IConfigurationRegistry):
         self._lazy_loaders: List[Callable[[], None]] = []
         self._initialized = False
         self._init_lock = threading.RLock()
+        self._thread_local = threading.local()
 
     def register_lazy_loader(self, loader: Callable[[], None]) -> None:
         """Registers a callback to load configuration lazily."""
@@ -62,19 +63,26 @@ class ConfigProxy(IConfigurationRegistry):
         Executes all registered lazy loaders if not already initialized.
         Uses double-checked locking for thread safety and prevents recursion.
         """
-        if not self._initialized:
-            with self._init_lock:
-                if not self._initialized:
-                    # RECURSION GUARD: Set initialized to True BEFORE running loaders
-                    # to prevent infinite recursion if a loader calls current_config.set/get
+        if self._initialized:
+            return
+
+        # Check thread-local loading flag to prevent recursive deadlocks
+        # during lazy loader execution.
+        if getattr(self._thread_local, 'is_loading', False):
+            return
+
+        with self._init_lock:
+            if not self._initialized:
+                self._thread_local.is_loading = True
+                try:
+                    for loader in self._lazy_loaders:
+                        loader()
                     self._initialized = True
-                    try:
-                        for loader in self._lazy_loaders:
-                            loader()
-                    except Exception as e:
-                        # Fallback: if loading fails, reset initialized flag or log it
-                        # For now, we prefer to keep it True to avoid repeated hangs
-                        sys.stderr.write(f"Error during ConfigProxy initialization: {e}\n")
+                except Exception as e:
+                    import sys
+                    sys.stderr.write(f"Error during ConfigProxy initialization: {e}\n")
+                finally:
+                    self._thread_local.is_loading = False
 
     def bootstrap_from_module(self, module: ModuleType) -> None:
         """

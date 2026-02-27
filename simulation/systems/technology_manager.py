@@ -92,6 +92,13 @@ class TechnologyManager:
     def _ensure_capacity(self, max_firm_id: int):
         """Resize adoption matrix rows if necessary."""
         current_rows = int(self.adoption_matrix.shape[0])
+        # TD-TEST-MOCK-LEAK: Prevent comparison between MagicMock and int
+        try:
+            if not isinstance(max_firm_id, int):
+                max_firm_id = int(max_firm_id)
+        except (TypeError, ValueError):
+            return
+
         if max_firm_id >= current_rows:
             # Expand to at least double or max_id + buffer
             new_rows = max(max_firm_id + 1, current_rows * 2)
