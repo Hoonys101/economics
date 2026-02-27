@@ -98,12 +98,25 @@ class PublicSimulationService(FirmServiceProtocol, HouseholdServiceProtocol, IPu
         if not self._metrics_provider:
              raise NotImplementedError("Metrics Provider is not available")
 
-        # This gets a DTO. I need to map keys to DTO fields.
+        # This gets a DTO. Map keys to DTO fields using explicit mapping or safe retrieval.
         indicators = self._metrics_provider.get_economic_indicators()
+
+        # Safe Mapping Logic (DTO to Dict)
+        # Assuming indicators is a dataclass or object with attributes
+        # We try to convert to dict safely
+        data_map = {}
+        if hasattr(indicators, '__dict__'):
+            data_map = vars(indicators)
+        elif hasattr(indicators, '_asdict'): # NamedTuple
+            data_map = indicators._asdict()
+        else:
+            # Fallback manual extraction or error
+            raise NotImplementedError("Cannot serialize indicators DTO")
+
         result = {}
         for key in keys:
-             if hasattr(indicators, key):
-                 result[key] = getattr(indicators, key)
+             if key in data_map:
+                 result[key] = data_map[key]
              else:
                  raise InvalidIndicatorError(f"Indicator {key} not found")
         return result

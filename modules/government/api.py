@@ -19,14 +19,6 @@ from modules.government.dtos import (
 )
 from typing import TYPE_CHECKING
 from modules.government.welfare.api import IWelfareRecipient
-
-# Use the new Common MarketSnapshotDTO for GovBrain, or alias it
-# The spec says "Pass strict MarketSnapshotDTO to the brain" and defines it in modules/common/api.py (implicitly via the Spec section)
-# But here I need to be careful. The spec defines MarketSnapshotDTO in the section "API & Interface Definitions (modules/government/api.py & modules/common/api.py)"
-# It lists MarketSnapshotDTO under "DTO Definitions".
-# I will import it from modules.common.api if I put it there, or define it here if it's gov specific.
-# I put it in common/api.py. So I import it.
-
 from modules.common.api import MarketSnapshotDTO
 
 if TYPE_CHECKING:
@@ -44,7 +36,7 @@ class GovernmentStateDTO:
     Strict GovernmentStateDTO as per Wave 16 Spec.
     Represents the output state from the GovBrain.
     """
-    treasury_balance: float
+    treasury_balance: int # Pennies (changed from float to int as per review)
     current_tax_rates: Dict[str, float]
     active_welfare_programs: List[str]
 
@@ -243,7 +235,7 @@ class IGovernmentDecisionEngine(Protocol):
     """
     def decide(
         self,
-        state: LegacyGovernmentStateDTO,
+        state: GovernmentStateDTO, # Corrected from LegacyGovernmentStateDTO to GovernmentStateDTO (New)
         market_snapshot: "LegacyMarketSnapshotDTO",
         central_bank: Any
     ) -> PolicyDecisionDTO:

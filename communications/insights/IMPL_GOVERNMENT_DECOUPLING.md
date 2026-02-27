@@ -6,6 +6,7 @@
 - **Circular Dependency Mitigation**: By enforcing that DTOs and Protocols are exclusively housed in and imported from `modules/*/api.py`, we eliminated the need for lazy local imports and string-based type annotations, drastically stabilizing the module load order.
 - **Stateless Boundaries**: The shift from internal subscription arrays to an injected pub/sub interface ensures the service layer remains stateless, paving the way for easier horizontal scaling or snapshot state saving.
 - **Interface Segregation (ISP)**: During review, it was identified that `PublicSimulationService` was violating ISP by expecting `ISimulationRepository` to provide economic indicators via `hasattr`. We introduced a dedicated `IMetricsProvider` protocol to handle global metrics, ensuring clean separation of concerns.
+- **Penny Standard Compliance**: The initial implementation of `GovernmentStateDTO` used `float` for `treasury_balance`, violating the project's strict integer-math policy for financial values. This was corrected to `int` (pennies) during review cycles.
 
 ## 2. [Regression Analysis]
 - **Mock Drift Elimination**: Initial local test runs revealed that numerous legacy tests failed because `MagicMock` objects lacked the required attributes defined in the new `IFirm` and `IHousehold` protocols (e.g., missing `capital` or `skills`).

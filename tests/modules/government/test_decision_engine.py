@@ -24,21 +24,21 @@ class TestGovernmentDecisionEngine:
         snapshot = MarketSnapshotDTO(
             tick=100,
             market_signals={},
-            market_data={"total_trade_volume": 5000.0},
+            market_data={"total_trade_volume": 5000.0, "unemployment_rate": 0.05},
             housing=None,
             loan=None,
             labor=None
         )
 
         state = GovernmentStateDTO(
-            treasury_balance=10000.0,
+            treasury_balance=1000000, # Int Pennies
             current_tax_rates={"income_tax": 0.1},
             active_welfare_programs=[]
         )
 
         # Brain returns NEW state
         target_state = GovernmentStateDTO(
-            treasury_balance=10000.0,
+            treasury_balance=1000000, # Int Pennies
             current_tax_rates={"income_tax": 0.08, "corporate_tax": 0.18},
             active_welfare_programs=[]
         )
@@ -64,3 +64,4 @@ class TestGovernmentDecisionEngine:
         # Verify fields
         assert arg_snapshot.timestamp == 100
         assert arg_snapshot.total_trade_volume == 5000.0
+        assert arg_snapshot.unemployment_rate == 0.05

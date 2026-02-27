@@ -4,7 +4,7 @@ from modules.government.api import IGovernmentDecisionEngine, IGovBrain, Governm
 from modules.government.dtos import PolicyDecisionDTO, PolicyActionDTO
 from simulation.dtos.api import MarketSnapshotDTO
 from simulation.ai.enums import PolicyActionTag, EconomicSchool, PoliticalParty
-# from modules.government.policies.adaptive_gov_brain import AdaptiveGovBrain # REMOVED strict import
+from modules.common.api import MarketSnapshotDTO as StrictMarketSnapshotDTO
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +52,6 @@ class GovernmentDecisionEngine(IGovernmentDecisionEngine):
         # The IGovBrain expects modules.common.api.MarketSnapshotDTO (Strict).
         # The input here is simulation.dtos.api.MarketSnapshotDTO (Legacy).
         # We need to adapt.
-
-        from modules.common.api import MarketSnapshotDTO as StrictMarketSnapshotDTO
 
         # Adapter Logic
         strict_snapshot = StrictMarketSnapshotDTO(
