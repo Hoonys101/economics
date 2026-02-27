@@ -27,7 +27,12 @@ class InheritanceHandler(ITransactionHandler):
 
         # SSoT: Use total_pennies directly (Strict Schema Enforced)
         # This ensures we only distribute what was calculated by the Manager, preventing leaks from shared wallets.
+        # Fallback to wallet balance if total_pennies is inexplicably zero but agent has assets
         assets_val = int(tx.total_pennies)
+
+        if assets_val <= 0:
+             # Legacy Fallback - only use if explicitly missed by Manager
+             assets_val = context.settlement_system.get_balance(deceased_agent.id, DEFAULT_CURRENCY)
 
         if assets_val <= 0:
             context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no distributable assets ({assets_val}).")
@@ -93,14 +98,6 @@ class InheritanceHandler(ITransactionHandler):
         if not heir_ids:
              return True
 
-        # Reconstruct amounts (assuming consistent state or using total_pennies from tx if accurate)
-        # Note: handle() uses current wallet balance. If we assume rollback happens immediately,
-        # we can't easily know exactly what was distributed unless we stored it in tx.metadata['distribution'].
-        # However, we can try to reverse using total_pennies if that was populated correctly.
-        # But handle() calculates assets_val dynamically and doesn't update tx.total_pennies necessarily?
-        # Let's assume for now that we can't perfectly rollback without detailed logs,
-        # so we log warning and fail safe, OR we assume total_pennies in tx is the amount.
-
         amount = tx.total_pennies
         if amount <= 0:
              return True
@@ -109,8 +106,8 @@ class InheritanceHandler(ITransactionHandler):
         base_amount = amount // count
         distributed_sum = 0
 
-        # Reverse transfers
-        success_all = True
+        # Reverse transfers via settle_atomic to ensure double-entry rollback
+        credits = []
 
         for i, h_id in enumerate(heir_ids):
              heir = context.agents.get(h_id)
@@ -123,7 +120,8 @@ class InheritanceHandler(ITransactionHandler):
              distributed_sum += base_amount
 
              if repay_amount > 0:
+                 # In a rollback, the heir is the "buyer" paying back to the estate "seller"
                  if not context.settlement_system.transfer(heir, estate_agent, repay_amount, f"rollback_inheritance:{tx.id}"):
-                      success_all = False
+                      return False
 
-        return success_all
+        return True
