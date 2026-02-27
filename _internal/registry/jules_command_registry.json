@@ -33,21 +33,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "IMPL_GOVERNMENT_DECOUPLING": {
-      "key": "IMPL_GOVERNMENT_DECOUPLING",
-      "title": "Module Implementation: Government Decoupling (Wave 16)",
-      "type": "jules",
-      "instruction_raw": "Refactor Government module to use Public API and stateless indicators as specified in MISSION_IMPACT_GOVERNMENT_SPEC.md. Decouple GovernmentDecisionEngine from concrete brain classes.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_IMPACT_GOVERNMENT_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "IMPL_LIFECYCLE_DECOUPLING": {
       "key": "IMPL_LIFECYCLE_DECOUPLING",
       "title": "Module Implementation: Lifecycle Decoupling (Wave 16)",
