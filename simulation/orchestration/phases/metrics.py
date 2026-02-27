@@ -90,6 +90,10 @@ class Phase6_PostTickMetrics(IPhaseStrategy):
             else:
                  logger.info(msg, extra=extra_data)
 
+            # --- SSoT M2 Audit ---
+            if state.settlement_system:
+                state.settlement_system.audit_total_m2(expected_total=expected_money)
+
             # Track Economics
             if state.tracker:
                 m0_dict = self.world_state.calculate_base_money()
