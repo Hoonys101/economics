@@ -1,8 +1,7 @@
 from __future__ import annotations
 from typing import List, Any, Dict, Protocol, runtime_checkable, Optional
 import logging
-from simulation.systems.lifecycle.api import IAgingSystem, IAgingFirm, IFinanceEngine, LifecycleConfigDTO
-from simulation.dtos.api import SimulationState
+from simulation.systems.lifecycle.api import IAgingSystem, IAgingFirm, IFinanceEngine, LifecycleConfigDTO, IAgingContext
 from simulation.models import Transaction
 from modules.demographics.api import IDemographicManager
 from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
@@ -19,25 +18,30 @@ class AgingSystem(IAgingSystem):
         self.demographic_manager = demographic_manager
         self.logger = logger
 
-    def execute(self, state: SimulationState) -> List[Transaction]:
+    def execute(self, context: IAgingContext) -> List[Transaction]:
         """
         Executes the aging phase.
         1. Biological aging (DemographicManager)
         2. Firm lifecycle checks (Bankruptcy/Grace Protocol)
         3. Household lifecycle checks (Distress)
         """
+        if not isinstance(context, IAgingContext):
+            raise TypeError(f"Expected IAgingContext, got {type(context)}")
+
         # 1. Aging (and internal lifecycle update)
-        self.demographic_manager.process_aging(state.households, state.time, state.market_data)
+        # Note: We use the injected demographic_manager, not necessarily the one in context,
+        # though they should be the same.
+        self.demographic_manager.process_aging(context.households, context.time, context.market_data)
 
         # 2. Firm Lifecycle (Aging & Bankruptcy Checks)
-        self._process_firm_lifecycle(state)
+        self._process_firm_lifecycle(context)
 
         # 3. Household Lifecycle (Distress Checks)
-        self._process_household_lifecycle(state)
+        self._process_household_lifecycle(context)
 
         return []
 
-    def _process_firm_lifecycle(self, state: SimulationState) -> None:
+    def _process_firm_lifecycle(self, context: IAgingContext) -> None:
         """
         Handles lifecycle updates for all active firms.
         Includes Solvency Gate and WO-167 Grace Protocol.
@@ -49,7 +53,7 @@ class AgingSystem(IAgingSystem):
         liquidity_inc_rate = self.config.liquidity_need_increase_rate
         grace_period = self.config.distress_grace_period
 
-        for firm in state.firms:
+        for firm in context.firms:
             if not isinstance(firm, IAgingFirm) or not firm.is_active:
                 continue
 
@@ -75,7 +79,7 @@ class AgingSystem(IAgingSystem):
             is_crunch = current_assets_pennies < liquidity_need_pennies
 
             # Inventory Value Calculation (Integer Pennies)
-            inventory_val_pennies = self._calculate_inventory_value(firm.get_all_items(), state.markets)
+            inventory_val_pennies = self._calculate_inventory_value(firm.get_all_items(), context.markets)
 
             if is_crunch and inventory_val_pennies > 0:
                 # Enter or Continue Distress
@@ -110,7 +114,7 @@ class AgingSystem(IAgingSystem):
                     f"Loss Turns: {getattr(firm.finance_state, 'consecutive_loss_turns', 0)}, Solvent: {is_solvent}"
                 )
 
-    def _process_household_lifecycle(self, state: SimulationState) -> None:
+    def _process_household_lifecycle(self, context: IAgingContext) -> None:
         """
         WO-167: Handles distress checks for households.
         Triggers emergency liquidation if starving but solvent.
@@ -119,7 +123,7 @@ class AgingSystem(IAgingSystem):
         distress_threshold = survival_threshold * 0.9
         grace_period = self.config.distress_grace_period
 
-        for household in state.households:
+        for household in context.households:
             # Direct access to _bio_state is unavoidable without DTO setter,
             # but we check if it exists or use property if available.
             # Assuming household is Household object.
@@ -183,16 +187,17 @@ class AgingSystem(IAgingSystem):
 
                              # Place orders
                              for order in emergency_orders:
-                                 market = state.markets.get(order.market_id)
+                                 market = context.markets.get(order.market_id)
                                  if isinstance(market, IMarket):
                                      # Check for place_order method on IMarket implementation
                                      place_order = getattr(market, 'place_order', None)
                                      if place_order:
-                                         place_order(order, state.time)
-                                 elif order.market_id == "stock_market" and state.stock_market:
-                                      place_order = getattr(state.stock_market, 'place_order', None)
+                                         place_order(order, context.time)
+                                 elif order.market_id == "stock_market" and context.stock_market:
+                                      # Use context.stock_market
+                                      place_order = getattr(context.stock_market, 'place_order', None)
                                       if place_order:
-                                          place_order(order, state.time)
+                                          place_order(order, context.time)
 
                 else:
                     # No assets to sell, nature takes its course

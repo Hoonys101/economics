@@ -5,6 +5,9 @@ import logging
 from simulation.models import Transaction
 from modules.finance.api import IFinancialEntity
 from modules.demographics.api import IDemographicManager
+from modules.simulation.api import (
+    ILifecycleContext, IDeathContext, IBirthContext, IAgingContext, ILifecycleSubsystem
+)
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
@@ -78,34 +81,6 @@ class DeathConfigDTO:
         )
 
 @runtime_checkable
-class IDeathContext(Protocol):
-    """
-    Scoped context for Lifecycle systems to prevent God DTO coupling.
-    """
-    time: int
-    households: List[Any]
-    firms: List[Any]
-    agents: Dict[Any, Any]
-    markets: Dict[str, Any]
-    primary_government: Optional[Any]
-    inactive_agents: Optional[Dict[Any, Any]]
-    currency_registry_handler: Optional[Any]
-    currency_holders: Optional[List[Any]]
-
-@runtime_checkable
-class ILifecycleSubsystem(Protocol):
-    """
-    Protocol for discrete lifecycle systems (Birth, Aging, Death).
-    Adheres to SEO Pattern: Stateless execution on Scoped Context.
-    """
-    def execute(self, state: Union[SimulationState, IDeathContext]) -> List[Transaction]:
-        """
-        Executes the lifecycle logic for the current tick.
-        Returns a list of transactions (e.g., inheritance, fees) to be processed.
-        """
-        ...
-
-@runtime_checkable
 class IAgingSystem(ILifecycleSubsystem, Protocol):
     """
     Responsible for incrementing age, updating biological needs,
@@ -114,13 +89,15 @@ class IAgingSystem(ILifecycleSubsystem, Protocol):
     def __init__(self, config: LifecycleConfigDTO, demographic_manager: IDemographicManager, logger: logging.Logger) -> None:
         ...
 
+    def execute(self, context: IAgingContext) -> List[Transaction]: ...
+
 @runtime_checkable
 class IBirthSystem(ILifecycleSubsystem, Protocol):
     """
     Responsible for creating new agents (Households) via reproduction
     and handling immigration entry.
     """
-    ...
+    def execute(self, context: IBirthContext) -> List[Transaction]: ...
 
 @runtime_checkable
 class IDeathSystem(ILifecycleSubsystem, Protocol):
@@ -128,7 +105,7 @@ class IDeathSystem(ILifecycleSubsystem, Protocol):
     Responsible for handling agent death, liquidation of assets,
     and inheritance processing.
     """
-    ...
+    def execute(self, context: IDeathContext) -> List[Transaction]: ...
 
 @runtime_checkable
 class IFinanceEngine(Protocol):

@@ -46,7 +46,7 @@ from modules.finance.system import FinanceSystem
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
 from modules.finance.api import ISettlementSystem, IMonetaryAuthority
 
-def pytest_collect_file(file_path, path, parent):
+def pytest_collect_file(file_path, parent):
     """Log file collection progress to help debug hangs."""
     if file_path.suffix == ".py":
         print(f"DEBUG: [pytest] Collecting: {file_path}")

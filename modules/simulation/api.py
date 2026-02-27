@@ -342,3 +342,60 @@ class HouseholdFactoryContext:
 class IHouseholdFactory(Protocol):
     def create_newborn(self, parent: Any, simulation: Any, child_id: int) -> Any:
         ...
+
+@runtime_checkable
+class ILifecycleContext(Protocol):
+    """
+    Base protocol context for lifecycle operations.
+    Eradicates God-Class SimulationState dependency by ensuring strict data boundaries.
+    """
+    time: int
+    agents: Dict[AgentID, Any]
+    markets: Dict[str, Any]
+
+@runtime_checkable
+class IDeathContext(ILifecycleContext, Protocol):
+    households: List[Any]
+    firms: List[Any]
+    inactive_agents: Dict[AgentID, Any]
+    currency_registry_handler: Any
+    currency_holders: List[Any]
+    settlement_system: Any # Added for DeathSystem
+    primary_government: Any # Added for DeathSystem inheritance
+    real_estate_units: List[Any] # Needed for InheritanceManager
+    bank: Any # Needed for InheritanceManager
+    transaction_processor: Any # Needed for InheritanceManager
+    transactions: List[Any] # Needed for LiquidationManager
+
+@runtime_checkable
+class IBirthContext(ILifecycleContext, Protocol):
+    # Context required to register new agents and initialize zero-sum assets
+    government_agent: Any
+    next_agent_id: int
+    households: List[Any] # Needed for appending new agents
+    currency_registry_handler: Any # Needed for registering new agents
+    currency_holders: List[Any] # Needed for registering new agents
+    stock_market: Any # Needed for updating shareholder registry
+    shareholder_registry: Any # Needed for updating shareholder registry
+    ai_training_manager: Any # Needed for registering new agents
+    ai_trainer: Any # Needed for FirmSystem
+    goods_data: Any # Needed for factory
+    logger: Any # Needed for logging
+    tracker: Any # Needed for ImmigrationManager
+
+@runtime_checkable
+class IAgingContext(ILifecycleContext, Protocol):
+    # Context required for demographic aging and biological distress events
+    demographic_registry: Any # This is typically DemographicManager
+    households: List[Any] # Needed for iterating households
+    firms: List[Any] # Needed for iterating firms
+    market_data: Dict[str, Any] # Needed for aging/needs update
+    stock_market: Any # Needed for liquidating stocks
+
+@runtime_checkable
+class ILifecycleSubsystem(Protocol):
+    """
+    Adheres to SEO Pattern: Stateless execution using pure Context Protocols.
+    """
+    def execute(self, context: ILifecycleContext) -> List[Any]: # Returns List[Transaction]
+        ...

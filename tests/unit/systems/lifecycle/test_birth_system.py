@@ -1,9 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.systems.lifecycle.birth_system import BirthSystem
-from simulation.systems.lifecycle.api import BirthConfigDTO
-from simulation.dtos.api import SimulationState
-# from simulation.core_agents import Household  # Removed heavy import
+from simulation.systems.lifecycle.api import BirthConfigDTO, IBirthContext
 from modules.system.api import ICurrencyHolder, DEFAULT_CURRENCY
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 from typing import Protocol, runtime_checkable, Any, Dict, List
@@ -62,17 +60,19 @@ class TestBirthSystem:
         parent.get_balance.return_value = 1000
         parent.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 1000}
 
-        # Setup State
-        state = MagicMock()
-        state.households = [parent]
-        state.agents = {parent.id: parent}
-        state.next_agent_id = 100
-        state.time = 1
-        state.markets = {}
-        state.goods_data = {}
-        state.stock_market = None
-        state.ai_training_manager = None
-        state.shareholder_registry = None
+        # Setup Context
+        context = MagicMock(spec=IBirthContext)
+        context.households = [parent]
+        context.agents = {parent.id: parent}
+        context.next_agent_id = 100
+        context.time = 1
+        context.markets = {}
+        context.goods_data = {}
+        context.stock_market = None
+        context.ai_training_manager = None
+        context.shareholder_registry = None
+        context.currency_holders = []
+        context.currency_registry_handler = None
 
         # Mock Planner
         birth_system.breeding_planner.decide_breeding_batch.return_value = [True]
@@ -80,6 +80,7 @@ class TestBirthSystem:
         # Mock Child
         child = MagicMock(spec=IHousehold)
         child.id = 100
+        child.portfolio = MagicMock() # Explicitly mock portfolio attribute
         child.portfolio.holdings.items.return_value = []
         child.decision_engine = MagicMock() # Explicitly mock decision_engine
 
@@ -87,7 +88,7 @@ class TestBirthSystem:
         birth_system.household_factory.create_newborn.return_value = child
 
         # Execute
-        transactions = birth_system.execute(state)
+        transactions = birth_system.execute(context)
 
         # Assert Factory called with 0 assets
         birth_system.household_factory.create_newborn.assert_called_once()
@@ -107,4 +108,11 @@ class TestBirthSystem:
         assert tx.seller_id == child.id
         assert tx.transaction_type == "GIFT"
 
-        assert child in state.households
+        assert child in context.households
+
+    def test_birth_system_requires_valid_protocol_context(self, birth_system):
+        # Pass an object that does NOT satisfy IBirthContext
+        invalid_context = MagicMock() # Not spec=IBirthContext
+
+        with pytest.raises(TypeError):
+            birth_system.execute(invalid_context)

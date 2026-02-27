@@ -1,8 +1,7 @@
 from __future__ import annotations
 from typing import List, Any, Optional, Tuple, cast
 import logging
-from simulation.systems.lifecycle.api import IBirthSystem, BirthConfigDTO
-from simulation.dtos.api import SimulationState
+from simulation.systems.lifecycle.api import IBirthSystem, BirthConfigDTO, IBirthContext
 from simulation.models import Transaction
 from simulation.core_agents import Household
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
@@ -38,33 +37,40 @@ class BirthSystem(IBirthSystem):
              raise ValueError("IHouseholdFactory is mandatory for BirthSystem.")
         self.household_factory = household_factory
 
-    def execute(self, state: SimulationState) -> List[Transaction]:
+    def execute(self, context: IBirthContext) -> List[Transaction]:
         """
         Executes the birth phase.
         1. Process biological births.
         2. Process immigration.
         3. Check for new firm creation (Entrepreneurship).
         """
+        if not isinstance(context, IBirthContext):
+            raise TypeError(f"Expected IBirthContext, got {type(context)}")
+
         all_transactions = []
 
         # 3. Births
-        new_children, birth_txs = self._process_births(state)
-        self._register_new_agents(state, new_children)
+        new_children, birth_txs = self._process_births(context)
+        self._register_new_agents(context, new_children)
         all_transactions.extend(birth_txs)
 
         # 4. Immigration
-        new_immigrants = self.immigration_manager.process_immigration(state)
-        self._register_new_agents(state, new_immigrants)
+        # ImmigrationManager expects 'engine' (Simulation-like object)
+        # Context adapter provides necessary attributes (tracker, government, etc.)
+        new_immigrants = self.immigration_manager.process_immigration(context)
+        self._register_new_agents(context, new_immigrants)
 
         # 5. Entrepreneurship
-        self.firm_system.check_entrepreneurship(state)
+        # FirmSystem expects 'simulation' (Simulation-like object)
+        # Context adapter mimics it via properties (logger, ai_trainer, markets, etc.)
+        self.firm_system.check_entrepreneurship(context)
 
         return all_transactions
 
-    def _process_births(self, state: SimulationState) -> Tuple[List[Household], List[Transaction]]:
+    def _process_births(self, context: IBirthContext) -> Tuple[List[Household], List[Transaction]]:
         birth_requests = []
         # Use Protocol property if available, otherwise assume Household object has is_active
-        active_households = [h for h in state.households if h.is_active]
+        active_households = [h for h in context.households if h.is_active]
         if not active_households:
             return [], []
 
@@ -81,8 +87,8 @@ class BirthSystem(IBirthSystem):
             if not (self.config.reproduction_age_start <= parent_agent.age <= self.config.reproduction_age_end):
                 continue
 
-            new_id = state.next_agent_id
-            state.next_agent_id += 1
+            new_id = context.next_agent_id
+            context.next_agent_id += 1
 
             # Asset Transfer Calculation
             parent_assets = 0
@@ -98,7 +104,7 @@ class BirthSystem(IBirthSystem):
                     parent=parent_agent,
                     new_id=new_id,
                     initial_assets=0,
-                    current_tick=state.time
+                    current_tick=context.time
                 )
 
                 # Explicit Zero-Sum Transfer Transaction
@@ -112,7 +118,7 @@ class BirthSystem(IBirthSystem):
                          total_pennies=initial_gift_pennies,
                          market_id="settlement",
                          transaction_type="GIFT",
-                         time=state.time,
+                         time=context.time,
                          currency=DEFAULT_CURRENCY
                      )
                      transactions.append(tx)
@@ -123,7 +129,7 @@ class BirthSystem(IBirthSystem):
                 self.logger.info(
                     f"BIRTH | Parent {parent_agent.id} ({parent_agent.age:.1f}y) -> Child {child.id}. "
                     f"Assets: {initial_gift_pennies}",
-                    extra={"parent_id": parent_agent.id, "child_id": child.id, "tick": state.time}
+                    extra={"parent_id": parent_agent.id, "child_id": child.id, "tick": context.time}
                 )
             except Exception as e:
                 self.logger.error(
@@ -134,38 +140,39 @@ class BirthSystem(IBirthSystem):
 
         return created_children, transactions
 
-    def _register_new_agents(self, state: SimulationState, new_agents: List[Household]):
+    def _register_new_agents(self, context: IBirthContext, new_agents: List[Household]):
         for agent in new_agents:
-            state.households.append(agent)
-            state.agents[agent.id] = agent
+            context.households.append(agent)
+            context.agents[agent.id] = agent
 
             # Setup dependencies
             # Agent is guaranteed to be Household
-            agent.decision_engine.markets = state.markets
-            agent.decision_engine.goods_data = state.goods_data
+            agent.decision_engine.markets = context.markets
+            agent.decision_engine.goods_data = context.goods_data
 
             # WO-218: Track new agent as currency holder for M2 integrity
-            if state.currency_registry_handler:
-                state.currency_registry_handler.register_currency_holder(agent)
-            elif state.currency_holders is not None:
-                state.currency_holders.append(agent)
+            if context.currency_registry_handler:
+                context.currency_registry_handler.register_currency_holder(agent)
+            elif context.currency_holders is not None:
+                context.currency_holders.append(agent)
 
             # Ensure agent has settlement system
             # Dynamic injection for systems that need it (e.g. HousingConnector)
             # We set it blindly as Household instance allows dynamic attributes
+            # Assuming BirthSystem has self.settlement_system injected (it does)
             agent.settlement_system = self.settlement_system
 
             # Shareholder Registry sync
-            if state.shareholder_registry:
+            if context.shareholder_registry:
                  # No shares initially for newborn
                  pass
-            elif state.stock_market:
+            elif context.stock_market:
                 # Handle potential portfolio from immigrants (newborns have empty portfolio)
                 for firm_id, holding in agent.portfolio.holdings.items():
                     # We check for update_shareholder availability on stock_market
-                    # because stock_market is Optional[Any] in state
-                    if hasattr(state.stock_market, 'update_shareholder'):
-                         state.stock_market.update_shareholder(agent.id, firm_id, holding.quantity)
+                    # because stock_market is Optional[Any] in state/context
+                    if hasattr(context.stock_market, 'update_shareholder'):
+                         context.stock_market.update_shareholder(agent.id, firm_id, holding.quantity)
 
-            if state.ai_training_manager:
-                state.ai_training_manager.agents.append(agent)
+            if context.ai_training_manager:
+                context.ai_training_manager.agents.append(agent)

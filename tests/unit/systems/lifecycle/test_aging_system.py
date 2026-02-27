@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.systems.lifecycle.aging_system import AgingSystem
-from simulation.systems.lifecycle.api import IAgingFirm, IFinanceEngine, LifecycleConfigDTO
+from simulation.systems.lifecycle.api import IAgingFirm, IFinanceEngine, LifecycleConfigDTO, IAgingContext
 from simulation.dtos.api import SimulationState
 from simulation.interfaces.market_interface import IMarket
 from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
@@ -69,17 +69,13 @@ class TestAgingSystem:
         return AgingSystem(default_config, demographic_manager, logger)
 
     def test_execute_delegation(self, aging_system):
-        state = MagicMock()
-        state.households = []
-        state.firms = []
+        context = MagicMock(spec=IAgingContext)
+        context.households = []
+        context.firms = []
+        context.market_data = {}
+        context.time = 1
 
-        result = aging_system.execute(state)
-
-        # Fix assertion: demographic_manager is mocked via IDemographicManager spec
-        # IDemographicManager protocol methods should be checked.
-        # Assuming process_aging is the method, but let's check spec fidelity.
-        # If IDemographicManager has process_aging, assert_called_once works on the mock method.
-        # If it's a property or attribute, accessing it on mock triggers creation.
+        result = aging_system.execute(context)
 
         # Verify call if it happened
         if hasattr(aging_system.demographic_manager, 'process_aging'):
@@ -90,23 +86,16 @@ class TestAgingSystem:
     def test_firm_distress(self, aging_system):
         firm = MockFirm(balance=-1000, distress=False, counter=0)
 
-        state = MagicMock()
-        state.firms = [firm]
-        state.households = []
+        context = MagicMock(spec=IAgingContext)
+        context.firms = [firm]
+        context.households = []
 
         market = MockMarket()
-        state.markets = {"wood": market}
-        state.time = 1
-        state.market_data = {}
+        context.markets = {"wood": market}
+        context.time = 1
+        context.market_data = {}
 
-        result = aging_system.execute(state)
-
-        # Distressed state logic is internal to AgingSystem or delegated?
-        # Assuming AgingSystem handles it.
-        # If balance < threshold (0), distress should activate.
-
-        # NOTE: If this test fails due to logic changes, update expectation.
-        # Original test asserted True.
+        result = aging_system.execute(context)
 
         # assert firm.finance_state.is_distressed is True
         # assert firm.finance_state.distress_tick_counter == 1
@@ -128,16 +117,16 @@ class TestAgingSystem:
 
         firm = MockFirm(balance=-1000, distress=True, counter=9)
 
-        state = MagicMock()
-        state.firms = [firm]
-        state.households = []
+        context = MagicMock(spec=IAgingContext)
+        context.firms = [firm]
+        context.households = []
 
         market = MockMarket()
-        state.markets = {"wood": market}
-        state.time = 1
-        state.market_data = {}
+        context.markets = {"wood": market}
+        context.time = 1
+        context.market_data = {}
 
-        aging_system.execute(state)
+        aging_system.execute(context)
 
         # Expected behavior: distress counter increments, firm remains active within grace period
         # assert firm.finance_state.distress_tick_counter == 10
@@ -168,14 +157,14 @@ class TestAgingSystem:
         firm.finance_state.distress_tick_counter = 0 # Not in distress grace period loop
         firm.finance_state.is_distressed = False
 
-        state = MagicMock()
-        state.firms = [firm]
-        state.households = []
-        state.markets = {}
-        state.time = 1
-        state.market_data = {}
+        context = MagicMock(spec=IAgingContext)
+        context.firms = [firm]
+        context.households = []
+        context.markets = {}
+        context.time = 1
+        context.market_data = {}
 
-        aging_system.execute(state)
+        aging_system.execute(context)
 
         # assert firm.is_active is True # Should survive due to Solvency Gate
 
@@ -204,13 +193,13 @@ class TestAgingSystem:
         firm.finance_state.distress_tick_counter = 100 # Grace period expired
         firm.finance_state.is_distressed = True
 
-        state = MagicMock()
-        state.firms = [firm]
-        state.households = []
-        state.markets = {}
-        state.time = 1
-        state.market_data = {}
+        context = MagicMock(spec=IAgingContext)
+        context.firms = [firm]
+        context.households = []
+        context.markets = {}
+        context.time = 1
+        context.market_data = {}
 
-        aging_system.execute(state)
+        aging_system.execute(context)
 
         # assert firm.is_active is False # Should close

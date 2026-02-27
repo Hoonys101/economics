@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.systems.lifecycle_manager import AgentLifecycleManager
 from simulation.dtos.api import SimulationState
+from modules.simulation.api import IAgingContext, IBirthContext, IDeathContext
 
 class TestAgentLifecycleManager:
     @pytest.fixture
@@ -35,13 +36,27 @@ class TestAgentLifecycleManager:
         manager.aging_system.execute = MagicMock(return_value=[])
         manager.birth_system.execute = MagicMock(return_value=[MagicMock(id="tx1")])
         manager.death_system.execute = MagicMock(return_value=[MagicMock(id="tx2")])
+        manager.marriage_system.execute = MagicMock(return_value=[])
 
         transactions = manager.execute(state)
 
         # Verify delegation
-        manager.aging_system.execute.assert_called_once_with(state)
-        manager.birth_system.execute.assert_called_once_with(state)
-        manager.death_system.execute.assert_called_once_with(state)
+        # Should be called with context adapter, not state directly
+        manager.aging_system.execute.assert_called_once()
+        args, _ = manager.aging_system.execute.call_args
+        assert isinstance(args[0], IAgingContext)
+        # Verify the context wraps the correct state (implementation detail of adapter)
+        assert args[0]._state == state
+
+        manager.birth_system.execute.assert_called_once()
+        args, _ = manager.birth_system.execute.call_args
+        assert isinstance(args[0], IBirthContext)
+        assert args[0]._state == state
+
+        manager.death_system.execute.assert_called_once()
+        args, _ = manager.death_system.execute.call_args
+        assert isinstance(args[0], IDeathContext)
+        assert args[0]._state == state
 
         # Verify transaction aggregation
         assert len(transactions) == 2

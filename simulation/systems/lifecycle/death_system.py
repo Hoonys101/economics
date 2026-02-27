@@ -34,31 +34,35 @@ class DeathSystem(IDeathSystem):
         self.logger = logger
         self.estate_registry = estate_registry
 
-    def execute(self, state: Union[SimulationState, IDeathContext]) -> List[Transaction]:
+    def execute(self, context: IDeathContext) -> List[Transaction]:
         """
         Executes the death phase.
         1. Firm Liquidation (Bankruptcy)
         2. Household Liquidation (Death & Inheritance)
         """
-        return self._handle_agent_liquidation(state)
+        if not isinstance(context, IDeathContext):
+            raise TypeError(f"Expected IDeathContext, got {type(context)}")
 
-    def _handle_agent_liquidation(self, state: Union[SimulationState, IDeathContext]) -> List[Transaction]:
+        return self._handle_agent_liquidation(context)
+
+    def _handle_agent_liquidation(self, context: IDeathContext) -> List[Transaction]:
         transactions: List[Transaction] = []
 
         # --- Firm Liquidation ---
         # Identify inactive firms
-        inactive_firms = [f for f in state.firms if not f.is_active]
+        inactive_firms = [f for f in context.firms if not f.is_active]
 
         for firm in inactive_firms:
             # 0. Cancel Orders (Atomicity Fix)
-            self._cancel_agent_orders(firm.id, state)
+            self._cancel_agent_orders(firm.id, context)
 
             # 0.5 Recover External Assets (Bank Deposits)
-            self._recover_external_assets(firm.id, state, transactions)
+            self._recover_external_assets(firm.id, context, transactions)
 
             # Delegate strictly to LiquidationManager
             if isinstance(firm, ILiquidatable):
-                 self.liquidation_manager.initiate_liquidation(firm, state)
+                 # Pass context instead of state (duck typing)
+                 self.liquidation_manager.initiate_liquidation(firm, context)
 
             # Post-Liquidation Cleanup
             # 1. Employees (HR)
@@ -74,11 +78,11 @@ class DeathSystem(IDeathSystem):
 
             # 2. Currency Registry
             if isinstance(firm, ICurrencyHolder):
-                if state.currency_registry_handler:
-                    state.currency_registry_handler.unregister_currency_holder(firm)
-                elif state.currency_holders is not None:
-                     if firm in state.currency_holders:
-                         state.currency_holders.remove(firm)
+                if context.currency_registry_handler:
+                    context.currency_registry_handler.unregister_currency_holder(firm)
+                elif context.currency_holders is not None:
+                     if firm in context.currency_holders:
+                         context.currency_holders.remove(firm)
 
             # 3. Settlement Index
             if self.settlement_system:
@@ -86,35 +90,36 @@ class DeathSystem(IDeathSystem):
 
         # --- Household Liquidation ---
         # Use property is_active (from IOrchestratorAgent/Household)
-        inactive_households = [h for h in state.households if not h.is_active]
+        inactive_households = [h for h in context.households if not h.is_active]
 
         for household in inactive_households:
              # 0. Cancel Orders (Atomicity Fix)
-             self._cancel_agent_orders(household.id, state)
+             self._cancel_agent_orders(household.id, context)
 
              # 0.5 Recover External Assets (Bank Deposits)
-             self._recover_external_assets(household.id, state, transactions)
+             self._recover_external_assets(household.id, context, transactions)
 
              # Preserve for history/logging if needed
-             if state.inactive_agents is not None:
-                 state.inactive_agents[household.id] = household
+             if context.inactive_agents is not None:
+                 context.inactive_agents[household.id] = household
 
              # Inventory Liquidation (Asset Buyout) via Public Manager
              # Must occur BEFORE inheritance so cash is available for heirs/tax.
-             self._liquidate_agent_inventory(household, state, transactions)
+             self._liquidate_agent_inventory(household, context, transactions)
 
              # Inheritance Manager (Executes transactions via side-effects)
-             if state.primary_government:
-                  inheritance_txs = self.inheritance_manager.process_death(household, state.primary_government, state)
+             if context.primary_government:
+                  # Pass context instead of state (duck typing)
+                  inheritance_txs = self.inheritance_manager.process_death(household, context.primary_government, context)
                   transactions.extend(inheritance_txs)
 
              # Cleanup
              if isinstance(household, ICurrencyHolder):
-                if state.currency_registry_handler:
-                    state.currency_registry_handler.unregister_currency_holder(household)
-                elif state.currency_holders is not None:
-                     if household in state.currency_holders:
-                         state.currency_holders.remove(household)
+                if context.currency_registry_handler:
+                    context.currency_registry_handler.unregister_currency_holder(household)
+                elif context.currency_holders is not None:
+                     if household in context.currency_holders:
+                         context.currency_holders.remove(household)
 
              if self.settlement_system:
                 self.settlement_system.remove_agent_from_all_accounts(household.id)
@@ -123,18 +128,18 @@ class DeathSystem(IDeathSystem):
 
         # O(1) Dictionary Cleanup - TD-SYS-PERF-DEATH
         for firm in inactive_firms:
-            self._decommission_agent(firm, state)
+            self._decommission_agent(firm, context)
 
         for household in inactive_households:
-            self._decommission_agent(household, state)
+            self._decommission_agent(household, context)
 
         # Modify lists in place to reflect removals
-        state.households[:] = [h for h in state.households if h.is_active]
-        state.firms[:] = [f for f in state.firms if f.is_active]
+        context.households[:] = [h for h in context.households if h.is_active]
+        context.firms[:] = [f for f in context.firms if f.is_active]
 
         return transactions
 
-    def _decommission_agent(self, agent: Any, state: Union[SimulationState, IDeathContext]) -> None:
+    def _decommission_agent(self, agent: Any, context: IDeathContext) -> None:
         """
         Standardized Decommission: Moves agent to estate and removes from global map.
         Note: List removal (households/firms) is handled in bulk for performance.
@@ -142,10 +147,10 @@ class DeathSystem(IDeathSystem):
         if self.estate_registry:
             self.estate_registry.add_to_estate(agent)
 
-        if agent.id in state.agents:
-            del state.agents[agent.id]
+        if agent.id in context.agents:
+            del context.agents[agent.id]
 
-    def _recover_external_assets(self, agent_id: int, state: Union[SimulationState, IDeathContext], transactions: List[Transaction]) -> None:
+    def _recover_external_assets(self, agent_id: int, context: IDeathContext, transactions: List[Transaction]) -> None:
         """
         Recovers assets from external accounts (Banks) before liquidation.
         """
@@ -157,12 +162,12 @@ class DeathSystem(IDeathSystem):
         else:
             return
 
-        agent = state.agents.get(agent_id)
+        agent = context.agents.get(agent_id)
         if not agent: return
 
         for bank_id in bank_ids:
             # 2. Close Account safely via Settlement Transfer
-            bank = state.agents.get(bank_id)
+            bank = context.agents.get(bank_id)
             if not bank: continue
 
             # Check for protocol compliance
@@ -192,7 +197,7 @@ class DeathSystem(IDeathSystem):
                             price=amount / 100.0,
                             market_id="financial",
                             transaction_type="withdrawal", # Or 'asset_recovery'
-                            time=state.time,
+                            time=context.time,
                             total_pennies=amount,
                             metadata={"executed": True, "reason": "liquidation_recovery"}
                         )
@@ -202,14 +207,14 @@ class DeathSystem(IDeathSystem):
                     else:
                         self.logger.error(f"RECOVER_FAIL | Bank {bank_id} insolvent? Could not return {amount} to {agent_id}")
 
-    def _cancel_agent_orders(self, agent_id: str | int, state: Union[SimulationState, IDeathContext]) -> None:
+    def _cancel_agent_orders(self, agent_id: str | int, context: IDeathContext) -> None:
         """
         Scrub agent orders from all markets to ensure atomicity.
         """
-        if not state.markets:
+        if not context.markets:
             return
 
-        for market in state.markets.values():
+        for market in context.markets.values():
             # Check for cancel_orders method (Protocol compliance)
             if isinstance(market, IMarket):
                 try:
@@ -219,7 +224,7 @@ class DeathSystem(IDeathSystem):
                         f"ORDER_SCRUB_FAIL | Failed to cancel orders for agent {agent_id} in market {getattr(market, 'id', 'unknown')}: {e}"
                     )
 
-    def _liquidate_agent_inventory(self, agent: Any, state: Union[SimulationState, IDeathContext], transactions: List[Transaction]) -> None:
+    def _liquidate_agent_inventory(self, agent: Any, context: IDeathContext, transactions: List[Transaction]) -> None:
         """
         Liquidates agent inventory by selling to Public Manager (Asset Buyout).
         Transfers cash to the agent and clears inventory.
@@ -244,16 +249,16 @@ class DeathSystem(IDeathSystem):
         for item_id in inventory.keys():
              price_pennies = default_price_pennies
              # Try to get market price
-             if state.markets:
-                 if item_id in state.markets:
-                     m = state.markets[item_id]
+             if context.markets:
+                 if item_id in context.markets:
+                     m = context.markets[item_id]
                      if isinstance(m, IMarket):
                          try:
                             p = m.get_price(item_id)
                             if p > 0: price_pennies = int(p * 100)
                          except: pass
-                 elif "goods_market" in state.markets: # Fallback to aggregate market
-                     m = state.markets["goods_market"]
+                 elif "goods_market" in context.markets: # Fallback to aggregate market
+                     m = context.markets["goods_market"]
                      if isinstance(m, IMarket):
                          try:
                             p = m.get_price(item_id)
@@ -292,7 +297,7 @@ class DeathSystem(IDeathSystem):
                     price=result.total_paid_pennies / 100.0,
                     market_id="financial",
                     transaction_type="asset_buyout",
-                    time=state.time,
+                    time=context.time,
                     total_pennies=result.total_paid_pennies,
                     metadata={"executed": True}
                 )

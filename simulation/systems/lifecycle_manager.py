@@ -30,6 +30,7 @@ from simulation.systems.lifecycle.aging_system import AgingSystem
 from simulation.systems.lifecycle.birth_system import BirthSystem
 from simulation.systems.lifecycle.death_system import DeathSystem
 from simulation.systems.lifecycle.marriage_system import MarriageSystem
+from simulation.systems.lifecycle.adapters import AgingContextAdapter, BirthContextAdapter, DeathContextAdapter
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 
 class AgentLifecycleManager(AgentLifecycleManagerInterface):
@@ -131,24 +132,31 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
         all_transactions = []
 
+        # Create Context Adapters
+        # We pass self.aging_system.demographic_manager to match what AgingSystem expects
+        aging_context = AgingContextAdapter(state, self.aging_system.demographic_manager)
+        birth_context = BirthContextAdapter(state)
+        death_context = DeathContextAdapter(state)
+
         # 1. Aging Phase
         # AgingSystem is side-effect heavy (aging, distress), currently returns no transactions.
-        aging_txs = self.aging_system.execute(state)
+        aging_txs = self.aging_system.execute(aging_context)
         all_transactions.extend(aging_txs)
 
         # 2. Birth Phase
         # BirthSystem now returns transactions for birth gifts.
-        birth_txs = self.birth_system.execute(state)
+        birth_txs = self.birth_system.execute(birth_context)
         all_transactions.extend(birth_txs)
 
         # 3. Marriage Phase (Wave 4)
         # Execute before Death to ensure spouses are linked if one dies.
+        # Not refactored yet, passes state directly.
         marriage_txs = self.marriage_system.execute(state)
         all_transactions.extend(marriage_txs)
 
         # 4. Death Phase
         # DeathSystem returns transactions (inheritance, liquidation leftovers)
-        death_txs = self.death_system.execute(state)
+        death_txs = self.death_system.execute(death_context)
         all_transactions.extend(death_txs)
 
         return all_transactions
