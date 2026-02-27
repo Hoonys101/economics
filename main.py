@@ -8,13 +8,10 @@ from modules.common.utils.logging_manager import (
 import config
 from modules.system.builders.simulation_builder import create_simulation
 
-print("DEBUG: [main.py] Importing main.py...")
-
 main_logger = logging.getLogger(__name__)
 
 # --- Setup Logging ---
 def setup_app():
-    print("DEBUG: [main.py] Executing setup_logging()...")
     setup_logging()  # Call the setup function
     logging.getLogger().setLevel(logging.DEBUG) # Force DEBUG level for all loggers
 
@@ -43,7 +40,6 @@ def setup_app():
             "SamplingFilter not found in logging handlers. Sampling rates not applied.",
             extra={"tags": ["setup"]},
         )
-    print("DEBUG: [main.py] setup_logging() complete.")
 
 # --- End Setup Logging ---
 

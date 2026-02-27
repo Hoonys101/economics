@@ -11,6 +11,7 @@ from modules.system.api import IConfigurationRegistry, RegistryValueDTO, OriginT
 from modules.system.registry import GlobalRegistry
 import importlib
 import types
+import threading
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -50,17 +51,23 @@ class ConfigProxy(IConfigurationRegistry):
         # Lazy Loading Callbacks
         self._lazy_loaders: List[Callable[[], None]] = []
         self._initialized = False
+        self._init_lock = threading.Lock()
 
     def register_lazy_loader(self, loader: Callable[[], None]) -> None:
         """Registers a callback to load configuration lazily."""
         self._lazy_loaders.append(loader)
 
     def _ensure_initialized(self) -> None:
-        """Executes all registered lazy loaders if not already initialized."""
+        """
+        Executes all registered lazy loaders if not already initialized.
+        Uses double-checked locking for thread safety.
+        """
         if not self._initialized:
-            for loader in self._lazy_loaders:
-                loader()
-            self._initialized = True
+            with self._init_lock:
+                if not self._initialized:
+                    for loader in self._lazy_loaders:
+                        loader()
+                    self._initialized = True
 
     def bootstrap_from_module(self, module: ModuleType) -> None:
         """
@@ -112,7 +119,7 @@ class ConfigProxy(IConfigurationRegistry):
         """
         Updates a value with origin tracking. Delegate to GlobalRegistry.
         """
-        self._ensure_initialized() # Ensure config is loaded before set? Maybe not strictly needed but safer.
+        self._ensure_initialized() # Ensure config is loaded before set.
 
         # Validate if metadata exists
         if key in self._metadata:
@@ -131,7 +138,6 @@ class ConfigProxy(IConfigurationRegistry):
         self._ensure_initialized()
         # GlobalRegistry.snapshot returns Dict[str, RegistryValueDTO]
         # We need to return Dict[str, Any] (values) to match IConfigurationRegistry signature if it implies values
-        # But wait, IConfigurationRegistry.snapshot signature in api.py is Dict[str, Any]
         # RegistryValueDTO is Any.
 
         # Let's map it to values to be consistent with previous implementation

@@ -3,6 +3,7 @@ from typing import Optional, Any, TYPE_CHECKING, Dict, List
 from modules.system.api import IAgentRegistry, IGlobalRegistry, IConfigurationRegistry, OriginType, RegistryValueDTO, RegistryObserver, RegistryEntry, ISystemAgentRegistry, IAgent, AgentID
 from modules.system.services.schema_loader import SchemaLoader
 from simulation.dtos.registry_dtos import ParameterSchemaDTO
+import threading
 
 if TYPE_CHECKING:
     from simulation.agents import Agent
@@ -85,15 +86,21 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
         # Load metadata schema on initialization
         self._metadata_map: Dict[str, ParameterSchemaDTO] = {}
         self._metadata_loaded = False # Flag for lazy loading
+        self._metadata_lock = threading.Lock() # Lock for thread-safe lazy loading
 
         if initial_data:
             self.migrate_from_dict(initial_data)
 
     def _ensure_metadata_loaded(self) -> None:
-        """Lazily loads metadata schema."""
+        """
+        Lazily loads metadata schema.
+        Uses double-checked locking for thread safety.
+        """
         if not self._metadata_loaded:
-            self._load_metadata()
-            self._metadata_loaded = True
+            with self._metadata_lock:
+                if not self._metadata_loaded:
+                    self._load_metadata()
+                    self._metadata_loaded = True
 
     def _load_metadata(self) -> None:
         schemas = SchemaLoader.load_schema()
