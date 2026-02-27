@@ -537,7 +537,11 @@ class SettlementSystem(IMonetaryAuthority):
             is_bank = isinstance(agent, IBank) or (self.bank and agent.id == self.bank.id)
             if is_bank and self.monetary_authority:
                 # Trigger LLR to cover the shortfall
-                self.monetary_authority.check_and_provide_liquidity(agent, amount)
+                tx = self.monetary_authority.check_and_provide_liquidity(agent, amount)
+
+                # If LLR triggered and minted money, record the transaction
+                if tx:
+                    self._internal_tx_queue.append(tx)
 
                 # Re-check balance after injection
                 if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:

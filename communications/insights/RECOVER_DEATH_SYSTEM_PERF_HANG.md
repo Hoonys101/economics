@@ -1,7 +1,7 @@
 # RECOVER_DEATH_SYSTEM_PERF_HANG & CRITICAL DEBT FIXES
 
 ## Architectural Insights
-The primary mission was to resolve a `pytest` collection hang in `test_death_system_performance.py`. During the submission phase, a critical code review identified blocking technical debt in the financial system (`CentralBankSystem`), which was also addressed.
+The primary mission was to resolve a `pytest` collection hang in `test_death_system_performance.py`. During the submission phase, critical code reviews identified blocking technical debt in the financial system and test suite, which were also addressed.
 
 ### Key Refactorings:
 1.  **Circular Dependency Break (Main Task)**:
@@ -13,18 +13,22 @@ The primary mission was to resolve a `pytest` collection hang in `test_death_sys
     -   It now uses `unittest.mock.MagicMock` exclusively, reducing collection time from infinite/hang to < 3s.
 
 3.  **Financial System Hardening (Review Fix)**:
-    -   `simulation/systems/central_bank_system.py` was refactored to remove magic numbers (`1.1` -> `LLR_LIQUIDITY_BUFFER_RATIO`) and fix local imports.
-    -   Encapsulation violation in `mint_and_transfer` was annotated with a TODO for future refactoring.
-    -   `TECH_DEBT_LEDGER.md` was updated to document `TD-FIN-FLOAT-INCURSION`.
+    -   `simulation/systems/central_bank_system.py` was refactored to remove Transaction Injection (State Purity Violation). It now **returns** transactions ("Bubble-up") instead of appending to an injected list.
+    -   `simulation/systems/settlement_system.py` was updated to capture these returned transactions and append them to `_internal_tx_queue`.
+    -   Magic numbers were replaced with constants (`LLR_LIQUIDITY_BUFFER_RATIO`).
+
+4.  **Test Hygiene (Review Fix)**:
+    -   `tests/unit/test_tax_collection.py`: Fixed "Mock Purity Violation" by returning a real `Transaction` object instead of `MagicMock`.
+    -   `TECH_DEBT_LEDGER.md` updated with `TD-FIN-FLOAT-INCURSION` and `TD-TEST-DTO-MOCKING`.
 
 ### Technical Debt Identified:
--   **Heavy Agents**: `Household` and `Firm` modules are extremely heavy "God Classes".
--   **Float Incursion**: Risk of using `float()` for monetary values in metadata parsing was flagged and documented.
+-   **State Purity**: Injecting global state (lists) into sub-systems is an anti-pattern. Bubble-up return values are preferred.
+-   **Mock Purity**: Returning `MagicMock` for DTOs hides schema errors. Use real DTOs in tests.
 
 ## Regression Analysis
 -   **Imports**: The `TYPE_CHECKING` change is runtime-safe.
--   **Central Bank**: The refactor introduces a constant and moves an import, which are behavior-neutral but cleaner.
--   **Tests**: Performance test logic remains valid (mocking matches expected interface).
+-   **Central Bank**: The refactor ensures transactions are still recorded but via a cleaner path (`_internal_tx_queue`).
+-   **Tests**: Performance test logic remains valid.
 
 ## Test Evidence
 ### Performance Test Collection (Fix Verification)
