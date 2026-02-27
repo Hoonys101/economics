@@ -127,14 +127,21 @@ class GovernmentDecisionEngine(IGovernmentDecisionEngine):
         return snapshot.market_data.get("total_trade_volume", 0.0)
 
     def _extract_unemployment(self, snapshot: MarketSnapshotDTO, state: Any) -> float:
-        # Try snapshot first
-        if snapshot.labor and snapshot.labor.avg_wage:
-             # Snapshot doesn't seem to have unemployment directly in Legacy DTO based on my read?
-             # Wait, EconomicIndicatorData has it.
+        # Priority 1: MarketSnapshotDTO (Legacy) labor field
+        if snapshot.labor and hasattr(snapshot.labor, 'unemployment_rate'):
+             # Note: LaborMarketSnapshotDTO in api.py only has avg_wage.
+             # So we check market_data
              pass
 
-        # Fallback to state sensory data if available (Legacy behavior)
-        if hasattr(state, 'sensory_data') and state.sensory_data:
-             return state.sensory_data.unemployment_sma
+        # Priority 2: market_data dict
+        if "unemployment_rate" in snapshot.market_data:
+            return float(snapshot.market_data["unemployment_rate"])
 
-        return 0.05 # Default
+        # Priority 3: State sensory data (Legacy state DTO)
+        # We check with getattr for safety if we are passed strict DTO without sensory
+        sensory = getattr(state, 'sensory_data', None)
+        if sensory and hasattr(sensory, 'unemployment_sma'):
+             return float(sensory.unemployment_sma)
+
+        # Fallback Default
+        return 0.05

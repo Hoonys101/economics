@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, create_autospec
 from modules.common.services.public_service import PublicSimulationService
 from modules.common.api import (
-    ISimulationRepository, IEventBroker, IndicatorSubscriptionDTO,
+    ISimulationRepository, IEventBroker, IMetricsProvider, IndicatorSubscriptionDTO,
     AgentNotFoundError, ProtocolViolationError, IFirm, IHousehold
 )
 
@@ -13,12 +13,16 @@ class TestPublicSimulationService:
         return MagicMock(spec=ISimulationRepository)
 
     @pytest.fixture
+    def mock_metrics(self):
+        return MagicMock(spec=IMetricsProvider)
+
+    @pytest.fixture
     def mock_broker(self):
         return MagicMock(spec=IEventBroker)
 
     @pytest.fixture
-    def service(self, mock_repo, mock_broker):
-        return PublicSimulationService(mock_repo, mock_broker)
+    def service(self, mock_repo, mock_metrics, mock_broker):
+        return PublicSimulationService(mock_repo, mock_metrics, mock_broker)
 
     def test_get_firm_status_success(self, service, mock_repo):
         # Setup
@@ -88,7 +92,24 @@ class TestPublicSimulationService:
 
     def test_subscribe_no_broker(self, mock_repo):
         # Service without broker
-        service = PublicSimulationService(mock_repo, None)
+        service = PublicSimulationService(mock_repo, None, None)
         dto = IndicatorSubscriptionDTO("id", [], lambda x: None)
 
         assert service.subscribe_to_indicators(dto) is False
+
+    def test_get_global_indicators(self, service, mock_metrics):
+        # Setup
+        mock_dto = MagicMock()
+        mock_dto.gdp = 1000.0
+        mock_dto.cpi = 2.5
+        mock_dto.unemployment_rate = 0.05
+        mock_metrics.get_economic_indicators.return_value = mock_dto
+
+        # Execute
+        result = service.get_global_indicators()
+
+        # Verify
+        assert result.gdp == 1000.0
+        assert result.cpi == 2.5
+        assert result.unemployment_rate == 0.05
+        mock_metrics.get_economic_indicators.assert_called_once()

@@ -67,6 +67,14 @@ class ISimulationRepository(Protocol):
     def get_all_households(self) -> List[IHousehold]: ...
 
 @runtime_checkable
+class IMetricsProvider(Protocol):
+    """
+    Interface for retrieving global economic indicators.
+    Enables ISP (Interface Segregation Principle).
+    """
+    def get_economic_indicators(self) -> Any: ... # Returns Kernel DTO (EconomicIndicatorsDTO)
+
+@runtime_checkable
 class IEventBroker(Protocol):
     """
     Interface for a simple event broker to handle subscriptions.
