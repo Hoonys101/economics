@@ -1,0 +1,24 @@
+{
+    "scenario_name": "test_tax_atomicity",
+    "description": "Verifies that sales tax is applied atomically in goods transactions.",
+    "duration_ticks": 10,
+    "initial_conditions": {
+        "government": {
+            "sales_tax_rate": 0.10
+        },
+        "households": [
+            {
+                "id": 1,
+                "initial_wealth": 1000.0,
+                "buy_order": {"item_id": "test_widget", "quantity": 10, "price": 10.0}
+            }
+        ],
+        "firms": [
+             {
+                 "id": 100,
+                 "initial_capital": 5000.0,
+                 "inventory": {"test_widget": 100}
+             }
+        ]
+    }
+}

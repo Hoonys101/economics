@@ -34,6 +34,11 @@ for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklear
             mock.Field = MagicMock(return_value=None)
             mock.validator = MagicMock(return_value=lambda x: x)
 
+        if module_name == "numpy":
+            # Create a mock bool_ class for isinstance checks
+            class MockBool(int): pass
+            mock.bool_ = MockBool
+
         sys.modules[module_name] = mock
     except Exception as e:
         print(f"FAILED ({e})")

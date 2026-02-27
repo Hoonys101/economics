@@ -45,6 +45,15 @@ def test_saga_cleanup_inactive_buyer(saga_orchestrator, mock_registry, caplog):
 
     saga_orchestrator.submit_saga(saga)
 
+    # Setup dependencies to avoid "Dependencies not fully injected" error
+    saga_orchestrator.set_dependencies(
+        settlement_system=MagicMock(),
+        housing_service=MagicMock(),
+        loan_market=MagicMock(),
+        bank=MagicMock(),
+        government=MagicMock()
+    )
+
     # Setup Simulation State (Still needed for handler initialization)
     sim_state = MagicMock()
     # Mocks for agents are needed if logic accesses them directly,
@@ -70,7 +79,7 @@ def test_saga_cleanup_inactive_buyer(saga_orchestrator, mock_registry, caplog):
 
         # Run process
         with caplog.at_level(logging.INFO):
-            saga_orchestrator.process_sagas()
+            saga_orchestrator.process_sagas(current_tick=1)
 
         # VERIFICATION
 
@@ -107,6 +116,21 @@ def test_saga_cleanup_and_compensate(saga_orchestrator, mock_registry, caplog):
 
     saga_orchestrator.submit_saga(saga)
 
+    saga_orchestrator.set_dependencies(
+        settlement_system=MagicMock(),
+        housing_service=MagicMock(),
+        loan_market=MagicMock(),
+        bank=MagicMock(),
+        government=MagicMock()
+    )
+    saga_orchestrator.set_dependencies(
+        settlement_system=MagicMock(),
+        housing_service=MagicMock(),
+        loan_market=MagicMock(),
+        bank=MagicMock(),
+        government=MagicMock()
+    )
+
     sim_state = MagicMock()
     sim_state.agents = {buyer_id: MagicMock(), seller_id: MagicMock()}
     sim_state.government = MagicMock()
@@ -123,7 +147,7 @@ def test_saga_cleanup_and_compensate(saga_orchestrator, mock_registry, caplog):
     with patch("modules.finance.sagas.orchestrator.HousingTransactionSagaHandler") as MockHandler:
         handler_instance = MockHandler.return_value
 
-        saga_orchestrator.process_sagas()
+        saga_orchestrator.process_sagas(current_tick=1)
 
         # Check compensation called
         handler_instance.compensate_step.assert_called_once()
@@ -153,6 +177,14 @@ def test_saga_compensate_failure_resilience(saga_orchestrator, mock_registry, ca
 
     saga_orchestrator.submit_saga(saga)
 
+    saga_orchestrator.set_dependencies(
+        settlement_system=MagicMock(),
+        housing_service=MagicMock(),
+        loan_market=MagicMock(),
+        bank=MagicMock(),
+        government=MagicMock()
+    )
+
     sim_state = MagicMock()
     sim_state.agents = {buyer_id: MagicMock(), seller_id: MagicMock()}
     sim_state.government = MagicMock()
@@ -168,7 +200,7 @@ def test_saga_compensate_failure_resilience(saga_orchestrator, mock_registry, ca
         handler_instance.compensate_step.side_effect = Exception("Critical Compensation Failure")
 
         with caplog.at_level(logging.ERROR):
-            saga_orchestrator.process_sagas()
+            saga_orchestrator.process_sagas(current_tick=1)
 
         # 1. Log SAGA_COMPENSATE_FAIL
         assert any("SAGA_COMPENSATE_FAIL" in record.message for record in caplog.records)

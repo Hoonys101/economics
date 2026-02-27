@@ -163,14 +163,15 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         credits = call_args[0][1]
 
         # Expect:
-        # 1. Heir gets 10005 (Full amount)
+        # 1. Heir gets 10000 (Transaction amount, not wallet balance)
         # 2. No dust sweep to government
 
         heir_credit = next((c for c in credits if c[0] == heir), None)
         gov_credit = next((c for c in credits if c[0] == self.government), None)
 
         self.assertIsNotNone(heir_credit)
-        self.assertEqual(heir_credit[1], 10005)
+        # Corrected expectation: Handler now uses tx.total_pennies (10000), not deceased.wallet.get_balance() (10005)
+        self.assertEqual(heir_credit[1], 10000)
 
         self.assertIsNone(gov_credit, "No dust sweep expected for single heir")
 

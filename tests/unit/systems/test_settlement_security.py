@@ -191,6 +191,23 @@ def test_mint_and_distribute_security():
     mock_registry.get_agent.side_effect = get_agent_side_effect
     system.agent_registry = mock_registry
 
+    # Fix: Make central_bank explicitly an instance of ICentralBank or Mock it.
+    from modules.finance.api import ICentralBank
+    class MockCentralBank(StrictMockBank, ICentralBank):
+        pass
+
+    central_bank_cb = MockCentralBank(id=ID_CENTRAL_BANK, balance=0, deposits=0)
+    # Update side effect closure
+    def get_agent_side_effect_v2(x):
+        if x == ID_CENTRAL_BANK or str(x) == str(ID_CENTRAL_BANK):
+            return central_bank_cb
+        elif x == 2:
+            return target
+        elif x == 3:
+            return BadAgent()
+        return None
+    mock_registry.get_agent.side_effect = get_agent_side_effect_v2
+
     # Valid mint
     success = system.mint_and_distribute(2, 500, reason="test")
     assert success == True
