@@ -4,6 +4,7 @@ from typing import Any, Optional, Dict
 from simulation.agents.government import Government
 from modules.finance.api import TaxCollectionResult
 from modules.system.api import DEFAULT_CURRENCY
+from simulation.models import Transaction
 
 # Mock classes
 class MockConfig:
@@ -62,11 +63,28 @@ class MockSettlementSystem:
         if debit_agent.get_balance(currency) >= amount:
             debit_agent._withdraw(amount, currency)
             credit_agent._deposit(amount, currency)
-            # Create Mock Transaction
-            tx = MagicMock()
-            tx.transaction_type = "tax" if "tax" in memo else "transfer"
-            tx.amount = amount
-            tx.memo = memo
+
+            # Create REAL Transaction object (Fixes Mock Purity Violation)
+            tx = Transaction(
+                buyer_id=debit_agent.id,
+                seller_id=credit_agent.id,
+                item_id="tax" if "tax" in memo else "transfer",
+                quantity=1,
+                price=amount / 100.0,
+                total_pennies=amount,
+                market_id="system",
+                transaction_type="tax" if "tax" in memo else "transfer",
+                time=kwargs.get("tick", 0),
+                currency=currency,
+                metadata={"memo": memo}
+            )
+            # Monkey-patch amount for test convenience if needed, though total_pennies is standard
+            # But tests might access .amount if they were written against MagicMock.
+            # Checking usage in test: `assert tax_txs[0].amount == 20`
+            # Transaction model doesn't have .amount, it has .total_pennies or .price.
+            # Wait, the previous MagicMock set .amount.
+            # I should update the test assertion or add the attribute.
+            # Updating test assertion is cleaner.
             return tx
         return None
 
@@ -98,10 +116,11 @@ def test_atomic_wealth_tax_collection_success():
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 20
     assert gov.tax_revenue["wealth_tax"] == 20
 
-    # Check transactions: Transaction object for tax should be returned
+    # Check transactions
     tax_txs = [t for t in txs if t.transaction_type == "tax"]
     assert len(tax_txs) == 1
-    assert tax_txs[0].amount == 20
+    # Check total_pennies instead of .amount
+    assert tax_txs[0].total_pennies == 20
 
 def test_atomic_wealth_tax_collection_insufficient_funds():
     config = MockConfig()
