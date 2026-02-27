@@ -30,6 +30,8 @@
 | **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks. | **High**: Gap. | **NEW (AUDIT)** |
 | **TD-FIN-FLOAT-INCURSION** | Finance | **Float Incursion in Ledger**: Parsing metadata using `float()` risks integer math integrity. | **Critical**: Integrity. | **NEW (AUDIT)** |
 | **TD-TEST-DTO-MOCKING** | Testing | **DTO Mocking Anti-Pattern**: Replacing DTOs with MagicMocks breaks type safety and stability. | **Medium**: Quality. | **NEW (AUDIT)** |
+| **TD-ARCH-GOD-DTO** | Architecture | **SimulationState God DTO**: Monolithic dependency violating Interface Segregation. | **High**: Rigidity. | **NEW (AUDIT)** |
+| **TD-ARCH-PROTOCOL-EVASION** | Architecture | **Protocol Evasion**: `hasattr()` usage in lifecycle logic bypasses Protocol Purity. | **Medium**: Safety. | **NEW (AUDIT)** |
 
 ---
 
@@ -61,6 +63,20 @@
 - **Symptom**: `SAGA_SKIP | Saga ... missing participant IDs`.
 - **Risk**: Sagas consume compute cycles for dead agents; memory leaks; state corruption in subsequent ticks.
 - **Solution**: Implement `SagaCaretaker` to purge dead references or use weak references for participants.
+- **Status**: NEW (AUDIT)
+
+### ID: TD-ARCH-GOD-DTO
+- **Title**: SimulationState God DTO
+- **Symptom**: `SimulationState` aggregates 40+ unrelated fields, forcing systems to depend on the entire simulation engine.
+- **Risk**: High architectural rigidity; any change in the engine triggers side-effects in unrelated systems like `DeathSystem`.
+- **Solution**: Segregate into scoped `DomainContext` protocols (e.g., `IDeathContext`).
+- **Status**: NEW (AUDIT)
+
+### ID: TD-ARCH-PROTOCOL-EVASION
+- **Title**: Protocol Evasion via `hasattr()`
+- **Symptom**: `DeathSystem.py` frequently uses `hasattr()` to check for `hr_state` or `get_agent_banks`.
+- **Risk**: Type safety violations; "Duck Typing" makes the system fragile during refactors.
+- **Solution**: Harden protocols (`ISettlementSystem`, `IFirm`) to include these missing methods.
 - **Status**: NEW (AUDIT)
 
 ---
