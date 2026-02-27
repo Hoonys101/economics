@@ -11,36 +11,31 @@ from modules.finance.sagas.housing_api import (
     HousingSagaAgentContext
 )
 from modules.housing.api import IHousingService
-from modules.finance.api import MortgageApplicationDTO, IFinancialAgent, IBank
-from modules.simulation.api import ISimulationState, HouseholdSnapshotDTO
+from modules.finance.api import MortgageApplicationDTO, IFinancialAgent, IBank, IMonetaryLedger
+from modules.government.api import IGovernment
+from modules.simulation.api import HouseholdSnapshotDTO
+from modules.system.api import IAgentRegistry, DEFAULT_CURRENCY
 from simulation.finance.api import ISettlementSystem
-from modules.finance.kernel.api import IMonetaryLedger
 
 logger = logging.getLogger(__name__)
 
 class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
-    def __init__(self, simulation: ISimulationState):
-        self.simulation = simulation
-        self.settlement_system: ISettlementSystem = simulation.settlement_system
-        # Note: housing_service must implement IHousingService
-        self.housing_service: IHousingService = simulation.housing_service
-
-        # Access Loan Market via markets dict
-        market = simulation.markets.get("loan")
-        # We need to ensure it supports ILoanMarket protocol methods used below.
-        # Assuming the loan market implementation aligns with ILoanMarket protocol or similar.
-        self.loan_market = market
-
-        # TD-253: Monetary Ledger Injection
-        self.monetary_ledger: Optional[IMonetaryLedger] = simulation.monetary_ledger
+    def __init__(self, settlement_system: ISettlementSystem, housing_service: IHousingService, loan_market: ILoanMarket, bank: IBank, government: IGovernment, monetary_ledger: Optional[IMonetaryLedger], agent_registry: IAgentRegistry, current_tick: int):
+        self.settlement_system = settlement_system
+        self.housing_service = housing_service
+        self.loan_market = loan_market
+        self.bank = bank
+        self.government = government
+        self.monetary_ledger = monetary_ledger
+        self.agent_registry = agent_registry
+        self.current_tick = current_tick
 
     def execute_step(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
         status = saga.status
         logger.debug(f"SAGA_EXECUTE | Saga {saga.saga_id} processing step: {status}")
 
-        current_tick = self.simulation.time
         # Prevent double processing in same tick
-        if saga.last_processed_tick == current_tick and status != "INITIATED":
+        if saga.last_processed_tick == self.current_tick and status != "INITIATED":
              return saga
 
         try:
@@ -65,7 +60,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
             saga.error_message = str(e)
             return self.compensate_step(saga)
         finally:
-            saga.last_processed_tick = current_tick
+            saga.last_processed_tick = self.current_tick
 
     def compensate_step(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
         status = saga.status
@@ -89,8 +84,8 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
                  # Void Loan
                  loan_id = saga.mortgage_approval.loan_id
                  # Use correct method to void/terminate existing loan
-                 if isinstance(self.simulation.bank, IBank):
-                    self.simulation.bank.terminate_loan(loan_id)
+                 if isinstance(self.bank, IBank):
+                    self.bank.terminate_loan(loan_id)
                  elif hasattr(self.loan_market, 'void_staged_application'):
                     # Fallback if approval but no bank method (unlikely)
                     self.loan_market.void_staged_application(loan_id)
@@ -184,7 +179,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         # 2. Add Lien via Registry
         # Need lienholder_id (Bank ID).
         # LoanInfo might not have it, but we know it's the Bank.
-        bank_id = int(self.simulation.bank.id) if self.simulation.bank else -1
+        bank_id = int(self.bank.id) if self.bank else -1
 
         # MIGRATION: Convert principal (dollars) to pennies (int) for Registry/Lien
         principal_pennies = int(principal * 100)
@@ -210,23 +205,30 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         # Bank -> Buyer (Principal)
         # Buyer -> Seller (Offer Price)
 
-        bank = self.simulation.bank
+        bank = self.bank
 
         buyer_id = self._get_buyer_id(saga)
 
         seller_id = saga.seller_context.id if saga.seller_context else None
 
         # Determine seller agent
-        seller = self.simulation.agents.get(seller_id)
-
         # Government/System Seller Logic
         if seller_id == -1:
-             seller = self.simulation.government
+             seller = self.government
+        else:
+             seller = self.agent_registry.get_agent(seller_id)
 
-        buyer = self.simulation.agents.get(buyer_id) if buyer_id is not None else None
+        buyer = self.agent_registry.get_agent(buyer_id) if buyer_id is not None else None
 
         if not buyer or not seller:
              saga.error_message = "Agents missing for settlement"
+             return self.compensate_step(saga)
+
+        # Check if agents support IFinancialAgent protocol (best effort or cast)
+        # In this simulation, households and government are IFinancialEntity compliant.
+        if not isinstance(buyer, IFinancialAgent) and not hasattr(buyer, 'id'):
+             logger.error(f"SAGA_SETTLEMENT_ERROR | Buyer {buyer_id} does not comply with IFinancialEntity")
+             saga.error_message = "Buyer invalid entity"
              return self.compensate_step(saga)
 
         if not saga.mortgage_approval:
@@ -245,7 +247,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
             (buyer, seller, offer_price_pennies)
         ]
 
-        success = self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
+        success = self.settlement_system.execute_multiparty_settlement(transfers, self.current_tick)
 
         if success:
              # TD-030: M2 Integrity - Record Authorized Expansion for Mortgage Disbursal
@@ -287,16 +289,18 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         # Seller -> Buyer (Offer Price)
         # Buyer -> Bank (Principal)
 
-        bank = self.simulation.bank
+        bank = self.bank
 
         buyer_id = self._get_buyer_id(saga)
         seller_id = saga.seller_context.id if saga.seller_context else None
 
-        buyer = self.simulation.agents.get(buyer_id) if buyer_id is not None else None
-        seller = self.simulation.agents.get(seller_id)
+        buyer = self.agent_registry.get_agent(buyer_id) if buyer_id is not None else None
 
         if seller_id == -1:
-             seller = self.simulation.government
+             seller = self.government
+        else:
+             seller = self.agent_registry.get_agent(seller_id)
+
 
         if not buyer:
              logger.critical(f"CRITICAL_INTEGRITY_FAILURE | Buyer {buyer_id} missing during settlement reversal for saga {saga.saga_id}. Funds may be leaked.")
@@ -321,7 +325,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
             (buyer, bank, principal_pennies)
         ]
 
-        self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
+        self.settlement_system.execute_multiparty_settlement(transfers, self.current_tick)
 
         # TD-030: M2 Integrity - Record Destruction
         if principal > 0 and self.monetary_ledger:
@@ -339,5 +343,4 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         # Only for logging, avoiding manual transaction injection into world state to maintain protocol purity.
         # Ideally, SettlementSystem should log all financial transactions.
         # This explicit transaction logging was likely for non-financial record keeping (housing market volume).
-        # We will skip manual injection into world_state.transactions to avoid violating ISimulationState protocol.
         pass

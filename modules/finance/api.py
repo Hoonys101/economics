@@ -12,7 +12,7 @@ from modules.finance.dtos import (
     BorrowerProfileDTO, CreditAssessmentResultDTO, LienDTO, MortgageApplicationDTO,
     EquityStake
 )
-from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY, CurrencyCode
+from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY, CurrencyCode, IAgentRegistry
 from modules.simulation.api import AgentID, AnyAgentID
 from modules.common.financial.api import IFinancialAgent
 from modules.common.financial.dtos import MoneyDTO, Claim

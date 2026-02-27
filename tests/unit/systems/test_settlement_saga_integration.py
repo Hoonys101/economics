@@ -15,12 +15,13 @@ class TestSettlementSagaIntegration:
         # Mock Simulation Dependencies
         sim.settlement_system = MagicMock()
         sim.housing_service = MagicMock()
-        sim.markets = {"loan": MagicMock()}
+        sim.markets = {"loan_market": MagicMock()}
         sim.agents = {}
         sim.time = 100
         sim.config_module = MagicMock()
         sim.config_module.TICKS_PER_YEAR = 100
         sim.bank = MagicMock()
+        sim.government = MagicMock()
         return sim
 
     def test_process_sagas_integration_initiated_to_credit_check(self, mock_simulation_state):
@@ -95,14 +96,34 @@ class TestSettlementSagaIntegration:
         mock_simulation_state.housing_service.set_under_contract.return_value = True
 
         # Mock Loan Market
-        mock_simulation_state.markets["loan"].stage_mortgage_application.return_value = "loan_staged_1"
+        mock_simulation_state.markets["loan_market"].stage_mortgage_application.return_value = "loan_staged_1"
 
         # Mock Bank (for debt calculation)
         mock_simulation_state.bank.get_debt_status.return_value = {'loans': []}
 
+        # Inject Dependencies
+        orchestrator.set_dependencies(
+            settlement_system=mock_simulation_state.settlement_system,
+            housing_service=mock_simulation_state.housing_service,
+            loan_market=mock_simulation_state.markets["loan_market"],
+            bank=mock_simulation_state.bank,
+            government=mock_simulation_state.government
+        )
+
+        # Mock Agent Registry
+        agent_registry = MagicMock()
+        def get_agent(id):
+            return mock_simulation_state.agents.get(id)
+        def is_active(id):
+            agent = mock_simulation_state.agents.get(id)
+            return agent.is_active if agent else False
+
+        agent_registry.get_agent.side_effect = get_agent
+        agent_registry.is_agent_active.side_effect = is_active
+        orchestrator.agent_registry = agent_registry
+
         # 4. Run
-        orchestrator.simulation_state = mock_simulation_state
-        orchestrator.process_sagas()
+        orchestrator.process_sagas(current_tick=100)
 
         # 5. Verify Saga Transition
         assert saga_id in orchestrator.active_sagas
@@ -115,7 +136,7 @@ class TestSettlementSagaIntegration:
 
         # Verify side effects
         mock_simulation_state.housing_service.set_under_contract.assert_called_with(101, saga_id)
-        mock_simulation_state.markets["loan"].stage_mortgage_application.assert_called_once()
+        mock_simulation_state.markets["loan_market"].stage_mortgage_application.assert_called_once()
 
     def test_process_sagas_integration_cancellation(self, mock_simulation_state):
         """
@@ -171,16 +192,36 @@ class TestSettlementSagaIntegration:
         mock_simulation_state.agents = {1: buyer, 2: seller}
 
         # Mock Loan Market for voiding
-        mock_simulation_state.markets["loan"].void_staged_application.return_value = True
+        mock_simulation_state.markets["loan_market"].void_staged_application.return_value = True
+
+        # Inject Dependencies
+        orchestrator.set_dependencies(
+            settlement_system=mock_simulation_state.settlement_system,
+            housing_service=mock_simulation_state.housing_service,
+            loan_market=mock_simulation_state.markets["loan_market"],
+            bank=mock_simulation_state.bank,
+            government=mock_simulation_state.government
+        )
+
+        # Mock Agent Registry
+        agent_registry = MagicMock()
+        def get_agent(id):
+            return mock_simulation_state.agents.get(id)
+        def is_active(id):
+            agent = mock_simulation_state.agents.get(id)
+            return agent.is_active if agent else False
+
+        agent_registry.get_agent.side_effect = get_agent
+        agent_registry.is_agent_active.side_effect = is_active
+        orchestrator.agent_registry = agent_registry
 
         # 4. Run
-        orchestrator.simulation_state = mock_simulation_state
-        orchestrator.process_sagas()
+        orchestrator.process_sagas(current_tick=100)
 
         # 5. Verify Cancellation
         # Saga should be removed from active_sagas
         assert saga_id not in orchestrator.active_sagas
 
         # Check logs/mock calls to verify compensation was attempted
-        mock_simulation_state.markets["loan"].void_staged_application.assert_called_with("loan_staged_x")
+        mock_simulation_state.markets["loan_market"].void_staged_application.assert_called_with("loan_staged_x")
         mock_simulation_state.housing_service.release_contract.assert_called_with(101, saga_id)

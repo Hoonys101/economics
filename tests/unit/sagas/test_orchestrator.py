@@ -45,24 +45,24 @@ def test_process_sagas_liveness_check(saga_orchestrator):
 
     saga_orchestrator.submit_saga(saga)
 
-    # Mock Simulation State
-    sim_state = MagicMock()
-    buyer = MagicMock()
-    buyer.is_active = False # Inactive Buyer
-    seller = MagicMock()
-    seller.is_active = True
+    # Mock Dependencies
+    agent_registry = MagicMock()
+    agent_registry.is_agent_active.side_effect = lambda id: id == seller_id # Buyer inactive, Seller active
 
-    sim_state.agents = {
-        buyer_id: buyer,
-        seller_id: seller
-    }
-    # Ensure government logic doesn't crash
-    sim_state.government = MagicMock()
-    sim_state.government.id = 0
+    settlement_system = MagicMock()
+    housing_service = MagicMock()
+    loan_market = MagicMock()
+    bank = MagicMock()
+    government = MagicMock()
+
+    # Inject dependencies
+    saga_orchestrator.set_dependencies(
+        settlement_system, housing_service, loan_market, bank, government
+    )
+    saga_orchestrator.agent_registry = agent_registry
 
     with patch("modules.finance.sagas.orchestrator.HousingTransactionSagaHandler") as MockHandler:
-        saga_orchestrator.simulation_state = sim_state
-        saga_orchestrator.process_sagas()
+        saga_orchestrator.process_sagas(current_tick=100)
 
         # Should be removed from active sagas
         assert saga_id not in saga_orchestrator.active_sagas
@@ -91,18 +91,21 @@ def test_process_sagas_active_participants(saga_orchestrator):
 
     saga_orchestrator.submit_saga(saga)
 
-    sim_state = MagicMock()
-    buyer = MagicMock()
-    buyer.is_active = True
-    seller = MagicMock()
-    seller.is_active = True
+    # Mock Dependencies
+    agent_registry = MagicMock()
+    agent_registry.is_agent_active.return_value = True
 
-    sim_state.agents = {
-        buyer_id: buyer,
-        seller_id: seller
-    }
-    sim_state.government = MagicMock()
-    sim_state.government.id = 0
+    settlement_system = MagicMock()
+    housing_service = MagicMock()
+    loan_market = MagicMock()
+    bank = MagicMock()
+    government = MagicMock()
+
+    # Inject dependencies
+    saga_orchestrator.set_dependencies(
+        settlement_system, housing_service, loan_market, bank, government
+    )
+    saga_orchestrator.agent_registry = agent_registry
 
     with patch("modules.finance.sagas.orchestrator.HousingTransactionSagaHandler") as MockHandler:
         handler_instance = MockHandler.return_value
@@ -114,8 +117,7 @@ def test_process_sagas_active_participants(saga_orchestrator):
         )
         handler_instance.execute_step.return_value = updated_saga
 
-        saga_orchestrator.simulation_state = sim_state
-        saga_orchestrator.process_sagas()
+        saga_orchestrator.process_sagas(current_tick=100)
 
         assert saga_id in saga_orchestrator.active_sagas
         assert saga_orchestrator.active_sagas[saga_id].status == "CREDIT_CHECK"
