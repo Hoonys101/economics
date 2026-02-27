@@ -3,11 +3,14 @@ from uuid import UUID
 import logging
 
 from modules.finance.kernel.api import ISagaOrchestrator, IHousingTransactionSagaHandler, IMonetaryLedger
-from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO
+from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, ILoanMarket
 from modules.finance.saga_handler import HousingTransactionSagaHandler
-from modules.simulation.api import ISimulationState, IAgent, HouseholdSnapshotDTO
+from modules.simulation.api import IAgent, HouseholdSnapshotDTO
 from modules.government.api import IGovernment
 from modules.system.api import IAgentRegistry
+from modules.housing.api import IHousingService
+from modules.finance.api import IBank
+from simulation.finance.api import ISettlementSystem
 
 logger = logging.getLogger(__name__)
 
@@ -22,15 +25,21 @@ class SagaOrchestrator(ISagaOrchestrator):
         self.active_sagas: Dict[UUID, HousingTransactionSagaStateDTO] = {}
         self.monetary_ledger = monetary_ledger
         self.agent_registry = agent_registry
-        self._simulation_state: Optional[ISimulationState] = None
 
-    @property
-    def simulation_state(self) -> Optional[ISimulationState]:
-        return self._simulation_state
+        # Dependencies injected via setter
+        self.settlement_system: Optional[ISettlementSystem] = None
+        self.housing_service: Optional[IHousingService] = None
+        self.loan_market: Optional[ILoanMarket] = None
+        self.bank: Optional[IBank] = None
+        self.government: Optional[IGovernment] = None
 
-    @simulation_state.setter
-    def simulation_state(self, value: ISimulationState):
-        self._simulation_state = value
+    def set_dependencies(self, settlement_system: ISettlementSystem, housing_service: IHousingService, loan_market: ILoanMarket, bank: IBank, government: IGovernment) -> None:
+        """Sets the system dependencies required for saga processing."""
+        self.settlement_system = settlement_system
+        self.housing_service = housing_service
+        self.loan_market = loan_market
+        self.bank = bank
+        self.government = government
 
     def submit_saga(self, saga: HousingTransactionSagaStateDTO) -> bool:
         """
@@ -64,22 +73,30 @@ class SagaOrchestrator(ISagaOrchestrator):
         )
         return True
 
-    def process_sagas(self) -> None:
+    def process_sagas(self, current_tick: int) -> None:
         """
         Processes active sagas. Implements the Housing Transaction Saga state machine.
         Called by TickOrchestrator (via Phase_HousingSaga).
         """
-        if not self.active_sagas or not self.simulation_state:
+        if not self.active_sagas:
             return
 
-        sim_state = self.simulation_state
+        # Ensure dependencies are set
+        if not (self.settlement_system and self.housing_service and self.loan_market and self.bank and self.government and self.agent_registry):
+            logger.warning("SAGA_PROCESS_SKIP | Dependencies not fully injected.")
+            return
 
-        # Initialize Handler with the current simulation state
-        handler = HousingTransactionSagaHandler(sim_state)
-
-        # Inject MonetaryLedger
-        if self.monetary_ledger:
-            handler.monetary_ledger = self.monetary_ledger
+        # Initialize Handler with injected dependencies
+        handler = HousingTransactionSagaHandler(
+            settlement_system=self.settlement_system,
+            housing_service=self.housing_service,
+            loan_market=self.loan_market,
+            bank=self.bank,
+            government=self.government,
+            monetary_ledger=self.monetary_ledger,
+            agent_registry=self.agent_registry,
+            current_tick=current_tick
+        )
 
         # Iterate over copy to allow modification/deletion
         for saga_id, saga in list(self.active_sagas.items()):
@@ -115,23 +132,8 @@ class SagaOrchestrator(ISagaOrchestrator):
                         is_seller_inactive = False
                     else:
                         is_seller_inactive = not self.agent_registry.is_agent_active(seller_id)
-                else:
-                    # Fallback Logic (Legacy)
-                    buyer = sim_state.agents.get(buyer_id)
-                    seller = sim_state.agents.get(seller_id)
 
-                    is_buyer_inactive = not buyer or not getattr(buyer, 'is_active', False)
-                    is_seller_inactive = not seller or not getattr(seller, 'is_active', False)
-
-                    # Special handling for System/Government agents
-                    if seller_id == -1:
-                        is_seller_inactive = False
-                    elif seller and isinstance(seller, IGovernment):
-                        is_seller_inactive = False
-
-                    # Fallback check for Government singleton via simulation state
-                    if not seller and sim_state.government and hasattr(sim_state.government, 'id') and sim_state.government.id == seller_id:
-                        is_seller_inactive = False
+                # Note: Fallback logic removed as agent_registry is mandatory
 
                 if is_buyer_inactive or is_seller_inactive:
                     saga.status = "CANCELLED"

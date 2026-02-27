@@ -18,7 +18,7 @@ class ISagaOrchestrator(Protocol):
         """Submits a new saga to be processed."""
         ...
 
-    def process_sagas(self) -> None:
+    def process_sagas(self, current_tick: int) -> None:
         """
         Iterates through all active sagas and executes their next step.
         This is the main entry point called by the simulation's tick orchestrator.

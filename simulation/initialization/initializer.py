@@ -470,6 +470,16 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
         sim.crisis_monitor = CrisisMonitor(logger=self.logger, run_id=sim.run_id)
 
+        # Inject dependencies into SagaOrchestrator (Phase 3 Complete)
+        if sim.saga_orchestrator:
+            sim.saga_orchestrator.set_dependencies(
+                settlement_system=sim.settlement_system,
+                housing_service=sim.housing_service,
+                loan_market=sim.markets['loan_market'],
+                bank=sim.bank,
+                government=sim.government
+            )
+
     def _init_phase4_population(self, sim: Simulation) -> None:
         """
         Phase 4: Atomic Registration & Population Injection
