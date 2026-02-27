@@ -131,6 +131,8 @@ class StubGenerator(IStubGenerator):
             )
 
     def batch_generate(self, requests: List[StubGenerationRequestDTO]) -> List[StubGenerationResultDTO]:
-        with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
+        # Limit workers to 2 to prevent "WinError 1455" (paging file exhaust) 
+        # when running with heavy context on limited RAM.
+        with ThreadPoolExecutor(max_workers=2) as executor:
             results = list(executor.map(self.generate_stub, requests))
         return results

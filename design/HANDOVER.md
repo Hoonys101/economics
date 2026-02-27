@@ -1,72 +1,71 @@
-# 🏗️ Architectural Handover Report: Phase 34 Scenario Framework & Reporting Pipeline
+# Architectural Handover Report
 
-**To**: Antigravity (The Architect)  
-**From**: Technical Reporter (Gemini-CLI Subordinate)  
-**Date**: 2026-02-26  
-**Subject**: Handover for Universal Scenario Framework (Scenario-as-Code) & M2 Integrity
+## Executive Summary
+This session focused on the transition to **Phase 33/34 Infrastructure**, primarily hardening the financial core through **Multi-Currency integration**, **Atomic Initialization sequences**, and **Protocol-based decoupling**. While architectural integrity has improved, the simulation exhibits critical economic fragility in the banking and essential goods sectors.
 
 ---
 
-## 1. Accomplishments & Architectural Evolutions
+## 1. Accomplishments (Architecture & Infrastructure)
 
-### 🎭 Universal Scenario Framework (Scenario-as-Code)
-- **Status**: ✅ Implemented (Modules 1-3)
-- **Detail**: Successfully transitioned from monolithic verifier scripts to a decoupled, protocol-driven architecture (`IScenarioJudge`). Introduced `ScenarioBuilder` and `IScenarioLoader` for declarative scenario definitions.
-- **Evidence**: `simulation/scenarios/framework.py` and `gemini-output/spec/MISSION_REBIRTH_SCENARIO_MIGRATION_SPEC.md`.
+### 1.1 Multi-Currency & Integer Hardening (Phase 33)
+- **Currency Abstraction**: Established `CurrencyCode` and `DEFAULT_CURRENCY` ("USD") as the universal standard in `modules/system/api.py`.
+- **DTO Hardening**: Updated `TransactionData` and `AgentStateData` to enforce `int` pennies for balances and include `CurrencyCode` to prevent cross-currency leakage.
+- **Ledger Decoupling**: Defined `IMonetaryLedger` and `ICurrencyHolder` protocols to centralize the Single Source of Truth (SSoT) for M2 money supply calculations.
 
-### 📊 3-Tier Reporting Engine (KPI Pyramid)
-- **Status**: ✅ Implemented
-- **Detail**: Created the Verification Pyramid (Physics, Macro, Micro metrics) using `IWorldStateMetricsProvider`. Automated the generation of `REBIRTH_REPORT.md` post-simulation.
-- **Evidence**: `modules/analytics/reporting_engine.py`.
+### 1.2 Atomic 5-Phase Initialization
+- **Genesis Sequence**: Implemented a decoupled **5-Phase Atomic Initialization** pattern (`Infrastructure -> System Agents -> Markets -> Population -> Genesis`).
+- **Safety Gate**: Enforced account registration prior to population injection to eliminate "Ghost Agents" during startup.
 
-### ⚖️ M2 Integrity: Wallet Identity Resolution
-- **Status**: ✅ Implemented
-- **Detail**: Resolved a critical architectural flaw where spouses shared the same `Wallet` memory instance. Implemented **Wallet Identity Deduplication** in `SettlementSystem` during boundary-crossing checks.
-- **Evidence**: `simulation/systems/settlement_system.py:L142-168`.
-
-### ✍️ Spec Manual Reform (Concept-First)
-- **Status**: ✅ Implemented
-- **Detail**: Reformed `_internal/manuals/spec.md` to ignore immediate consistency in favor of **Conceptual Integrity** during drafting. Introduced **[Conceptual Debt]** protocol to allow AG to resolve technical drift during implementation.
+### 1.3 System Agent Evolution
+- **Public Manager**: Enhanced `IAssetRecoverySystem` with active buyout logic (`AssetBuyoutRequestDTO`) allowing the system to inject liquidity into distressed entities to facilitate creditor repayment.
+- **Registry Hardening**: Migrated legacy registry entries to `RegistryValueDTO` (Pydantic-based) with explicit `OriginType` priority levels (System, Config, User, God Mode).
 
 ---
 
-## 2. Economic Insights & Forensic Findings
+## 2. Economic Insights & Observations
 
-### 💸 The M2 Boundary Leakage (Ghost Money Autopsy)
-- **Discovery**: The perceived "Money Creation" (M2 Drift) of ~5.7B pennies was identified as **untracked boundary crossings**. 
-- **Mechanism**: Routine transfers between `Non-M2` agents (Bank, CB, Government) and `M2` agents (Household, Firm) were not being recorded as expansions/contractions in `MonetaryLedger`.
-- **Primary Leaks**: Bank-to-Household interest payments and Government-to-Public welfare/infrastructure spending.
-- **Reference**: `MISSION_WO-SPEC-MONETARY-ANOMALY_AUDIT.md`.
+### 2.1 The "Zombie Firm" Phenomenon
+- **Observation**: Rapid extinction of `basic_food` firms within the first 30 ticks.
+- **Insight**: Firms trigger `FIRE_SALE` continually but cannot afford wages even at reduced rates, leading to a total collapse of the essential goods supply chain.
+- **Evidence**: `TECH_DEBT_LEDGER.md::TD-ECON-ZOMBIE-FIRM`.
 
-### 📊 Reporting Layer "Penny Shaving"
-- **Discovery**: The `EconomicIndicatorTracker` was performing `/ 100.0` divisions for UI display, which introduced floating-point noise and caused a 1/100 scale error in the `labor_share` metric (Dollars/Pennies mismatch).
-- **Fix**: Reporting DTOs now strictly hold `int` pennies. Unit conversion is delegated exclusively to the View/Dashboard layer.
+### 2.2 Bank Reserve Structural Crunch
+- **Observation**: Government bond issuance (`BOND_ISSUANCE_FAILED`) occurs because commercial banks lack fractional elasticity.
+- **Insight**: Banks hold insufficient reserves (e.g., 1M pennies) relative to mandated bond sizes (8M-40M), indicating a lack of liquidity injection or fractional reserve logic.
+- **Evidence**: `TECH_DEBT_LEDGER.md::TD-BANK-RESERVE-CRUNCH`.
+
+### 2.3 M2 "Black Hole"
+- **Observation**: Aggregate M2 calculations reach large negative values (-99M).
+- **Insight**: The current sum-total logic includes raw overdraft balances without tracking them as `SystemDebt`, rendering macro indicators like GDP and inflation mathematically unstable.
 
 ---
 
-## 3. Pending Tasks & Technical Debt (High Priority)
+## 3. Pending Tasks & Technical Debt
 
-### ⚠️ Critical Technical Debt
-- **`TD-GOV-MONETARY-BOUNDARY`**: `SettlementSystem.transfer` needs an automated M2-aware decorator or internal check to trigger `monetary_ledger.record_monetary_expansion()` when transfers cross system boundaries.
-- **`TD-MARKET-HARDCODED`**: `MatchingEngine.py:L45` and `L288` still contain hardcoded coefficients for labor utility and commodity price determination. These must be moved to `MarketConfigDTO`.
-- **`TD-AGING-DEPENDENCY`**: `AgingSystem.py` currently violates Dependency Purity by directly importing `config.defaults`. This must be reverted to use the injected `config_module`.
+### 3.1 Critical Integrity Risks
+- **TD-FIN-FLOAT-INCURSION**: Ledger components still use `float()` to parse monetary values from metadata, risking integer math violations. **(Action: Enforce strict `int` casting)**.
+- **TD-FIN-NEGATIVE-M2**: M2 calculation needs to transition to `max(0, balance)` + separate `SystemDebt` tracking.
 
-### 🏗️ Unfinished Logic
-- **`system_debt` Implementation**: `WorldState.calculate_total_money` currently returns `system_debt_pennies = 0` as a placeholder. The logic to aggregate system-wide overdrafts remains deferred.
+### 3.2 Architectural Rigidity
+- **TD-ARCH-GOD-DTO**: `SimulationState` has bloated to 40+ fields. **(Action: Segregate into DomainContext protocols like `IDeathContext`)**.
+- **TD-ARCH-PROTOCOL-EVASION**: Widespread use of `hasattr()` in lifecycle logic (e.g., `DeathSystem.py`) bypasses protocol purity.
+
+### 3.3 Reliability
+- **TD-REBIRTH-BUFFER-LOSS**: Lack of periodic checkpointing risks up to N ticks of data loss upon engine crash.
 
 ---
 
 ## 4. Verification Status
 
-### 🧪 Test Hygiene & Stability
-- **Mock Drift Resolution**: Fixed 13+ integration failures where `MagicMock` objects were silently propagating into integer comparison logic (`int > MagicMock`).
-- **Standard**: All new tests MUST use `MagicMock(spec=ConcreteClass)` instead of `spec=Protocol` to ensure `isinstance` checks pass during settlement.
-
-### 🚀 Simulation Health
-- **`main.py` Status**: **STABLE**.
-- **M2 Integrity Check**: Aggregation logic is now mathematically sound (`M2 - SystemDebt = Net Equity`), but the discrepancy alert will persist until the **Boundary Tracking Fix** (Section 3) is implemented.
-- **Lock Management**: `PlatformLockManager` now tracks PID and detects stale locks, preventing "Ghost Simulations" from corrupting `test.db`.
+| Component | Status | Verification Method |
+| :--- | :--- | :--- |
+| **Financial Ledger** | ⚠️ Partial | Protocol defined (`IMonetaryLedger`), but float incursions persist. |
+| **Initialization** | ✅ Pass | 5-Phase sequence verified in `initializer.py`. |
+| **Multi-Currency** | ✅ Pass | `TransactionData` DTOs successfully hardened to `CurrencyCode`. |
+| **Protocol Purity** | ⚠️ Partial | `IProtocolEnforcer` active, but `hasattr()` escapes detected in `DeathSystem`. |
+| **M2 Integrity** | ❌ Fail | `MONEY_SUPPLY_CHECK` yielding negative values (Accounting violation). |
 
 ---
-**Handover Status**: Ready for Architect review.  
-**Next Strategic Mission Recommendation**: `WO-IMPL-MONETARY-BOUNDARY-AUTOMATION` to eliminate the remaining M2 delta.
+
+## Conclusion
+The infrastructure is ready for **Phase 34 (Rebirth)**, but the economic engine requires immediate tuning of bank reserves and firm pricing logic to prevent immediate systemic collapse. Priority for the next session must be **TD-FIN-FLOAT-INCURSION** and **TD-FIN-NEGATIVE-M2** to restore accounting integrity.
