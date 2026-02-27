@@ -714,6 +714,14 @@ class ICentralBank(IMonetaryOperations, Protocol):
         """
         ...
 
+    def check_and_provide_liquidity(self, bank_agent: Any, amount_needed: int) -> Optional[Any]:
+        """
+        Checks if the bank has sufficient liquidity.
+        If not, provides emergency liquidity via minting (LLR).
+        Returns the Transaction if liquidity was provided, None otherwise.
+        """
+        ...
+
 # --- Portfolio Interfaces (TD-160) ---
 
 # --- Interfaces for Data Access ---

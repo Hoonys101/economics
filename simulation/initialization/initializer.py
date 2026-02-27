@@ -295,7 +295,6 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.central_bank_system = CentralBankSystem(
             central_bank_agent=sim.central_bank,
             settlement_system=sim.settlement_system,
-            transactions=sim.world_state.transactions, # WO-WAVE5-MONETARY-FIX: Inject global transaction ledger
             logger=self.logger
         )
         # Wire Settlement System to LLR (Wave 5 Stabilization)
