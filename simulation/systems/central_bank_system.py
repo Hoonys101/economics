@@ -4,6 +4,8 @@ from simulation.systems.api import IMintingAuthority
 from simulation.systems.settlement_system import SettlementSystem
 from modules.finance.api import ICentralBank, OMOInstructionDTO
 from simulation.models import Order, Transaction
+from modules.system.api import DEFAULT_CURRENCY
+
 logger = logging.getLogger(__name__)
 
 class CentralBankSystem(IMintingAuthority, ICentralBank):
@@ -19,6 +21,9 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
     OMO_BUY_LIMIT_PRICE = 110.0
     OMO_SELL_LIMIT_PRICE_PENNIES = 9000
     OMO_SELL_LIMIT_PRICE = 90.0
+
+    # LLR Configuration
+    LLR_LIQUIDITY_BUFFER_RATIO = 1.1
 
     def __init__(self, central_bank_agent: Any, settlement_system: SettlementSystem, transactions: List[Any], security_market_id: str='security_market', logger: Optional[logging.Logger]=None):
         self.central_bank = central_bank_agent
@@ -97,6 +102,9 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
             # Capture the transaction for the global ledger
             self.transactions.append(tx)
 
+            # TODO: Refactor direct property modification for encapsulation
+            # If target_agent tracks money issued (e.g. Government/Bank), use setter if available.
+            # Currently checking hasattr to be safe.
             if hasattr(target_agent, 'total_money_issued'):
                 target_agent.total_money_issued += amount
 
@@ -137,12 +145,10 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
         if not hasattr(bank_agent, 'get_balance'):
             return False
 
-        # Use DEFAULT_CURRENCY from imports
-        from modules.system.api import DEFAULT_CURRENCY
         current_balance = bank_agent.get_balance(DEFAULT_CURRENCY)
 
-        # 2. Determine Threshold (e.g. 110% of needed amount to avoid edge cases)
-        threshold = int(amount_needed * 1.1)
+        # 2. Determine Threshold (using constant)
+        threshold = int(amount_needed * self.LLR_LIQUIDITY_BUFFER_RATIO)
 
         if current_balance < threshold:
             shortfall = threshold - current_balance
