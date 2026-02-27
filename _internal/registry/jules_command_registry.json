@@ -33,13 +33,13 @@
       "model": null,
       "audit_requirements": null
     },
-    "Track_B_Lifecycle_Inheritance": {
-      "key": "Track_B_Lifecycle_Inheritance",
-      "title": "Track B: Agent Lifecycle & Estate Management",
+    "Track_C_Stability_Profiling": {
+      "key": "Track_C_Stability_Profiling",
+      "title": "Track C: Simulation Stability & Performance Profiling",
       "type": "jules",
-      "instruction_raw": "Hardened inheritance and escheatment logic to prevent 'ghost money' leaks during agent death.",
+      "instruction_raw": "Resolve initialization deadlocks and optimize pytest collection and memory usage.",
       "command": "create",
-      "file_path": "c:\\coding\\economics\\communications\\jules_missions\\MISSION_Track_B_Lifecycle_Inheritance.md",
+      "file_path": "c:\\coding\\economics\\communications\\jules_missions\\MISSION_Track_C_Stability_Performance.md",
       "wait": true,
       "session_id": null,
       "worker": null,
@@ -48,13 +48,13 @@
       "model": null,
       "audit_requirements": null
     },
-    "Track_C_Stability_Profiling": {
-      "key": "Track_C_Stability_Profiling",
-      "title": "Track C: Simulation Stability & Performance Profiling",
+    "Track_B_Lifecycle_Inheritance": {
+      "key": "Track_B_Lifecycle_Inheritance",
+      "title": "Track B: Agent Lifecycle & Estate Management",
       "type": "jules",
-      "instruction_raw": "Resolve initialization deadlocks and optimize pytest collection and memory usage.",
+      "instruction_raw": "Hardened inheritance and escheatment logic to prevent 'ghost money' leaks during agent death.",
       "command": "create",
-      "file_path": "c:\\coding\\economics\\communications\\jules_missions\\MISSION_Track_C_Stability_Performance.md",
+      "file_path": "c:\\coding\\economics\\communications\\jules_missions\\MISSION_Track_B_Lifecycle_Inheritance.md",
       "wait": true,
       "session_id": null,
       "worker": null,
