@@ -33,21 +33,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "Track_A_Finance_Audit": {
-      "key": "Track_A_Finance_Audit",
-      "title": "Track A: Finance & Economic Integrity Audit",
-      "type": "jules",
-      "instruction_raw": "Audit and enforce Zero-Sum integrity and integer penny standard across all financial handlers.",
-      "command": "create",
-      "file_path": "c:\\coding\\economics\\communications\\jules_missions\\MISSION_Track_A_Finance_Audit.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "Track_B_Lifecycle_Inheritance": {
       "key": "Track_B_Lifecycle_Inheritance",
       "title": "Track B: Agent Lifecycle & Estate Management",
