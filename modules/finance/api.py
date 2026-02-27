@@ -20,6 +20,21 @@ from modules.common.financial.dtos import MoneyDTO, Claim
 # --- Core Types ---
 
 @runtime_checkable
+class ILiquidityOracle(Protocol):
+    """
+    Tier 1 Protocol: Live Liquidity Oracle.
+    Provides real-time, intra-tick balance and solvency checks for agents.
+    Decouples settlement systems from stale point-in-time DTOs and the SimulationState God Class.
+    """
+    def get_live_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Returns the current intra-tick balance of the agent in integer pennies."""
+        ...
+
+    def check_solvency(self, agent_id: AgentID, required_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
+        """Returns True if the agent has at least 'required_pennies'."""
+        ...
+
+@runtime_checkable
 class IFinancialEntity(Protocol):
     """
     Standard interface for any entity capable of holding and transferring financial value.

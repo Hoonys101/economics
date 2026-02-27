@@ -4,7 +4,7 @@ from simulation.systems.settlement_system import SettlementSystem
 from simulation.registries.estate_registry import EstateRegistry
 from simulation.models import Transaction
 from modules.simulation.api import IAgent
-from modules.finance.api import IFinancialEntity, IFinancialAgent
+from modules.finance.api import IFinancialEntity, IFinancialAgent, ILiquidityOracle
 from modules.finance.transaction.api import TransactionResultDTO, TransactionDTO
 from modules.system.api import DEFAULT_CURRENCY
 
@@ -18,12 +18,20 @@ class TestSettlementSystemAtomic:
         mock_metrics_service = MagicMock()
         mock_logger = MagicMock()
 
+        # Mock Oracle to ensure solvency checks pass
+        mock_oracle = MagicMock(spec=ILiquidityOracle)
+        # Default: Always Solvent
+        mock_oracle.check_solvency.return_value = True
+        # Default Balance: Enough for any test
+        mock_oracle.get_live_balance.return_value = 1000000
+
         # Instantiate SettlementSystem
         system = SettlementSystem(
             agent_registry=mock_agent_registry,
             estate_registry=mock_estate_registry,
             metrics_service=mock_metrics_service,
-            logger=mock_logger
+            logger=mock_logger,
+            liquidity_oracle=mock_oracle
         )
 
         return system, mock_agent_registry, mock_estate_registry, mock_logger

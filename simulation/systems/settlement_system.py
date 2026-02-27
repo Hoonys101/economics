@@ -8,7 +8,7 @@ from modules.finance.api import (
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
     IMonetaryAuthority, IEconomicMetricsService, IPanicRecorder, ICentralBank,
     FXMatchDTO, IAccountRegistry, FloatIncursionError, ZeroSumViolationError,
-    IMonetaryLedger, ILiquidator
+    IMonetaryLedger, ILiquidator, ILiquidityOracle
 )
 from modules.finance.registry.account_registry import AccountRegistry
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry, ISystemFinancialAgent
@@ -44,7 +44,8 @@ class SettlementSystem(IMonetaryAuthority):
         metrics_service: Optional[IEconomicMetricsService] = None,
         agent_registry: Optional[IAgentRegistry] = None,
         account_registry: Optional[IAccountRegistry] = None,
-        estate_registry: Optional[Any] = None
+        estate_registry: Optional[Any] = None,
+        liquidity_oracle: Optional[ILiquidityOracle] = None
     ):
         self.logger = logger if logger else logging.getLogger(__name__)
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
@@ -52,6 +53,8 @@ class SettlementSystem(IMonetaryAuthority):
         self.total_liquidation_losses: int = 0
         self.agent_registry = agent_registry # Injected by SimulationInitializer
         self.estate_registry = estate_registry # Graveyard for dead agents
+        self.liquidity_oracle = liquidity_oracle # Tier 1: Live Liquidity Oracle
+
         self.panic_recorder: Optional[IPanicRecorder] = None # Injected by SimulationInitializer
         self.monetary_authority: Optional[ICentralBank] = None # Added for LLR Linkage
         self.monetary_ledger: Optional[IMonetaryLedger] = None # WO-IMPL-FINANCIAL-FIX-PH33
@@ -65,6 +68,11 @@ class SettlementSystem(IMonetaryAuthority):
         # Internal buffer for side-effect transactions (e.g., Estate Distribution)
         # Addressed by TD-ARCH-GHOST-TRANSACTIONS
         self._internal_tx_queue: List[Transaction] = []
+
+        # Ensure Oracle Fallback (for legacy tests that don't inject one)
+        if self.liquidity_oracle is None and self.agent_registry:
+             from modules.finance.oracle import LiquidityOracle
+             self.liquidity_oracle = LiquidityOracle(self.agent_registry, self.estate_registry)
 
     def set_monetary_ledger(self, ledger: IMonetaryLedger) -> None:
         self.monetary_ledger = ledger
@@ -166,6 +174,11 @@ class SettlementSystem(IMonetaryAuthority):
         Queries the Single Source of Truth for an agent's current balance.
         This is the ONLY permissible way to check another agent's funds.
         """
+        if self.liquidity_oracle:
+            return self.liquidity_oracle.get_live_balance(agent_id, currency)
+
+        # Fallback to Legacy Logic (Should not be reached if Oracle initialized)
+        self.logger.warning("get_balance: Oracle missing, falling back to legacy registry lookup.")
         try:
             if self.agent_registry:
                 agent = self.agent_registry.get_agent(agent_id)
@@ -526,11 +539,21 @@ class SettlementSystem(IMonetaryAuthority):
         if isinstance(agent, ISystemFinancialAgent) and agent.is_system_agent():
             return True
 
-        current_cash = 0
-        if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
-            current_cash = agent.balance_pennies
-        elif isinstance(agent, IFinancialAgent):
-            current_cash = agent.get_balance(currency)
+        # --- ORACLE INTERVENTION ---
+        if self.liquidity_oracle:
+            is_solvent = self.liquidity_oracle.check_solvency(agent.id, amount, currency)
+            if is_solvent:
+                return True
+
+            # If not solvent, check LLR (see below)
+            current_cash = self.liquidity_oracle.get_live_balance(agent.id, currency)
+        else:
+            # Fallback
+            current_cash = 0
+            if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
+                current_cash = agent.balance_pennies
+            elif isinstance(agent, IFinancialAgent):
+                current_cash = agent.get_balance(currency)
 
         # LLR Integration for Banks (Residual Settlement Fails Fix)
         if current_cash < amount:
@@ -544,10 +567,13 @@ class SettlementSystem(IMonetaryAuthority):
                     self._internal_tx_queue.append(tx)
 
                 # Re-check balance after injection
-                if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
-                    current_cash = agent.balance_pennies
-                elif isinstance(agent, IFinancialAgent):
-                    current_cash = agent.get_balance(currency)
+                if self.liquidity_oracle:
+                    return self.liquidity_oracle.check_solvency(agent.id, amount, currency)
+                else:
+                    if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
+                        current_cash = agent.balance_pennies
+                    elif isinstance(agent, IFinancialAgent):
+                        current_cash = agent.get_balance(currency)
 
         if current_cash >= amount:
             return True

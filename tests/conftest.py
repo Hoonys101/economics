@@ -44,7 +44,7 @@ import config
 from simulation.agents.government import Government
 from modules.finance.system import FinanceSystem
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
-from modules.finance.api import ISettlementSystem, IMonetaryAuthority
+from modules.finance.api import ISettlementSystem, IMonetaryAuthority, ILiquidityOracle
 
 def pytest_collect_file(file_path, parent):
     """Log file collection progress to help debug hangs."""
@@ -176,9 +176,16 @@ def government(mock_config, mock_tracker, finance_system):
 
 @pytest.fixture
 def settlement_system():
-    """Provides a SettlementSystem instance."""
+    """Provides a SettlementSystem instance with a mocked Oracle."""
     from simulation.systems.settlement_system import SettlementSystem
-    return SettlementSystem()
+
+    # Create a strict mock for the Oracle
+    mock_oracle = MagicMock(spec=ILiquidityOracle)
+    # Default behavior: Solvent and Rich
+    mock_oracle.check_solvency.return_value = True
+    mock_oracle.get_live_balance.return_value = 1_000_000_000 # 10M
+
+    return SettlementSystem(liquidity_oracle=mock_oracle)
 
 @pytest.fixture
 def strict_settlement_mock():

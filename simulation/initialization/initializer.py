@@ -90,6 +90,7 @@ from modules.household.api import HouseholdFactoryContext
 from simulation.factories.household_factory import HouseholdFactory
 from simulation.utils.config_factory import create_config_dto
 from modules.simulation.dtos.api import HouseholdConfigDTO
+from modules.finance.oracle import LiquidityOracle
 
 class SimulationInitializer(SimulationInitializerInterface):
     """Simulation 인스턴스 생성 및 모든 구성 요소의 초기화를 전담합니다."""
@@ -154,7 +155,17 @@ class SimulationInitializer(SimulationInitializerInterface):
         global_registry = GlobalRegistry()
         agent_registry = AgentRegistry()
         estate_registry = EstateRegistry()
-        settlement_system = SettlementSystem(logger=self.logger, agent_registry=agent_registry)
+
+        # Tier 1: Initialize Live Liquidity Oracle (IMPL_SETTLEMENT_SYNC)
+        liquidity_oracle = LiquidityOracle(agent_registry=agent_registry, estate_registry=estate_registry)
+
+        settlement_system = SettlementSystem(
+            logger=self.logger,
+            agent_registry=agent_registry,
+            estate_registry=estate_registry,
+            liquidity_oracle=liquidity_oracle
+        )
+
         from modules.system.services.command_service import CommandService
         from modules.system.command_pipeline.service import CommandIngressService
         command_service = CommandService(registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry)
