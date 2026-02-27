@@ -1,11 +1,11 @@
 from __future__ import annotations
 from typing import Protocol, List, Any, Optional, Dict, TypedDict, runtime_checkable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from abc import abstractmethod
 from modules.government.dtos import (
     FiscalPolicyDTO,
     MonetaryPolicyDTO,
-    GovernmentStateDTO,
+    GovernmentStateDTO as LegacyGovernmentStateDTO,
     PolicyDecisionDTO,
     ExecutionResultDTO,
     MacroEconomicSnapshotDTO,
@@ -19,10 +19,40 @@ from modules.government.dtos import (
 )
 from typing import TYPE_CHECKING
 from modules.government.welfare.api import IWelfareRecipient
+
+# Use the new Common MarketSnapshotDTO for GovBrain, or alias it
+# The spec says "Pass strict MarketSnapshotDTO to the brain" and defines it in modules/common/api.py (implicitly via the Spec section)
+# But here I need to be careful. The spec defines MarketSnapshotDTO in the section "API & Interface Definitions (modules/government/api.py & modules/common/api.py)"
+# It lists MarketSnapshotDTO under "DTO Definitions".
+# I will import it from modules.common.api if I put it there, or define it here if it's gov specific.
+# I put it in common/api.py. So I import it.
+
+from modules.common.api import MarketSnapshotDTO
+
 if TYPE_CHECKING:
-    from simulation.dtos.api import MarketSnapshotDTO
+    # Legacy import for compatibility if needed elsewhere, but GovBrain uses strict new one
+    from simulation.dtos.api import MarketSnapshotDTO as LegacyMarketSnapshotDTO
+
 from modules.finance.api import TaxCollectionResult, IFinancialEntity
 from modules.system.api import CurrencyCode, AgentID
+
+# --- Spec Definitions ---
+
+@dataclass(frozen=True)
+class GovernmentStateDTO:
+    """
+    Strict GovernmentStateDTO as per Wave 16 Spec.
+    Represents the output state from the GovBrain.
+    """
+    treasury_balance: float
+    current_tax_rates: Dict[str, float]
+    active_welfare_programs: List[str]
+
+@runtime_checkable
+class IGovBrain(Protocol):
+    def evaluate_policies(self, snapshot: MarketSnapshotDTO) -> GovernmentStateDTO: ...
+
+# --- End Spec Definitions ---
 
 @runtime_checkable
 class ITaxableHousehold(IFinancialEntity, IAgent, Protocol):
@@ -37,7 +67,7 @@ class ITaxableHousehold(IFinancialEntity, IAgent, Protocol):
 class IFiscalPolicyManager(Protocol):
     """Interface for managing the government's fiscal policy."""
 
-    def determine_fiscal_stance(self, market_snapshot: "MarketSnapshotDTO") -> GovernmentPolicyDTO:
+    def determine_fiscal_stance(self, market_snapshot: "LegacyMarketSnapshotDTO") -> GovernmentPolicyDTO:
         """Adjusts tax brackets based on economic conditions."""
         ...
 
@@ -57,7 +87,7 @@ class ITaxService(Protocol):
     A stateless service responsible for all tax calculations and for generating
     tax collection requests.
     """
-    def determine_fiscal_stance(self, snapshot: "MarketSnapshotDTO") -> GovernmentPolicyDTO:
+    def determine_fiscal_stance(self, snapshot: "LegacyMarketSnapshotDTO") -> GovernmentPolicyDTO:
         """Determines the current fiscal policy based on market conditions."""
         ...
 
@@ -113,7 +143,7 @@ class IWelfareService(Protocol):
     A stateless service responsible for all welfare and subsidy logic.
     It does not hold state or have access to agent wallets.
     """
-    def run_welfare_check(self, agents: List[IAgent], market_data: "MarketSnapshotDTO", current_tick: int, gdp_history: List[float], welfare_budget_multiplier: float = 1.0) -> WelfareResultDTO:
+    def run_welfare_check(self, agents: List[IAgent], market_data: "LegacyMarketSnapshotDTO", current_tick: int, gdp_history: List[float], welfare_budget_multiplier: float = 1.0) -> WelfareResultDTO:
         """
         Identifies agents needing support and returns a DTO containing
         welfare payment requests for the government to execute.
@@ -127,7 +157,7 @@ class IWelfareService(Protocol):
         """
         ...
 
-    def get_survival_cost(self, market_data: "MarketSnapshotDTO") -> int:
+    def get_survival_cost(self, market_data: "LegacyMarketSnapshotDTO") -> int:
         """Calculates current survival cost based on market prices (pennies)."""
         ...
 
@@ -167,7 +197,7 @@ class IGovernment(Protocol):
     id: AgentID
     is_active: bool
     name: str
-    state: GovernmentStateDTO
+    state: LegacyGovernmentStateDTO
 
     @property
     def expenditure_this_tick(self) -> Dict[CurrencyCode, int]:
@@ -213,8 +243,8 @@ class IGovernmentDecisionEngine(Protocol):
     """
     def decide(
         self,
-        state: GovernmentStateDTO,
-        market_snapshot: "MarketSnapshotDTO",
+        state: LegacyGovernmentStateDTO,
+        market_snapshot: "LegacyMarketSnapshotDTO",
         central_bank: Any
     ) -> PolicyDecisionDTO:
         """
@@ -231,7 +261,7 @@ class IPolicyExecutionEngine(Protocol):
     def execute(
         self,
         decision: PolicyDecisionDTO,
-        current_state: GovernmentStateDTO,
+        current_state: LegacyGovernmentStateDTO,
         agents: List[IAgent],
         market_data: Dict[str, Any],
         context: GovernmentExecutionContext
