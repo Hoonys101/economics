@@ -8,9 +8,8 @@ from simulation.finance.api import ISettlementSystem as ISettlementSystem
 from simulation.interfaces.market_interface import IMarket as IMarket
 from simulation.models import Transaction as Transaction
 from simulation.systems.inheritance_manager import InheritanceManager as InheritanceManager
-from simulation.systems.lifecycle.api import IDeathSystem as IDeathSystem
+from simulation.systems.lifecycle.api import DeathConfigDTO as DeathConfigDTO, IDeathSystem as IDeathSystem
 from simulation.systems.liquidation_manager import LiquidationManager as LiquidationManager
-from typing import Any
 
 class DeathSystem(IDeathSystem):
     """
@@ -24,7 +23,7 @@ class DeathSystem(IDeathSystem):
     public_manager: Incomplete
     logger: Incomplete
     estate_registry: Incomplete
-    def __init__(self, config_module: Any, inheritance_manager: InheritanceManager, liquidation_manager: LiquidationManager, settlement_system: ISettlementSystem, public_manager: IAssetRecoverySystem, logger: logging.Logger, estate_registry: IEstateRegistry | None = None) -> None: ...
+    def __init__(self, config: DeathConfigDTO, inheritance_manager: InheritanceManager, liquidation_manager: LiquidationManager, settlement_system: ISettlementSystem, public_manager: IAssetRecoverySystem, logger: logging.Logger, estate_registry: IEstateRegistry | None = None) -> None: ...
     def execute(self, state: SimulationState) -> list[Transaction]:
         """
         Executes the death phase.

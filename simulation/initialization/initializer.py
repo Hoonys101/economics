@@ -139,12 +139,17 @@ class SimulationInitializer(SimulationInitializerInterface):
         No Agents are created here.
         """
         # Cross-Platform Locking Mechanism (Wave 1.5)
-        lock_manager = PlatformLockManager('simulation.lock')
-        try:
-            lock_manager.acquire()
-        except LockAcquisitionError:
-            self.logger.error('Another simulation instance is already running (locked by simulation.lock).')
-            raise RuntimeError('Simulation is already running.')
+        # TD-INIT-LOCK-HANG: Skip locking during pytest collection/runs to prevent deadlocks.
+        if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("SKIP_SIM_LOCK"):
+            self.logger.debug("Skipping PlatformLockManager (Testing/Manual skip active).")
+            lock_manager = None
+        else:
+            lock_manager = PlatformLockManager('simulation.lock')
+            try:
+                lock_manager.acquire()
+            except LockAcquisitionError:
+                self.logger.error('Another simulation instance is already running (locked by simulation.lock).')
+                raise RuntimeError('Simulation is already running.')
 
         global_registry = GlobalRegistry()
         agent_registry = AgentRegistry()

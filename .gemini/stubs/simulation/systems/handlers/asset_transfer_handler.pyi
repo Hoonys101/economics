@@ -13,3 +13,9 @@ class AssetTransferHandler(ITransactionHandler):
     Updates ownership.
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool: ...
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses the asset transfer.
+        Ideally should reverse both money and asset ownership.
+        Currently not implemented for complex asset transfers.
+        """

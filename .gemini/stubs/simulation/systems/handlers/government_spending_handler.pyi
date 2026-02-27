@@ -10,3 +10,7 @@ class GovernmentSpendingHandler(ITransactionHandler):
     Handles 'infrastructure_spending' and other government spending transactions.
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool: ...
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses government spending.
+        """

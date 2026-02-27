@@ -12,3 +12,8 @@ class EscheatmentHandler(ITransactionHandler):
     Enforces zero-sum integrity.
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool: ...
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses an escheatment transaction.
+        Transfers funds back from Government to the original owner.
+        """

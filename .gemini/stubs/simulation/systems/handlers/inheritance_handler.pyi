@@ -17,3 +17,8 @@ class InheritanceHandler(ITransactionHandler):
         Buyer: Deceased Agent (Estate)
         Seller: Not used (None) or could be considered heirs implicitly.
         """
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses inheritance distribution.
+        Heirs pay back the Estate.
+        """

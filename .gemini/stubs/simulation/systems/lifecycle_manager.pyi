@@ -5,6 +5,7 @@ from modules.household.api import IHouseholdFactory as IHouseholdFactory
 from modules.hr.api import IHRService as IHRService
 from modules.simulation.api import IEstateRegistry as IEstateRegistry
 from modules.system.api import IAgentRegistry as IAgentRegistry, IAssetRecoverySystem as IAssetRecoverySystem
+from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner as VectorizedHouseholdPlanner
 from simulation.dtos.api import SimulationState as SimulationState
 from simulation.finance.api import ISettlementSystem as ISettlementSystem
 from simulation.models import Transaction as Transaction
@@ -14,6 +15,7 @@ from simulation.systems.firm_management import FirmSystem as FirmSystem
 from simulation.systems.immigration_manager import ImmigrationManager as ImmigrationManager
 from simulation.systems.inheritance_manager import InheritanceManager as InheritanceManager
 from simulation.systems.lifecycle.aging_system import AgingSystem as AgingSystem
+from simulation.systems.lifecycle.api import BirthConfigDTO as BirthConfigDTO, DeathConfigDTO as DeathConfigDTO, LifecycleConfigDTO as LifecycleConfigDTO
 from simulation.systems.lifecycle.birth_system import BirthSystem as BirthSystem
 from simulation.systems.lifecycle.death_system import DeathSystem as DeathSystem
 from simulation.systems.lifecycle.marriage_system import MarriageSystem as MarriageSystem

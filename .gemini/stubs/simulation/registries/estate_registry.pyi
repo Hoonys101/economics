@@ -1,5 +1,10 @@
+from _typeshed import Incomplete
+from modules.finance.api import ISettlementSystem as ISettlementSystem
 from modules.simulation.api import AgentID as AgentID, IAgent as IAgent
+from simulation.models import Transaction as Transaction
 from typing import Any
+
+logger: Incomplete
 
 class EstateRegistry:
     """
@@ -14,3 +19,14 @@ class EstateRegistry:
         """Retrieves an agent from the estate."""
     def get_all_estate_agents(self) -> list[IAgent]:
         """Returns all agents currently in the estate."""
+    def process_estate_distribution(self, agent: IAgent, settlement_system: ISettlementSystem, tick: int = 0) -> list[Transaction]:
+        """
+        Distributes assets of the dead agent.
+        Priority: Taxes -> Creditors -> Heirs -> Escheatment (Government).
+
+        This method is called POST-EXECUTION of an incoming transfer, so funds
+        are already in the dead agent's account.
+
+        Returns:
+            List[Transaction]: A list of transactions generated during distribution.
+        """

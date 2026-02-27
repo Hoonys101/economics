@@ -15,3 +15,7 @@ class FinancialTransactionHandler(ITransactionHandler):
     - tax (Atomic Payment)
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool: ...
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses financial transactions by transferring funds back.
+        """

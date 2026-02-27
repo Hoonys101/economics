@@ -13,3 +13,8 @@ class StockTransactionHandler(ITransactionHandler):
     Direct transfer and Share Registry updates.
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool: ...
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses a stock transaction.
+        Attempts to reverse money and share ownership.
+        """

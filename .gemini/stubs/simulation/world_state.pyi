@@ -8,7 +8,7 @@ from modules.finance.system import FinanceSystem as FinanceSystem
 from modules.governance.api import SystemCommand as SystemCommand
 from modules.government.politics_system import PoliticsSystem as PoliticsSystem
 from modules.market.api import IIndexCircuitBreaker as IIndexCircuitBreaker
-from modules.simulation.api import AgentID, IEstateRegistry as IEstateRegistry
+from modules.simulation.api import AgentID, EconomicIndicatorsDTO, IEstateRegistry as IEstateRegistry
 from modules.simulation.dtos.api import MoneySupplyDTO
 from modules.system.api import CurrencyCode as CurrencyCode, IAgentRegistry as IAgentRegistry, IAssetRecoverySystem as IAssetRecoverySystem, ICurrencyHolder as ICurrencyHolder, IGlobalRegistry as IGlobalRegistry
 from modules.system.server_bridge import CommandQueue as CommandQueue, TelemetryExchange as TelemetryExchange
@@ -48,7 +48,7 @@ from simulation.systems.settlement_system import SettlementSystem as SettlementS
 from simulation.systems.social_system import SocialSystem as SocialSystem
 from simulation.systems.technology_manager import TechnologyManager as TechnologyManager
 from simulation.systems.transaction_processor import TransactionProcessor as TransactionProcessor
-from typing import Any
+from typing import Any, Sequence
 
 class WorldState:
     """
@@ -156,6 +156,14 @@ class WorldState:
         SystemDebt = Sum(abs(balance)) where balance < 0.
         Returns: MoneySupplyDTO with strict penny values.
         """
+    def get_economic_indicators(self) -> EconomicIndicatorsDTO:
+        """
+        Provides Macro-tier indicators (GDP, CPI, Unemployment) safely.
+        """
+    def get_market_panic_index(self) -> float:
+        """
+        Provides Micro-tier sentiment and panic indices safely.
+        """
     def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = 'USD') -> float:
         """
         Provides a single float value for total system money for backward compatibility
@@ -172,3 +180,7 @@ class WorldState:
         """Unregisters an agent from M2 tracking (e.g. upon death)."""
     def get_all_agents(self) -> list[Any]:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
+    def get_technology_system(self) -> Any: ...
+    def get_monetary_ledger(self) -> Any: ...
+    def get_all_firms(self) -> Sequence[Any]: ...
+    def get_all_households(self) -> Sequence[Any]: ...

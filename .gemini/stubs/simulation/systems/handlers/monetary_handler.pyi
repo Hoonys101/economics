@@ -18,3 +18,9 @@ class MonetaryTransactionHandler(ITransactionHandler):
     - Money Creation/Destruction (M2 Delta) is tracked by MonetaryLedger via Phase3_Transaction.
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool: ...
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses the effects of a monetary transaction.
+        For simple transfers, it attempts to reverse the funds.
+        For asset transfers, it logs a warning as complex rollback is risky.
+        """

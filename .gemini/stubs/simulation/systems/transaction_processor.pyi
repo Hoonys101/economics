@@ -19,7 +19,6 @@ class TransactionProcessor(SystemInterface):
         """Registers a handler for a specific transaction type."""
     def register_public_manager_handler(self, handler: ITransactionHandler):
         """Registers a handler for Public Manager transactions (seller check)."""
-    taxation_system: Incomplete
     def execute(self, state: SimulationState, transactions: Iterable[Transaction] | None = None) -> list[SettlementResultDTO]:
         """
         Dispatches transactions to registered handlers.
@@ -33,4 +32,8 @@ class TransactionProcessor(SystemInterface):
 
         Returns:
             List[SettlementResultDTO]: Results of executed transactions.
+        """
+    def rollback_transaction(self, tx: Transaction, state: SimulationState) -> bool:
+        """
+        Rolls back a transaction using the registered handler.
         """

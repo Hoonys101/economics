@@ -4,6 +4,8 @@ from _typeshed import Incomplete
 from modules.common.financial.dtos import MoneyDTO as MoneyDTO
 from modules.finance.api import InsufficientFundsError as InsufficientFundsError
 
+logger: Incomplete
+
 class Wallet(IWallet):
     """
     An encapsulated, auditable container for an agent's multi-currency assets.

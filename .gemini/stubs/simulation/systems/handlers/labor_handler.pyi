@@ -14,3 +14,9 @@ class LaborTransactionHandler(ITransactionHandler):
     Enforces atomic settlement (Wage + Income Tax).
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool: ...
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses labor transactions.
+        For wages, it attempts to reverse the payment.
+        For hiring, it does not currently fire the employee but logs a warning.
+        """

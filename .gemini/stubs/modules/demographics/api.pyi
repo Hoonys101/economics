@@ -48,3 +48,7 @@ class IDemographicManager(Protocol):
         """
         Force-rebuilds the internal cache from a list of agents.
         """
+    def process_aging(self, agents: list[Any], current_tick: int, market_data: dict[str, Any] | None = None) -> None:
+        """
+        Processes aging for a list of agents.
+        """

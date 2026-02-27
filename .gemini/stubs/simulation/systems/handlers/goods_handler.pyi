@@ -14,3 +14,8 @@ class GoodsTransactionHandler(ITransactionHandler):
     Enforces atomic settlement (Trade + Sales Tax).
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool: ...
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses a goods transaction.
+        Attempts to reverse money flow and inventory.
+        """

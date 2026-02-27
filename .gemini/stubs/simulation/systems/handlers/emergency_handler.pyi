@@ -11,3 +11,7 @@ class EmergencyTransactionHandler(ITransactionHandler):
     Fast purchase logic with immediate inventory update.
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool: ...
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses the effects of an emergency purchase.
+        """

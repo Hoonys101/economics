@@ -10,3 +10,8 @@ class DefaultTransferHandler(ITransactionHandler):
     can record the event for M2 Audits and tracking.
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool: ...
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Default transfer handler is a pass-through for already settled transactions.
+        Rollback is assumed to be handled by the caller or SettlementSystem directly.
+        """

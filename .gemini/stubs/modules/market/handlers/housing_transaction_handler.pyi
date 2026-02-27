@@ -27,3 +27,10 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         4. Loan Disbursement (Bank -> Escrow)
         5. Final Settlement (Escrow -> Seller)
         """
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses a committed housing transaction.
+        CRITICAL: This is a high-risk operation involving mortgages, liens, and ownership.
+        Currently not supported for post-commit rollback.
+        Saga compensation logic handles failures *during* execution.
+        """

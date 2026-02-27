@@ -13,3 +13,7 @@ class PublicManagerTransactionHandler(ITransactionHandler):
     (Phase 3: Public Manager Support)
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool: ...
+    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+        """
+        Reverses a Public Manager sale.
+        """
