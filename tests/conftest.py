@@ -3,8 +3,10 @@ from unittest.mock import Mock, MagicMock, patch
 import pytest
 
 # Mock missing dependencies for CI/Sandbox environments
-# Removed "numpy" from mock list to fix TypeError in VectorizedHouseholdPlanner
-for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit", "pydantic", "fastapi", "fastapi.testclient", "uvicorn", "httpx", "starlette", "starlette.websockets", "starlette.status"]:
+# Note: "numpy" is included here to allow collection in envs where it's missing.
+# However, if numpy is missing, tests relying on actual array operations will fail at runtime.
+# This loop only mocks if the module cannot be imported.
+for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit", "pydantic", "fastapi", "fastapi.testclient", "uvicorn", "httpx", "starlette", "starlette.websockets", "starlette.status", "numpy"]:
     if module_name in sys.modules:
         continue
     try:
