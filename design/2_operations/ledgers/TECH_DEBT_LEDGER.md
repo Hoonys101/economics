@@ -28,6 +28,8 @@
 | **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firms**: Race condition; capital injection attempted before registration. | **High**: Reliability. | **NEW (AUDIT)** |
 | **TD-ARCH-ORPHAN-SAGA** | Architecture | **Orphaned Sagas**: Sagas holding stale references to dead/failed agents. | **Medium**: Memory. | **NEW (AUDIT)** |
 | **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks. | **High**: Gap. | **NEW (AUDIT)** |
+| **TD-FIN-FLOAT-INCURSION** | Finance | **Float Incursion in Ledger**: Parsing metadata using `float()` risks integer math integrity. | **Critical**: Integrity. | **NEW (AUDIT)** |
+| **TD-TEST-DTO-MOCKING** | Testing | **DTO Mocking Anti-Pattern**: Replacing DTOs with MagicMocks breaks type safety and stability. | **Medium**: Quality. | **NEW (AUDIT)** |
 
 ---
 
@@ -86,6 +88,13 @@
 - **Solution**: Modify `calculate_total_money` to sum `max(0, balance)` and track negative balances as `SystemDebt`.
 - **Status**: NEW (AUDIT)
 
+### ID: TD-FIN-FLOAT-INCURSION
+- **Title**: Float Incursion during Ledger Metadata Parsing
+- **Symptom**: Ledger components using `float()` to parse monetary values from metadata dictionaries.
+- **Risk**: Float precision errors accumulating to violate Zero-Sum integrity (e.g. creating or destroying dust pennies).
+- **Solution**: Enforce strict `int()` casting for all monetary values in parsing logic and DTOs.
+- **Status**: NEW (AUDIT)
+
 ---
 
 ## AI & Economic Simulation
@@ -119,6 +128,13 @@
 - **Symptom**: `tests/system/test_engine.py` attempts to call `_handle_agent_liquidation` which was refactored into `DeathSystem`.
 - **Risk**: Test failures in the system engine suite.
 - **Solution**: Realign test logic to use `DeathSystem` or mock the new lifecycle components accurately.
+
+### ID: TD-TEST-DTO-MOCKING
+- **Title**: DTO Mocking Anti-Pattern
+- **Symptom**: Tests return `MagicMock` instead of real DTOs (e.g. `Transaction`), bypassing type checks and schema validation.
+- **Risk**: Hidden regressions where code assumes specific DTO attributes or behavior that `MagicMock` silently absorbs.
+- **Solution**: Use real DTOs or `dataclass` instances in test fixtures.
+- **Status**: NEW (AUDIT)
 
 ---
 

@@ -2,21 +2,5 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {
-    "RECOVER_DEATH_SYSTEM_PERF_HANG": {
-      "key": "RECOVER_DEATH_SYSTEM_PERF_HANG",
-      "title": "Diagnose test_death_system_performance.py Collection Hang",
-      "type": "jules",
-      "instruction_raw": "",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_RECOVER_DEATH_SYSTEM_PERF_HANG_SPEC.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    }
-  }
+  "missions": {}
 }
