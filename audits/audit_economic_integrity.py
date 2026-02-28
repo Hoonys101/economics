@@ -37,20 +37,23 @@ class EconomicIntegrityAudit(unittest.TestCase):
             return False
         return True
 
-    def check_transaction_atomicity(self, tx: Transaction, buyer_balance_pre: int, buyer_balance_post: int, seller_balance_pre: int, seller_balance_post: int):
+    def check_transaction_atomicity(self, tx: Transaction, buyer_balance_pre: int, buyer_balance_post: int, seller_balance_pre: int, seller_balance_post: int, tax_intents: List[Any] = None):
         """
         Verifies that the buyer's debit equals the seller's credit (plus tax/fees).
         """
         debit = buyer_balance_pre - buyer_balance_post
         credit = seller_balance_post - seller_balance_pre
 
-        # Simple check: Debit should equal Credit if no tax
-        # If tax exists, Debit = Credit + Tax
+        total_tax = 0
+        if tax_intents:
+            for intent in tax_intents:
+                total_tax += int(intent.amount)
 
-        # We need to know the tax amount to verify fully.
-        # For now, we check that money didn't disappear without a trace.
-        # This function would need access to the tax transaction or ledger to verify the third leg.
-        pass
+        if debit != credit + total_tax:
+            logger.error(f"ATOMICITY_VIOLATION | Tx: {tx.id}, Debit: {debit}, Credit: {credit}, Tax: {total_tax}")
+            return False
+
+        return True
 
     def verify_reflux_completeness(self, total_tax_collected: int, government_revenue_recorded: int):
         """

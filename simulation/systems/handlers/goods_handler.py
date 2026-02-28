@@ -6,7 +6,7 @@ from simulation.core_agents import Household
 from simulation.firms import Firm
 from modules.system.api import DEFAULT_CURRENCY
 from modules.simulation.api import IInventoryHandler, InventorySlot
-from modules.finance.api import IFinancialAgent, ISolvencyChecker, ISalesTracker, IRevenueTracker, IExpenseTracker, IConsumer, IConsumptionTracker
+from modules.finance.api import IFinancialAgent, ISolvencyChecker, ISalesTracker, IRevenueTracker, IExpenseTracker, IConsumer, IConsumptionTracker, FloatIncursionError
 from modules.finance.utils.currency_math import round_to_pennies
 
 logger = logging.getLogger(__name__)
@@ -23,6 +23,12 @@ class GoodsTransactionHandler(ITransactionHandler):
             return False
 
         # SSoT: Use total_pennies directly (Strict Schema Enforced)
+        if isinstance(tx.total_pennies, float):
+            raise FloatIncursionError(f"Settlement integrity violation: amount must be int, got float: {tx.total_pennies}.")
+
+        if not isinstance(tx.total_pennies, int):
+            raise TypeError(f"Settlement integrity violation: amount must be int, got {type(tx.total_pennies)}.")
+
         trade_value = tx.total_pennies
 
 

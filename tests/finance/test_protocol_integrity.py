@@ -97,6 +97,9 @@ class MockCentralBank:
     def execute_open_market_operation(self, instruction: Any) -> List[Any]:
         return []
 
+    def check_and_provide_liquidity(self, bank_agent: Any, amount_needed: int) -> Optional[Any]:
+        return None
+
 class TestProtocolIntegrity:
 
     @pytest.fixture
