@@ -1,11 +1,12 @@
 # [Architectural Insights]
-- Completely removed the `get_balance()` fallback from `InheritanceHandler.handle` to strictly enforce Protocol Purity and rely on the Single Source of Truth (`tx.total_pennies`) provided by the `InheritanceManager`. This properly fixes the bug where spouse's shared wallet assets were inadvertently liquidated.
-- Refactored `InheritanceHandler.rollback` to ensure double-entry rollback atomicity via `context.settlement_system.execute_multiparty_settlement()`. If an heir fails to pay back their inheritance portion during a rollback, the entire operation correctly aborts instead of causing a partial zero-sum violation.
+- Completely removed the `get_balance()` legacy fallback from `InheritanceHandler.handle` to strictly enforce Protocol Purity and rely on the Single Source of Truth (`tx.total_pennies`) provided by the `InheritanceManager`. This properly fixes the bug where spouse's shared wallet assets were inadvertently liquidated.
+- Refactored `InheritanceHandler.rollback` to ensure double-entry rollback atomicity via `context.settlement_system.execute_multiparty_settlement()`. If an heir fails to pay back their inheritance portion during a rollback (e.g. they died or are not found in `inactive_agents`), the entire operation correctly aborts instead of causing a partial zero-sum violation or stealing from the last heir.
 - Validated `EstateRegistry` logic natively uses `ID_PUBLIC_MANAGER` and `ID_GOVERNMENT` rather than routing escheated funds to `ID_ESCROW`.
 
 # [Regression Analysis]
 - Tests in `tests/unit/systems/test_inheritance_manager.py` all continue to pass completely.
 - `EscheatmentHandler.rollback` and `InheritanceHandler.rollback` methods now cleanly revert double-entry balance updates.
+- Inactive heirs are tracked correctly, avoiding any silent zero-sum violations.
 
 # [Test Evidence]
 ```

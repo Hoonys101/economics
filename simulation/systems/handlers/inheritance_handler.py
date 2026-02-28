@@ -105,8 +105,12 @@ class InheritanceHandler(ITransactionHandler):
         transfers = []
 
         for i, h_id in enumerate(heir_ids):
-             heir = context.agents.get(h_id)
-             if not heir: continue
+             heir = context.agents.get(h_id) or context.inactive_agents.get(h_id)
+             if not heir:
+                 # If an heir is completely missing (not even in inactive), we cannot safely rollback.
+                 # Continuing would cause a zero-sum violation or steal from the last heir.
+                 context.logger.error(f"ROLLBACK_FAIL | Inheritance heir {h_id} not found.")
+                 return False
 
              repay_amount = base_amount
              if i == count - 1:
