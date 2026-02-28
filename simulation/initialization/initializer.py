@@ -141,7 +141,8 @@ class SimulationInitializer(SimulationInitializerInterface):
         """
         # Cross-Platform Locking Mechanism (Wave 1.5)
         # TD-INIT-LOCK-HANG: Skip locking during pytest collection/runs to prevent deadlocks.
-        if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("SKIP_SIM_LOCK"):
+        # But allow testing of the initializer with MockLockManager if explicitly requested.
+        if os.environ.get("PYTEST_CURRENT_TEST") and not os.environ.get("FORCE_SIM_LOCK_TEST"):
             self.logger.debug("Skipping PlatformLockManager (Testing/Manual skip active).")
             lock_manager = None
         else:

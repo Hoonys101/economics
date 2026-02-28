@@ -6,6 +6,7 @@ from modules.system.constants import ID_GOVERNMENT, ID_CENTRAL_BANK, ID_BANK, ID
 
 class TestSimulationInitializer:
 
+    @patch.dict('os.environ', {"FORCE_SIM_LOCK_TEST": "1"})
     @patch('simulation.initialization.initializer.PlatformLockManager')
     @patch('simulation.initialization.initializer.Simulation')
     @patch('simulation.initialization.initializer.SettlementSystem')
