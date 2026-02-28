@@ -58,10 +58,18 @@ class AgentLifecycleManager(IAgentLifecycleManager):
             # Initial assets to pennies
             cash_amount = dto.initial_assets.get("cash", 0)
 
-            # Create account - not strictly in ledger API directly right now, might just be giving them money?
-            # Assuming ledger requires an account or we just update M2 expectations
+
+            # Create account and inject assets properly
+            cash_amount = dto.initial_assets.get("cash", 0)
             self.ledger.record_monetary_expansion(cash_amount, "FIRM_REGISTRATION")
-            # In a full system, you'd add the money to the firm's wallet.
+
+            # Inject to agent
+            if hasattr(firm_entity, "wallet") and hasattr(firm_entity.wallet, "add_funds"):
+                firm_entity.wallet.add_funds(cash_amount)
+            elif hasattr(firm_entity, "assets") and isinstance(firm_entity.assets, dict):
+                firm_entity.assets["USD"] = firm_entity.assets.get("USD", 0) + cash_amount
+            elif hasattr(firm_entity, "assets"):
+                firm_entity.assets += cash_amount
 
             self.logger.info(f"Firm {new_id} registered atomically.")
             return new_id
@@ -84,8 +92,17 @@ class AgentLifecycleManager(IAgentLifecycleManager):
 
             self.registry.register(household_entity)
 
+
             cash_amount = dto.initial_assets.get("cash", 0)
             self.ledger.record_monetary_expansion(cash_amount, "HOUSEHOLD_REGISTRATION")
+
+            # Inject to agent
+            if hasattr(household_entity, "wallet") and hasattr(household_entity.wallet, "add_funds"):
+                household_entity.wallet.add_funds(cash_amount)
+            elif hasattr(household_entity, "assets") and isinstance(household_entity.assets, dict):
+                household_entity.assets["USD"] = household_entity.assets.get("USD", 0) + cash_amount
+            elif hasattr(household_entity, "assets"):
+                household_entity.assets += cash_amount
 
             self.logger.info(f"Household {new_id} registered atomically.")
             return new_id
@@ -112,8 +129,21 @@ class AgentLifecycleManager(IAgentLifecycleManager):
         self.market_system.cancel_all_orders_for_agent(agent_id)
 
         # 5. Asset Recovery / Bankruptcy
-        # (Mocking unresolved liabilities as 0 for now)
+        # Resolve liabilities via the recovery system
         liabilities = 0
+        if hasattr(agent, "liabilities"):
+            liabilities = agent.liabilities
+        elif hasattr(agent, "loans"):
+            liabilities = sum(l.amount for l in agent.loans)
+
+        if self.asset_recovery_system and liabilities > 0:
+            try:
+                # Basic attempt to route through recovery system
+                if hasattr(self.asset_recovery_system, "execute_asset_buyout"):
+                    self.asset_recovery_system.execute_asset_buyout(agent_id)
+            except Exception as e:
+                self.logger.error(f"Asset recovery failed for {agent_id}: {e}")
+
 
         return AgentDeactivationEventDTO(
             agent_id=agent_id,

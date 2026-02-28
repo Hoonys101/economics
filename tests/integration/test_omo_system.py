@@ -168,6 +168,7 @@ def test_execute_omo_sale_order_creation(omo_setup):
     assert orders[0].price > 0 # Limit price is no longer 0
     assert orders[0].market_id == "security_market"
 
+@pytest.mark.xfail(reason="TD-TEST-LEDGER-SYNC: OMO Purchase fails to correctly reflect in Settlement SSoT mock environment.")
 def test_process_omo_purchase_transaction(omo_setup):
     cb_system, tp, state, cb_agent, gov_agent, household, settlement = omo_setup
 
@@ -198,7 +199,7 @@ def test_process_omo_purchase_transaction(omo_setup):
     gov_agent.monetary_ledger.process_transactions([tx])
 
     # Verify Household got paid via SSoT
-    pass # test fails independently of this fix, known issue
+    assert settlement.get_balance(household.id) == initial_hh_assets + trade_price
 
     # Verify Gov Ledger Updated via MonetaryLedger (SSoT for M2 Tracking)
     delta = gov_agent.monetary_ledger.get_monetary_delta()
