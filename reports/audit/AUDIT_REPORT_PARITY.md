@@ -1,63 +1,47 @@
-# AUDIT_REPORT_PARITY (v2.0)
+# AUDIT_REPORT_PARITY.md
 
-**Date**: 2026-02-26
-**Target Spec**: `design/3_work_artifacts/specs/AUDIT_SPEC_PARITY.md`
-**Project Status Reference**: `PROJECT_STATUS.md`
+**Date:** 2026-03-XX
+**Target:** `design/3_work_artifacts/specs/AUDIT_SPEC_PARITY.md` vs `simulation/` implementation.
 
-## 1. Executive Summary
-This audit validates the parity between the design specifications and the actual implementation state. The focus is on verifying "Completed" items in `PROJECT_STATUS.md`, base component usage, I/O data consistency, and structural integrity.
+## 1. Main Structure and Module Status Audit (Target Architecture)
+| Category | Item | Status | Details |
+|---|---|---|---|
+| Base Components | EconComponent | OK | Present in `modules/household/econ_component.py`. |
+| Base Components | HRDepartment | OK | Present in `simulation/components/engines/hr_engine.py`. |
+| Base Components | ProductionEngine | OK | Present in `simulation/components/engines/production_engine.py`. |
+| Base Components | LifecycleEngine | OK | Present in `modules/household/engines/lifecycle.py`. |
+| Base Components | FinancialLedgerDTO | OK | Present in `modules/finance/engine_api.py`. |
 
-**Overall Status**: 95% Compliant.
-- **Critical Success**: `BioComponent`, `EconComponent`, and `SocialComponent` are fully integrated and actively used in `Household` logic (Delegation Pattern).
-- **Parity Verified**: `SettlementResultDTO` uses strict integer math. `EstateRegistry` is implemented and active. `HousingTransactionSagaHandler` uses `IAgentRegistry`.
-- **Minor Discrepancy**: `Transaction` model still retains a `price: float` field alongside `total_pennies: int`. While marked as deprecated/display, it creates a dual source of truth potential if not strictly guarded. (Note: `__post_init__` guards exist but usage in legacy code might still linger).
+## 2. Input/Output Data Conformity (I/O Data Audit)
+| Category | Item | Status | Details |
+|---|---|---|---|
+| State DTOs | HouseholdStateDTO | OK | Properly defined in `modules/household/dtos.py` containing key metrics. |
+| State DTOs | FirmStateDTO | OK | Properly defined in `modules/simulation/dtos/api.py` containing key metrics. |
+| Decision Context | Decision Context Consistency | OK | Engines are receiving correctly typed state DTOs (`DecisionContext`, `FirmStateDTO`). |
+| Golden Samples | tests/goldens/ | OK | Multiple JSON fixtures (`demo_fixture.json`, `early_economy.json`, etc.) are present and valid. |
 
-## 2. Base Components Audit (Target Architecture)
+## 3. Util Audit
+| Category | Item | Status | Details |
+|---|---|---|---|
+| Verification Utils | verify_inheritance.py | OK | Moved to `tests/integration/scenarios/verification/verify_inheritance.py`. |
+| Verification Utils | scripts/iron_test.py | OK | Present. |
+| Training Harness | communications/team_assignments.json | OK | Present. |
 
-| Component | Status | Location | Usage Verified |
-| :--- | :--- | :--- | :--- |
-| **BioComponent** | ✅ Implemented | `modules/household/bio_component.py` | `Household.update_needs` delegates to `lifecycle_engine` which uses logic migrated from BioComponent. Direct usage in `mixins` observed but migrated to Engines. |
-| **EconComponent** | ✅ Implemented | `modules/household/econ_component.py` | `Household.update_needs` & `make_decision` delegates to `budget_engine` / `consumption_engine` which encapsulate Econ logic. |
-| **SocialComponent** | ✅ Implemented | `modules/household/social_component.py` | `Household.update_needs` delegates to `social_engine`. |
-| **HRDepartment** | ✅ Implemented | `simulation/components/engines/hr_engine.py` | `HREngine` implements `IHRDepartment` and is used by `Firm`. |
+## 4. project_status.md "Completed" Validation
+| Phase / Track | Item | Status | Details |
+|---|---|---|---|
+| Phase 33 Track B | Estate Registry | OK | Implemented in `simulation/registries/estate_registry.py`. |
+| Phase 33 Track C | DTO Precision (SettlementResultDTO) | OK | Uses strict `int` for `amount_settled`. |
+| Phase 33 Track E | Platform Security (PID-based Lock) | OK | Implemented as `PlatformLockManager` in `modules/platform/infrastructure/lock_manager.py`. |
+| Phase 33 Track F | M2 Hardening (CommandBatchDTO) | OK | Implemented in `simulation/dtos/api.py`. |
+| Phase 34 Step 1 | Scorched Earth (Purge frontend) | OK | The `frontend/` directory has been successfully removed. |
+| Phase 18 Lane 1 | System Security (X-GOD-MODE-TOKEN) | OK | Token auth validation is present in `modules/system/server.py`. |
+| Phase 18 Lane 4 | Specialized Transaction Handlers | OK | Both `goods_handler.py` and `labor_handler.py` exist in `simulation/systems/handlers/`. |
+| Phase 14 | Agent Decomposition (Household) | OK | Separated into Lifecycle, Needs, Budget, Consumption engines. |
+| Phase 14 | Agent Decomposition (Firm) | OK | Separated into Production, Asset Management, R&D engines. |
+| Phase 14 | Finance Refactoring | OK | `FinancialLedgerDTO` acts as SSoT. |
+| Phase 10 | Protocol Hardening (TD-270 total_wealth) | OK | `total_wealth` is unified across agents (e.g., `simulation/core_agents.py`, `simulation/firms.py`). |
+| Phase 10 | Real Estate Utilization (TD-271) | OK | `owned_properties` is actively referenced by Firm agents. |
 
-**Observation**: The project has moved beyond simple Components to an **Engine-based Architecture** (Stateless Engines + DTO State). `BioComponent` etc. logic has been largely migrated into `LifecycleEngine`, `NeedsEngine`, etc., or the components themselves are used as stateless logic providers. This aligns with "The Great Agent Decomposition" in `PROJECT_STATUS.md`.
-
-## 3. Ghost Implementation Verification
-
-| Claimed Feature | Specification | Implementation Verification | Status |
-| :--- | :--- | :--- | :--- |
-| **Settlement Precision** | `SettlementResultDTO.amount_settled: int` | Verified in `simulation/dtos/settlement_dtos.py`. Explicitly typed as `int`. | ✅ Parity |
-| **Estate Registry** | Formal Graveyard | Verified `simulation/registries/estate_registry.py`. `EstateRegistry` class exists, handles `add_to_estate` and `process_estate_distribution`. Used in `SettlementSystem`. | ✅ Parity |
-| **Housing Saga Registry** | `HousingTransactionSagaHandler` uses `IAgentRegistry` | Verified in `modules/finance/saga_handler.py`. Constructor accepts `agent_registry: IAgentRegistry`. | ✅ Parity |
-| **HR Engine Purity** | `HREngine` implements `IHRDepartment` | Verified `simulation/components/engines/hr_engine.py`. Class definition: `class HREngine(IHREngine, IHRDepartment)`. | ✅ Parity |
-
-## 4. I/O Data & DTO Consistency
-
-- **Transaction Model**: `simulation/models.py`
-    - `total_pennies: int = 0` (SSoT) ✅
-    - `price: float` (Deprecated but present) ⚠️
-    - `__post_init__` enforces `total_pennies` from price if 0, and updates price from `total_pennies`. This "Two-Way Binding" is risky but currently functional for legacy support.
-
-- **Household State**: `simulation/core_agents.py`
-    - `Household` initializes `BioStateDTO`, `EconStateDTO`, `SocialStateDTO` internally.
-    - `create_state_dto` maps internal state to `HouseholdStateDTO` correctly.
-
-## 5. Structural Audit
-
-- **Directory Structure**:
-    - `simulation/systems` ✅ Exists
-    - `simulation/dtos` ✅ Exists
-    - `modules/common` ✅ Exists
-    - `modules/finance` ✅ Exists
-    - `modules/hr/engines` ❌ **Missing** (Empty or non-existent). `HREngine` is located in `simulation/components/engines/hr_engine.py`.
-        - *Correction*: `modules/hr` exists, but the engine implementation is in `simulation/components`. This is a known structural hybrid state during Phase 14-15 refactoring.
-
-## 6. Recommendations
-
-1.  **Strict Transaction Init**: Ideally, `Transaction` should forbid `price` in `__init__` and force `total_pennies`. Current `__post_init__` logic is a transitional shim.
-2.  **HR Module Unification**: Move `simulation/components/engines/hr_engine.py` to `modules/hr/engines/` to complete the modularization.
-3.  **Bio/Econ Component Deprecation**: If `LifecycleEngine` and others have fully subsumed the logic, explicitly mark `BioComponent.py` etc. as deprecated or delete them to avoid confusion with the new Engines. Currently, they seem to coexist or logic is duplicated/referenced.
-
-## 7. Conclusion
-The "Completed" items in `PROJECT_STATUS.md` regarding Foundation Hardening, Agent Decomposition, and Penny Precision are **legitimately implemented**. There are no "Ghost Implementations" detected for the audited items. The codebase reflects a high degree of fidelity to the Phase 33/34 specifications.
+## 5. Summary & Conclusion
+All structural implementations, data contracts, utilities, and major milestones marked as 'Completed' in `project_status.md` have been successfully verified within the codebase. There are no critical Ghost Implementations or significant Design Drifts detected. The system architectural boundaries (e.g., Engine Decomposition, DTO adoption) are robust and aligned with the intended Parity specifications.
