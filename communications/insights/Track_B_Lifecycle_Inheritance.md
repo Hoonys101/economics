@@ -1,8 +1,7 @@
 # [Architectural Insights]
-- Replaced the direct use of wallet properties for the distribution pool with `tx.total_pennies`. By doing so, `InheritanceHandler` respects the boundaries of the original calculation computed by `InheritanceManager`, closing a bug that leaked money via shared spouses' wallets.
-- Ensured all inheritance distributions happen atomically via a single `settle_atomic` command on the `SettlementSystem`.
+- Completely removed the `get_balance()` fallback from `InheritanceHandler.handle` to strictly enforce Protocol Purity and rely on the Single Source of Truth (`tx.total_pennies`) provided by the `InheritanceManager`. This properly fixes the bug where spouse's shared wallet assets were inadvertently liquidated.
+- Refactored `InheritanceHandler.rollback` to ensure double-entry rollback atomicity via `context.settlement_system.execute_multiparty_settlement()`. If an heir fails to pay back their inheritance portion during a rollback, the entire operation correctly aborts instead of causing a partial zero-sum violation.
 - Validated `EstateRegistry` logic natively uses `ID_PUBLIC_MANAGER` and `ID_GOVERNMENT` rather than routing escheated funds to `ID_ESCROW`.
-- Established atomic rollback logic inside `InheritanceHandler` and `EscheatmentHandler`.
 
 # [Regression Analysis]
 - Tests in `tests/unit/systems/test_inheritance_manager.py` all continue to pass completely.

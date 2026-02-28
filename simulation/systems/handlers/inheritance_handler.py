@@ -27,12 +27,7 @@ class InheritanceHandler(ITransactionHandler):
 
         # SSoT: Use total_pennies directly (Strict Schema Enforced)
         # This ensures we only distribute what was calculated by the Manager, preventing leaks from shared wallets.
-        # Fallback to wallet balance if total_pennies is inexplicably zero but agent has assets
         assets_val = int(tx.total_pennies)
-
-        if assets_val <= 0:
-             # Legacy Fallback - only use if explicitly missed by Manager
-             assets_val = context.settlement_system.get_balance(deceased_agent.id, DEFAULT_CURRENCY)
 
         if assets_val <= 0:
             context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no distributable assets ({assets_val}).")
@@ -106,8 +101,8 @@ class InheritanceHandler(ITransactionHandler):
         base_amount = amount // count
         distributed_sum = 0
 
-        # Reverse transfers via settle_atomic to ensure double-entry rollback
-        credits = []
+        # Reverse transfers via execute_multiparty_settlement to ensure all-or-nothing double-entry rollback
+        transfers = []
 
         for i, h_id in enumerate(heir_ids):
              heir = context.agents.get(h_id)
@@ -121,7 +116,9 @@ class InheritanceHandler(ITransactionHandler):
 
              if repay_amount > 0:
                  # In a rollback, the heir is the "buyer" paying back to the estate "seller"
-                 if not context.settlement_system.transfer(heir, estate_agent, repay_amount, f"rollback_inheritance:{tx.id}"):
-                      return False
+                 transfers.append((heir, estate_agent, repay_amount))
+
+        if transfers:
+            return context.settlement_system.execute_multiparty_settlement(transfers, context.time)
 
         return True
