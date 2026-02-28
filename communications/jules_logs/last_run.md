@@ -1,6 +1,0 @@
-[main 81044efc] chore: Pre-Jules dispatch for Implement QA & Test Mock Regression Strategy
- 1 file changed, 6 deletions(-)
-INFO:JulesBridge:📍 Attaching context file list: 1 files
-INFO:JulesBridge:Creating Jules session: Implement QA & Test Mock Regression Strategy
-INFO:JulesBridge:Waiting for agent response in session 2970858205368982498...
-WARNING:JulesBridge:  [!] Session 2970858205368982498 activities not found yet. Retrying (1/3)...
