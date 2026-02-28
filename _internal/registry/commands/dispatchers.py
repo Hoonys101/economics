@@ -123,36 +123,12 @@ class JulesDispatcher(ICommand):
             print(msg)
             return CommandResult(success=False, message=msg)
 
-        # --- UPS-6.0: Stub-First Context Injection ---
-        from _internal.scripts.core.context_injector.service import ContextInjectorService
-        from _internal.scripts.core.context_injector.api import InjectionRequestDTO
-
-        injector = ContextInjectorService()
-        existing_context = mission.context_files or []
-        
-        # If the mission points to a file that contains instructions/spec, include it
-        targets = list(existing_context)
-        if mission.file_path:
-            targets.append(mission.file_path)
-
-        req = InjectionRequestDTO(
-            target_files=targets,
-            worker_type="spec", # Jules is implicitly spec-execution
-            include_tests=True,
-            include_docs=True,
-            max_dependency_depth=1
-        )
-        
-        injection_result = injector.analyze_context(req)
-        final_context = [node.file_path for node in injection_result.nodes]
-        
-        # We need to communicate to jules_bridge that these files should be attached.
-        # jules_bridge currently doesn't take a context list explicitly in its CLI args,
-        # but Jules automatically picks up files if they are in the prompt or spec.
-        # However, for the Bridge, we logic-inject it.
-        
-        # Temporary: Update mission in-memory with injected context if bridge supports it, 
-        # or handle via temporary mission file.
+        # --- UPS-6.0: Minimal Context (No Injection) ---
+        # Removed ContextInjectorService as Jules can read the codebase directly.
+        # This prevents redundant token usage and slow dispatch.
+        final_context = mission.context_files or []
+        if mission.file_path and mission.file_path not in final_context:
+            final_context.append(mission.file_path)
         
         command = mission.command or "create"
         cmd = [sys.executable, str(ctx.base_dir / "_internal" / "scripts" / "jules_bridge.py"), command]
@@ -191,20 +167,34 @@ class JulesDispatcher(ICommand):
         
         try:
             with open(output_log, "w", encoding="utf-8") as f:
-                result = subprocess.run(cmd, cwd=ctx.base_dir, capture_output=True, text=True)
-                f.write(result.stdout)
-                f.write(result.stderr)
+                # UPS-6.2: Real-time output streaming to prevent "hang" perception
+                process = subprocess.Popen(
+                    cmd, 
+                    cwd=ctx.base_dir, 
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.STDOUT, 
+                    text=True,
+                    bufsize=1,
+                    universal_newlines=True
+                )
                 
-                if result.returncode == 0:
-                    for line in result.stdout.splitlines():
-                        if "OK: Session created:" in line or "AGENT Jules Response:" in line or "Title:" in line:
-                            print(f"   {line}")
+                if process.stdout:
+                    for line in process.stdout:
+                        clean_line = line.strip()
+                        if clean_line:
+                            print(f"   {clean_line}")
+                            f.write(line)
+                            f.flush()
+                
+                process.wait()
+                
+                if process.returncode == 0:
                     print(f"✅ Success! Log: {output_log}")
                     service.delete_mission(key)
                     return CommandResult(success=True, message="Jules mission dispatched successfully.")
                 else:
-                    print(f"❌ Failed! (Exit Code: {result.returncode})")
-                    return CommandResult(success=False, message="Jules mission failed.", exit_code=result.returncode)
+                    print(f"❌ Failed! (Exit Code: {process.returncode})")
+                    return CommandResult(success=False, message="Jules mission failed.", exit_code=process.returncode)
 
         except Exception as e:
             return CommandResult(success=False, message=f"Error during Jules dispatch: {e}")

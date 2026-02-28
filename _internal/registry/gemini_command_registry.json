@@ -2,28 +2,5 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {
-    "M2_BOUNDARY_AUDIT": {
-      "key": "M2_BOUNDARY_AUDIT",
-      "title": "M2 Boundary Leakage Audit",
-      "type": "gemini",
-      "instruction_raw": "\n        Handover report indicates a 5.7B penny M2 leakage despite existing boundary logic.\n        1. Analyze 'SettlementSystem.transfer', 'execute_multiparty_settlement', and 'settle_atomic' for bypasses.\n        2. Check if 'TransactionProcessor' or handlers (Financial, GovernmentSpending) are bypassing the 'MonetaryLedger' notification.\n        3. Verify the 'NON_M2_SYSTEM_AGENT_IDS' list in 'modules/system/constants.py' for completeness.\n        4. Identify the exact code path failure causing the leakage.\n        5. Output a detailed report: 'M2_BOUNDARY_AUDIT_REPORT.md'.\n        ",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "audit",
-      "context_files": [
-        "simulation/systems/settlement_system.py",
-        "modules/finance/kernel/ledger.py",
-        "modules/system/constants.py",
-        "simulation/systems/transaction_processor.py",
-        "simulation/systems/handlers/financial_handler.py",
-        "simulation/systems/handlers/government_spending_handler.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    }
-  }
+  "missions": {}
 }
