@@ -1,6 +1,0 @@
-[main 3648b0e7] chore: Pre-Jules dispatch for Track D: Fix Remaining Test Failures
- 1 file changed, 8 deletions(-)
-INFO:JulesBridge:📍 Attaching context file list: 1 files
-INFO:JulesBridge:Creating Jules session: Track D: Fix Remaining Test Failures
-INFO:JulesBridge:Waiting for agent response in session 3683202342928444143...
-WARNING:JulesBridge:  [!] Session 3683202342928444143 activities not found yet. Retrying (1/3)...
