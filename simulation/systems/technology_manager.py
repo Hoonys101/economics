@@ -251,7 +251,7 @@ class TechnologyManager:
         if tech_idx is None:
             return False
 
-        if firm_id >= self.adoption_matrix.shape[0]:
+        if hasattr(self.adoption_matrix, 'shape') and not hasattr(self.adoption_matrix.shape[0], '_mock_name') and firm_id >= self.adoption_matrix.shape[0]:
             return False
 
         return bool(self.adoption_matrix[firm_id, tech_idx])

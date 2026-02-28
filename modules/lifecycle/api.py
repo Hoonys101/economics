@@ -41,7 +41,7 @@ class IAgentLifecycleManager(Protocol):
         """Atomically registers a household in the registry and instantiates its ledger account."""
         ...
 
-    def deactivate_agent(self, agent_id: AgentID, reason: LifecycleEventType) -> AgentDeactivationEventDTO:
+    def deactivate_agent(self, agent_id: AgentID, reason: LifecycleEventType, current_tick: int) -> AgentDeactivationEventDTO:
         """
         Safely removes an agent from the active economy.
         Must cancel active orders, terminate pending sagas, and trigger asset liquidation.

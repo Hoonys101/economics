@@ -71,7 +71,7 @@ class InheritanceManager:
         portfolio_holdings = deceased._econ_state.portfolio.holdings.copy() # dict of firm_id -> Share
         stock_value = 0.0
         current_prices = {}
-        if simulation.stock_market:
+        if getattr(simulation, 'stock_market', None) is not None:
             for firm_id, share in portfolio_holdings.items():
                 price = simulation.stock_market.get_daily_avg_price(firm_id)
                 if price <= 0:

@@ -15,6 +15,10 @@ class IMarketSystem(Protocol):
 class AgentRegistrationException(Exception):
     pass
 
+class IAgentFactory(Protocol):
+    def create(self, agent_id: AgentID, dto: AgentRegistrationDTO) -> Any:
+        ...
+
 class AgentLifecycleManager(IAgentLifecycleManager):
     def __init__(self,
                  agent_registry: IAgentRegistry,
@@ -22,19 +26,17 @@ class AgentLifecycleManager(IAgentLifecycleManager):
                  saga_orchestrator: ISagaOrchestrator,
                  market_system: IMarketSystem,
                  asset_recovery_system: IAssetRecoverySystem,
-                 logger: logging.Logger):
+                 logger: logging.Logger,
+                 firm_factory: IAgentFactory = None,
+                 household_factory: IAgentFactory = None):
         self.registry = agent_registry
         self.ledger = monetary_ledger
         self.saga_orchestrator = saga_orchestrator
         self.market_system = market_system
         self.asset_recovery_system = asset_recovery_system
         self.logger = logger
-
-        # We need a way to mint an actual agent.
-        # This will depend on the real system design.
-        # For now, relying on factory injection.
-        self.household_factory: Any = None
-        self.firm_factory: Any = None
+        self.firm_factory = firm_factory
+        self.household_factory = household_factory
         self._next_id = 1000 # Dummy ID allocator for now if registry doesn't provide one
 
     def register_firm(self, dto: AgentRegistrationDTO) -> AgentID:
@@ -92,7 +94,7 @@ class AgentLifecycleManager(IAgentLifecycleManager):
             self.logger.error(f"Failed to register household: {e}")
             raise AgentRegistrationException(str(e))
 
-    def deactivate_agent(self, agent_id: AgentID, reason: LifecycleEventType) -> AgentDeactivationEventDTO:
+    def deactivate_agent(self, agent_id: AgentID, reason: LifecycleEventType, current_tick: int) -> AgentDeactivationEventDTO:
         # 1. Fetch agent
         agent = self.registry.get_agent(agent_id)
         if not agent:
@@ -116,7 +118,7 @@ class AgentLifecycleManager(IAgentLifecycleManager):
         return AgentDeactivationEventDTO(
             agent_id=agent_id,
             reason=reason,
-            tick=0, # Need current tick
+            tick=current_tick,
             unresolved_liabilities=liabilities
         )
 
@@ -128,4 +130,4 @@ class AgentLifecycleManager(IAgentLifecycleManager):
         if hasattr(agent, "needs"):
             survival = agent.needs.get("survival", 100.0)
             if survival <= 0:
-                self.deactivate_agent(household_id, LifecycleEventType.STARVED)
+                self.deactivate_agent(household_id, LifecycleEventType.STARVED, current_tick)

@@ -15,11 +15,10 @@ def test_atomic_registration_failure_rolls_back_registry():
     recovery_mock = MagicMock(spec=IAssetRecoverySystem)
     logger = logging.getLogger("test")
 
-    manager = AgentLifecycleManager(registry_mock, ledger_mock, saga_mock, market_mock, recovery_mock, logger)
+    firm_factory = MagicMock()
+    firm_factory.create.side_effect = Exception("Factory failed")
+    manager = AgentLifecycleManager(registry_mock, ledger_mock, saga_mock, market_mock, recovery_mock, logger, firm_factory=firm_factory)
 
-    # Force firm factory to raise exception
-    manager.firm_factory = MagicMock()
-    manager.firm_factory.create.side_effect = Exception("Factory failed")
 
     dto = AgentRegistrationDTO(agent_type="firm", initial_assets={"cash": 1000}, metadata={})
 
@@ -39,16 +38,19 @@ def test_deactivation_clears_sagas_and_orders():
     recovery_mock = MagicMock(spec=IAssetRecoverySystem)
     logger = logging.getLogger("test")
 
-    manager = AgentLifecycleManager(registry_mock, ledger_mock, saga_mock, market_mock, recovery_mock, logger)
+    firm_factory = MagicMock()
+    firm_factory.create.side_effect = Exception("Factory failed")
+    manager = AgentLifecycleManager(registry_mock, ledger_mock, saga_mock, market_mock, recovery_mock, logger, firm_factory=firm_factory)
 
     agent_mock = MagicMock(spec=IAgent)
     agent_mock.is_active = True
     registry_mock.get_agent.return_value = agent_mock
 
-    event = manager.deactivate_agent(100, LifecycleEventType.BANKRUPT)
+    event = manager.deactivate_agent(100, LifecycleEventType.BANKRUPT, current_tick=42)
 
     assert not agent_mock.is_active
     saga_mock.cancel_all_sagas_for_agent.assert_called_once_with(100)
     market_mock.cancel_all_orders_for_agent.assert_called_once_with(100)
     assert event.agent_id == 100
     assert event.reason == LifecycleEventType.BANKRUPT
+    assert event.tick == 42
