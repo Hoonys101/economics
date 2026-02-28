@@ -93,14 +93,6 @@ class InheritanceHandler(ITransactionHandler):
         if not heir_ids:
              return True
 
-        # Reconstruct amounts (assuming consistent state or using total_pennies from tx if accurate)
-        # Note: handle() uses current wallet balance. If we assume rollback happens immediately,
-        # we can't easily know exactly what was distributed unless we stored it in tx.metadata['distribution'].
-        # However, we can try to reverse using total_pennies if that was populated correctly.
-        # But handle() calculates assets_val dynamically and doesn't update tx.total_pennies necessarily?
-        # Let's assume for now that we can't perfectly rollback without detailed logs,
-        # so we log warning and fail safe, OR we assume total_pennies in tx is the amount.
-
         amount = tx.total_pennies
         if amount <= 0:
              return True
@@ -109,12 +101,16 @@ class InheritanceHandler(ITransactionHandler):
         base_amount = amount // count
         distributed_sum = 0
 
-        # Reverse transfers
-        success_all = True
+        # Reverse transfers via execute_multiparty_settlement to ensure all-or-nothing double-entry rollback
+        transfers = []
 
         for i, h_id in enumerate(heir_ids):
-             heir = context.agents.get(h_id)
-             if not heir: continue
+             heir = context.agents.get(h_id) or context.inactive_agents.get(h_id)
+             if not heir:
+                 # If an heir is completely missing (not even in inactive), we cannot safely rollback.
+                 # Continuing would cause a zero-sum violation or steal from the last heir.
+                 context.logger.error(f"ROLLBACK_FAIL | Inheritance heir {h_id} not found.")
+                 return False
 
              repay_amount = base_amount
              if i == count - 1:
@@ -123,7 +119,10 @@ class InheritanceHandler(ITransactionHandler):
              distributed_sum += base_amount
 
              if repay_amount > 0:
-                 if not context.settlement_system.transfer(heir, estate_agent, repay_amount, f"rollback_inheritance:{tx.id}"):
-                      success_all = False
+                 # In a rollback, the heir is the "buyer" paying back to the estate "seller"
+                 transfers.append((heir, estate_agent, repay_amount))
 
-        return success_all
+        if transfers:
+            return context.settlement_system.execute_multiparty_settlement(transfers, context.time)
+
+        return True
