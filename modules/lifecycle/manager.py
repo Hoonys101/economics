@@ -66,10 +66,8 @@ class AgentLifecycleManager(IAgentLifecycleManager):
             # Inject to agent
             if hasattr(firm_entity, "wallet") and hasattr(firm_entity.wallet, "add_funds"):
                 firm_entity.wallet.add_funds(cash_amount)
-            elif hasattr(firm_entity, "assets") and isinstance(firm_entity.assets, dict):
-                firm_entity.assets["USD"] = firm_entity.assets.get("USD", 0) + cash_amount
-            elif hasattr(firm_entity, "assets"):
-                firm_entity.assets += cash_amount
+            else:
+                raise AgentRegistrationException(f"Firm {new_id} lacks a valid wallet for initial funds injection.")
 
             self.logger.info(f"Firm {new_id} registered atomically.")
             return new_id
@@ -99,10 +97,8 @@ class AgentLifecycleManager(IAgentLifecycleManager):
             # Inject to agent
             if hasattr(household_entity, "wallet") and hasattr(household_entity.wallet, "add_funds"):
                 household_entity.wallet.add_funds(cash_amount)
-            elif hasattr(household_entity, "assets") and isinstance(household_entity.assets, dict):
-                household_entity.assets["USD"] = household_entity.assets.get("USD", 0) + cash_amount
-            elif hasattr(household_entity, "assets"):
-                household_entity.assets += cash_amount
+            else:
+                raise AgentRegistrationException(f"Household {new_id} lacks a valid wallet for initial funds injection.")
 
             self.logger.info(f"Household {new_id} registered atomically.")
             return new_id
