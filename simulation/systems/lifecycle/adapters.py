@@ -102,6 +102,10 @@ class BirthContextAdapter(BaseLifecycleContextAdapter):
     def government(self) -> Any:
         return self._state.primary_government
 
+    @property
+    def bank(self) -> Any:
+        return self._state.bank
+
 class DeathContextAdapter(BaseLifecycleContextAdapter):
     @property
     def households(self) -> List[Any]:

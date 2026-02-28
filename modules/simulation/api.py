@@ -1,4 +1,3 @@
-from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol, TypedDict, Any, List, Dict, Optional, TYPE_CHECKING, runtime_checkable, NewType, Literal, Union
 from enum import Enum, auto
@@ -11,6 +10,22 @@ class LifecycleState(Enum):
     LIQUIDATING = auto()
     DELETED = auto()
 
+class IndustryDomain(Enum):
+    """Replaces the string-based 'major' field for robust domain categorization."""
+    TECHNOLOGY = auto()
+    AGRICULTURE = auto()
+    MANUFACTURING = auto()
+    SERVICES = auto()
+    FINANCE = auto()
+    PUBLIC = auto()
+
+import logging
+
+# --- Unified Agent Identifier ---
+AgentID = NewType('AgentID', int)
+SpecialAgentRole = Literal["GOVERNMENT", "CENTRAL_BANK", "BANK"]
+AnyAgentID = Union[AgentID, SpecialAgentRole]
+
 @runtime_checkable
 class ILifecycleRegistry(Protocol):
     """Module C: Registry protocol for atomic state transitions."""
@@ -21,13 +36,6 @@ class ILifecycleRegistry(Protocol):
     def get_state(self, agent_id: AgentID) -> LifecycleState:
         """Retrieves the current lifecycle state of an agent."""
         ...
-
-import logging
-
-# --- Unified Agent Identifier ---
-AgentID = NewType('AgentID', int)
-SpecialAgentRole = Literal["GOVERNMENT", "CENTRAL_BANK", "BANK"]
-AnyAgentID = Union[AgentID, SpecialAgentRole]
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -42,6 +50,33 @@ from modules.system.api import CurrencyCode, IAgent
 from modules.simulation.dtos.api import MoneySupplyDTO
 
 # --- DTOs ---
+
+@dataclass(frozen=True)
+class EconStateDTO:
+    """Pure snapshot of an agent's economic standing."""
+    assets: float
+    liabilities: float
+    income: float
+    hidden_talent: float  # Solves TD-WAVE3-TALENT-VEIL
+    industry_domain: Optional[IndustryDomain] = None # Solves TD-WAVE3-DTO-SWAP
+
+@dataclass(frozen=True)
+class WelfareCandidateDTO:
+    """Safely encapsulates state for Government Welfare logic without leaking the raw Household."""
+    agent_id: AgentID
+    current_assets: float
+    employment_status: bool
+    needs_survival: float
+    hidden_talent: float
+
+@dataclass(frozen=True)
+class HouseholdStateDTO:
+    """Read-only state transfer object replacing raw Household instances."""
+    agent_id: AgentID
+    assets: float
+    inventory: Dict[str, float]
+    is_active: bool
+    education_xp: float
 
 @dataclass
 class AgentCoreConfigDTO:
@@ -177,6 +212,7 @@ class IAgent(Protocol):
     id: AgentID
     is_active: bool
     name: str # Added for logging/telemetry
+    def get_agent_banks(self) -> List[AgentID]: ... # Eliminated hasattr check
 
 @runtime_checkable
 class IEstateRegistry(Protocol):
@@ -194,10 +230,13 @@ class IOrchestratorAgent(IAgent, Protocol):
     def update_needs(self, current_tick: int) -> None: ...
     def make_decision(self, input_dto: Any) -> Any: ...
 
+@runtime_checkable
 class IFirm(IAgent, Protocol):
     productivity_factor: float
     def reset(self) -> None: ...
+    def hr_state(self) -> Any: ...
 
+@runtime_checkable
 class IHousehold(IAgent, Protocol):
     inventory: Dict[str, float]
     def reset_tick_state(self) -> None: ...
@@ -278,7 +317,7 @@ class ISimulationState(Protocol):
     firms: List[IFirm]
     households: List[IHousehold]
     central_bank: ICentralBank
-    government: IGovernment
+    government: "IGovernment"
     config_module: IConfig
 
     # Extended context for Saga Handlers and System Logic
@@ -350,14 +389,14 @@ class ILifecycleContext(Protocol):
     Eradicates God-Class SimulationState dependency by ensuring strict data boundaries.
     """
     time: int
-    agents: Dict[AgentID, Any]
+    agents: Dict[AgentID, IAgent]
     markets: Dict[str, Any]
 
 @runtime_checkable
 class IDeathContext(ILifecycleContext, Protocol):
-    households: List[Any]
-    firms: List[Any]
-    inactive_agents: Dict[AgentID, Any]
+    households: List[IHousehold]
+    firms: List[IFirm]
+    inactive_agents: Dict[AgentID, IAgent]
     currency_registry_handler: Any
     currency_holders: List[Any]
     settlement_system: Any # Added for DeathSystem
@@ -382,6 +421,7 @@ class IBirthContext(ILifecycleContext, Protocol):
     goods_data: Any # Needed for factory
     logger: Any # Needed for logging
     tracker: Any # Needed for ImmigrationManager
+    bank: Any # Needed for FirmFactory bootstrap check (AttributeError fix)
 
 @runtime_checkable
 class IAgingContext(ILifecycleContext, Protocol):

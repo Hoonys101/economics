@@ -3,13 +3,43 @@
     "version": "1.0"
   },
   "missions": {
-    "Track_D_Remaining_Fails": {
-      "key": "Track_D_Remaining_Fails",
-      "title": "Track D: Fix Remaining Test Failures",
+    "WO-IMPL-QA-MOCK-REGRESSION": {
+      "key": "WO-IMPL-QA-MOCK-REGRESSION",
+      "title": "Implement QA & Test Mock Regression Strategy",
       "type": "jules",
-      "instruction_raw": "Fix the DeathContextAdapter stock_market attribute error and the OMO test assertion failure.",
+      "instruction_raw": "Replace MagicMock DTOs with strict dataclasses and specced Protocol mocks across all tests. Implement SimulationStateBuilder in tests/factories/state_builder.py. Fix stale attributes (system_command_queue) and handle frozen dataclasses using dataclasses.replace(). Ensure 100% test pass rate.",
       "command": "create",
-      "file_path": "c:\\coding\\economics\\communications\\jules_missions\\MISSION_Track_D_Remaining_Fails.md",
+      "file_path": "gemini-output/spec/MISSION_QA_Mock_Regression.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-IMPL-FINANCE-MACRO": {
+      "key": "WO-IMPL-FINANCE-MACRO",
+      "title": "Implement Finance & Macro Stability",
+      "type": "jules",
+      "instruction_raw": "Resolve financial debts: TD-FIN-NEGATIVE-M2, TD-BANK-RESERVE-CRUNCH, TD-FIN-FLOAT-RESIDUE, TD-FIN-MAGIC-BASE-RATE. Implement IMonetaryLedger, IBankReserveSystem, and ICentralBank protocols. Ensure all financial transfers use integer pennies (int) and pass audit_zero_sum_integrity.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_Finance_Macro_Stability.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-IMPL-LIFECYCLE-INTEGRITY": {
+      "key": "WO-IMPL-LIFECYCLE-INTEGRITY",
+      "title": "Implement Lifecycle & Agent Integrity",
+      "type": "jules",
+      "instruction_raw": "Resolve lifecycle debts: TD-LIFECYCLE-GHOST-FIRM, TD-ECON-ZOMBIE-FIRM, TD-ARCH-ORPHAN-SAGA. Implement IAgentLifecycleManager for atomic agent registration across registry and ledger. Ensure deactivation clears sagas and orders. Handle basic food starvation logic.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_Lifecycle_Agent_Integrity.md",
       "wait": true,
       "session_id": null,
       "worker": null,
