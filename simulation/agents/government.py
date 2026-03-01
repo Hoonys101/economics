@@ -41,7 +41,7 @@ from modules.government.tax.service import TaxService
 from modules.government.services.fiscal_bond_service import FiscalBondService
 from modules.government.components.infrastructure_manager import InfrastructureManager
 from modules.government.constants import *
-from modules.government.components.monetary_ledger import MonetaryLedger
+from modules.finance.kernel.ledger import MonetaryLedger
 from modules.government.components.policy_lockout_manager import PolicyLockoutManager
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder
 from modules.finance.wallet.wallet import Wallet
@@ -92,7 +92,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
 
         self.ministry_of_education = MinistryOfEducation(config_module)
         self.infrastructure_manager = InfrastructureManager(self)
-        self.monetary_ledger = MonetaryLedger()
+        self.monetary_ledger = MonetaryLedger(transaction_log=[], time_provider=self)
         self.policy_lockout_manager = PolicyLockoutManager()
         self.public_manager = None # Will be injected by Initializer
 

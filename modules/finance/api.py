@@ -20,6 +20,20 @@ from modules.common.financial.dtos import MoneyDTO, Claim
 # --- Core Types ---
 
 @runtime_checkable
+class IDustReceiver(Protocol):
+    """Protocol for an entity capable of receiving zero-sum fractional dust."""
+    def inject_dust(self, amount_pennies: int) -> None:
+        ...
+
+@runtime_checkable
+class ICurrencyHolderRegistry(Protocol):
+    """Protocol for strictly tracking valid currency holders."""
+    def register_holder(self, agent: 'ICurrencyHolder') -> None:
+        ...
+    def get_all(self) -> list['ICurrencyHolder']:
+        ...
+
+@runtime_checkable
 class ILiquidityOracle(Protocol):
     """
     Tier 1 Protocol: Live Liquidity Oracle.

@@ -1,4 +1,5 @@
-from modules.government.components.monetary_ledger import MonetaryLedger
+from unittest.mock import MagicMock
+from modules.finance.kernel.ledger import MonetaryLedger
 from simulation.models import Transaction
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.system.api import DEFAULT_CURRENCY
@@ -8,7 +9,7 @@ def test_monetary_ledger_uses_pennies_source_and_returns_pennies():
     Verifies that MonetaryLedger uses tx.total_pennies (SSoT) as source
     and returns the delta in Pennies.
     """
-    ledger = MonetaryLedger()
+    ledger = MonetaryLedger(transaction_log=[], time_provider=MagicMock())
     ledger.reset_tick_flow()
     
     # Simulate a 1.00 USD (100 Penny) expansion from Central Bank

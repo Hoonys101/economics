@@ -9,7 +9,7 @@ from simulation.models import Order, Transaction
 from modules.finance.api import OMOInstructionDTO, IFinancialEntity, IFinancialAgent, InsufficientFundsError, ILiquidityOracle, ILiquidityOracle
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.system.api import IAgentRegistry, DEFAULT_CURRENCY
-from modules.government.components.monetary_ledger import MonetaryLedger
+from modules.finance.kernel.ledger import MonetaryLedger
 
 class OMOTestAgent: # Implements IFinancialEntity and IFinancialAgent
     def __init__(self, agent_id, assets=0):
@@ -22,7 +22,7 @@ class OMOTestAgent: # Implements IFinancialEntity and IFinancialAgent
         self._econ_state.assets = self._assets
         # Attach Monetary Ledger to simulate Government
         if agent_id == 102: # Mock Government
-             self.monetary_ledger = MonetaryLedger()
+             self.monetary_ledger = MonetaryLedger(transaction_log=[], time_provider=MagicMock())
 
     @property
     def balance_pennies(self) -> int:

@@ -1,13 +1,14 @@
+from unittest.mock import MagicMock
 import unittest
 from unittest.mock import MagicMock
-from modules.government.components.monetary_ledger import MonetaryLedger
+from modules.finance.kernel.ledger import MonetaryLedger
 from simulation.models import Transaction
 from modules.system.api import DEFAULT_CURRENCY
 from modules.system.constants import ID_PUBLIC_MANAGER
 
 class TestMonetaryLedgerExpansion(unittest.TestCase):
     def setUp(self):
-        self.ledger = MonetaryLedger()
+        self.ledger = MonetaryLedger(transaction_log=[], time_provider=MagicMock())
         self.ledger.reset_tick_flow()
 
     def test_lender_of_last_resort_expansion(self):

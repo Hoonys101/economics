@@ -1,6 +1,7 @@
+from unittest.mock import MagicMock
 import pytest
 from unittest.mock import MagicMock
-from modules.government.components.monetary_ledger import MonetaryLedger
+from modules.finance.kernel.ledger import MonetaryLedger
 from simulation.models import Transaction
 from modules.system.constants import ID_CENTRAL_BANK
 
@@ -10,7 +11,7 @@ class TestMonetaryLedgerRepayment:
         Verify that bond repayment uses SSoT (total_pennies) and destroys full amount.
         Split logic removed for Zero-Sum Integrity.
         """
-        ledger = MonetaryLedger()
+        ledger = MonetaryLedger(transaction_log=[], time_provider=MagicMock())
         ledger.reset_tick_flow()
 
         # Mock Transaction
@@ -44,7 +45,7 @@ class TestMonetaryLedgerRepayment:
         """
         Verify that bond repayment without metadata destroys full amount.
         """
-        ledger = MonetaryLedger()
+        ledger = MonetaryLedger(transaction_log=[], time_provider=MagicMock())
         ledger.reset_tick_flow()
 
         tx = MagicMock(spec=Transaction)
@@ -70,7 +71,7 @@ class TestMonetaryLedgerRepayment:
         Verify that interest portion (if part of total_pennies) IS destroyed now,
         as it represents money leaving circulation to System Agent.
         """
-        ledger = MonetaryLedger()
+        ledger = MonetaryLedger(transaction_log=[], time_provider=MagicMock())
         ledger.reset_tick_flow()
 
         tx = MagicMock(spec=Transaction)
