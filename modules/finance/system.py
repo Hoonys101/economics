@@ -46,7 +46,13 @@ class FinanceSystem(IFinanceSystem):
         self.bank = bank
         self.config_module = config_module
         self.settlement_system = settlement_system
-        self.monetary_authority = monetary_authority
+
+        # SSoT for checking liquidity, use explicit Protocol from central_bank if not provided
+        from modules.finance.api import ICentralBank
+        self.monetary_authority: Optional[ICentralBank] = monetary_authority
+        if self.monetary_authority is None and isinstance(self.central_bank, ICentralBank):
+             self.monetary_authority = self.central_bank
+
         self.monetary_ledger = monetary_ledger
 
         self.fiscal_monitor = FiscalMonitor()
@@ -364,17 +370,16 @@ class FinanceSystem(IFinanceSystem):
 
             # LLR Intervention Logic
             if bank_reserves < amount and self.monetary_authority:
-                if hasattr(self.monetary_authority, 'check_and_provide_liquidity'):
-                     # Request Liquidity
-                     self.monetary_authority.check_and_provide_liquidity(self.bank, amount)
+                 # Request Liquidity explicitly through the ICentralBank Protocol
+                 self.monetary_authority.check_and_provide_liquidity(self.bank, amount)
 
-                     # Re-sync Ledger to reflect new reserves
-                     self._sync_ledger_balances()
+                 # Re-sync Ledger to reflect new reserves
+                 self._sync_ledger_balances()
 
-                     # Re-check Reserves
-                     bank_state = self.bank_registry.get_bank(buyer_id)
-                     if bank_state:
-                         bank_reserves = bank_state.reserves.get(DEFAULT_CURRENCY, 0)
+                 # Re-check Reserves
+                 bank_state = self.bank_registry.get_bank(buyer_id)
+                 if bank_state:
+                     bank_reserves = bank_state.reserves.get(DEFAULT_CURRENCY, 0)
 
             if bank_reserves < amount:
                  logger.warning(f"BOND_ISSUANCE_SKIPPED | Bank {buyer_id} insufficient reserves: {bank_reserves} < {amount}")
