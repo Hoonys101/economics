@@ -23,21 +23,25 @@ Provide a 3-bullet summary of the most critical structural drift found.
 
 [TASK]
 Run this audit on the provided context files and output the result.'...
-📖 Attached context: simulation\interfaces\market_interface.py
-📖 Attached context: simulation\markets\matching_engine.py
-📖 Attached context: simulation\markets\order_book_market.py
-📖 Attached context: simulation\markets\stock_market.py
-📖 Attached context: simulation\markets\__init__.py
-📖 Attached context: design\1_governance\architecture\ARCH_TRANSACTIONS.md
+📖 Attached 6 context files using Smart Context Injector.
+📊 [GeminiWorker] Total Context Size: 95.40 kb (97685 chars)
 🚀 [GeminiWorker] Running task with manual: report.md
+🛡️  Memory Guard Active: Limit = 2048MB
+📡 [GeminiWorker] Feeding prompt to STDIN (97685 chars)...
+✅ [GeminiWorker] STDIN feed complete.
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260222_213635_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260301_204101_Domain_Auditor.md
 ============================================================
-# Domain Audit Report: Markets & Transaction Protocols
+# ⚖️ Domain Auditor: Markets & Transaction Protocols
 
-## 🚥 Domain Grade: PASS (with Minor Warnings)
+## 🚥 Domain Grade: ⚠️ WARNING
 
-## Executive Summary
-The market domain demonstrates high architectural maturity, successfully implementing a **Stateless Matching Engine** pattern and a **3-Phase Pipeline** (Intent → Match → Act). The enforcement of **Integer Math (Pennies)** for zero-sum integrity is consistent across both Goods and Stock markets. Protocol isolation is strong, with markets operating primarily on DTOs and retu
+The market and transaction infrastructure demonstrates a strong commitment to Protocol-based design, but architectural "drift" in the form of monolithic DTOs and implicit registry lookups threatens the long-term isolation of market logic.
+
+## ❌ Violations
+
+| File | Line | Violation | Severity |
+| :--- | :--- | :--- | :--- |
+| `simulation/dtos/api.py` | L208-258 | **TD-ARCH-GOD-DTO**: `SimulationState` aggregates
 ...
 ============================================================

@@ -23,25 +23,18 @@ Provide a 3-bullet summary of the most critical structural drift found.
 
 [TASK]
 Run this audit on the provided context files and output the result.'...
-📖 Attached context: simulation\api.py
-📖 Attached context: simulation\agents\central_bank.py
-📖 Attached context: simulation\systems\settlement_system.py
-📖 Attached context: design\1_governance\architecture\ARCH_TRANSACTIONS.md
+📖 Attached 6 context files using Smart Context Injector.
+📊 [GeminiWorker] Total Context Size: 95.33 kb (97622 chars)
 🚀 [GeminiWorker] Running task with manual: report.md
+🛡️  Memory Guard Active: Limit = 2048MB
+📡 [GeminiWorker] Feeding prompt to STDIN (97622 chars)...
+✅ [GeminiWorker] STDIN feed complete.
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260222_213555_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260301_204017_Domain_Auditor.md
 ============================================================
-# ⚖️ Domain Auditor: Finance & Monetary Integrity
+# ⚖️ Financial Integrity Audit Report
 
-## 🚥 Domain Grade: ⚠️ WARNING
-
-The system demonstrates a sophisticated understanding of financial integrity, particularly through the use of an atomic **LedgerEngine** and a **Zero-Float Mandate**. However, there is a technical drift in how "Money Creation" (Minting) is handled compared to standard "Zero-Sum" transfers, potentially creating an audit gap in the automated ledger.
-
----
-
-## ❌ Violations
-
-| File | Line | Violation | Severity |
-| :---
+## Executive Summary
+The financial domain is currently in a **transitional state** regarding integer hardening. While the "Ghost Money" leakage from LLR injections has been resolved via the Transaction Injection Pattern, significant risks remain in the aggregate accounting of M2 and the presence of "float residue" in core DTOs. The system correctly identifies `MonetaryLedger` as the SSoT, but implementation gaps allow for accounting violations (Negative M2)
 ...
 ============================================================

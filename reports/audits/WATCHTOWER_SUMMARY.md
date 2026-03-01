@@ -1,117 +1,80 @@
-I will read the project status, recent diagnostic reports, and test results to understand the current state of the codebase and its recent issues.
-Then, I will explore the `modules` directory to perform a high-level audit of the Agents, Finance, Markets, and Systems domains, looking for architectural drifts or violations as described in the audit checklists.
-Finally, I will generate the "Project Watchtower Audit Report" aggregating these findings and updating the project status.
+### 1. 📍 Current Coordinates
+- **Phase**: Phase 35: Audit Stabilization & Structural Integrity
+- **Work Order**: Project Watchtower Global Audit Aggregation
+- **Target Files**: `PROJECT_STATUS.md`, `reports/audits/WATCHTOWER_SUMMARY.md` (Draft)
 
-I will locate the relevant files for verification by searching for `initializer`, `matching_engine`, `sales_engine`, and `analytics_system`.
-Then, I will read these files to confirm the reported issues: Central Bank registration in the initializer, float casts in the matching engine, state mutation in the sales engine, and the test failure in `test_config_hot_swap.py`.
-Finally, I will generate the "Project Watchtower Audit Report" based on these confirmed findings.
+### 2. ✅ Accomplishments
+- Synthesized 4 modular domain audit snippets (Agents, Finance, Markets, Systems) into a unified Project Watchtower perspective.
+- Identified the overarching **Global Architectural Drift**: Systemic risk of Protocol Bypass and State Leakage (specifically bypassing `SettlementSystem` and `IInventoryHandler` in favor of direct state mutation).
+- Drafted the final Watchtower Audit Report and generated the Routine Sync Proposal for `PROJECT_STATUS.md`.
 
-I will list the contents of `modules/firm` to check for a newer "SalesEngine".
-Then, I will read `simulation/initialization/initializer.py` to verify the Central Bank registration, `simulation/markets/matching_engine.py` to check for float casts, `simulation/components/engines/sales_engine.py` (or the newer version if found) to check for state mutation, `simulation/systems/analytics_system.py` to check for direct agent access, and `tests/integration/test_config_hot_swap.py` to diagnose the test failure.
-Finally, I will generate the "Project Watchtower Audit Report" based on the confirmed findings.
+### 3. 🚧 Blockers & Pending
+- The identified architectural drifts represent a "Tech Debt" that requires immediate static/runtime enforcement (as outlined in Phase 15 Track A & B) to prevent further regressions.
+- Awaiting human/Antigravity review to apply the generated Sync Proposals to the documentation.
 
-I will list the contents of `modules/firm/engines` to see if a newer `sales_engine.py` exists there.
-If it does, I will read it to compare with the one I already checked.
-Then, I will generate the "Project Watchtower Audit Report" based on all confirmed findings, ensuring I reference the correct "live" code.
+### 4. 🧠 Warm Boot Message
+> **"Context Manager Online. I have aggregated the 4 domain audits into the Project Watchtower Audit Report. The core finding is a cross-domain architectural drift where modules are bypassing SSoT protocols (like `SettlementSystem` and `IInventoryHandler`) and leaking state via direct mutation. I have prepared the sync proposals below for `PROJECT_STATUS.md` and the full Audit Report draft. Please copy/paste to update our registries."**
 
-I will generate the "Project Watchtower Audit Report" by aggregating the findings from my investigation into the Agents, Finance, Markets, and Systems domains.
-I will structure the report with an executive summary, detailed domain findings, and actionable recommendations, specifically highlighting the critical "Invisible Hand" bug in the initializer, float casts in the matching engine, and direct agent access in the analytics system.
-Finally, I will ensure the report provides a clear path forward for resolving these architectural drifts and technical debts.
+---
 
-I will generate the "Project Watchtower Audit Report" based on my findings, highlighting critical issues in the Agents, Finance, Markets, and Systems domains.
-Then, I will create a "Session Snapshot" summarizing the current project status, accomplishments, and blockers.
-Finally, I will provide a "Warm Boot Message" to give the next session's team a concise overview of the critical bugs and required actions.
+## 🔄 Routine Sync Proposal: `PROJECT_STATUS.md`
 
-I will generate the "Project Watchtower Audit Report" detailing the critical findings in Agents, Finance, Markets, and Systems, including the "Invisible Hand" bug and unsafe float casting.
-Then, I will produce the "Session Snapshot" to summarize the current project status and blockers.
-Finally, I will create the "Warm Boot Message" to outline immediate actions required for the next session, such as fixing the `AgentRegistry` snapshot order and refactoring the `MatchingEngine`.
+*Please replace or prepend this to the **`6. 감사 결과 및 권장 조치 (Audit Results & Recommended Actions)`** section in `PROJECT_STATUS.md`.*
 
+```markdown
+### 6. 감사 결과 및 권장 조치 (Audit Results & Recommended Actions)
+
+**최신 감사 보고서**: [WATCHTOWER_SUMMARY.md](./reports/audits/WATCHTOWER_SUMMARY.md) (2026-03-01)
+    - **Project Watchtower Global Audit (2026-03-01)**:
+        - [ ] **Protocol Purity (CRITICAL)**: Systemic architectural drift detected across domains. Modules risk bypassing `SettlementSystem` and `IInventoryHandler` by directly mutating `.cash`, `.assets`, or `.inventory`.
+        - [ ] **Market Interface Isolation**: Market transaction handlers are at risk of creating side-effects; strict interaction via protocols is required.
+        - [ ] **Lifecycle Suture Integrity**: `LifecycleManager` events (Birth/Death) require validation against hidden state leaks and strict synchronization with the persistence layer.
+    - **Action**: Logged `TD-ARCH-SSOT-BYPASS`. Recommend accelerating Phase 15 Track A & B (Static/Runtime Enforcement) to explicitly forbid and fail builds on direct private member access.
+
+    - **Wave 5 Monetary Audit (2026-02-23)**:
+        - [x] **Ghost Money**: Resolved un-ledgered LLR injections (~2.4B).
+        - [x] **M2 Perimeter**: Harmonized ID comparisons and excluded system sinks (PM, System).
+        - [ ] **Transfer Handler Gap (CRITICAL)**: Identified that generic `"transfer"` type transactions lack a dedicated handler, causing P2P invisibility in the ledger.
+    - **Action**: Logged `TD-SYS-TRANSFER-HANDLER-GAP`, resolved `TD-ECON-M2-INV-BUG`, and initiated Tick 1 baseline jump tracing.
+```
+
+---
+
+## 🔭 Project Watchtower Audit Report (Draft)
+
+*Proposed content for `reports/audits/WATCHTOWER_SUMMARY.md` or as a new Handover/Audit artifact.*
+
+```markdown
 # 🔭 Project Watchtower Audit Report
+**Date**: 2026-03-01
+**Auditor**: Lead Management Auditor
 
-**Date**: 2026-02-22
-**Auditor**: Lead Management Auditor (Gemini-CLI)
-**Status**: ⚠️ **AT RISK** (Critical Structural Misalignment Detected)
+## 1. Executive Summary: Global Architectural Drift
+A comprehensive cross-domain audit reveals a systemic risk of **Protocol Bypass and State Leakage**. While individual components are functionally passing, there is a recurring architectural drift where modules attempt to mutate internal states directly (e.g., cash, inventory) rather than interacting strictly through the designated Orchestrators and Single Sources of Truth (SSoT) like the `SettlementSystem` and `IInventoryHandler`.
 
-## Executive Summary
-The simulation's integrity is compromised by a "Registry Gap" where key System Agents (Central Bank, PublicManager) are invisible to the Settlement System during initialization. This causes widespread `SETTLEMENT_FAIL` errors. Additionally, `MatchingEngine` uses unsafe integer casting which threatens Zero-Sum integrity over long run times.
+## 2. Domain Audit Findings (Separation of Concerns Focus)
 
-## 1. 🕵️ Agents Domain Audit
-**Auditor**: Agent Domain Auditor
-**Status**: ⚠️ **Concern**
+### 🤖 Agents & Populations Domain
+- **Focus**: Agent lifecycle, state, and behavior.
+- **Critical Risk**: State Leakage & Protocol Violation.
+- **Finding**: Implementations risk bypassing the `IAgent` and `IInventoryHandler` protocols. Direct manipulation of inventory (rather than strictly using `add_item`/`remove_item`) compromises encapsulation and Separation of Concerns (SoC).
 
-### Findings
-- **Analytics Bypass (TD-ARCH-ANALYTICS)**: `simulation/systems/analytics_system.py` directly accesses agent methods (`agent.get_assets_by_currency()`) instead of using `AgentStateDTO`. This violates the "Stateless Observer" pattern.
-- **Legacy Config Access**: `Household` config is accessed directly via `agent.config.HOURS_PER_TICK`.
+### 💰 Finance & Monetary Integrity Domain
+- **Focus**: Flow of money, credit creation, and transactional atomicity.
+- **Critical Risk**: Monetary Integrity & SSoT Bypass.
+- **Finding**: High risk of modules mutating `cash` or `assets` directly. All financial operations (loans, interest, tax) must be perfectly zero-sum and rigidly routed through the `SettlementSystem` as the absolute SSoT for state changes.
 
-### Recommendations
-- Refactor `AnalyticsSystem` to exclusively consume `AgentSnapshotDTO`.
-- Migrate `HOURS_PER_TICK` to `HouseholdConfigDTO`.
+### ⚖️ Markets & Transaction Protocols Domain
+- **Focus**: Agent interfaces, price discovery, and listing protocols.
+- **Critical Risk**: Protocol Isolation Failure.
+- **Finding**: Market implementations are at risk of violating strict Protocol isolation. Transaction handlers could create un-ledgered side-effects that violate economic principles if they do not interact with agents via strict, predefined interfaces.
 
-## 2. 💰 Finance Domain Audit
-**Auditor**: Financial Integrity Auditor
-**Status**: ❌ **CRITICAL FAILURE**
+### ⚙️ Systems, Persistence & LifeCycles Domain
+- **Focus**: Simulation heartbeat, persistence, and cross-cutting concerns.
+- **Critical Risk**: Lifecycle Suture Leaks.
+- **Finding**: Risk of `LifecycleManager` events (Birth/Death) introducing hidden leaks or performance degradations if the simulation's "plumbing" is not perfectly atomic and synchronized with the SSoT.
 
-### Findings
-- **The "Invisible Hand" Bug (CRITICAL)**: In `simulation/initialization/initializer.py`, `sim.agent_registry.set_state(sim.world_state)` (Line 132) snapshots the agent list *before* `sim.central_bank` (Line 166) and `sim.public_manager` (Line 207) are added to `sim.agents`.
-    - **Impact**: The `SettlementSystem` (which uses `AgentRegistry`) cannot see the Central Bank or Public Manager. All minting, OMOs, and liquidations fail validation.
-- **Broke Liquidator**: `PublicManager` lacks initial funding or overdraft capability, causing asset buyouts to fail.
-
-### Recommendations
-- **Immediate Fix**: Move `sim.agent_registry.set_state(sim.world_state)` to the *end* of `build_simulation()`, after all system agents are registered.
-- **Grant Overdraft**: Enable `allows_overdraft=True` for `PublicManager` in `FinancialEntityAdapter`.
-
-## 3. ⚖️ Markets Domain Audit
-**Auditor**: Market Domain Auditor
-**Status**: ⚠️ **Risk**
-
-### Findings
-- **Unsafe Float Casting (TD-MARKET-FLOAT-CAST)**: `simulation/markets/matching_engine.py` uses `int(price * qty)` for total price calculation. This truncates fractional pennies, leading to gradual deflation (wealth destruction).
-    - **Location**: Lines 98, 133, 196, 219, 275.
-
-### Recommendations
-- Replace `int()` casts with `modules.finance.utils.round_to_pennies()`.
-
-## 4. ⚙️ Systems Domain Audit
-**Auditor**: Systems & Infrastructure Auditor
-**Status**: ⚠️ **Drift**
-
-### Findings
-- **Configuration Drift**: `tests/integration/test_config_hot_swap.py` fails because `config.FORMULA_TECH_LEVEL` is 1.0 (Simulation Default) but the test expects 0.0 (Codebase Default).
-- **Schema Drift**: `diagnostic_findings.md` reports `total_pennies` column missing in `transactions` table.
-
-### Recommendations
-- Update `test_config_hot_swap.py` to match `simulation.yaml` defaults.
-- Run DB migration script to add `total_pennies` column.
-
----
-
-# 📸 Session Snapshot (2026-02-22)
-
-### 📍 Current Coordinates
-- **Phase**: 4.1 (AI Logic & Simulation Re-architecture) -> **Phase 15 (Architectural Lockdown)**
-- **Focus**: Verifying Structural Integrity & Zero-Sum Compliance.
-- **Critical Files**: `initializer.py`, `matching_engine.py`, `analytics_system.py`.
-
-### ✅ Accomplishments
-- Verified **"Invisible Hand" Bug**: Confirmed `CentralBank` registration order issue in `initializer.py`.
-- Verified **Float Casting Risk**: Confirmed raw `int()` usage in `MatchingEngine`.
-- Verified **Analytics Bypass**: Confirmed direct agent method calls in `AnalyticsSystem`.
-
-### 🚧 Blockers & Pending
-- **CRITICAL FIX**: Move `agent_registry.set_state` call to end of `build_simulation`.
-- **Refactor**: Update `MatchingEngine` to use `round_to_pennies`.
-- **Refactor**: Update `AnalyticsSystem` to use DTOs.
-- **DB Migration**: Add `total_pennies` to `transactions` table.
-
----
-
-# 🧠 Warm Boot Message
-
-**Current State**: ⚠️ **CRITICAL ARCHITECTURAL GAP**
-**Primary Issue**: The `SettlementSystem` cannot see the **Central Bank** or **Public Manager** because `AgentRegistry` snapshots the agent list *before* they are added in `initializer.py`.
-**Secondary Issue**: `MatchingEngine` uses unsafe `int()` casts (wealth destruction risk).
-
-**Immediate Action Required**:
-1.  **Move** `sim.agent_registry.set_state(sim.world_state)` to the end of `SimulationInitializer.build_simulation()`.
-2.  **Refactor** `MatchingEngine` to use `round_to_pennies()`.
-3.  **Run** DB migration for `total_pennies`.
+## 3. Recommended Remediation
+1. **Static Analysis Enforcement**: Immediately deploy custom rules (e.g., `ruff` plugin or pre-commit hooks) to reject any code attempting to directly access `.cash`, `.assets`, or `.inventory` properties from outside of the approved Engine/Settlement boundaries.
+2. **Runtime Protocol Sentry**: Implement decorators or middleware that throw exceptions during test runs if state changes are detected outside the `SettlementSystem` context.
+```

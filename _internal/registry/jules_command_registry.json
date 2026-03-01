@@ -3,13 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-FINANCE-HARDENING": {
-      "key": "WO-IMPL-FINANCE-HARDENING",
-      "title": "Finance & Ledger Architecture Hardening",
+    "WO-IMPL-CONNECTIVITY-ENFORCEMENT": {
+      "key": "WO-IMPL-CONNECTIVITY-ENFORCEMENT",
+      "title": "Connectivity & SSoT Enforcement",
       "type": "jules",
-      "instruction_raw": "Implement the Finance & Ledger hardening spec to resolve 5 critical/pending technical debts (M2 Negative Balance, Reserve Crunch, Dust Settlement, Implicit Registry Lookups, and Magic Base Rate).",
+      "instruction_raw": "Implement the Connectivity & SSoT enforcement spec to resolve critical technical debts (SSoT Bypass and Transfer Handler Gap).",
       "command": "create",
-      "file_path": "design/3_specs/MISSION_spec_finance_ledger_hardening.md",
+      "file_path": "design/3_specs/MISSION_spec_connectivity_enforcement.md",
       "wait": false,
       "session_id": null,
       "worker": null,
@@ -18,13 +18,13 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-IMPL-ECON-TUNING": {
-      "key": "WO-IMPL-ECON-TUNING",
-      "title": "Economy & Behavioral Tuning",
+    "WO-IMPL-INFRA-RELIABILITY": {
+      "key": "WO-IMPL-INFRA-RELIABILITY",
+      "title": "Infrastructure & Persistence Reliability",
       "type": "jules",
-      "instruction_raw": "Tuned firm pricing to prevent extinction and integrate 'hidden_talent' into agents/DTOs to resolve 3 High-priority behavioral technical debts.",
+      "instruction_raw": "Implement the Infrastructure & Persistence reliability spec to resolve high-priority technical debts (Checkpointing and Lifecycle Suture).",
       "command": "create",
-      "file_path": "design/3_specs/MISSION_spec_econ_behavioral_tuning.md",
+      "file_path": "design/3_specs/MISSION_spec_infra_reliability.md",
       "wait": false,
       "session_id": null,
       "worker": null,

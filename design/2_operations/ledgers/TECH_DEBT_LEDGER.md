@@ -16,23 +16,25 @@
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-FIN-MAGIC-BASE-RATE** | Finance | `FinanceSystem.issue_treasury_bonds` uses hardcoded `0.03`. | **Low**: Config. | Identified |
+| **TD-ARCH-SSOT-BYPASS** | Architecture | **Protocol Evasion**: Modules bypassing `SettlementSystem` and `IInventoryHandler` via direct mutation. | **CRITICAL**: SSoT. | **NEW (AUDIT)** |
+| **TD-SYS-TRANSFER-HANDLER-GAP** | Finance | **Invisible P2P**: Generic `"transfer"` type lacks handler; invisible in ledger. | **CRITICAL**: Integrity. | **NEW (AUDIT)** |
 | **TD-WAVE3-DTO-SWAP** | DTO | **IndustryDomain Shift**: Replace `major` with `IndustryDomain` enum. | **Medium**: Structure. | **SPECCED** |
-| **TD-WAVE3-TALENT-VEIL** | Agent | **Hidden Talent**: `EconStateDTO` missing `hidden_talent`. | **High**: Intent. | **SPECCED** |
-| **TD-WAVE3-MATCH-REWRITE** | Market | **Bargaining vs OrderBook**: Existing LaborMarket assumes sorting. | **High**: Economy. | **SPECCED** |
-| **TD-FIN-LIQUIDATION-DUST** | Finance | **Wealth Orphanage**: Pro-rata liquidation truncates dust pennies. | **Low**: Accuracy. | **SPECCED (PH33)** |
+| **TD-WAVE3-TALENT-VEIL** | Agent | **Hidden Talent**: `EconStateDTO` missing `hidden_talent`. | **High**: Intent. | **RESOLVED** |
+| **TD-WAVE3-MATCH-REWRITE** | Market | **Bargaining vs OrderBook**: Existing LaborMarket assumes sorting. | **High**: Economy. | **RESOLVED** |
+| **TD-FIN-LIQUIDATION-DUST** | Finance | **Wealth Orphanage**: Pro-rata liquidation truncates dust pennies. | **Low**: Accuracy. | **RESOLVED** |
 | **TD-REBIRTH-BUFFER-LOSS** | Architecture | **Buffer Flush Risk**: Crash during simulation results in loss of up to N ticks of data. | **Medium**: Data Loss. | **NEW (PH34)** |
-| **TD-REBIRTH-TIMELINE-OPS** | Configuration | **Dynamic Shift Handling**: Config DTOs are immutable; re-generation needed during events. | **High**: Logic Complexity. | **NEW (PH34)** |
-| **TD-BANK-RESERVE-CRUNCH** | Finance | **Bank Reserve Structural Constraint**: Bank 2 lacks reserves for bond issuance. | **High**: Macro. | NEW |
-| **TD-ECON-ZOMBIE-FIRM** | Agent | **Zombie Firms**: Rapid extinction of basic_food firms. | **High**: Economy. | **IN PROGRESS (PH35)** |
-| **TD-FIN-NEGATIVE-M2** | Finance | **M2 Black Hole**: Aggregate M2 sums raw balances including overdrafts (Negative M2). | **Critical**: Accounting. | **IN PROGRESS (PH35)** |
-| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firms**: Race condition; capital injection attempted before registration. | **High**: Reliability. | **IN PROGRESS (PH35)** |
-| **TD-ARCH-ORPHAN-SAGA** | Architecture | **Orphaned Sagas**: Sagas holding stale references to dead/failed agents. | **Medium**: Memory. | **IN PROGRESS (PH35)** |
-| **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks. | **High**: Gap. | **IN PROGRESS (PH35)** |
+| **TD-REBIRTH-TIMELINE-OPS** | Configuration | **Dynamic Shift Handling**: Config DTOs are immutable; re-generation needed during events. | **High**: Logic Complexity. | **RESOLVED** |
+| **TD-BANK-RESERVE-CRUNCH** | Finance | **Bank Reserve Structural Constraint**: Bank 2 lacks reserves for bond issuance. | **High**: Macro. | Identified |
+| **TD-ECON-ZOMBIE-FIRM** | Agent | **Zombie Firms**: Rapid extinction of basic_food firms. | **High**: Economy. | **RESOLVED** |
+| **TD-FIN-NEGATIVE-M2** | Finance | **M2 Black Hole**: Aggregate M2 sums raw balances including overdrafts (Negative M2). | **Critical**: Accounting. | **RESOLVED** |
+| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firms**: Race condition; capital injection attempted before registration. | **High**: Reliability. | **RESOLVED** |
+| **TD-ARCH-ORPHAN-SAGA** | Architecture | **Orphaned Sagas**: Sagas holding stale references to dead/failed agents. | **Medium**: Memory. | Identified |
+| **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks. | **High**: Gap. | **RESOLVED** |
 | **TD-FIN-FLOAT-INCURSION** | Finance | **Float Incursion in Ledger**: Parsing metadata using `float()` risks integer math integrity. | **Critical**: Integrity. | **RESOLVED** |
-32: | **TD-SYS-IMPLICIT-REGISTRY-LOOKUP** | Architecture | **Duck-Typed Agent Resolution**: `MonetaryLedger` uses `hasattr` to find registries. | **Medium**: Rigidity. | **NEW** |
+| **TD-SYS-IMPLICIT-REGISTRY-LOOKUP** | Architecture | **Duck-Typed Agent Resolution**: `MonetaryLedger` uses `hasattr` to find registries. | **Medium**: Rigidity. | **RESOLVED** |
 | **TD-TEST-DTO-MOCKING** | Testing | **DTO Mocking Anti-Pattern**: Replacing DTOs with MagicMocks breaks type safety and stability. | **Medium**: Quality. | **NEW (AUDIT)** |
-| **TD-ARCH-GOD-DTO** | Architecture | **SimulationState God DTO**: Monolithic dependency violating Interface Segregation. | **High**: Rigidity. | **NEW (AUDIT)** |
-| **TD-ARCH-PROTOCOL-EVASION** | Architecture | **Protocol Evasion**: `hasattr()` usage in lifecycle logic bypasses Protocol Purity. | **Medium**: Safety. | **NEW (AUDIT)** |
+| **TD-ARCH-GOD-DTO** | Architecture | **SimulationState God DTO**: Monolithic dependency violating Interface Segregation. | **High**: Rigidity. | **RESOLVED** |
+| **TD-ARCH-PROTOCOL-EVASION** | Architecture | **Protocol Evasion**: `hasattr()` usage in lifecycle logic bypasses Protocol Purity. | **Medium**: Safety. | **RESOLVED** |
 
 ---
 

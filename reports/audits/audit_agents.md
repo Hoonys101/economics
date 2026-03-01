@@ -23,22 +23,26 @@ Provide a 3-bullet summary of the most critical structural drift found.
 
 [TASK]
 Run this audit on the provided context files and output the result.'...
-⚠️ Context file not found or is not a file: simulation\base_agent.py
-📖 Attached context: simulation\firms.py
-📖 Attached context: simulation\core_agents.py
-📖 Attached context: design\1_governance\architecture\ARCH_AGENTS.md
+📖 Attached 6 context files using Smart Context Injector.
+📊 [GeminiWorker] Total Context Size: 95.40 kb (97689 chars)
 🚀 [GeminiWorker] Running task with manual: report.md
+🛡️  Memory Guard Active: Limit = 2048MB
+📡 [GeminiWorker] Feeding prompt to STDIN (97689 chars)...
+✅ [GeminiWorker] STDIN feed complete.
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260222_213504_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260301_203915_Domain_Auditor.md
 ============================================================
-# ⚖️ Domain Auditor: Agents & Populations
+# ⚖️ Domain Audit Report: Agents & Populations
 
-## 🚥 Domain Grade: ⚠️ WARNING
+## Executive Summary
+The audit reveals significant structural drift and architectural fragility. While the system is transitioning to an integer-based ledger and DTO-driven communication, there is widespread **Protocol Evasion** and **Abstraction Leakage**. The reliance on "God DTOs" and direct object passing between services severely compromises the Separation of Concerns (SoC) and modularity goals.
 
-## ❌ Violations
-| File | Line | Violation | Severity |
-| :--- | :--- | :--- | :--- |
-| `core_agents.py` | `L445`, `L458` | **Interface Encapsulation**: `Household` directly mutates `_econ_state.inventory` instead of delegating to a standard `InventoryComponent`. | Medium |
-| `firms.py` | `L231-236` | **Component Bypass**: `load_state` directly clears internal `InventoryComponent` dictionaries (`main_inventory`) instead of 
+---
+
+### 🚥 Domain Grade: ⚠️ WARNING
+
+---
+
+### ❌
 ...
 ============================================================
