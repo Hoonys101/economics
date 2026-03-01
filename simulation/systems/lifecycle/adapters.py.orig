@@ -221,10 +221,6 @@ class DeathContextAdapter(BaseLifecycleContextAdapter, IDeathContext):
         return getattr(self._state, "logger", None)
 
     @property
-    def stock_market(self) -> Any:
-        return self.markets.get("stock", None)
-
-    @property
     def tracker(self) -> Any:
         return getattr(self._state, "tracker", None)
 

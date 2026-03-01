@@ -23,11 +23,11 @@
 | **TD-REBIRTH-BUFFER-LOSS** | Architecture | **Buffer Flush Risk**: Crash during simulation results in loss of up to N ticks of data. | **Medium**: Data Loss. | **NEW (PH34)** |
 | **TD-REBIRTH-TIMELINE-OPS** | Configuration | **Dynamic Shift Handling**: Config DTOs are immutable; re-generation needed during events. | **High**: Logic Complexity. | **NEW (PH34)** |
 | **TD-BANK-RESERVE-CRUNCH** | Finance | **Bank Reserve Structural Constraint**: Bank 2 lacks reserves for bond issuance. | **High**: Macro. | NEW |
-| **TD-ECON-ZOMBIE-FIRM** | Agent | **Zombie Firms**: Rapid extinction of basic_food firms. | **High**: Economy. | NEW |
-| **TD-FIN-NEGATIVE-M2** | Finance | **M2 Black Hole**: Aggregate M2 sums raw balances including overdrafts (Negative M2). | **Critical**: Accounting. | **NEW (AUDIT)** |
-| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firms**: Race condition; capital injection attempted before registration. | **High**: Reliability. | **NEW (AUDIT)** |
-| **TD-ARCH-ORPHAN-SAGA** | Architecture | **Orphaned Sagas**: Sagas holding stale references to dead/failed agents. | **Medium**: Memory. | **NEW (AUDIT)** |
-| **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks. | **High**: Gap. | **NEW (AUDIT)** |
+| **TD-ECON-ZOMBIE-FIRM** | Agent | **Zombie Firms**: Rapid extinction of basic_food firms. | **High**: Economy. | **IN PROGRESS (PH35)** |
+| **TD-FIN-NEGATIVE-M2** | Finance | **M2 Black Hole**: Aggregate M2 sums raw balances including overdrafts (Negative M2). | **Critical**: Accounting. | **IN PROGRESS (PH35)** |
+| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firms**: Race condition; capital injection attempted before registration. | **High**: Reliability. | **IN PROGRESS (PH35)** |
+| **TD-ARCH-ORPHAN-SAGA** | Architecture | **Orphaned Sagas**: Sagas holding stale references to dead/failed agents. | **Medium**: Memory. | **IN PROGRESS (PH35)** |
+| **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks. | **High**: Gap. | **IN PROGRESS (PH35)** |
 | **TD-FIN-FLOAT-INCURSION** | Finance | **Float Incursion in Ledger**: Parsing metadata using `float()` risks integer math integrity. | **Critical**: Integrity. | **RESOLVED** |
 32: | **TD-SYS-IMPLICIT-REGISTRY-LOOKUP** | Architecture | **Duck-Typed Agent Resolution**: `MonetaryLedger` uses `hasattr` to find registries. | **Medium**: Rigidity. | **NEW** |
 | **TD-TEST-DTO-MOCKING** | Testing | **DTO Mocking Anti-Pattern**: Replacing DTOs with MagicMocks breaks type safety and stability. | **Medium**: Quality. | **NEW (AUDIT)** |
@@ -64,7 +64,7 @@
 - **Symptom**: `SAGA_SKIP | Saga ... missing participant IDs`.
 - **Risk**: Sagas consume compute cycles for dead agents; memory leaks; state corruption in subsequent ticks.
 - **Solution**: Implement `SagaCaretaker` to purge dead references or use weak references for participants.
-- **Status**: NEW (AUDIT)
+- **Status**: **IN PROGRESS** (PH35 Audit Stabilization)
 
 ### ID: TD-ARCH-GOD-DTO
 - **Title**: SimulationState God DTO
@@ -117,7 +117,7 @@
 - **Symptom**: `MONEY_SUPPLY_CHECK` reaches large negative values (e.g. -99M).
 - **Risk**: Economic calculations (GDP, inflation) become meaningless; accounting violation.
 - **Solution**: Modify `calculate_total_money` to sum `max(0, balance)` and track negative balances as `SystemDebt`.
-- **Status**: NEW (AUDIT)
+- **Status**: **IN PROGRESS** (PH35 Audit Stabilization)
 
 ### ID: TD-FIN-FLOAT-RESIDUE
 - **Title**: Float Price Residue in Transaction model
@@ -163,7 +163,7 @@
 - **Symptom**: `SETTLEMENT_FAIL | Engine Error: Destination account does not exist`.
 - **Risk**: Investor funds debited without firm capitalization; "Zombie" firms with 0 capital.
 - **Solution**: Implement atomic `FirmFactory` ensuring registration and bank account opening before injection.
-- **Status**: NEW (AUDIT)
+- **Status**: **IN PROGRESS** (PH35 Audit Stabilization)
 
 ---
 

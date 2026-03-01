@@ -23,6 +23,25 @@ class Phase5_PostSequence(IPhaseStrategy):
              self.world_state.housing_system.process_housing(state)
              self.world_state.housing_system.apply_homeless_penalty(state)
 
+        # Final Burial Pass (Atomic Stabilization)
+        # Catches starvation deaths from Phase_Consumption before Tick Metrics/Audit
+        if hasattr(self.world_state, 'lifecycle_manager') and self.world_state.lifecycle_manager:
+            inactive_households = [h for h in state.households if not h._bio_state.is_active]
+            if inactive_households:
+                logger.info(f"FINAL_BURIAL | Processing {len(inactive_households)} starvation deaths.")
+                # We skip Aging/Birth/Marriage and go straight to Death logic
+                # Pass a limited context for safety
+                from simulation.systems.lifecycle.adapters import DeathContextAdapter
+                death_context = DeathContextAdapter(state)
+                # Process deaths atomically
+                death_txs = self.world_state.lifecycle_manager.death_system.execute(death_context)
+                if death_txs:
+                    # Note: These txs are recorded in the current tick but might effect next tick
+                    pass
+
+        # Cleanup households (Ensure state consistency for Audit)
+        state.households[:] = [h for h in state.households if h._bio_state.is_active]
+
         # Learning Update
         market_data_for_learning = prepare_market_data(state)
 

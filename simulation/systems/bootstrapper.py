@@ -37,7 +37,12 @@ class Bootstrapper:
                  is_cb = str(central_bank.id) == str(ID_CENTRAL_BANK)
 
              if is_cb and hasattr(settlement_system, 'create_and_transfer'):
-                 tx = settlement_system.create_and_transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT", tick=0)
+                 from modules.finance.api import IBank
+                 # If target is Bank, it is M0 seeding. Do not use create_and_transfer which expands M2.
+                 if isinstance(target_agent, IBank):
+                     tx = settlement_system.transfer(central_bank, target_agent, amount_pennies, "GENESIS_RESERVES")
+                 else:
+                     tx = settlement_system.create_and_transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT", tick=0)
              else:
                  tx = settlement_system.transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT")
 
@@ -114,7 +119,11 @@ class Bootstrapper:
                     is_cb = str(central_bank.id) == str(ID_CENTRAL_BANK)
 
                 if is_cb and hasattr(settlement_system, 'create_and_transfer'):
-                    tx = settlement_system.create_and_transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION", tick=current_tick)
+                    from modules.finance.api import IBank
+                    if isinstance(firm, IBank):
+                        tx = settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_RESERVES")
+                    else:
+                        tx = settlement_system.create_and_transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION", tick=current_tick)
                 else:
                     tx = settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
 

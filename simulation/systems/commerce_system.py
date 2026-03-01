@@ -18,8 +18,10 @@ class CommerceSystem(ICommerceSystem):
     Orchestrates the consumption and leisure phase of the tick.
     """
 
-    def __init__(self, config: Any):
+    def __init__(self, config: Any, **kwargs):
         self.config = config
+        # TD-TEST-REGRESSION: Handle legacy components passed by outdated unit tests
+        self.reflux_system = kwargs.get('reflux_system')
 
     def plan_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional["StressScenarioConfig"] = None) -> Tuple[Dict[int, Dict[str, Any]], List[Transaction]]:
         """

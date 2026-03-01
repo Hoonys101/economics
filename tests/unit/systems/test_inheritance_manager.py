@@ -128,3 +128,27 @@ class TestInheritanceManager:
         tax_tx = next((t for t in txs if t.transaction_type == "tax"), None)
         assert tax_tx is not None
         assert tax_tx.price == 500.0 # 50% of 1000
+
+    def test_shared_wallet_guest_proportion(self, setup_manager, mocks):
+        """Test Case 6: Verify guest in shared wallet is taxed on their SHARE (e.g. 50%), not 0% or 100%."""
+        # Setup: Deceased is a guest in Household 100's wallet (Balance: 1000)
+        # Default share ratio is 0.5
+        setup_manager.config_module.JOINT_ACCOUNT_SHARE = 0.5
+        setup_manager.config_module.INHERITANCE_TAX_RATE = 0.1
+        setup_manager.config_module.INHERITANCE_DEDUCTION = 0.0
+        from modules.system.api import DEFAULT_CURRENCY
+
+        deceased = self.create_household(1)
+        deceased._econ_state.wallet.owner_id = 100 # Different owner -> Shared Wallet Guest
+        deceased._econ_state.wallet.get_balance.return_value = 1000
+        
+        heir1 = self.create_household(2)
+        deceased._bio_state.children_ids = [2]
+        mocks.agents = {2: heir1}
+
+        txs = setup_manager.process_death(deceased, mocks.government, mocks)
+
+        # Tax should be based on 50% of 1000 = 500. 10% tax on 500 = 50.
+        tax_tx = next((t for t in txs if t.transaction_type == "tax"), None)
+        assert tax_tx is not None
+        assert tax_tx.price == 50.0 # 10% of (1000 * 0.5)

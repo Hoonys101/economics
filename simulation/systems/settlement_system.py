@@ -239,6 +239,10 @@ class SettlementSystem(IMonetaryAuthority):
                 return 0
             processed_ids.add(agent.id)
 
+            # 0. ID Check (PRIORITY: Do not poison shared wallets with system exclusions)
+            if str(agent.id) in excluded_ids:
+                return 0
+
             # 0.1 Deduplication (Shared Wallet Identity)
             # Fixes M2 Double Counting when spouses share a wallet object
             if hasattr(agent, "_econ_state") and hasattr(agent._econ_state, "wallet"):
@@ -248,10 +252,6 @@ class SettlementSystem(IMonetaryAuthority):
                     # self.logger.debug(f"M2_CALC | Deduplicated Shared Wallet {wallet_id} for Agent {agent.id}")
                     return 0
                 processed_wallets.add(wallet_id)
-
-            # 1. ID Check
-            if str(agent.id) in excluded_ids:
-                return 0
 
             # 2. Type Check (Exclude Banks - Reserves are M0)
             if isinstance(agent, IBank):

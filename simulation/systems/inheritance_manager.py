@@ -42,15 +42,20 @@ class InheritanceManager:
         # ------------------------------------------------------------------
         # NEW: Shared Wallet Protection (WO-IMPL-SCENARIO-MIGRATION)
         # If the deceased shares a wallet owned by someone else (e.g. Spouse),
-        # we treat their personal cash holdings as 0.0 to prevent draining the survivor's funds.
-        is_shared_wallet_guest = False
+        # we treat their personal cash holdings as their SHARE of the joint balance.
+        # This prevents draining the survivor's funds (if owner is survivor)
+        # while still ensuring the deceased's share is taxed/used for debt.
+        joint_share_ratio = getattr(self.config_module, "JOINT_ACCOUNT_SHARE", 0.5)
+        is_shared_wallet = False
         if hasattr(deceased, '_econ_state') and hasattr(deceased._econ_state, 'wallet'):
              if deceased._econ_state.wallet.owner_id != deceased.id:
-                 is_shared_wallet_guest = True
-                 self.logger.info(f"INHERITANCE_PROTECT | Agent {deceased.id} shares wallet owned by {deceased._econ_state.wallet.owner_id}. Skipping cash liquidation.")
+                 is_shared_wallet = True
+                 self.logger.info(f"INHERITANCE_PROTECT | Agent {deceased.id} is guest in wallet owned by {deceased._econ_state.wallet.owner_id}. Using {joint_share_ratio:.0%} share.")
 
-        if is_shared_wallet_guest:
-             cash = 0.0
+        if is_shared_wallet:
+             # Calculate share from wallet balance
+             wallet_balance = deceased._econ_state.wallet.get_balance(DEFAULT_CURRENCY)
+             cash = float(wallet_balance) * joint_share_ratio
         else:
             cash_raw = deceased._econ_state.assets
             if isinstance(cash_raw, dict):

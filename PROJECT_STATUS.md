@@ -15,15 +15,13 @@
 
 ## 1. 현재 개발 단계
 
-    - **`Phase 33: Foundation Hardening (Estate & DTO)`** 🛡️ ✅ (2026-02-28)
-        - **Goal**: Liquidate final high-priority technical debt: Estate Registry implementation and Telemetry DTO integer migration.
-        - **Status**: COMPLETED (Pivoted to Project Rebirth)
-            - [x] **Track A (Research & Planning)**: Updating Tech Debt Ledger and mapping Estate patterns. ✅
-            - [x] **Track B (Estate Registry)**: Implementing formal graveyard for dead agents. ✅
-            - [x] **Track C (DTO Precision)**: Migrating `SettlementResultDTO` to strict `int`. ✅
-            - [x] **Track D (Modular Kernel)**: Hardened System, Market, DB, and Liquidation. ✅
-            - [x] **Track E (Platform Security)**: PID-based Lock Hardening. ✅
-            - [x] **Track F (M2 Hardening)**: Implementation of `CommandBatchDTO` and strict `int` enforcement. ✅ (2026-02-28)
+    - **`Phase 35: Audit Stabilization & Structural Integrity`** 🛡️ 🛠️ (2026-03-01)
+        - **Goal**: Address critical findings from Forensic Audit Phase 21 (M2 Black Hole, Ghost Firms, Orphaned Sagas).
+        - **Status**: **ACTIVE**
+            - [ ] **M2 Integrity**: Sum `max(0, balance)` to prevent negative money supply.
+            - [ ] **Atomic Lifecycle**: Implement `FirmFactory` to prevent registration race conditions.
+            - [ ] **Saga Caretaker**: Purge orphaned saga references for dead agents.
+            - [/] **Lifecycle Adaptation**: Hardening protocols and adapters for `IBirthContext`/`IDeathContext`.
 
     - **`Phase 34: Project Rebirth (Batch Simulation & Reporting)`** 📈 🚀 (2026-02-28)
         - **Goal**: Decommission failed "Cockpit" web infrastructure and pivot to a high-performance Batch Reporting pipeline.
