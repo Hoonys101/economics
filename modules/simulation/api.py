@@ -439,3 +439,79 @@ class ILifecycleSubsystem(Protocol):
     """
     def execute(self, context: ILifecycleContext) -> List[Any]: # Returns List[Transaction]
         ...
+
+# ---------------------------------------------------------
+# 1. Domain-Specific Context Protocols (TD-ARCH-GOD-DTO)
+# ---------------------------------------------------------
+
+@runtime_checkable
+class ICommerceTickContext(Protocol):
+    """Restricted context for Commerce/Market operations. Eliminates God DTO coupling."""
+    @property
+    def current_time(self) -> int: ...
+    @property
+    def market_data(self) -> Dict[str, Any]: ...
+    @property
+    def goods_data(self) -> Dict[str, Any]: ...
+
+@runtime_checkable
+class IGovernanceTickContext(Protocol):
+    """Restricted context for Taxation and Government operations."""
+    @property
+    def current_time(self) -> int: ...
+    @property
+    def primary_government(self) -> Any: ...
+    @property
+    def taxation_system(self) -> Any: ...
+
+@runtime_checkable
+class IFinanceTickContext(Protocol):
+    """Restricted context for Banking and Monetary operations."""
+    @property
+    def current_time(self) -> int: ...
+    @property
+    def bank(self) -> Any: ...
+    @property
+    def central_bank(self) -> Any: ...
+    @property
+    def monetary_ledger(self) -> Any: ...
+    @property
+    def saga_orchestrator(self) -> Any: ...
+
+@runtime_checkable
+class IMutationTickContext(Protocol):
+    """Restricted write-only context for appending side-effects safely."""
+    def append_transaction(self, transaction: Any) -> None: ...
+    def append_effect(self, effect: Dict[str, Any]) -> None: ...
+    def append_god_command(self, command: Any) -> None: ...
+
+# ---------------------------------------------------------
+# 2. Firm Lifecycle DTOs (TD-LIFECYCLE-GHOST-FIRM)
+# ---------------------------------------------------------
+
+@dataclass(frozen=True)
+class FirmSpawnRequestDTO:
+    owner_id: AgentID
+    firm_type: str
+    initial_capital_pennies: int
+    location_id: Optional[str] = None
+
+@runtime_checkable
+class IFirmLifecycleManager(Protocol):
+    def register_new_firm(self, request: FirmSpawnRequestDTO, ctx: IFinanceTickContext) -> AgentID: ...
+    def deregister_firm(self, firm_id: AgentID, ctx: IMutationTickContext) -> None: ...
+
+# ---------------------------------------------------------
+# 3. Dynamic Config Overrides (TD-REBIRTH-TIMELINE-OPS)
+# ---------------------------------------------------------
+
+@dataclass(frozen=True)
+class ConfigOverrideDTO:
+    target_module: str
+    override_keys: Dict[str, Any]
+    expires_at_tick: Optional[int]
+
+@runtime_checkable
+class IConfigTimelineManager(Protocol):
+    def get_active_config(self, module: str, current_tick: int) -> Any: ...
+    def apply_override(self, override: ConfigOverrideDTO) -> None: ...
