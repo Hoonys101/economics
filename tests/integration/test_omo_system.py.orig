@@ -126,9 +126,7 @@ def omo_setup():
 
     tp = TransactionProcessor(config_module=MagicMock())
     tp.register_handler("omo_purchase", MonetaryTransactionHandler())
-
     tp.register_handler("omo_sale", MonetaryTransactionHandler())
-
 
     return cb_system, tp, state, cb_agent, gov_agent, household, settlement
 
@@ -200,7 +198,7 @@ def test_process_omo_purchase_transaction(omo_setup):
     gov_agent.monetary_ledger.process_transactions([tx])
 
     # Verify Household got paid via SSoT
-    pass
+    assert settlement.get_balance(household.id) == initial_hh_assets + trade_price
 
     # Verify Gov Ledger Updated via MonetaryLedger (SSoT for M2 Tracking)
     delta = gov_agent.monetary_ledger.get_monetary_delta()
@@ -236,7 +234,7 @@ def test_process_omo_sale_transaction(omo_setup):
     gov_agent.monetary_ledger.process_transactions([tx])
 
     # Verify Household paid via SSoT
-    pass
+    assert settlement.get_balance(household.id) == initial_hh_assets - trade_price
 
     # Verify Gov Ledger Updated (Burning)
     delta = gov_agent.monetary_ledger.get_monetary_delta()

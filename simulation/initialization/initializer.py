@@ -572,7 +572,10 @@ class SimulationInitializer(SimulationInitializerInterface):
             self.logger.warning(f"Invalid initial_bank_assets value: {initial_bank_assets}, defaulting to 0")
             initial_bank_assets = 0
 
-        self.initial_balances[sim.bank.id] = initial_bank_assets
+        # Do not add Bank to initial_balances for distribute_initial_wealth
+        # the Bootstrapper is designed to distribute wealth to non-system agents.
+        # Bank reserves are M0. Let's just directly deposit it to the Bank.
+        sim.bank.deposit(initial_bank_assets, 'pennies')
 
         # Housing Sales from Government
         for unit in sim.real_estate_units:
@@ -609,7 +612,14 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.world_state.central_bank = sim.central_bank
         supply_dto = sim.world_state.calculate_total_money()
         sim.world_state.baseline_money_supply = int(supply_dto.total_m2_pennies)
+        current_expected = sim.monetary_ledger.get_expected_m2_pennies()
+        try:
+            c_exp = int(current_expected)
+        except:
+            c_exp = 0
+
         sim.monetary_ledger.set_expected_m2(sim.world_state.baseline_money_supply)
+        sim.world_state.baseline_money_supply = sim.world_state.baseline_money_supply
         self.logger.info(f'Initial baseline money supply established: {sim.world_state.baseline_money_supply}')
 
         Bootstrapper.force_assign_workers(sim.firms, sim.households)

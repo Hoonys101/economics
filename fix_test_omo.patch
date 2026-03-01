@@ -1,0 +1,29 @@
+--- tests/integration/test_omo_system.py
++++ tests/integration/test_omo_system.py
+@@ -107,11 +107,14 @@
+     state.agents = {
+         cb_agent.id: cb_agent, # Use dynamic ID
+         gov_agent.id: gov_agent,
+-        101: household
++        household.id: household
+     }
+     state.primary_government = gov_agent
+     state.government = gov_agent # Compatibility
+     state.transactions = []
++
++    # Need to add to actual agent array so SSoT gets it
++    state.households = [household]
+     state.time = 1
+     state.settlement_system = settlement
+     state.central_bank = cb_agent
+@@ -124,7 +127,10 @@
+
+     cb_agent.get_balance = MagicMock(return_value=1000000000)
+
+-    household.deposit(500)
++    # Let's ensure the SettlementSystem sees the household has money!
++    settlement.register_account(ID_CENTRAL_BANK, household.id)
++    settlement.register_account(ID_CENTRAL_BANK, gov_agent.id)
++    household.deposit(500)
+
+     return cb_system, tp, state, cb_agent, gov_agent, household, settlement

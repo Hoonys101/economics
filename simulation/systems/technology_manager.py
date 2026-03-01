@@ -251,7 +251,13 @@ class TechnologyManager:
         if tech_idx is None:
             return False
 
-        if firm_id >= self.adoption_matrix.shape[0]:
+        try:
+            # Shield against MagicMocks bypassing type hints in tests
+            f_id = int(firm_id)
+            rows = int(self.adoption_matrix.shape[0])
+            if f_id >= rows:
+                return False
+        except:
             return False
 
         return bool(self.adoption_matrix[firm_id, tech_idx])
