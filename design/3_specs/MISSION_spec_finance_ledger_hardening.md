@@ -4,7 +4,8 @@
 **Target Phase**: Finance & Ledger Stability (Addressing Phase 33/4.1 Tech Debt)
 **Target Files**: 
 - `modules/finance/api.py`
-- `modules/government/components/monetary_ledger.py`
+- [SSOT] `modules/finance/kernel/ledger.py` (Merge target)
+- [DEPRECATE] `modules/government/components/monetary_ledger.py`
 - `modules/system/api.py`
 - `modules/finance/system.py`
 
@@ -31,7 +32,7 @@ The current task aims to **Resolve** five critical technical debts related to th
 ### 2.1. TD-FIN-NEGATIVE-M2 & SRP (M2 vs SystemDebt)
 **Concept**: Separate M2 calculation into asset and liability tracking.
 ```python
-# In modules/government/components/monetary_ledger.py
+# In modules/finance/kernel/ledger.py (Consolidating SSoT)
 def calculate_total_money(self) -> MoneySupplyDTO:
     total_m2 = 0
     total_debt = 0
@@ -99,8 +100,14 @@ if isinstance(agent, ICurrencyHolder):
 ```python
 def get_base_rate(self) -> float:
     # Requires injection of IGlobalRegistry
-    return self.registry.get("FINANCE.BASE_INTEREST_RATE", 0.03)
+    return self.registry.get("FINANCE.BASE_INTEREST_RATE", 0.103)
 ```
+
+### 2.6. [UNIFICATION] MonetaryLedger Merger
+**Concept**: The simulation is currently fragmented. **Jules MUST merge** the logic from `modules/government/components/monetary_ledger.py` into `modules/finance/kernel/ledger.py`.
+- **Action**: Move `process_transactions` observation logic (System Agent ID checks) into the Kernel Ledger.
+- **Action**: Point the `Government` agent and `DemographicManager` to the Finance Kernel SSoT.
+- **Action**: Delete or turn the government-side ledger into a thin wrapper to prevent future "Shadow M2" discrepancies.
 
 ---
 

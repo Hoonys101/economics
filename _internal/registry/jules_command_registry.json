@@ -17,6 +17,36 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "WO-IMPL-ARCH-STABILITY": {
+      "key": "WO-IMPL-ARCH-STABILITY",
+      "title": "Architecture & Core Stability Hardening",
+      "type": "jules",
+      "instruction_raw": "Decouple SimulationState using Protocol-based TickContexts and implement atomic firm spawning to resolve 4 High-priority technical debts.",
+      "command": "create",
+      "file_path": "design/3_specs/MISSION_spec_arch_core_stability.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-IMPL-ECON-TUNING": {
+      "key": "WO-IMPL-ECON-TUNING",
+      "title": "Economy & Behavioral Tuning",
+      "type": "jules",
+      "instruction_raw": "Tuned firm pricing to prevent extinction and integrate 'hidden_talent' into agents/DTOs to resolve 3 High-priority behavioral technical debts.",
+      "command": "create",
+      "file_path": "design/3_specs/MISSION_spec_econ_behavioral_tuning.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }
