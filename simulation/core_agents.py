@@ -372,21 +372,23 @@ class Household(
         if state.assets and any(v > 0 for v in state.assets.values()):
              self.logger.warning(f"Agent {self.id}: load_state called with assets, but direct loading is disabled for integrity. Assets ignored: {state.assets}")
 
-        self._econ_state.inventory.clear()
-        self._econ_state.inventory_quality.clear()
-        self.is_active = state.is_active
+        from simulation.systems.settlement_system import InventorySentry
+        with InventorySentry.unlocked():
+            self._econ_state.inventory.clear()
+            self._econ_state.inventory_quality.clear()
+            self.is_active = state.is_active
 
-        # Restore from inventories
-        if state.inventories:
-            main_slot = state.inventories.get(InventorySlot.MAIN.name)
-            if main_slot:
-                for item in main_slot.items:
-                    self._econ_state.inventory[item.name] = item.quantity
-                    self._econ_state.inventory_quality[item.name] = item.quality
+            # Restore from inventories
+            if state.inventories:
+                main_slot = state.inventories.get(InventorySlot.MAIN.name)
+                if main_slot:
+                    for item in main_slot.items:
+                        self._econ_state.inventory[item.name] = item.quantity
+                        self._econ_state.inventory_quality[item.name] = item.quality
 
-        # Fallback for legacy
-        elif state.inventory:
-            self._econ_state.inventory.update(state.inventory)
+            # Fallback for legacy
+            elif state.inventory:
+                self._econ_state.inventory.update(state.inventory)
 
     @property
     def is_active(self) -> bool:
@@ -836,10 +838,14 @@ class Household(
         self._econ_state.wallet.subtract(amount_pennies, currency=currency, memo="Withdraw")
 
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self._econ_state.wallet.add(amount, currency=currency, memo="Deposit")
+        from simulation.systems.settlement_system import FinancialSentry
+        with FinancialSentry.unlocked():
+            self._econ_state.wallet.add(amount, currency=currency, memo="Deposit")
 
     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self._econ_state.wallet.subtract(amount, currency=currency, memo="Withdraw")
+        from simulation.systems.settlement_system import FinancialSentry
+        with FinancialSentry.unlocked():
+            self._econ_state.wallet.subtract(amount, currency=currency, memo="Withdraw")
     @property
     def balance_pennies(self) -> int:
         """Returns the balance in the default currency (pennies)."""

@@ -211,10 +211,14 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         return self.wallet.get_all_balances()
 
     def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.wallet.add(int(amount), currency, memo="Internal Add")
+        from simulation.systems.settlement_system import FinancialSentry
+        with FinancialSentry.unlocked():
+            self.wallet.add(int(amount), currency, memo="Internal Add")
 
     def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.wallet.subtract(int(amount), currency, memo="Internal Sub")
+        from simulation.systems.settlement_system import FinancialSentry
+        with FinancialSentry.unlocked():
+            self.wallet.subtract(int(amount), currency, memo="Internal Sub")
 
     def update_sensory_data(self, dto: GovernmentSensoryDTO):
         self.sensory_data = dto
@@ -703,10 +707,14 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
 
     # --- IFinancialAgent Implementation ---
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.wallet.add(amount, currency, memo="Deposit")
+        from simulation.systems.settlement_system import FinancialSentry
+        with FinancialSentry.unlocked():
+            self.wallet.add(amount, currency, memo="Deposit")
 
     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.wallet.subtract(amount, currency, memo="Withdraw")
+        from simulation.systems.settlement_system import FinancialSentry
+        with FinancialSentry.unlocked():
+            self.wallet.subtract(amount, currency, memo="Withdraw")
 
     def get_all_balances(self) -> Dict[CurrencyCode, int]:
         return self.wallet.get_all_balances()

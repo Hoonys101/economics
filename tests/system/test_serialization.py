@@ -33,8 +33,10 @@ class TestSerialization:
         )
 
         # 2. Add Items
-        firm.add_item("item_main", 10.0, slot=InventorySlot.MAIN)
-        firm.add_item("item_input", 5.0, slot=InventorySlot.INPUT)
+        from simulation.systems.settlement_system import InventorySentry
+        with InventorySentry.unlocked():
+            firm.add_item("item_main", 10.0, slot=InventorySlot.MAIN)
+            firm.add_item("item_input", 5.0, slot=InventorySlot.INPUT)
 
         # 3. Get State
         state_dto = firm.get_current_state()

@@ -10,7 +10,24 @@ class DefaultTransferHandler(ITransactionHandler):
     can record the event for M2 Audits and tracking.
     """
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        # Transaction logic is already executed. Acknowledge for ledger.
+        # Transaction logic is already executed. Notify MonetaryLedger.
+        if context.settlement_system and hasattr(context.settlement_system, 'monetary_ledger') and context.settlement_system.monetary_ledger:
+            # Check M2 boundary
+            is_buyer_m2 = context.settlement_system._is_m2_agent(buyer)
+            is_seller_m2 = context.settlement_system._is_m2_agent(seller)
+
+            amount = getattr(tx, 'total_pennies', 0)
+            currency = getattr(tx, 'currency', 'USD')
+            memo = getattr(tx, 'metadata', {}).get('memo', 'transfer')
+
+            # Buyer is the sender (debit), Seller is the receiver (credit) in standard tx logic
+            if not is_buyer_m2 and is_seller_m2:
+                # Non-M2 -> M2 (Expansion)
+                context.settlement_system.monetary_ledger.record_monetary_expansion(amount, source=memo, currency=currency)
+            elif is_buyer_m2 and not is_seller_m2:
+                # M2 -> Non-M2 (Contraction)
+                context.settlement_system.monetary_ledger.record_monetary_contraction(amount, source=memo, currency=currency)
+
         return True
 
     def rollback(self, tx: Transaction, context: TransactionContext) -> bool:

@@ -298,7 +298,9 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
                     config.INITIAL_FIRM_INVENTORY_RANGE,
                 )
             )
-            firm.add_item(good_name, qty)
+            from simulation.systems.settlement_system import InventorySentry
+            with InventorySentry.unlocked():
+                firm.add_item(good_name, qty)
         firms.append(firm)
 
     firm_founders = {}

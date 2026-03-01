@@ -29,6 +29,35 @@ from modules.finance.transaction.adapter import RegistryAccountAccessor, Diction
 if TYPE_CHECKING:
     from simulation.firms import Firm
 
+from contextlib import contextmanager
+
+class FinancialSentry:
+    _is_active = False
+
+    @classmethod
+    @contextmanager
+    def unlocked(cls):
+        was_active = cls._is_active
+        cls._is_active = True
+        try:
+            yield
+        finally:
+            cls._is_active = was_active
+
+class InventorySentry:
+    _is_active = False
+
+    @classmethod
+    @contextmanager
+    def unlocked(cls):
+        was_active = cls._is_active
+        cls._is_active = True
+        try:
+            yield
+        finally:
+            cls._is_active = was_active
+
+
 class SettlementSystem(IMonetaryAuthority):
     """
     Centralized system for handling all financial transfers between entities.
@@ -413,7 +442,8 @@ class SettlementSystem(IMonetaryAuthority):
         # Execute Batch
         try:
             engine = self._get_engine(context_agents=agents_involved)
-            results = engine.process_batch(dtos)
+            with FinancialSentry.unlocked():
+                results = engine.process_batch(dtos)
         except RuntimeError:
              # If engine fails to init (no registry, no agents?), fail
              self.logger.error("MULTIPARTY_FAIL | Transaction Engine initialization failed.")
@@ -490,7 +520,8 @@ class SettlementSystem(IMonetaryAuthority):
         # Execute Batch
         try:
             engine = self._get_engine(context_agents=agents_involved)
-            results = engine.process_batch(dtos)
+            with FinancialSentry.unlocked():
+                results = engine.process_batch(dtos)
         except RuntimeError:
             self.logger.error("SETTLEMENT_ATOMIC_FAIL | Engine init failed.")
             return False
@@ -637,7 +668,8 @@ class SettlementSystem(IMonetaryAuthority):
         # 5. Execute Atomically
         try:
             engine = self._get_engine(context_agents=[party_a, party_b])
-            results = engine.process_batch([tx1, tx2])
+            with FinancialSentry.unlocked():
+                results = engine.process_batch([tx1, tx2])
         except RuntimeError:
             self.logger.error("FX_SWAP_FAIL | Engine init failed.")
             return None
@@ -711,13 +743,14 @@ class SettlementSystem(IMonetaryAuthority):
         # Execute via Engine
         try:
             engine = self._get_engine(context_agents=[debit_agent, credit_agent])
-            result = engine.process_transaction(
-                source_account_id=str(debit_agent.id),
-                destination_account_id=str(credit_agent.id),
-                amount=amount,
-                currency=currency,
-                description=memo
-            )
+            with FinancialSentry.unlocked():
+                result = engine.process_transaction(
+                    source_account_id=str(debit_agent.id),
+                    destination_account_id=str(credit_agent.id),
+                    amount=amount,
+                    currency=currency,
+                    description=memo
+                )
         except RuntimeError:
              self.logger.error("SETTLEMENT_FAIL | Engine init failed.")
              return None
@@ -785,13 +818,14 @@ class SettlementSystem(IMonetaryAuthority):
         if is_central_bank or is_liquidator:
             # Minting is special: Source doesn't need funds.
             try:
-                if isinstance(destination, IFinancialEntity):
-                    destination.deposit(amount, currency)
-                elif isinstance(destination, IFinancialAgent):
-                    destination._deposit(amount, currency)
-                else:
-                    self.logger.error(f"MINT_FAIL | Destination agent {destination.id} does not implement IFinancialEntity or IFinancialAgent.")
-                    return None
+                with FinancialSentry.unlocked():
+                    if isinstance(destination, IFinancialEntity):
+                        destination.deposit(amount, currency)
+                    elif isinstance(destination, IFinancialAgent):
+                        destination._deposit(amount, currency)
+                    else:
+                        self.logger.error(f"MINT_FAIL | Destination agent {destination.id} does not implement IFinancialEntity or IFinancialAgent.")
+                        return None
 
                 self.logger.info(
                     f"MINT_AND_TRANSFER | Created {amount} {currency} from {source_authority.id} to {destination.id}. Reason: {reason}",
@@ -838,10 +872,11 @@ class SettlementSystem(IMonetaryAuthority):
         if is_central_bank:
             # Burning: Withdraw from source.
             try:
-                if isinstance(source, IFinancialEntity):
-                    source.withdraw(amount, currency)
-                elif isinstance(source, IFinancialAgent):
-                    source._withdraw(amount, currency)
+                with FinancialSentry.unlocked():
+                    if isinstance(source, IFinancialEntity):
+                        source.withdraw(amount, currency)
+                    elif isinstance(source, IFinancialAgent):
+                        source._withdraw(amount, currency)
 
                 self.logger.info(
                     f"TRANSFER_AND_DESTROY | Destroyed {amount} {currency} from {source.id} to {sink_authority.id}. Reason: {reason}",

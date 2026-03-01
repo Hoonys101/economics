@@ -96,6 +96,10 @@ class ZeroSumViolationError(RuntimeError):
     """Raised when a settlement operation fails to balance (Debits != Credits)."""
     pass
 
+class SystemicIntegrityError(RuntimeError):
+    """Raised when a direct mutation is attempted on a sentry-protected property."""
+    pass
+
 @runtime_checkable
 class ITransaction(Protocol):
     """Module A: Protocol for a completed financial transaction."""

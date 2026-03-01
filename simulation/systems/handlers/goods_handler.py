@@ -131,21 +131,23 @@ class GoodsTransactionHandler(ITransactionHandler):
                 buyer.consume(tx.item_id, tx.quantity, context.time)
         else:
             # Physical Goods: Update Inventory
-            # Seller Inventory
-            if isinstance(seller, IInventoryHandler):
-                seller.remove_item(tx.item_id, tx.quantity)
-            else:
-                 logger.warning(f"GOODS_HANDLER_WARN | Seller {seller.id} does not implement IInventoryHandler")
+            from simulation.systems.settlement_system import InventorySentry
+            with InventorySentry.unlocked():
+                # Seller Inventory
+                if isinstance(seller, IInventoryHandler):
+                    seller.remove_item(tx.item_id, tx.quantity)
+                else:
+                     logger.warning(f"GOODS_HANDLER_WARN | Seller {seller.id} does not implement IInventoryHandler")
 
-            # Buyer Inventory
-            is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
-            tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
+                # Buyer Inventory
+                is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
+                tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
 
-            if isinstance(buyer, IInventoryHandler):
-                slot = InventorySlot.INPUT if is_raw_material and isinstance(buyer, Firm) else InventorySlot.MAIN
-                buyer.add_item(tx.item_id, tx.quantity, quality=tx_quality, slot=slot)
-            else:
-                logger.warning(f"GOODS_HANDLER_WARN | Buyer {buyer.id} does not implement IInventoryHandler")
+                if isinstance(buyer, IInventoryHandler):
+                    slot = InventorySlot.INPUT if is_raw_material and isinstance(buyer, Firm) else InventorySlot.MAIN
+                    buyer.add_item(tx.item_id, tx.quantity, quality=tx_quality, slot=slot)
+                else:
+                    logger.warning(f"GOODS_HANDLER_WARN | Buyer {buyer.id} does not implement IInventoryHandler")
 
         # 2. Seller Financial Records (Revenue)
         if isinstance(seller, IRevenueTracker):

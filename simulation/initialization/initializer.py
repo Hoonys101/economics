@@ -560,7 +560,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         """
         Phase 5: Injects initial liquidity via `Bootstrapper`. Converts config float values to integer pennies.
         """
-        sim.central_bank.deposit(int(self.config.INITIAL_MONEY_SUPPLY))
+        from simulation.systems.settlement_system import FinancialSentry
+        with FinancialSentry.unlocked():
+            sim.central_bank.deposit(int(self.config.INITIAL_MONEY_SUPPLY))
         self.logger.info(f'GENESIS | Central Bank minted M0: {self.config.INITIAL_MONEY_SUPPLY:,.2f}')
 
         # TD-BANK-RESERVE-CRUNCH: Use tunable initial assets from config
@@ -575,7 +577,11 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Do not add Bank to initial_balances for distribute_initial_wealth
         # the Bootstrapper is designed to distribute wealth to non-system agents.
         # Bank reserves are M0. Let's just directly deposit it to the Bank.
-        sim.bank.deposit(initial_bank_assets, 'pennies')
+        with FinancialSentry.unlocked():
+            try:
+                sim.bank.deposit(initial_bank_assets, 'pennies')
+            except InsufficientFundsError:
+                pass
 
         # Housing Sales from Government
         for unit in sim.real_estate_units:

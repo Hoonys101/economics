@@ -4,9 +4,10 @@ from collections import defaultdict
 from typing import Dict, List, Optional
 from .api import IWallet, WalletOpLogDTO, CurrencyCode, DEFAULT_CURRENCY
 from .audit import GLOBAL_WALLET_LOG
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import InsufficientFundsError, SystemicIntegrityError
 from modules.common.financial.dtos import MoneyDTO
 import logging
+from simulation.systems.settlement_system import FinancialSentry
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,8 @@ class Wallet(IWallet):
         self._balances.update(balances)
 
     def add(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "", tick: int = -1) -> None:
+        if not FinancialSentry._is_active:
+            raise SystemicIntegrityError("Direct mutation of wallet balance is FORBIDDEN. Use SettlementSystem.")
         if not isinstance(amount, int):
             raise TypeError(f"Wallet add: Amount must be int, got {type(amount)}")
         if amount < 0:
@@ -56,6 +59,8 @@ class Wallet(IWallet):
         self._log_operation(tick, currency, amount, memo)
 
     def subtract(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "", tick: int = -1) -> None:
+        if not FinancialSentry._is_active:
+            raise SystemicIntegrityError("Direct mutation of wallet balance is FORBIDDEN. Use SettlementSystem.")
         if not isinstance(amount, int):
              raise TypeError(f"Wallet subtract: Amount must be int, got {type(amount)}")
         if amount < 0:

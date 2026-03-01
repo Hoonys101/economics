@@ -189,8 +189,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         # Inventory Initialization
         if initial_inventory is not None:
-            for item_id, qty in initial_inventory.items():
-                self.add_item(item_id, qty)
+            from simulation.systems.settlement_system import InventorySentry
+            with InventorySentry.unlocked():
+                for item_id, qty in initial_inventory.items():
+                    self.add_item(item_id, qty)
 
         # TD-271: Real Estate Utilization
         self.real_estate_utilization_component = RealEstateUtilizationComponent()
@@ -262,37 +264,39 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         if state.assets and any(v > 0 for v in state.assets.values()):
              self.logger.warning(f"Agent {self.id}: load_state called with assets, but direct loading is disabled for integrity. Assets ignored: {state.assets}")
 
-        self.inventory_component.clear_inventory(InventorySlot.MAIN)
-        self.inventory_component.clear_inventory(InventorySlot.INPUT)
+        from simulation.systems.settlement_system import InventorySentry
+        with InventorySentry.unlocked():
+            self.inventory_component.clear_inventory(InventorySlot.MAIN)
+            self.inventory_component.clear_inventory(InventorySlot.INPUT)
 
-        self.is_active = state.is_active
+            self.is_active = state.is_active
 
-        # Restore from inventories
-        if state.inventories:
-            for slot_name, slot_dto in state.inventories.items():
-                slot = InventorySlot[slot_name] if slot_name in InventorySlot.__members__ else None
-                if slot == InventorySlot.MAIN:
-                    target_inv = self.inventory_component.main_inventory
-                    target_qual = self.inventory_component.inventory_quality
-                elif slot == InventorySlot.INPUT:
-                    target_inv = self.inventory_component.input_inventory
-                else:
-                    self.logger.warning(f"Unknown inventory slot in load_state: {slot_name}")
-                    continue
+            # Restore from inventories
+            if state.inventories:
+                for slot_name, slot_dto in state.inventories.items():
+                    slot = InventorySlot[slot_name] if slot_name in InventorySlot.__members__ else None
+                    if slot == InventorySlot.MAIN:
+                        target_inv = self.inventory_component.main_inventory
+                        target_qual = self.inventory_component.inventory_quality
+                    elif slot == InventorySlot.INPUT:
+                        target_inv = self.inventory_component.input_inventory
+                    else:
+                        self.logger.warning(f"Unknown inventory slot in load_state: {slot_name}")
+                        continue
 
-                if slot == InventorySlot.INPUT:
-                     # Fallback to add_item which is safe, though avg calc might be redundant if empty.
-                     # But clear() was called.
-                     for item in slot_dto.items:
-                         self.add_item(item.name, item.quantity, quality=item.quality, slot=InventorySlot.INPUT)
-                elif slot == InventorySlot.MAIN:
-                     for item in slot_dto.items:
-                         self.add_item(item.name, item.quantity, quality=item.quality, slot=InventorySlot.MAIN)
+                    if slot == InventorySlot.INPUT:
+                         # Fallback to add_item which is safe, though avg calc might be redundant if empty.
+                         # But clear() was called.
+                         for item in slot_dto.items:
+                             self.add_item(item.name, item.quantity, quality=item.quality, slot=InventorySlot.INPUT)
+                    elif slot == InventorySlot.MAIN:
+                         for item in slot_dto.items:
+                             self.add_item(item.name, item.quantity, quality=item.quality, slot=InventorySlot.MAIN)
 
-        # Fallback for legacy state
-        elif state.inventory:
-             for k, v in state.inventory.items():
-                 self.add_item(k, v)
+            # Fallback for legacy state
+            elif state.inventory:
+                 for k, v in state.inventory.items():
+                     self.add_item(k, v)
 
     @property
     def wallet(self) -> Wallet:
@@ -332,19 +336,27 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Internal deposit implementation."""
-        self.financial_component.deposit(amount, currency)
+        from simulation.systems.settlement_system import FinancialSentry
+        with FinancialSentry.unlocked():
+            self.financial_component.deposit(amount, currency)
 
     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Internal withdraw implementation."""
-        self.financial_component.withdraw(amount, currency)
+        from simulation.systems.settlement_system import FinancialSentry
+        with FinancialSentry.unlocked():
+            self.financial_component.withdraw(amount, currency)
 
     def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Public deposit implementation."""
-        self.financial_component.deposit(amount_pennies, currency)
+        from simulation.systems.settlement_system import FinancialSentry
+        with FinancialSentry.unlocked():
+            self.financial_component.deposit(amount_pennies, currency)
 
     def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Public withdraw implementation."""
-        self.financial_component.withdraw(amount_pennies, currency)
+        from simulation.systems.settlement_system import FinancialSentry
+        with FinancialSentry.unlocked():
+            self.financial_component.withdraw(amount_pennies, currency)
 
     # --- ICreditFrozen Implementation ---
 

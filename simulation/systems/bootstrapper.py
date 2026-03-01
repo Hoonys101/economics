@@ -85,28 +85,31 @@ class Bootstrapper:
         - Capital is transferred from Central Bank.
         - Physical Goods (Inputs) are only magically created at Tick 0 (Genesis).
         """
+        from simulation.systems.settlement_system import InventorySentry
+
         BUFFER_DAYS = 30.0
         injected = False
 
         # 1. Input Injection (Supply Side) - ONLY AT GENESIS
         if current_tick == 0:
-            if firm.specialization in config.GOODS:
-                item_config = config.GOODS[firm.specialization]
+            with InventorySentry.unlocked():
+                if firm.specialization in config.GOODS:
+                    item_config = config.GOODS[firm.specialization]
 
-                if 'inputs' in item_config and item_config['inputs']:
-                    for mat, qty_per_unit in item_config['inputs'].items():
-                        needed = qty_per_unit * firm.production_target * BUFFER_DAYS
-                        current = firm.get_quantity(mat, slot=InventorySlot.INPUT)
-                        if current < needed:
-                            firm.add_item(mat, needed - current, slot=InventorySlot.INPUT)
-                            injected = True
+                    if 'inputs' in item_config and item_config['inputs']:
+                        for mat, qty_per_unit in item_config['inputs'].items():
+                            needed = qty_per_unit * firm.production_target * BUFFER_DAYS
+                            current = firm.get_quantity(mat, slot=InventorySlot.INPUT)
+                            if current < needed:
+                                firm.add_item(mat, needed - current, slot=InventorySlot.INPUT)
+                                injected = True
 
-                current_inv = firm.get_quantity(firm.specialization)
-                if current_inv < Bootstrapper.INITIAL_INVENTORY:
-                    needed = Bootstrapper.INITIAL_INVENTORY - current_inv
-                    firm.add_item(firm.specialization, needed)
-                    injected = True
-                    logger.info(f'BOOTSTRAPPER | Injected {needed} units to Firm {firm.id} (Genesis)')
+                    current_inv = firm.get_quantity(firm.specialization)
+                    if current_inv < Bootstrapper.INITIAL_INVENTORY:
+                        needed = Bootstrapper.INITIAL_INVENTORY - current_inv
+                        firm.add_item(firm.specialization, needed)
+                        injected = True
+                        logger.info(f'BOOTSTRAPPER | Injected {needed} units to Firm {firm.id} (Genesis)')
 
         # 2. Capital Injection (Demand Side) - ALWAYS ALLOWED (via Transfer)
         current_balance = firm.wallet.get_balance(DEFAULT_CURRENCY)

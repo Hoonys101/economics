@@ -9,6 +9,8 @@ import logging
 
 from modules.simulation.api import InventorySlot, ItemDTO
 from modules.agent_framework.api import IInventoryComponent, ComponentConfigDTO, InventoryStateDTO
+from modules.finance.api import SystemicIntegrityError
+from simulation.systems.settlement_system import InventorySentry
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +63,9 @@ class InventoryComponent(IInventoryComponent):
         """
         Adds item to the specified slot, updating weighted average quality.
         """
+        if not InventorySentry._is_active:
+            raise SystemicIntegrityError("Direct mutation of inventory is FORBIDDEN. Use proper handlers.")
+
         if quantity < 0:
             return False
 
@@ -92,6 +97,9 @@ class InventoryComponent(IInventoryComponent):
         """
         Removes item from the specified slot. Returns False if insufficient quantity.
         """
+        if not InventorySentry._is_active:
+            raise SystemicIntegrityError("Direct mutation of inventory is FORBIDDEN. Use proper handlers.")
+
         if quantity < 0:
             return False
 
