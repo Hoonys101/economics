@@ -29,6 +29,14 @@ class TaxService(ITaxService):
     def __init__(self, config_module: Any):
         self.config_module = config_module
 
+        # Cache config values for calculate_wealth_tax to optimize performance
+        wealth_tax_rate_annual = getattr(self.config_module, "ANNUAL_WEALTH_TAX_RATE", DEFAULT_ANNUAL_WEALTH_TAX_RATE)
+        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR)
+        if ticks_per_year <= 0:
+            ticks_per_year = 100
+        self._wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
+        self._wealth_threshold = int(getattr(self.config_module, "WEALTH_TAX_THRESHOLD", DEFAULT_WEALTH_TAX_THRESHOLD))
+
         # Composition of existing logic components
         self.taxation_system = TaxationSystem(config_module)
         self.fiscal_policy_manager = FiscalPolicyManager(config_module)
@@ -63,25 +71,12 @@ class TaxService(ITaxService):
 
     def calculate_wealth_tax(self, net_worth: int) -> int:
         """Calculates wealth tax based on net worth (pennies)."""
-        wealth_tax_rate_annual = getattr(self.config_module, "ANNUAL_WEALTH_TAX_RATE", DEFAULT_ANNUAL_WEALTH_TAX_RATE)
-        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR)
-
-        if ticks_per_year <= 0:
-             ticks_per_year = 100
-
-        wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
-
-        # Threshold handling:
-        # DEFAULT_WEALTH_TAX_THRESHOLD is now pennies (5000000).
-        # We assume config value is pennies.
-        wealth_threshold = int(getattr(self.config_module, "WEALTH_TAX_THRESHOLD", DEFAULT_WEALTH_TAX_THRESHOLD))
-
-        if net_worth <= wealth_threshold:
+        if net_worth <= self._wealth_threshold:
             return 0
 
         # Calculation: (Net Worth - Threshold) * Rate
-        taxable_wealth = net_worth - wealth_threshold
-        tax_amount = round_to_pennies(taxable_wealth * wealth_tax_rate_tick)
+        taxable_wealth = net_worth - self._wealth_threshold
+        tax_amount = round_to_pennies(taxable_wealth * self._wealth_tax_rate_tick)
         return int(max(0, min(tax_amount, net_worth)))
 
     def collect_wealth_tax(self, agents: List[IAgent]) -> TaxAssessmentResultDTO:
