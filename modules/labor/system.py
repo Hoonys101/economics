@@ -41,139 +41,66 @@ class LaborMarket(ILaborMarket, IMarket):
     def match_market(self, current_tick: int) -> List[LaborMarketMatchResultDTO]:
         matches: List[LaborMarketMatchResultDTO] = []
 
-        # Sort offers by wage descending (High paying jobs pick first)
-        # Using offer_wage_pennies
-        sorted_offers = sorted(self._job_offers, key=lambda x: x.offer_wage_pennies, reverse=True)
+        # TD-WAVE3-MATCH-REWRITE: Delegate to stateless engine
+        context = JobMatchContextDTO(
+            tick=current_tick,
+            available_seekers=self._job_seekers,
+            available_offers=self._job_offers,
+            market_panic_index=0.0 # Could be passed from somewhere if available
+        )
 
-        # Bucket seekers by Major for Performance Optimization (O(N*M) -> O(N*K) where K is subset)
-        seekers_by_major: Dict[IndustryDomain, List[JobSeekerDTO]] = {}
-        for seeker in self._job_seekers:
-            major = seeker.major
-            if major not in seekers_by_major:
-                seekers_by_major[major] = []
-            seekers_by_major[major].append(seeker)
+        # We need to pass the config to execute_labor_matching so it can do the multipliers
+        result = execute_labor_matching(context, self.config)
 
-        # Also maintain a set of matched IDs to prevent double-booking
-        matched_seeker_ids = set()
+        # Convert matched_pairs to LaborMarketMatchResultDTO format for backward compatibility
+        for seeker_id, firm_id in result.matched_pairs.items():
+            wage = result.agreed_wages_pennies[seeker_id]
 
-        for offer in sorted_offers:
-            # Determine relevant buckets to search
-            # Priority 1: Same Major
-            # Priority 2: GENERAL Major (or if offer is GENERAL)
-            # Priority 3: All others (if desperate/allowed, but for perf we limit)
+            # Resolve the exact offer that matched.
+            # To avoid taking just the first one arbitrarily, we look at unmatched_offers from result
+            # meaning the ones that were NOT matched. This still means we need to know the original offer.
+            # However, since the engine removed the matched offer from unmatched_offers,
+            # we can identify it by looking at original offers minus unmatched offers.
+            original_offers_for_firm = [o for o in self._job_offers if o.firm_id == firm_id]
+            unmatched_for_firm = [o for o in result.unmatched_offers if o.firm_id == firm_id]
 
-            search_buckets = [offer.major]
-            if IndustryDomain.GENERAL not in search_buckets:
-                search_buckets.append(IndustryDomain.GENERAL)
+            # A matched offer is one that is in original but not in unmatched
+            # To handle multiple identical offers, we can just take the first one that is missing from unmatched
+            # Or simpler: base_wage is the highest offer for this firm that was matched.
+            # For simplicity, since the engine sorted by highest wage, the matched offer is the highest one that isn't in unmatched_for_firm
+            # but wait, `result.unmatched_offers` contains actual instances if `.copy()` was shallow.
+            matched_offers = [o for o in original_offers_for_firm if o not in unmatched_for_firm]
+            offer = matched_offers[0] if matched_offers else original_offers_for_firm[0]
 
-            # Add all other buckets for broader search if needed, but penalize?
-            # For strict perf, we might only check primary buckets.
-            # Let's iterate all buckets but order them.
-            all_majors = list(seekers_by_major.keys())
-            remaining = [m for m in all_majors if m not in search_buckets]
-            search_buckets.extend(remaining)
+            base_wage = offer.offer_wage_pennies
 
-            best_candidate = None
-            best_score = -1.0
-            best_wage_pennies = 0
-            best_compatibility = "MISMATCH"
+            # Reconstruct original reservation wage to calculate true surplus
+            seeker = next((s for s in self._job_seekers if s.household_id == seeker_id), None)
+            res_wage = seeker.reservation_wage_pennies if seeker else wage
+            surplus = base_wage - res_wage
 
-            for major_key in search_buckets:
-                if major_key not in seekers_by_major:
-                    continue
+            # Calculate match score & compatibility dynamically just for the report/telemetry
+            # To stay stateless, we can just recalculate the simplified multiplier
+            req_talent = getattr(offer, 'min_match_score', 0.0)
+            seeker_talent = getattr(seeker, 'talent_score', 1.0) if seeker else 1.0
+            score = 1.0 + (seeker_talent - 1.0) * 0.5
 
-                candidates = seekers_by_major[major_key]
+            offer_major = getattr(offer, 'major', IndustryDomain.GENERAL)
+            seeker_major = getattr(seeker, 'major', IndustryDomain.GENERAL)
+            compat = "PERFECT" if offer_major == seeker_major else "MISMATCH"
+            if offer_major == IndustryDomain.GENERAL or seeker_major == IndustryDomain.GENERAL:
+                compat = "PARTIAL"
 
-                for seeker in candidates:
-                    if seeker.household_id in matched_seeker_ids:
-                        continue
-
-                    # 1. Base Score (Wage vs Reservation)
-                    if seeker.reservation_wage_pennies <= 0:
-                        base_score = 1.0
-                    else:
-                        base_score = offer.offer_wage_pennies / seeker.reservation_wage_pennies
-
-                    # Filter: Must meet reservation wage (Relaxed to 0.9 for Market Thaw)
-                    if base_score < 0.9:
-                        continue
-
-                    # 2. Major Matching (Dynamic Config)
-                    major_multiplier = 1.0
-                    compatibility = "MISMATCH"
-
-                    # Default multipliers
-                    mult_perfect = 1.2
-                    mult_partial = 1.0
-                    mult_mismatch = 0.8
-                    mult_general = 1.0
-
-                    if self.config:
-                        compat_config = self.config.compatibility
-                        mult_perfect = compat_config.get('PERFECT', mult_perfect)
-                        mult_partial = compat_config.get('PARTIAL', mult_partial)
-                        mult_mismatch = compat_config.get('MISMATCH', mult_mismatch)
-                        mult_general = compat_config.get('GENERAL_PENALTY', mult_general)
-
-                    if offer.major == seeker.major:
-                        major_multiplier = mult_perfect
-                        compatibility = "PERFECT"
-                    elif seeker.secondary_majors and offer.major in seeker.secondary_majors:
-                        major_multiplier = mult_partial # Using Partial for secondary match
-                        compatibility = "PARTIAL"
-                    elif offer.major == IndustryDomain.GENERAL or seeker.major == IndustryDomain.GENERAL:
-                        major_multiplier = mult_general
-                        compatibility = "PARTIAL"
-                    else:
-                        major_multiplier = mult_mismatch
-
-                    # 3. Education Matching
-                    edu_multiplier = 1.0
-                    if seeker.education_level < offer.required_education:
-                        edu_multiplier = 0.5 # Severe penalty
-                    elif seeker.education_level > offer.required_education:
-                        # Small bonus for over-qualification? Or diminishing return?
-                        # Let's say slight bonus.
-                        edu_multiplier = 1.05
-
-                    # 4. Talent Signal (Phase 4.2)
-                    # Talent score 1.0 is neutral. Higher is better.
-                    # Multiplier = 1.0 + (talent - 1.0) * 0.5
-                    # e.g. Talent 1.2 -> 1.0 + 0.1 = 1.1 multiplier
-                    talent_multiplier = 1.0 + (seeker.talent_score - 1.0) * 0.5
-
-                    final_score = base_score * major_multiplier * edu_multiplier * talent_multiplier
-
-                    if final_score > best_score:
-                        best_score = final_score
-                        best_candidate = seeker
-
-                        # Wave 3: Nash Bargaining
-                        # Surplus = WTP (Offer) - WTA (Reservation)
-                        surplus = offer.offer_wage_pennies - seeker.reservation_wage_pennies
-                        bargaining_power = 0.5 # Default split
-
-                        if surplus > 0:
-                            best_wage_pennies = int(seeker.reservation_wage_pennies + (surplus * bargaining_power))
-                        else:
-                            best_wage_pennies = offer.offer_wage_pennies # Fallback
-
-                        best_compatibility = compatibility
-
-            if best_candidate:
-                # Recalculate context for DTO
-                surplus = offer.offer_wage_pennies - best_candidate.reservation_wage_pennies
-                matches.append(LaborMarketMatchResultDTO(
-                    employer_id=offer.firm_id,
-                    employee_id=best_candidate.household_id,
-                    base_wage_pennies=offer.offer_wage_pennies,
-                    matched_wage_pennies=best_wage_pennies,
-                    match_score=best_score,
-                    major_compatibility=best_compatibility,
-                    surplus_pennies=surplus,
-                    bargaining_power=0.5
-                ))
-                matched_seeker_ids.add(best_candidate.household_id)
+            matches.append(LaborMarketMatchResultDTO(
+                employer_id=firm_id,
+                employee_id=seeker_id,
+                base_wage_pennies=base_wage,
+                matched_wage_pennies=wage,
+                match_score=score,
+                major_compatibility=compat,
+                surplus_pennies=surplus,
+                bargaining_power=0.5
+            ))
 
         # Clear queues after matching
         self._job_offers.clear()
@@ -341,3 +268,128 @@ class LaborMarket(ILaborMarket, IMarket):
     def get_total_supply(self) -> float:
         """Returns total supply (job seekers)."""
         return sum(seeker.quantity for seeker in self._job_seekers)
+
+# TD-WAVE3-MATCH-REWRITE: Labor Market Bargaining
+from simulation.dtos.api import JobMatchContextDTO, LaborMatchingResultDTO
+
+def execute_labor_matching(context: JobMatchContextDTO, config=None) -> LaborMatchingResultDTO:
+    """
+    Stateless matching engine.
+    """
+    # SORT available_seekers BY hidden_talent DESC (using talent_score from JobSeekerDTO)
+    # SORT available_offers BY wage_offered_pennies DESC
+    available_seekers = sorted(context.available_seekers, key=lambda s: getattr(s, 'talent_score', 1.0), reverse=True)
+    available_offers = sorted(context.available_offers, key=lambda o: getattr(o, 'offer_wage_pennies', 0), reverse=True)
+
+    matched_pairs = {}
+    agreed_wages_pennies = {}
+
+    unmatched_offers = available_offers.copy()
+    unmatched_seekers = []
+
+    for seeker in available_seekers:
+        matched = False
+        best_offer = None
+        best_score = -1.0
+        best_wage_pennies = 0
+        best_compatibility = "MISMATCH"
+
+        for offer in unmatched_offers:
+            reservation_wage = getattr(seeker, 'reservation_wage_pennies', 0)
+            offer_wage = getattr(offer, 'offer_wage_pennies', 0)
+
+            # Base logic relaxed to 0.9 for thaw
+            if reservation_wage <= 0:
+                base_score = 1.0
+            else:
+                base_score = offer_wage / reservation_wage
+
+            if base_score < 0.9:
+                continue
+
+            required_talent = getattr(offer, 'min_match_score', 0.0)
+            seeker_talent = getattr(seeker, 'talent_score', 1.0)
+
+            # Talent multiplier
+            talent_multiplier = 1.0 + (seeker_talent - 1.0) * 0.5
+
+            # Major matching
+            major_multiplier = 1.0
+            compatibility = "MISMATCH"
+
+            mult_perfect = 1.2
+            mult_partial = 1.0
+            mult_mismatch = 0.8
+            mult_general = 1.0
+
+            if config and hasattr(config, 'compatibility'):
+                compat_config = config.compatibility
+                mult_perfect = compat_config.get('PERFECT', mult_perfect)
+                mult_partial = compat_config.get('PARTIAL', mult_partial)
+                mult_mismatch = compat_config.get('MISMATCH', mult_mismatch)
+                mult_general = compat_config.get('GENERAL_PENALTY', mult_general)
+
+            offer_major = getattr(offer, 'major', IndustryDomain.GENERAL)
+            seeker_major = getattr(seeker, 'major', IndustryDomain.GENERAL)
+            secondary_majors = getattr(seeker, 'secondary_majors', [])
+
+            if offer_major == seeker_major:
+                major_multiplier = mult_perfect
+                compatibility = "PERFECT"
+            elif secondary_majors and offer_major in secondary_majors:
+                major_multiplier = mult_partial
+                compatibility = "PARTIAL"
+            elif offer_major == IndustryDomain.GENERAL or seeker_major == IndustryDomain.GENERAL:
+                major_multiplier = mult_general
+                compatibility = "PARTIAL"
+            else:
+                major_multiplier = mult_mismatch
+
+            # Education matching
+            edu_multiplier = 1.0
+            req_edu = getattr(offer, 'required_education', 0)
+            seek_edu = getattr(seeker, 'education_level', 0)
+            if seek_edu < req_edu:
+                edu_multiplier = 0.5
+            elif seek_edu > req_edu:
+                edu_multiplier = 1.05
+
+            final_score = base_score * major_multiplier * edu_multiplier * talent_multiplier
+
+            if final_score > best_score and seeker_talent >= required_talent:
+                best_score = final_score
+                best_offer = offer
+                best_compatibility = compatibility
+
+                surplus = offer_wage - reservation_wage
+                bargaining_power = 0.5
+
+                if surplus > 0:
+                    best_wage_pennies = int(reservation_wage + (surplus * bargaining_power))
+                else:
+                    best_wage_pennies = offer_wage
+
+        if best_offer:
+            # DTO Type compliance: matched_pairs is Dict[AgentID, AgentID]
+            matched_pairs[seeker.household_id] = best_offer.firm_id
+
+            # Since matched_pairs only holds the firm_id, we need to pass the metadata
+            # We can either expand LaborMatchingResultDTO or return it differently
+            # For now, let's keep it pure to the DTO and let the orchestrator re-calculate
+            # or we can just assume match_score 1.0/PERFECT as an initial naive state
+            # if we can't change DTO or we pass it via agreed_wages if we really needed.
+            # We will just comply with the strict DTO typing for matched_pairs
+
+            agreed_wages_pennies[seeker.household_id] = best_wage_pennies
+            unmatched_offers.remove(best_offer)
+            matched = True
+
+        if not matched:
+            unmatched_seekers.append(seeker.household_id)
+
+    return LaborMatchingResultDTO(
+        matched_pairs=matched_pairs,
+        agreed_wages_pennies=agreed_wages_pennies,
+        unmatched_seekers=unmatched_seekers,
+        unmatched_offers=unmatched_offers
+    )

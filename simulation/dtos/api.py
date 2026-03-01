@@ -81,6 +81,40 @@ class AgentStateData:
     time_worked: Optional[float] = None
     time_leisure: Optional[float] = None
     market_insight: Optional[float] = 0.5 # Phase 4.1: Perception & Adaptive Logic
+    hidden_talent: Optional[float] = None  # TD-WAVE3-TALENT-VEIL: Pure base type, Optional
+
+# Phase 4.1: Labor Market DTOs moved to modules/labor/api.py
+from modules.labor.api import JobOfferDTO, JobSeekerDTO
+
+@dataclass
+class JobMatchContextDTO:
+    """Pure DTO for TD-WAVE3-MATCH-REWRITE to avoid dumping logic into SimulationState."""
+    tick: int
+    available_seekers: List[JobSeekerDTO]
+    available_offers: List[JobOfferDTO]
+    market_panic_index: float
+
+@dataclass
+class LaborMatchingResultDTO:
+    """Results of the labor matching process, returning state updates to orchestrator."""
+    matched_pairs: Dict[AgentID, AgentID]  # seeker_id -> firm_id
+    agreed_wages_pennies: Dict[AgentID, int]
+    unmatched_seekers: List[AgentID]
+    unmatched_offers: List[JobOfferDTO]
+
+@dataclass
+class FirmPricingStrategyDTO:
+    """Configuration for firm pricing algorithms to prevent rapid extinction."""
+    floor_price_pennies: int
+    markup_percentage: float
+    buffer_capital_pennies: int
+    price_elasticity: float = 0.1
+
+@dataclass
+class ZombieFirmPreventionDTO:
+    """Configuration for bailouts or reserve tuning."""
+    emergency_reserve_threshold_pennies: int
+    max_bailout_count: int = 1
 
 @dataclass
 class EconomicIndicatorData:
