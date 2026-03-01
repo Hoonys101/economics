@@ -29,5 +29,17 @@ class TransferHandler(ITransactionHandler):
         )
 
     def rollback(self, transaction_id: str, context: Any) -> bool:
-        # TODO: Implement rollback
-        return False
+        if not isinstance(context, TransactionDTO):
+            return False
+
+        try:
+            result = self.ledger_engine.process_transaction(
+                source_account_id=context.destination_account_id,
+                destination_account_id=context.source_account_id,
+                amount=context.amount,
+                currency=context.currency,
+                description=f"ROLLBACK of {transaction_id}"
+            )
+            return result.status == 'COMPLETED'
+        except Exception:
+            return False
