@@ -89,7 +89,10 @@ class GitReviewCommand(ICommand):
         else:
             print(f"❌ AI Review failed with exit code {r.returncode}")
             if r.stderr:
-                print(f"⚠️ Error: {r.stderr.strip().splitlines()[-1]}")
+                err_lines = r.stderr.strip().splitlines()
+                # Print last 5 lines for context
+                context_err = "\n".join(err_lines[-5:])
+                print(f"⚠️ Error Context:\n{context_err}")
 
         return CommandResult(
             success=success,
