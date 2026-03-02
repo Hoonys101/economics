@@ -3,23 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "wo-mock-leak-repair": {
-      "key": "wo-mock-leak-repair",
-      "title": "[S3-1] Resolve MagicMock Leaks in Planners",
-      "type": "jules",
-      "instruction_raw": "Identify and fix MagicMock leaks where planners are not properly cleaned up after ticks. Ensure all mocks are disposed of to prevent memory growth. MANDATORY: Ignore all test regressions for this mission. Verification is strictly based on structural correctness. Final suite alignment is deferred to Phase 8.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [
-        "simulation/decisions/firm/financial_strategy.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wo-ssot-purity-ledger": {
       "key": "wo-ssot-purity-ledger",
       "title": "[S1-1] Integer Purity (Ledger & Bank)",
