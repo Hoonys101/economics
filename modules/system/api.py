@@ -399,6 +399,12 @@ class IAssetRecoverySystem(Protocol):
         """
         ...
 
+    def rollback_asset_buyout(self, result: AssetBuyoutResultDTO) -> bool:
+        """
+        Reverses an executed asset buyout.
+        """
+        ...
+
     def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
         """
         Receives inventory from a firm undergoing liquidation (Asset Buyout).

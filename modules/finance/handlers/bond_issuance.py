@@ -1,5 +1,6 @@
-from typing import Any
+from typing import Any, Dict
 import logging
+import uuid
 from modules.finance.api import ITransactionHandler, IBondMarketSystem, BondIssuanceRequestDTO
 from modules.finance.transaction.api import ILedgerEngine
 from modules.system.api import DEFAULT_CURRENCY
@@ -14,6 +15,7 @@ class BondIssuanceHandler(ITransactionHandler):
     def __init__(self, bond_market_system: IBondMarketSystem, ledger_engine: ILedgerEngine):
         self.bond_market_system = bond_market_system
         self.ledger_engine = ledger_engine
+        self._active_issuances: Dict[str, BondIssuanceRequestDTO] = {}
 
     def validate(self, request: Any, context: Any) -> bool:
         if not isinstance(request, BondIssuanceRequestDTO):
@@ -23,6 +25,9 @@ class BondIssuanceHandler(ITransactionHandler):
     def execute(self, request: Any, context: Any) -> bool:
         if not isinstance(request, BondIssuanceRequestDTO):
             raise ValueError("Invalid request type for BondIssuanceHandler")
+
+        transaction_id = request.transaction_id or str(uuid.uuid4())
+        self._active_issuances[transaction_id] = request
 
         # 1. Calculate Total Cost
         total_cost = request.issue_price * request.quantity
@@ -69,5 +74,37 @@ class BondIssuanceHandler(ITransactionHandler):
         return True
 
     def rollback(self, transaction_id: str, context: Any) -> bool:
-        # TODO: Implement full rollback (reverse payment, cancel bond)
-        return False
+        request = self._active_issuances.get(transaction_id)
+        if not request:
+            logger.warning(f"Rollback requested for unknown transaction_id: {transaction_id}")
+            return False
+
+        total_cost = request.issue_price * request.quantity
+
+        try:
+            # Reverse payment
+            reverse_result = self.ledger_engine.process_transaction(
+                source_account_id=str(request.issuer_id),
+                destination_account_id=str(request.buyer_id),
+                amount=total_cost,
+                currency=DEFAULT_CURRENCY,
+                description=f"ROLLBACK: Bond Issuance Reversal for {transaction_id}"
+            )
+            if reverse_result.status != 'COMPLETED':
+                logger.critical(f"CRITICAL: Rollback failed for Bond Issuance! Money trapped in Issuer {request.issuer_id}. Error: {reverse_result.message}")
+                return False
+
+            # Cancel bond
+            bond_id = f"BOND_{transaction_id}"
+            if not self.bond_market_system.cancel_bond(bond_id):
+                logger.error(f"Failed to cancel bond {bond_id} in BondMarketSystem.")
+                return False
+
+            # Clean up
+            del self._active_issuances[transaction_id]
+            logger.info(f"Successfully rolled back Bond Issuance {transaction_id}.")
+            return True
+
+        except Exception as e:
+            logger.critical(f"CRITICAL: Rollback exception for Bond Issuance {transaction_id}. Error: {e}")
+            return False
