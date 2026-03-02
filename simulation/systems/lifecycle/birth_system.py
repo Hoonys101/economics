@@ -142,8 +142,8 @@ class BirthSystem(IBirthSystem):
 
     def _register_new_agents(self, context: IBirthContext, new_agents: List[Household]):
         for agent in new_agents:
-            context.households.append(agent)
-            context.agents[agent.id] = agent
+            context.agent_registry.register(agent)
+            # context.agents[agent.id] = agent # handled by register
 
             # Setup dependencies
             # Agent is guaranteed to be Household

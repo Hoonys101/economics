@@ -22,7 +22,7 @@ def test_agent_registry_get_agent_zero():
     central_bank.is_active = True
 
     # Manually add to state.agents (simulating legacy behavior)
-    state.agents[ID_CENTRAL_BANK] = central_bank
+    registry.register_system_agent(central_bank)
 
     # Test get_agent(0)
     retrieved_agent = registry.get_agent(ID_CENTRAL_BANK)
@@ -47,7 +47,7 @@ def test_register_system_agent():
     # Assuming register_system_agent is implemented
     registry.register_system_agent(central_bank)
 
-    assert state.agents[ID_CENTRAL_BANK] is central_bank
+    assert registry.get_system_agent(ID_CENTRAL_BANK) is central_bank
     assert registry.get_agent(ID_CENTRAL_BANK) is central_bank
     assert registry.get_system_agent(ID_CENTRAL_BANK) is central_bank
 

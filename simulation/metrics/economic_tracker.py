@@ -57,6 +57,15 @@ class EconomicIndicatorTracker:
         self.cpi_history: deque[float] = deque(maxlen=self.history_window)
         self.m2_leak_history: deque[float] = deque(maxlen=self.history_window)
 
+        # Migrated buffers from WorldState (TD-ARCH-GOD-DTO)
+        self.inflation_buffer: deque[float] = deque(maxlen=10)
+        self.unemployment_buffer: deque[float] = deque(maxlen=10)
+        self.gdp_growth_buffer: deque[float] = deque(maxlen=10)
+        self.wage_buffer: deque[float] = deque(maxlen=10)
+        self.approval_buffer: deque[float] = deque(maxlen=10)
+        self.last_avg_price_for_sma: float = 10.0
+        self.last_gdp_for_sma: float = 0.0
+
         self.config_module = config_module  # Store config_module
         self.exchange_engine = CurrencyExchangeEngine(config_module) # TD-213: Initialize Exchange Engine
 

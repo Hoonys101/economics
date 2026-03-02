@@ -54,7 +54,7 @@ class TestPhase20Integration:
             h = MagicMock()
             h._bio_state.is_active = True # Boolean, not Mock
             h._econ_state.assets = 5000.0
-            engine.households.append(h)
+            engine.agent_registry.register(h)
         engine.goods_data = []
         engine.ai_trainer = MagicMock()
 

@@ -77,10 +77,6 @@ class WorldState:
         # These attributes are populated by the SimulationInitializer
         self.time: int = 0
         self.run_id: int = 0
-        self.households: List[Household] = []
-        self.firms: List[Firm] = []
-        self.agents: Dict[AgentID, Any] = {}
-        self.next_agent_id: int = 0
         self.markets: Dict[str, Market] = {}
         self.bank: Optional[Bank] = None
         self._governments: List[Government] = [] # TD-ARCH-GOV-MISMATCH
@@ -108,10 +104,6 @@ class WorldState:
         self.real_estate_units: List[RealEstateUnit] = []
         self.finance_system: Optional[FinanceSystem] = None
         self.ai_trainer: Optional[AIEngineRegistry] = None
-        self.transactions: List[Any] = []  # Stores transactions of the current tick
-        self.inter_tick_queue: List[Transaction] = []  # WO-109: Queue for next tick
-        self.effects_queue: List[Dict[str, Any]] = []  # WO-109: Queue for side-effects
-        self.inactive_agents: Dict[int, Any] = {}  # WO-109: Store inactive agents for transaction processing
         from collections import deque
         self.system_commands: List[SystemCommand] = [] # TD-255: Cockpit Event Queue
         self.god_commands: List[GodCommandDTO] = [] # Renamed for DTO parity (TD-ARCH-GOD-CMD-DIVERGENCE)
@@ -126,7 +118,8 @@ class WorldState:
         self.event_system: Optional[EventSystem] = None
         self.sensory_system: Optional[SensorySystem] = None
         self.settlement_system: Optional[ISettlementSystem] = None
-        self.agent_registry: Optional[IAgentRegistry] = None # Added for explicit typing
+        from modules.system.registry import AgentRegistry
+        self.agent_registry = AgentRegistry() # Added for explicit typing
         self.saga_orchestrator: Optional[ISagaOrchestrator] = None
         self.monetary_ledger: Optional[IMonetaryLedger] = None
         self.shareholder_registry: Optional[IShareholderRegistry] = None # TD-275
@@ -152,14 +145,6 @@ class WorldState:
         self.last_interest_rate: float = 0.0
 
         # Buffers
-        self.inflation_buffer = deque(maxlen=10)
-        self.unemployment_buffer = deque(maxlen=10)
-        self.gdp_growth_buffer = deque(maxlen=10)
-        self.wage_buffer = deque(maxlen=10)
-        self.approval_buffer = deque(maxlen=10)
-
-        self.last_avg_price_for_sma = 10.0
-        self.last_gdp_for_sma = 0.0
 
         self.baseline_money_supply: float = 0.0
         
@@ -176,6 +161,88 @@ class WorldState:
     def government(self, value: Government) -> None:
         if value not in self._governments:
             self._governments.append(value)
+
+
+    @property
+    def agents(self):
+        return self.agent_registry.agents
+
+    @agents.setter
+    def agents(self, value):
+        self.agent_registry.agents = value
+
+    @property
+    def households(self):
+        return self.agent_registry.households
+
+    @households.setter
+    def households(self, value):
+        self.agent_registry.households = value
+
+    @property
+    def firms(self):
+        return self.agent_registry.firms
+
+    @firms.setter
+    def firms(self, value):
+        self.agent_registry.firms = value
+
+    @property
+    def next_agent_id(self):
+        return self.agent_registry._next_agent_id
+
+    @next_agent_id.setter
+    def next_agent_id(self, value):
+        self.agent_registry._next_agent_id = value
+
+    @property
+    def inactive_agents(self):
+        return self.agent_registry.inactive_agents
+
+    @inactive_agents.setter
+    def inactive_agents(self, value):
+        self.agent_registry.inactive_agents = value
+
+
+    def append_transaction(self, transaction: Any) -> None:
+        if self.event_system:
+            self.event_system.append_transaction(transaction)
+
+    def append_effect(self, effect: Dict[str, Any]) -> None:
+        if self.event_system:
+            self.event_system.append_effect(effect)
+
+    def append_god_command(self, command: Any) -> None:
+        if self.event_system:
+            self.event_system.append_god_command(command)
+
+
+    @property
+    def transactions(self):
+        return self.event_system.transactions if self.event_system else []
+
+    @transactions.setter
+    def transactions(self, value):
+        if self.event_system:
+            self.event_system.transactions = value
+
+    @property
+    def inter_tick_queue(self):
+        return self.event_system.inter_tick_queue if self.event_system else []
+
+    @inter_tick_queue.setter
+    def inter_tick_queue(self, value):
+        if self.event_system:
+            self.event_system.inter_tick_queue = value
+
+    @property
+    def effects_queue(self):
+        return self.event_system.effects_queue if self.event_system else []
+
+    @effects_queue.setter
+    def effects_queue(self, value):
+        if self.event_system:
+            self.event_system.effects_queue = value
 
     def record_withdrawal(self, amount_pennies: int) -> None:
         """Records a withdrawal event for panic index calculation."""

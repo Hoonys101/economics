@@ -62,6 +62,7 @@ class TestBirthSystem:
 
         # Setup Context
         context = MagicMock(spec=IBirthContext)
+        context.agent_registry = MagicMock()
         context.households = [parent]
         context.agents = {parent.id: parent}
         context.next_agent_id = 100
@@ -108,7 +109,7 @@ class TestBirthSystem:
         assert tx.seller_id == child.id
         assert tx.transaction_type == "GIFT"
 
-        assert child in context.households
+        context.agent_registry.register.assert_called_with(child)
 
     def test_birth_system_requires_valid_protocol_context(self, birth_system):
         # Pass an object that does NOT satisfy IBirthContext

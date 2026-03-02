@@ -24,7 +24,7 @@ def test_m2_fix():
     hh.assets = 1000.0
     hh.is_active = True
 
-    state.households.append(hh)
+    state.agent_registry.register(hh)
 
     # Check Initial M2
     # Should be Gov(1000) + HH(1000) = 2000

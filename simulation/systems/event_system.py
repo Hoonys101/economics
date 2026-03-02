@@ -22,6 +22,20 @@ class EventSystem(IEventSystem):
     def __init__(self, config: Any, settlement_system: ISettlementSystem):
         self.config = config
         self.settlement_system = settlement_system
+        self.transactions: List[Any] = []
+        self.inter_tick_queue: List[Dict[str, Any]] = []
+        self.effects_queue: List[Dict[str, Any]] = []
+        self.god_commands: List[Any] = []
+
+    def append_transaction(self, transaction: Any) -> None:
+        self.transactions.append(transaction)
+
+    def append_effect(self, effect: Dict[str, Any]) -> None:
+        self.effects_queue.append(effect)
+
+    def append_god_command(self, command: Any) -> None:
+        self.god_commands.append(command)
+
 
     def execute_scheduled_events(self, time: int, context: EventContext, config: "StressScenarioConfig") -> None:
         """

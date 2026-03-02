@@ -364,6 +364,16 @@ class IAgentRegistry(Protocol):
     def get_all_agents(self) -> List[Any]:
         ...
 
+    def get_all_households(self) -> List[Any]:
+        ...
+
+    def get_all_firms(self) -> List[Any]:
+        ...
+
+    def generate_next_agent_id(self) -> int:
+        ...
+
+
     def is_agent_active(self, agent_id: int) -> bool:
         """Returns True if the agent exists and has not been marked INACTIVE/DEAD."""
         ...

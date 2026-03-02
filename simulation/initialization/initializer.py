@@ -505,8 +505,8 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         Prevents TD-LIFECYCLE-GHOST-FIRM by ensuring no agent exists without a ledger account.
         """
-        sim.households = self.households
-        sim.firms = self.firms
+        sim.agent_registry.households = self.households
+        sim.agent_registry.firms = self.firms
         sim.goods_data = self.goods_data
 
         # Ensure sim.agents is initialized (it should be partitioned from System Agents in Phase 2)
@@ -636,14 +636,6 @@ class SimulationInitializer(SimulationInitializerInterface):
             agent.update_needs(sim.time)
             agent.decision_engine.markets = sim.markets
             agent.decision_engine.goods_data = self.goods_data
-
-        sim.inflation_buffer = deque(maxlen=10)
-        sim.unemployment_buffer = deque(maxlen=10)
-        sim.gdp_growth_buffer = deque(maxlen=10)
-        sim.wage_buffer = deque(maxlen=10)
-        sim.approval_buffer = deque(maxlen=10)
-        sim.last_avg_price_for_sma = 10.0
-        sim.last_gdp_for_sma = 0.0
         sim.last_interest_rate = sim.bank.base_rate
         config_content = str(self.config.__dict__)
         config_hash = hashlib.sha256(config_content.encode()).hexdigest()

@@ -11,65 +11,77 @@ if TYPE_CHECKING:
 
 class AgentRegistry(IAgentRegistry, ISystemAgentRegistry):
     def __init__(self):
-        self._state: Optional[SimulationState] = None
+        # Migrated from WorldState
+        self.agents: Dict[AgentID, Any] = {}
+        self.households: List[Any] = []
+        self.firms: List[Any] = []
+        self._next_agent_id: int = 0
+        self.inactive_agents: Dict[AgentID, Any] = {} # WO-109
+        self._state = None # Keep for backward compat for now
 
-    def set_state(self, state: SimulationState) -> None:
+    def set_state(self, state: Any) -> None:
         self._state = state
 
-    def register(self, agent: Agent) -> None:
+    def generate_next_agent_id(self) -> int:
+        self._next_agent_id += 1
+        return self._next_agent_id
+
+    def register(self, agent: Any) -> None:
         """
         Registers an agent into the registry's state.
         Ensures atomic registration visibility.
         """
-        if self._state is not None:
-            self._state.agents[agent.id] = agent
+        self.agents[agent.id] = agent
+
+        # Categorize
+        if hasattr(agent, '__class__'):
+            class_name = agent.__class__.__name__
+            if 'Household' in class_name:
+                self.households.append(agent)
+            elif 'Firm' in class_name:
+                self.firms.append(agent)
 
     def register_system_agent(self, agent: IAgent) -> None:
         """Registers a system agent bypassing standard initialization constraints."""
-        if self._state is not None:
-            self._state.agents[agent.id] = agent
+        self.agents[agent.id] = agent
 
     def get_system_agent(self, agent_id: AgentID) -> Optional[IAgent]:
         """Retrieves a system agent, supporting ID 0."""
-        if self._state is None:
-            return None
-        return self._state.agents.get(agent_id)
+        return self.agents.get(agent_id)
 
-    def get_agent(self, agent_id: Any) -> Optional[Agent]:
+    def get_agent(self, agent_id: Any) -> Optional[Any]:
         if agent_id is None:
             return None
-        if self._state is None:
-            return None
-        agent = self._state.agents.get(agent_id)
+
+        agent = self.agents.get(agent_id)
         if agent is not None:
              return agent
 
-        # Check Estate Registry
-        if hasattr(self._state, 'estate_registry') and self._state.estate_registry:
+        # Check Estate Registry (Fallback to legacy _state if available)
+        if self._state and hasattr(self._state, 'estate_registry') and self._state.estate_registry:
              return self._state.estate_registry.get_agent(agent_id)
 
         return None
 
     def get_all_financial_agents(self) -> List[Any]:
-        if self._state is None:
-            return []
-        # Since all system agents (Government, Central Bank, etc) are now explicitly registered
-        # in state.agents by SimulationInitializer, we can simply return values.
-        return list(self._state.agents.values())
+        return list(self.agents.values())
 
     def get_all_agents(self) -> List[Any]:
-        if self._state is None:
-            return []
-        return list(self._state.agents.values())
+        return list(self.agents.values())
+
+    def get_all_households(self) -> List[Any]:
+        return self.households
+
+    def get_all_firms(self) -> List[Any]:
+        return self.firms
 
     def is_agent_active(self, agent_id: int) -> bool:
         """Returns True if the agent exists and has not been marked INACTIVE/DEAD."""
-        if self._state is None:
-            return False
-        agent = self._state.agents.get(agent_id)
+        agent = self.agents.get(agent_id)
         if not agent:
             return False
         return getattr(agent, "is_active", False)
+
 
 class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
     """

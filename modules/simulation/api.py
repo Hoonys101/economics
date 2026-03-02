@@ -202,6 +202,7 @@ class IInventoryHandler(Protocol):
     def get_all_items(self, slot: InventorySlot = InventorySlot.MAIN) -> Dict[str, float]: ...
     def clear_inventory(self, slot: InventorySlot = InventorySlot.MAIN) -> None: ...
 
+@runtime_checkable
 class IDecisionEngine(Protocol):
     """Interface for the 'brain' of an agent."""
     # Updated to match BaseDecisionEngine signature
@@ -306,6 +307,7 @@ class IShareholderRegistry(Protocol):
         """Returns total outstanding shares."""
         ...
 
+@runtime_checkable
 class IConfig(Protocol):
     STARVATION_THRESHOLD: float
 
@@ -350,6 +352,7 @@ class ISimulationState(Protocol):
         """
         ...
 
+@runtime_checkable
 class IShockInjector(Protocol):
     """
     An interface for a component that can inject economic shocks into the simulation.
