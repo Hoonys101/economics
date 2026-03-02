@@ -81,8 +81,8 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
         self._layers: Dict[str, Dict[OriginType, RegistryValueDTO]] = {}
         self._observers: List[RegistryObserver] = []
         self._key_observers: Dict[str, List[RegistryObserver]] = {}
-        # Placeholder for scheduler injection (Phase 0 Intercept)
-        self._scheduler = None
+        # Source for current simulation tick (Callable[[], int] or object with .time/.current_tick)
+        self._tick_source: Optional[Any] = None
         # Load metadata schema on initialization
         self._metadata_map: Dict[str, ParameterSchemaDTO] = {}
         self._metadata_loaded = False # Flag for lazy loading
@@ -153,9 +153,17 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
             if origin < active_entry.origin:
                 return False
 
-        # 2. Phase 0 Intercept (TODO: Implement when Scheduler is available)
-        # ...
-
+        # 2. Get Current Tick for Metadata
+        current_tick = 0
+        if self._tick_source:
+             if callable(self._tick_source):
+                 current_tick = self._tick_source()
+             elif hasattr(self._tick_source, 'current_tick'):
+                 current_tick = self._tick_source.current_tick
+             elif hasattr(self._tick_source, 'time'):
+                 current_tick = self._tick_source.time
+             # Fallback to 0 if none of the above match
+        
         # 3. Update Layer
         is_locked = (origin == OriginType.GOD_MODE)
 
@@ -170,7 +178,7 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
             domain=domain,
             origin=origin,
             is_locked=is_locked,
-            last_updated_tick=0 # TODO: Inject scheduler.current_tick
+            last_updated_tick=current_tick
         )
 
         if key not in self._layers:
@@ -247,6 +255,10 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
 
     def get_entry(self, key: str) -> Optional[RegistryValueDTO]:
         return self._get_active_entry(key)
+
+    def inject_tick_source(self, source: Any) -> None:
+        """Injects the source for simulation time."""
+        self._tick_source = source
 
     def delete_entry(self, key: str) -> bool:
         """Deletes an entry completely (for rollback purposes)."""

@@ -279,6 +279,13 @@ class IGlobalRegistry(Protocol):
     def subscribe(self, observer: RegistryObserver, keys: Optional[List[str]] = None) -> None:
         ...
 
+    def inject_tick_source(self, source: Any) -> None:
+        """
+        Injects a source for the current simulation tick.
+        Expected to be a callable returning int, or an object with a 'time' or 'current_tick' property.
+        """
+        ...
+
     def snapshot(self) -> Dict[str, RegistryValueDTO]:
         ...
 

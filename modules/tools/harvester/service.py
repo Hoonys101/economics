@@ -102,7 +102,7 @@ class HarvesterService(IHarvesterService):
         
         # 2. Static Scoring (In-Memory)
         candidates = []
-        target_dirs = ["design/", "artifacts/reports/", "communications/reports/", "reports/"]
+        target_dirs = ["design/", "artifacts/reports/", "communications/reports/", "reports/", "analysis_report/"]
         
         for f in all_files:
             if not f.endswith(".md"):
