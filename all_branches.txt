@@ -1,0 +1,18 @@
+  atomic-housing-saga-v3-6601307136540128487
+  feat/td-162-household-refactor
+  feature/integrity-refactor-20260201
+  feature/liquidation-sprint-20260202
+  fix-stability-engine-api-17575759646479653565
+  fix/tech-debt-stability-cleanup
+  housing-v2-refactor-15597012861367002904
+* main
+  mission-wave5-stabilization-phase2-9235819225399444347
+  ph6-watchtower-scaffold-18088587128119282769
+  refactor/strict-typing-dto-enforcement-3664420407678054950
+  wave-1.5-initialization-4380446179203151109
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/fix/corporate-mocks-refactor-14894947520103075596
+  remotes/origin/impl-s3-1-decisions-13063379254852348615
+  remotes/origin/jules-520093425014145795-3784ee4c
+  remotes/origin/jules-test-global-setup-fix-7245793932980915287
+  remotes/origin/main

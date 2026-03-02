@@ -1,0 +1,38 @@
+# 🐙 Gemini CLI Code Review Report
+
+## 1. 🔍 Summary
+이번 PR은 진단(Diagnosis) 시나리오 테스트에서 사용되던 전역 모듈 기반의 불안정한 Mocking(`mock_config_module`)을 제거하고, `IConfigurationRegistry`와 `IAgentRegistry` 인터페이스를 명시적으로 주입(DI)하도록 테스트 팩토리와 픽스처를 개선하여 "Clean Room" 격리 환경을 구축했습니다.
+
+## 2. 🚨 Critical Issues
+*   **None**: 보안 위반, 돈 복사 버그(Zero-sum 위반) 또는 시스템 절대 경로 하드코딩 등 치명적인 이슈는 발견되지 않았습니다.
+
+## 3. ⚠️ Logic & Spec Gaps
+*   **Empty Teardown Logic**: `conftest.py`에 추가된 `clean_room_teardown` 픽스처가 `yield` 이후 실제 cleanup 로직 없이 주석만 포함되어 있습니다. 당장은 문제가 없지만, 실제 전역 상태(예: Singleton 캐시 등)를 사용하는 경우 메모리 누수나 테스트 간 간섭이 발생할 수 있으므로 구체적인 cleanup 로직 구현이 권장됩니다.
+*   **Mock Config Default Return**: `mock_config_registry.get.return_value = None`으로 설정되어 있습니다. 현재 `EconomicIndicatorTracker` 테스트는 정상 통과하지만, 추후 다른 테스트에서 `.get()`을 호출하고 반환값으로 산술 연산(`+`, `*` 등)을 시도할 경우 `TypeError`가 발생할 수 있습니다. 
+
+## 4. 💡 Suggestions
+*   **Teardown 구현 구체화**: `clean_room_teardown` 픽스처 내에 `mock_agent_registry.clear()` 또는 관련 글로벌 캐시를 명시적으로 비우는 코드를 추가하는 것을 고려하십시오.
+*   **팩토리 내 이중 등록 방지 (Double-Registration)**: `factories.py`에서 `registry.register_agent()`가 호출됩니다. 만약 `create_firm`이나 `create_household`가 Bootstrapper 내에서 호출될 경우, Bootstrapper에서도 등록을 시도하여 이중 등록(Double-Registration)이 발생할 가능성이 있는지 확인하는 것이 좋습니다.
+
+## 5. 🧠 Implementation Insight Evaluation
+*   **Original Insight**:
+    > The architectural review of `tests/integration/scenarios/diagnosis/conftest.py` identified a significant technical debt: the `mock_config_module` fixture was creating a "Duct-Tape" mock by copying the entire global `config` module, leaking global state into the isolated diagnosis scenarios. Furthermore, factory functions (`create_household`, `create_firm`) in `tests/utils/factories.py` assumed global contexts and dependencies.
+    > ... (Mitigation steps 1-4 detailed)
+*   **Reviewer Evaluation**: 
+    매우 훌륭한 통찰입니다. 전역 상태를 복제하여 테스트를 우회하던 기존의 "Duct-Tape" 방식의 기술 부채를 정확히 짚어냈으며, 인터페이스(`IConfigurationRegistry`, `IAgentRegistry`)를 이용한 명시적 의존성 주입(DI)으로 해결한 점이 아키텍처 원칙에 완벽히 부합합니다. 독립된 미션의 실패를 무시하고 관심사를 분리한 점(Boundary 유지) 또한 높게 평가합니다.
+
+## 6. 📚 Manual Update Proposal (Draft)
+
+**Target File**: `design/2_operations/ledgers/TECH_DEBT_LEDGER.md` (또는 `ECONOMIC_INSIGHTS.md`)
+
+```markdown
+### [S3-1] Duct-Tape Mocking in Test Fixtures
+- **현상**: `tests/integration/scenarios/diagnosis/conftest.py` 등 일부 테스트 환경에서 전역 `config` 모듈을 통째로 복사하여 Mocking하는 "Duct-Tape" 방식을 사용함.
+- **원인**: 초기 테스트 작성 시 완전한 격리(Isolation)보다는 빠른 의존성 충족을 우선시하여 전역 상태를 모방함. 팩토리 함수들 또한 암묵적으로 글로벌 컨텍스트를 가정함.
+- **해결**: 전역 모듈 모방 방식을 폐기하고, `IConfigurationRegistry`, `IAgentRegistry` 등의 명확한 인터페이스 기반 Mock 객체를 주입(DI)하도록 리팩토링. 팩토리 메서드(`create_household`, `create_firm`)에 레지스트리를 선택적으로 받을 수 있도록 업데이트.
+- **교훈**: 테스트 환경에서도 의존성 역전 원칙(DIP)과 명시적 주입을 준수해야 Global State Leak을 방지하고 진정한 "Clean Room Isolation"을 달성할 수 있음.
+```
+
+## 7. ✅ Verdict
+**APPROVE**
+(모든 보안 및 아키텍처 규칙을 준수했으며, 인사이트 기록 및 기술 부채 상환이 올바르게 수행되었습니다.)
