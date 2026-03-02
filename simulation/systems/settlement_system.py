@@ -255,9 +255,14 @@ class SettlementSystem(IMonetaryAuthority):
         processed_wallets = set()
 
         # System Agents to Exclude
-        # Use set comprehension to ensure all IDs are strings for comparison
-        excluded_ids = {str(uid) for uid in NON_M2_SYSTEM_AGENT_IDS}
+        # Use a set with both raw and string representations to avoid casting in the tight loop
+        excluded_ids = set()
+        for uid in NON_M2_SYSTEM_AGENT_IDS:
+            excluded_ids.add(uid)
+            excluded_ids.add(str(uid))
+
         if self.bank:
+             excluded_ids.add(self.bank.id)
              excluded_ids.add(str(self.bank.id))
 
         def process_agent_balance(agent: Any) -> int:
@@ -269,7 +274,7 @@ class SettlementSystem(IMonetaryAuthority):
             processed_ids.add(agent.id)
 
             # 0. ID Check (PRIORITY: Do not poison shared wallets with system exclusions)
-            if str(agent.id) in excluded_ids:
+            if agent.id in excluded_ids:
                 return 0
 
             # 0.1 Deduplication (Shared Wallet Identity)

@@ -199,6 +199,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Guarantees AgentRegistry.register() works during Population Phase
         sim.agent_registry.set_state(sim.world_state)
 
+        # Inject Tick Source for Registry Metadata
+        sim.world_state.global_registry.inject_tick_source(sim.world_state)
+
         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
 
         from simulation.dtos.strategy import ScenarioStrategy

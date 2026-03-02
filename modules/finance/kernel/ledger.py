@@ -255,62 +255,6 @@ class MonetaryLedger(IMonetaryLedger):
         destroyed_delta = self.total_money_destroyed.get(currency, 0) - self.start_tick_money_destroyed.get(currency, 0)
         return issued_delta - destroyed_delta
 
-    def record_monetary_expansion(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.expected_m2_pennies += amount_pennies
-
-        if currency not in self.total_money_issued:
-            self.total_money_issued[currency] = 0
-        self.total_money_issued[currency] += amount_pennies
-
-        tx = Transaction(
-            buyer_id=-1,
-            seller_id=-1,
-            item_id=f"monetary_expansion_{self._current_tick}",
-            quantity=1.0,
-            price=amount_pennies / 100.0,
-            market_id="monetary_policy",
-            transaction_type="monetary_expansion",
-            time=self._current_tick,
-            metadata={
-                "source": source,
-                "currency": currency,
-                "is_monetary_expansion": True,
-                "executed": True,
-                "is_audit": True
-            },
-            total_pennies=amount_pennies
-        )
-        self.transaction_log.append(tx)
-        logger.info(f"MONETARY_LEDGER | M2 Expansion: +{amount_pennies} ({source}) | New Expected M2: {self.expected_m2_pennies}")
-
-    def record_monetary_contraction(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.expected_m2_pennies -= amount_pennies
-
-        if currency not in self.total_money_destroyed:
-            self.total_money_destroyed[currency] = 0
-        self.total_money_destroyed[currency] += amount_pennies
-
-        tx = Transaction(
-            buyer_id=-1,
-            seller_id=-1,
-            item_id=f"monetary_contraction_{self._current_tick}",
-            quantity=1.0,
-            price=amount_pennies / 100.0,
-            market_id="monetary_policy",
-            transaction_type="monetary_contraction",
-            time=self._current_tick,
-            metadata={
-                "source": source,
-                "currency": currency,
-                "is_monetary_destruction": True,
-                "executed": True,
-                "is_audit": True
-            },
-            total_pennies=amount_pennies
-        )
-        self.transaction_log.append(tx)
-        logger.info(f"MONETARY_LEDGER | M2 Contraction: -{amount_pennies} ({source}) | New Expected M2: {self.expected_m2_pennies}")
-
     # Legacy wrappers
     def record_credit_expansion(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None:
         # Convert float amount to pennies

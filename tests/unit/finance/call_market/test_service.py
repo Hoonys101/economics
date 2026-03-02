@@ -136,6 +136,8 @@ class TestCallMarketService(unittest.TestCase):
             "maturity_tick": 100
         }
         self.service.active_loans[loan_id] = loan
+        import heapq
+        heapq.heappush(self.service.maturity_queue, (100, loan_id))
 
         # Tick 99: Not matured
         self.service.settle_matured_loans(tick=99)

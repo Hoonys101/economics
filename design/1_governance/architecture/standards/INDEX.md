@@ -11,6 +11,7 @@ Welcome to the central repository of architectural rules and coding patterns for
 ## 🔌 2. Infrastructure & Lifecycle
 - **[LIFECYCLE_HYGIENE.md](./LIFECYCLE_HYGIENE.md)**: Tick sequencing, Late-Reset principle, and state transition safety.
 - **[TESTING_STABILITY.md](./TESTING_STABILITY.md)**: Mock Purity, Golden Fixtures, and library-less environment stability.
+- **[VIBE_CHECK_MANUAL.md](./VIBE_CHECK_MANUAL.md)**: LLM Governance, Deconstruction, and "Duct-Tape" prevention.
 
 ## ⚡ 3. Performance Optimization
 - **Iterator Efficiency**: When combining large sequences (e.g., `Transaction` lists), prefer `itertools.chain` over list concatenation (`+`) to save memory/CPU.

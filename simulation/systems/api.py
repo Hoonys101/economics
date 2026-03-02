@@ -237,13 +237,14 @@ class IMintingAuthority(Protocol):
     Authority capable of creating or destroying money (Non-Zero-Sum).
     Typically the Central Bank system.
     """
-    def mint_and_transfer(self, target_agent: Any, amount: float, memo: str) -> bool:
+    def mint_and_transfer(self, target_agent: Any, amount: int, memo: str) -> Optional[Transaction]:
         """Creates money and transfers it to the target agent."""
         ...
 
-    def transfer_and_burn(self, source_agent: Any, amount: float, memo: str) -> bool:
+    def transfer_and_burn(self, source_agent: Any, amount: int, memo: str) -> Optional[Transaction]:
         """Transfers money from the source agent and destroys it."""
         ...
+
 
 class IAccountingSystem(Protocol):
     """

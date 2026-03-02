@@ -1,6 +1,9 @@
+import logging
 from typing import Any
 from modules.finance.api import ITransactionHandler
 from modules.finance.transaction.api import ILedgerEngine, TransactionDTO, TransactionResultDTO
+
+logger = logging.getLogger(__name__)
 
 class TransferHandler(ITransactionHandler):
     """
@@ -29,5 +32,21 @@ class TransferHandler(ITransactionHandler):
         )
 
     def rollback(self, transaction_id: str, context: Any) -> bool:
-        # TODO: Implement rollback
-        return False
+        if not isinstance(context, TransactionDTO):
+            logger.error(f"Rollback failed for tx {transaction_id}: context is not a TransactionDTO")
+            return False
+
+        try:
+            result = self.ledger_engine.process_transaction(
+                source_account_id=context.destination_account_id,
+                destination_account_id=context.source_account_id,
+                amount=context.amount,
+                currency=context.currency,
+                description=f"ROLLBACK of original tx {context.transaction_id}"
+            )
+            if result.status != 'COMPLETED':
+                logger.error(f"Rollback failed for tx {transaction_id}: {result.message}")
+            return result.status == 'COMPLETED'
+        except Exception as e:
+            logger.error(f"Rollback failed for tx {transaction_id} (original tx {context.transaction_id}): {e}")
+            return False
