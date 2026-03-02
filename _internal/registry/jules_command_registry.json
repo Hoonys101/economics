@@ -3,24 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "wo-ssot-purity-ids": {
-      "key": "wo-ssot-purity-ids",
-      "title": "[S2-1] Agent ID Normalization",
-      "type": "jules",
-      "instruction_raw": "Replace all 'str(id)' and string-based agent ID comparisons with direct 'int' (AgentID) comparisons in world_state.py and settlement_system.py. Standardize on the AgentID NewType. MANDATORY: Ignore all test regressions. Focus on structural correctness. Final suite alignment is deferred to Phase 8.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [
-        "simulation/world_state.py",
-        "simulation/systems/settlement_system.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wo-ssot-authority": {
       "key": "wo-ssot-authority",
       "title": "[S1-2] Behavioral Sinking (Settlement Authority)",

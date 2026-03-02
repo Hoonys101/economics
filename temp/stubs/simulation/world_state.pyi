@@ -1,5 +1,6 @@
 import logging
 from _typeshed import Incomplete
+from collections import deque as deque
 from modules.analysis.crisis_monitor import CrisisMonitor as CrisisMonitor
 from modules.common.config_manager.api import ConfigManager as ConfigManager
 from modules.finance.api import ISettlementSystem as ISettlementSystem, IShareholderRegistry as IShareholderRegistry
@@ -61,10 +62,6 @@ class WorldState:
     repository: Incomplete
     time: int
     run_id: int
-    households: list[Household]
-    firms: list[Firm]
-    agents: dict[AgentID, Any]
-    next_agent_id: int
     markets: dict[str, Market]
     bank: Bank | None
     central_bank: CentralBank | None
@@ -91,10 +88,6 @@ class WorldState:
     real_estate_units: list[RealEstateUnit]
     finance_system: FinanceSystem | None
     ai_trainer: AIEngineRegistry | None
-    transactions: list[Any]
-    inter_tick_queue: list[Transaction]
-    effects_queue: list[dict[str, Any]]
-    inactive_agents: dict[int, Any]
     system_commands: list[SystemCommand]
     god_commands: list[GodCommandDTO]
     command_queue: CommandQueue | None
@@ -104,7 +97,7 @@ class WorldState:
     event_system: EventSystem | None
     sensory_system: SensorySystem | None
     settlement_system: ISettlementSystem | None
-    agent_registry: IAgentRegistry | None
+    agent_registry: Incomplete
     saga_orchestrator: ISagaOrchestrator | None
     monetary_ledger: IMonetaryLedger | None
     shareholder_registry: IShareholderRegistry | None
@@ -124,13 +117,6 @@ class WorldState:
     batch_save_interval: int
     household_time_allocation: dict[int, float]
     last_interest_rate: float
-    inflation_buffer: Incomplete
-    unemployment_buffer: Incomplete
-    gdp_growth_buffer: Incomplete
-    wage_buffer: Incomplete
-    approval_buffer: Incomplete
-    last_avg_price_for_sma: float
-    last_gdp_for_sma: float
     baseline_money_supply: float
     tick_withdrawal_pennies: int
     market_panic_index: float
@@ -140,6 +126,41 @@ class WorldState:
         """Facade to provide the primary government instance (TD-ARCH-GOV-MISMATCH)."""
     @government.setter
     def government(self, value: Government) -> None: ...
+    @property
+    def agents(self): ...
+    @agents.setter
+    def agents(self, value) -> None: ...
+    @property
+    def households(self): ...
+    @households.setter
+    def households(self, value) -> None: ...
+    @property
+    def firms(self): ...
+    @firms.setter
+    def firms(self, value) -> None: ...
+    @property
+    def next_agent_id(self): ...
+    @next_agent_id.setter
+    def next_agent_id(self, value) -> None: ...
+    @property
+    def inactive_agents(self): ...
+    @inactive_agents.setter
+    def inactive_agents(self, value) -> None: ...
+    def append_transaction(self, transaction: Any) -> None: ...
+    def append_effect(self, effect: dict[str, Any]) -> None: ...
+    def append_god_command(self, command: Any) -> None: ...
+    @property
+    def transactions(self): ...
+    @transactions.setter
+    def transactions(self, value) -> None: ...
+    @property
+    def inter_tick_queue(self): ...
+    @inter_tick_queue.setter
+    def inter_tick_queue(self, value) -> None: ...
+    @property
+    def effects_queue(self): ...
+    @effects_queue.setter
+    def effects_queue(self, value) -> None: ...
     def record_withdrawal(self, amount_pennies: int) -> None:
         """Records a withdrawal event for panic index calculation."""
     def calculate_base_money(self) -> dict[CurrencyCode, int]:
