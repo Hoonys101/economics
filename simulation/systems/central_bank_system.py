@@ -50,21 +50,21 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
 
         if op_type == 'purchase':
             limit_price_pennies = self.OMO_BUY_LIMIT_PRICE_PENNIES
-            limit_price = self.OMO_BUY_LIMIT_PRICE
+            # limit_price = self.OMO_BUY_LIMIT_PRICE # Removed float variable
             quantity = amount // par_value_pennies
 
             if quantity > 0:
-                order = Order(agent_id=self.id, side='buy', item_id='government_bond', quantity=quantity, price_pennies=limit_price_pennies, price_limit=limit_price, market_id=self.security_market_id)
+                order = Order(agent_id=self.id, side='buy', item_id='government_bond', quantity=quantity, price_pennies=limit_price_pennies, price_limit=0.0, market_id=self.security_market_id)
                 orders.append(order)
                 self.logger.info(f'OMO: Placing BUY order for {quantity} bonds (Target: {amount}).')
 
         elif op_type == 'sale':
             limit_price_pennies = self.OMO_SELL_LIMIT_PRICE_PENNIES
-            limit_price = self.OMO_SELL_LIMIT_PRICE
+            # limit_price = self.OMO_SELL_LIMIT_PRICE # Removed float variable
             quantity = amount // par_value_pennies
 
             if quantity > 0:
-                order = Order(agent_id=self.id, side='sell', item_id='government_bond', quantity=quantity, price_pennies=limit_price_pennies, price_limit=limit_price, market_id=self.security_market_id)
+                order = Order(agent_id=self.id, side='sell', item_id='government_bond', quantity=quantity, price_pennies=limit_price_pennies, price_limit=0.0, market_id=self.security_market_id)
                 orders.append(order)
                 self.logger.info(f'OMO: Placing SELL order for {quantity} bonds (Target: {amount}).')
         return orders
