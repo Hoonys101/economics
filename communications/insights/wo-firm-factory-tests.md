@@ -2,12 +2,12 @@
 
 ## 1. Architectural Insights
 * **Decoupling from God Objects**: Refactored `FirmFactory.create_firm` and `FirmFactory.clone_firm` to no longer rely on untyped `Any` `birth_context` and `finance_context` derived from the God Object `SimulationState`. These methods now explicitly use strictly typed `IBirthContext` and `IFinanceTickContext` protocols, ensuring predictable instantiation.
-* **Strict Type Validation in Bootstrapper**: Replaced dynamic `hasattr` and loose type validations (`IMonetaryAuthority`) with strict protocol enforcement (`ISettlementSystem`) via `isinstance()` in `Bootstrapper.inject_liquidity_for_firm`. This ensures Zero-Sum Economic Integrity by guaranteeing that M2 liquidity expansion uses standard settlement protocol behaviors.
+* **Strict Type Validation in Bootstrapper**: Replaced dynamic `hasattr` and loose type validations with strict protocol enforcement (`IMonetaryAuthority`) via `isinstance()` in `Bootstrapper.inject_liquidity_for_firm`. This ensures Zero-Sum Economic Integrity by guaranteeing that M2 liquidity expansion (`create_and_transfer`) strictly requires `IMonetaryAuthority` which implements this expansion, keeping standard settlement segregated.
 * **Test Fixture Purity**: Standardized the `create_firm` test fixture in `tests/utils/factories.py` to transparently build the correct mocked `IBirthContext` and `IFinanceTickContext` objects. This significantly lowers test initialization complexity for future simulations.
 
 ## 2. Regression Analysis
-* **Initial Breakage**: Modifying `Bootstrapper.inject_liquidity_for_firm` to check for `ISettlementSystem` instead of `IMonetaryAuthority` broke `TestBootstrapperProtocolPurity` inside `tests/simulation/test_firm_factory.py`.
-* **Fix Applied**: Updated the exception message string assertion in `test_firm_factory.py` to expect `must implement ISettlementSystem`.
+* **Initial Breakage**: Modifying `Bootstrapper.inject_liquidity_for_firm` temporarily broke `TestBootstrapperProtocolPurity` inside `tests/simulation/test_firm_factory.py`.
+* **Fix Applied**: Restored the type validation and exception message string assertion in `test_firm_factory.py` to expect `must implement IMonetaryAuthority` to accurately reflect M2 creation capabilities.
 * **System-wide Compatibility**: A search through the `tests/` and `simulation/` codebase confirmed that other mock injections in testing factories (`MockFinanceTickContext` and `MockBirthContext`) were already aligned with the protocol changes, meaning no large-scale cascading refactors were required beyond `FirmFactory` and `Bootstrapper`.
 
 ## 3. Test Evidence
