@@ -564,13 +564,6 @@ class IMonetaryAuthority(ISettlementSystem, Protocol):
     Extended interface for authorized NON-ZERO-SUM operations.
     Used by Central Bank and Government (Minting/Burning).
     """
-    def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = 'god_mode_injection') -> bool:
-        """
-        Creates new money (M2 Expansion).
-        Records creation event in MonetaryLedger.
-        """
-        ...
-
     def transfer_and_destroy(self, source: IFinancialEntity, sink_authority: IFinancialEntity, amount: int, reason: str, tick: int, currency: CurrencyCode = ...) -> Any:
         """
         Destroys money (M2 Contraction).
