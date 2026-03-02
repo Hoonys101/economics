@@ -155,7 +155,6 @@ class SettlementSystem(IMonetaryAuthority):
                 # Use Protocol check if possible
                 if isinstance(agent, IAgent) or isinstance(agent, IFinancialAgent):
                     agents_map[agent.id] = agent
-                    agents_map[str(agent.id)] = agent
 
             accessor = DictionaryAccountAccessor(agents_map)
             validator = TransactionValidator(accessor)
@@ -259,11 +258,9 @@ class SettlementSystem(IMonetaryAuthority):
         excluded_ids = set()
         for uid in NON_M2_SYSTEM_AGENT_IDS:
             excluded_ids.add(uid)
-            excluded_ids.add(str(uid))
 
         if self.bank:
              excluded_ids.add(self.bank.id)
-             excluded_ids.add(str(self.bank.id))
 
         def process_agent_balance(agent: Any) -> int:
             if not agent: return 0
@@ -308,7 +305,7 @@ class SettlementSystem(IMonetaryAuthority):
             if balance > 10000000:
                  wallet_id = "N/A"
                  if hasattr(agent, "_econ_state") and hasattr(agent._econ_state, "wallet"):
-                     wallet_id = str(id(agent._econ_state.wallet))
+                     wallet_id = id(agent._econ_state.wallet)
 
                  self.logger.info(f"M2_AUDIT | Agent {agent.id} | Balance: {balance} | Active: {getattr(agent, 'is_active', '?')} | WalletID: {wallet_id} | AgentID: {id(agent)}")
 
@@ -336,11 +333,11 @@ class SettlementSystem(IMonetaryAuthority):
             return False
 
         # 1. Check ID Exclusion
-        if str(agent.id) in {str(uid) for uid in NON_M2_SYSTEM_AGENT_IDS}:
+        if agent.id in NON_M2_SYSTEM_AGENT_IDS:
             return False
 
         # 2. Check Bank ID (if bank reference exists)
-        if self.bank and str(agent.id) == str(self.bank.id):
+        if self.bank and agent.id == self.bank.id:
              return False
 
         # 3. Check Type Exclusion (IBank implementation)
@@ -437,8 +434,8 @@ class SettlementSystem(IMonetaryAuthority):
 
              dtos.append(TransactionDTO(
                  transaction_id=f"batch_{tick}_{i}",
-                 source_account_id=str(debit.id),
-                 destination_account_id=str(credit.id),
+                 source_account_id=debit.id,
+                 destination_account_id=credit.id,
                  amount=amount,
                  currency=DEFAULT_CURRENCY,
                  description=f"multiparty_seq_{i}"
@@ -515,8 +512,8 @@ class SettlementSystem(IMonetaryAuthority):
             agents_involved.append(credit_agent)
             dtos.append(TransactionDTO(
                  transaction_id=f"atomic_{tick}_{i}",
-                 source_account_id=str(debit_agent.id),
-                 destination_account_id=str(credit_agent.id),
+                 source_account_id=debit_agent.id,
+                 destination_account_id=credit_agent.id,
                  amount=amount,
                  currency=DEFAULT_CURRENCY,
                  description=memo
@@ -653,8 +650,8 @@ class SettlementSystem(IMonetaryAuthority):
         # Leg 1: A -> B (Currency A)
         tx1 = TransactionDTO(
             transaction_id=f"swap_{match.match_tick}_leg1",
-            source_account_id=str(party_a.id),
-            destination_account_id=str(party_b.id),
+            source_account_id=party_a.id,
+            destination_account_id=party_b.id,
             amount=match.amount_a_pennies,
             currency=match.currency_a,
             description=f"FX Swap Leg 1: {match.amount_a_pennies} {match.currency_a}"
@@ -663,8 +660,8 @@ class SettlementSystem(IMonetaryAuthority):
         # Leg 2: B -> A (Currency B)
         tx2 = TransactionDTO(
             transaction_id=f"swap_{match.match_tick}_leg2",
-            source_account_id=str(party_b.id),
-            destination_account_id=str(party_a.id),
+            source_account_id=party_b.id,
+            destination_account_id=party_a.id,
             amount=match.amount_b_pennies,
             currency=match.currency_b,
             description=f"FX Swap Leg 2: {match.amount_b_pennies} {match.currency_b}"
@@ -750,8 +747,8 @@ class SettlementSystem(IMonetaryAuthority):
             engine = self._get_engine(context_agents=[debit_agent, credit_agent])
             with FinancialSentry.unlocked():
                 result = engine.process_transaction(
-                    source_account_id=str(debit_agent.id),
-                    destination_account_id=str(credit_agent.id),
+                    source_account_id=debit_agent.id,
+                    destination_account_id=credit_agent.id,
                     amount=amount,
                     currency=currency,
                     description=memo
@@ -942,8 +939,6 @@ class SettlementSystem(IMonetaryAuthority):
         if not self.agent_registry: return False
 
         central_bank = self.agent_registry.get_agent(ID_CENTRAL_BANK)
-        if not central_bank:
-             central_bank = self.agent_registry.get_agent(str(ID_CENTRAL_BANK))
         if not central_bank: return False
 
         target_agent = self.agent_registry.get_agent(target_agent_id)

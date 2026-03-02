@@ -6,6 +6,8 @@ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 # DATA TRANSFER OBJECTS (DTOs)
 # ==============================================================================
 
+from modules.system.api import AgentID
+
 @dataclass
 class TransactionDTO:
     """
@@ -14,8 +16,8 @@ class TransactionDTO:
     MIGRATION: Uses integer pennies for amount.
     """
     transaction_id: str
-    source_account_id: str
-    destination_account_id: str
+    source_account_id: AgentID
+    destination_account_id: AgentID
     amount: int
     currency: CurrencyCode  # e.g., "GOLD", "USD"
     description: str
@@ -102,14 +104,14 @@ class IAccountAccessor(Protocol):
     Interface for accessing account information and performing operations.
     Decouples the transaction system from the agent registry.
     """
-    def get_participant(self, account_id: str) -> ITransactionParticipant:
+    def get_participant(self, account_id: AgentID) -> ITransactionParticipant:
         """
         Retrieves the transaction participant for the given account ID.
         Raises InvalidAccountError if the account does not exist or is incompatible.
         """
         ...
 
-    def exists(self, account_id: str) -> bool:
+    def exists(self, account_id: AgentID) -> bool:
         """Checks if an account exists."""
         ...
 
@@ -176,8 +178,8 @@ class ILedgerEngine(Protocol):
     """
     def process_transaction(
         self,
-        source_account_id: str,
-        destination_account_id: str,
+        source_account_id: AgentID,
+        destination_account_id: AgentID,
         amount: int,
         currency: CurrencyCode,
         description: str
