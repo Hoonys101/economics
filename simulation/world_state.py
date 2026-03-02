@@ -305,17 +305,17 @@ class WorldState:
             else: system_debt_pennies += abs(val)
 
         excluded_ids = {
-            str(ID_CENTRAL_BANK),
-            str(ID_SYSTEM),
-            str(ID_ESCROW),
-            str(ID_PUBLIC_MANAGER)
+            ID_CENTRAL_BANK,
+            ID_SYSTEM,
+            ID_ESCROW,
+            ID_PUBLIC_MANAGER
         }
         if self.bank:
-            excluded_ids.add(str(self.bank.id))
+            excluded_ids.add(self.bank.id)
 
         for agent in self.agents.values():
             if hasattr(agent, 'is_active') and not agent.is_active: continue
-            if hasattr(agent, 'id') and str(agent.id) in excluded_ids: continue
+            if hasattr(agent, 'id') and agent.id in excluded_ids: continue
             if isinstance(agent, IBank): continue
             process_agent(agent)
 

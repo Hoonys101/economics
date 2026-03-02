@@ -7,6 +7,7 @@ from modules.finance.api import (
     TransactionType,
     ITransactionHandler,
 )
+from modules.system.api import AgentID
 from modules.finance.transaction.api import (
     ILedgerEngine,
     ITransactionValidator,
@@ -194,8 +195,8 @@ class LedgerEngine(ILedgerEngine):
 
     def process_transaction(
         self,
-        source_account_id: str,
-        destination_account_id: str,
+        source_account_id: AgentID,
+        destination_account_id: AgentID,
         amount: int,
         currency: CurrencyCode,
         description: str

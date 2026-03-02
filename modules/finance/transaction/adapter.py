@@ -29,7 +29,7 @@ class FinancialEntityAdapter:
             return True
         # Hardcoded ID check for Central Bank. IDs are usually int.
         from modules.system.constants import ID_CENTRAL_BANK
-        return self.entity.id == ID_CENTRAL_BANK or str(self.entity.id) == str(ID_CENTRAL_BANK)
+        return self.entity.id == ID_CENTRAL_BANK
 
 class FinancialAgentAdapter:
     """
@@ -53,23 +53,16 @@ class FinancialAgentAdapter:
         if isinstance(self.agent, ISystemFinancialAgent) and self.agent.is_system_agent():
             return True
         from modules.system.constants import ID_CENTRAL_BANK
-        return self.agent.id == ID_CENTRAL_BANK or str(self.agent.id) == str(ID_CENTRAL_BANK)
+        return self.agent.id == ID_CENTRAL_BANK
 
+
+from modules.system.api import AgentID
 
 class RegistryAccountAccessor(IAccountAccessor):
     def __init__(self, registry: IAgentRegistry):
         self.registry = registry
 
-    def _get_agent(self, account_id: str) -> Any:
-        # 1. Try as Int (Common Case)
-        if isinstance(account_id, str) and account_id.isdigit():
-            try:
-                agent = self.registry.get_agent(int(account_id))
-                if agent: return agent
-            except (KeyError, ValueError):
-                pass
-
-        # 2. Try as String (Fallback or Non-Numeric ID)
+    def _get_agent(self, account_id: AgentID) -> Any:
         try:
             agent = self.registry.get_agent(account_id)
             if agent: return agent
@@ -78,7 +71,7 @@ class RegistryAccountAccessor(IAccountAccessor):
 
         return None
 
-    def get_participant(self, account_id: str) -> ITransactionParticipant:
+    def get_participant(self, account_id: AgentID) -> ITransactionParticipant:
         agent = self._get_agent(account_id)
         if agent is None:
             raise InvalidAccountError(f"Account (Agent) not found: {account_id}")
@@ -92,7 +85,7 @@ class RegistryAccountAccessor(IAccountAccessor):
 
         raise InvalidAccountError(f"Agent {account_id} does not implement IFinancialAgent or IFinancialEntity.")
 
-    def exists(self, account_id: str) -> bool:
+    def exists(self, account_id: AgentID) -> bool:
         agent = self._get_agent(account_id)
         return agent is not None and (
             isinstance(agent, IFinancialAgent) or
@@ -104,15 +97,11 @@ class DictionaryAccountAccessor(IAccountAccessor):
     Accessor that uses a local dictionary of agents.
     Useful for testing or ad-hoc transactions where registry is not available.
     """
-    def __init__(self, agents_map: Dict[str, Any]):
+    def __init__(self, agents_map: Dict[AgentID, Any]):
         self.agents_map = agents_map
 
-    def get_participant(self, account_id: str) -> ITransactionParticipant:
+    def get_participant(self, account_id: AgentID) -> ITransactionParticipant:
         agent = self.agents_map.get(account_id)
-        if agent is None:
-             # Try int key
-             if account_id.isdigit():
-                 agent = self.agents_map.get(int(account_id))
 
         if agent is None:
             raise InvalidAccountError(f"Account (Agent) not found in local map: {account_id}")
@@ -124,5 +113,5 @@ class DictionaryAccountAccessor(IAccountAccessor):
 
         raise InvalidAccountError(f"Agent {account_id} does not implement protocols.")
 
-    def exists(self, account_id: str) -> bool:
-        return (account_id in self.agents_map) or (account_id.isdigit() and int(account_id) in self.agents_map)
+    def exists(self, account_id: AgentID) -> bool:
+        return account_id in self.agents_map
