@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import FinancialSentry
 import pytest
 import logging
 from unittest.mock import MagicMock
@@ -17,7 +18,8 @@ class DummyHousehold:
             sex=gender # Sync sex with gender for test
         )
         wallet = Wallet(owner_id=id)
-        wallet.add(wealth)
+        with FinancialSentry.unlocked():
+            wallet.add(wealth)
         self._econ_state = EconStateDTO(
             wallet=wallet, inventory={}, inventory_quality={}, durable_assets=[], portfolio=MagicMock(),
             is_employed=True, employer_id=None, current_wage_pennies=0, wage_modifier=1.0,

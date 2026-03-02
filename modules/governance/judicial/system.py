@@ -74,11 +74,11 @@ class JudicialSystem(IJudicialSystem):
         return balance >= 0
 
     def handle_default(self, event: LoanDefaultedEvent) -> SeizureResultDTO:
-        agent_id = event['agent_id']
-        creditor_id = event['creditor_id']
-        amount = int(event['defaulted_amount']) # Ensure int
-        loan_id = event['loan_id']
-        tick = event['tick']
+        agent_id = event['agent_id'] if isinstance(event, dict) else event.agent_id
+        creditor_id = event['creditor_id'] if isinstance(event, dict) else event.creditor_id
+        amount = int(event['defaulted_amount'] if isinstance(event, dict) else event.defaulted_amount) # Ensure int
+        loan_id = event['loan_id'] if isinstance(event, dict) else event.loan_id
+        tick = event['tick'] if isinstance(event, dict) else event.tick
 
         result = SeizureResultDTO(
             seized_cash=0,

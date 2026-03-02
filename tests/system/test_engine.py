@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import FinancialSentry
 from unittest.mock import Mock, MagicMock, patch
 import pytest
 from simulation.engine import Simulation, EconomicIndicatorTracker
@@ -46,6 +47,13 @@ def mock_config_module():
     mock_config.INCOME_TAX_PAYER = "HOUSEHOLD"
     mock_config.LABOR_MARKET_MIN_WAGE = 5.0
     mock_config.INHERITANCE_TAX_RATE = 1.0
+    mock_config.ANNUAL_WEALTH_TAX_RATE = 0.05
+    mock_config.POPULATION_IMMIGRATION_THRESHOLD = 80
+    mock_config.MIN_FIRMS_THRESHOLD = 5
+    mock_config.STARTUP_COST = 15000.0
+    mock_config.ENTREPRENEURSHIP_SPIRIT = 0.05
+    mock_config.STARTUP_CAPITAL_MULTIPLIER = 1.5
+    mock_config.WEALTH_TAX_THRESHOLD = 50000.0
     mock_config.TICKS_PER_YEAR = 100.0
     mock_config.INITIAL_BASE_ANNUAL_RATE = 0.05
     # To support string formatting in mock
@@ -841,7 +849,7 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
     household_inactive.is_active = False
     firm_inactive.is_active = False
 
-    sim.lifecycle_manager.death_system.execute(state)
+    sim.lifecycle_manager.execute(state)
 
     assert len(sim.households) == 2
     assert household_active in sim.households
@@ -927,7 +935,7 @@ def test_death_system_executes_asset_buyout(setup_simulation_for_lifecycle):
         escrow_agent=getattr(sim, 'escrow_agent', None),
     )
 
-    death_system.execute(state)
+    sim.lifecycle_manager.execute(state)
 
     # Verify
     # 1. execute_asset_buyout called

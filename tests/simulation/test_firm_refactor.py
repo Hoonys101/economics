@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import InventorySentry
 import pytest
 from unittest.mock import MagicMock, patch
 from simulation.firms import Firm
@@ -94,8 +95,10 @@ def test_produce_orchestration(firm):
     from modules.simulation.api import InventorySlot
     firm.production_state.capital_stock = 100.0
     firm.production_state.automation_level = 0.5
-    firm.add_item('RAW', 10.0, slot=InventorySlot.INPUT)
-    firm.produce(current_time=0)
+    with InventorySentry.unlocked():
+        firm.add_item('RAW', 10.0, slot=InventorySlot.INPUT)
+    with InventorySentry.unlocked():
+        firm.produce(current_time=0)
     assert firm.production_state.capital_stock == 95.0
     assert firm.production_state.automation_level == 0.49
     assert firm.get_quantity('RAW', slot=InventorySlot.INPUT) == 5.0

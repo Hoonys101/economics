@@ -68,16 +68,16 @@ class HousingService(IHousingService):
              return None
 
         # Compare as strings to prevent int/str mismatch issues
-        if any(str(l['loan_id']) == loan_id_str for l in unit.liens):
+        if any(str(l.loan_id) == loan_id_str for l in unit.liens):
              return f"lien_{loan_id_str}"
 
         lien_id = f"lien_{loan_id_str}"
-        new_lien: LienDTO = {
-            "loan_id": loan_id_str,
-            "lienholder_id": int(lienholder_id_val) if lienholder_id_val is not None else -1,
-            "principal_remaining": int(principal_val) if principal_val is not None else 0,
-            "lien_type": "MORTGAGE"
-        }
+        new_lien = LienDTO(
+            loan_id=loan_id_str,
+            lienholder_id=int(lienholder_id_val) if lienholder_id_val is not None else -1,
+            principal_remaining=int(principal_val) if principal_val is not None else 0,
+            lien_type="MORTGAGE"
+        )
         unit.liens.append(new_lien)
         return lien_id
 
@@ -87,7 +87,7 @@ class HousingService(IHousingService):
              return False
 
         original_len = len(unit.liens)
-        unit.liens = [l for l in unit.liens if f"lien_{l['loan_id']}" != lien_id and l['loan_id'] != lien_id]
+        unit.liens = [l for l in unit.liens if f"lien_{l.loan_id}" != lien_id and l.loan_id != lien_id]
 
         return len(unit.liens) < original_len
 
@@ -114,7 +114,7 @@ class HousingService(IHousingService):
         seller_id = tx.seller_id
 
         try:
-            # real_estate_{id}
+            # real_estate_{id)
             unit_id = int(tx.item_id.split("_")[2])
             unit = next((u for u in self.real_estate_units if u.id == unit_id), None)
 
@@ -146,7 +146,7 @@ class HousingService(IHousingService):
         seller = state.agents.get(tx.seller_id)
 
         try:
-            # item_id format: "unit_{id}"
+            # item_id format: "unit_{id)"
             unit_id = int(tx.item_id.split("_")[1])
             unit = next((u for u in self.real_estate_units if u.id == unit_id), None)
 
@@ -158,19 +158,19 @@ class HousingService(IHousingService):
             unit.owner_id = tx.buyer_id
             # Update Liens - Remove old mortgages if any (assuming refinancing or fresh purchase clears old mortgage)
             # Logic from Registry:
-            unit.liens = [lien for lien in unit.liens if lien['lien_type'] != 'MORTGAGE']
+            unit.liens = [lien for lien in unit.liens if lien.lien_type != 'MORTGAGE']
 
             if tx.metadata and "mortgage_id" in tx.metadata and tx.metadata["mortgage_id"]:
                 loan_id = str(tx.metadata["mortgage_id"])
                 loan_principal = float(tx.metadata.get("loan_principal", 0.0))
                 lender_id = int(tx.metadata.get("lender_id", 0))
 
-                new_lien: LienDTO = {
-                    "loan_id": loan_id,
-                    "lienholder_id": lender_id,
-                    "principal_remaining": loan_principal,
-                    "lien_type": "MORTGAGE"
-                }
+                new_lien = LienDTO(
+                    loan_id=loan_id,
+                    lienholder_id=lender_id,
+                    principal_remaining=loan_principal,
+                    lien_type="MORTGAGE"
+                )
                 unit.liens.append(new_lien)
 
             # Update Seller (if not None/Govt)

@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import FinancialSentry
 import pytest
 from collections import deque
 from unittest.mock import Mock
@@ -38,7 +39,8 @@ def mock_firm():
     )
 
     # Hydrate wallet
-    firm.wallet.add(1000, DEFAULT_CURRENCY)
+    with FinancialSentry.unlocked():
+        firm.wallet.add(1000, DEFAULT_CURRENCY)
 
     firm.production_target = 100.0
 

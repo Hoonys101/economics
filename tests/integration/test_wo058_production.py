@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import InventorySentry
 import pytest
 from unittest.mock import Mock, MagicMock
 from simulation.engine import Simulation
@@ -232,10 +233,12 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_conf
     # To make produce work, we need to ensure the firm has employees
     mock_employee = households[0]
     firm.hr_state.employees = [mock_employee]
-    firm.add_item('wood', 100.0, slot=InventorySlot.INPUT)
+    with InventorySentry.unlocked():
+        firm.add_item('wood', 100.0, slot=InventorySlot.INPUT)
     firm.productivity_factor = 1.0
 
-    firm.produce(0) # Tick 0
+    with InventorySentry.unlocked():
+        firm.produce(0) # Tick 0
 
     sim.tracker.track(1, sim.households, sim.firms, sim.markets, 0)
 

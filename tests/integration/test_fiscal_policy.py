@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import FinancialSentry
 import pytest
 from unittest.mock import Mock
 from simulation.dtos import GovernmentSensoryDTO
@@ -65,7 +66,8 @@ def test_debt_ceiling_enforcement(government):
     # Ensure wallet is empty to trigger bond issuance logic
     current_balance = government.wallet.get_balance("USD")
     if current_balance > 0:
-        government.wallet.subtract(int(current_balance), "USD") # FIX: int cast
+        with FinancialSentry.unlocked():
+            government.wallet.subtract(int(current_balance), "USD") # FIX: int cast
 
     government._assets = 0.0
     government.total_debt = 0.0
@@ -85,7 +87,8 @@ def test_debt_ceiling_enforcement(government):
 
     def issue_bonds_side_effect(request, context, buyer_pool):
         amount = int(request.amount_pennies) # Ensure int
-        government.wallet.add(amount, "USD") # Update Wallet with cash
+        with FinancialSentry.unlocked():
+            government.wallet.add(amount, "USD") # Update Wallet with cash
         # Sync mocked settlement system balance so subsequent checks in the same tick see the funds
         government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
 
@@ -128,7 +131,8 @@ def test_debt_ceiling_enforcement(government):
 
     # Simulate execution (deduct spent amount)
     government._assets -= paid
-    government.wallet.subtract(int(paid), "USD") # FIX: int cast
+    with FinancialSentry.unlocked():
+        government.wallet.subtract(int(paid), "USD") # FIX: int cast
     government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
 
     # After spending 500, assets should be 0, and total_debt (which is -assets if no cash)
@@ -144,7 +148,8 @@ def test_debt_ceiling_enforcement(government):
 
     # Simulate execution
     government._assets -= paid
-    government.wallet.subtract(int(paid), "USD") # FIX: int cast
+    with FinancialSentry.unlocked():
+        government.wallet.subtract(int(paid), "USD") # FIX: int cast
     government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
 
     assert government.wallet.get_balance("USD") == 0.0

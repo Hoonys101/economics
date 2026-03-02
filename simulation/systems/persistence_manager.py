@@ -104,7 +104,7 @@ class PersistenceManager:
             snapshot = global_registry.snapshot()
             # Convert RegistryValueDTOs to dict
             snapshot_dict = {key: entry.value for key, entry in snapshot.items()}
-            registry_json = json.dumps(snapshot_dict)
+            registry_json = json.dumps(snapshot_dict, default=str)
             self.repository.runs.save_registry_snapshot(self.run_id, current_tick, registry_json)
 
         # 3. Update last safe tick marker

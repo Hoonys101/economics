@@ -1,3 +1,5 @@
+from simulation.systems.settlement_system import InventorySentry
+from simulation.systems.settlement_system import FinancialSentry
 import pytest
 from unittest.mock import Mock, MagicMock
 import math
@@ -40,7 +42,8 @@ class TestFirmBookValue:
 
     def test_book_value_no_liabilities(self, firm):
         # Assets 1000 pennies ($10.00)
-        firm.wallet.add(1000, DEFAULT_CURRENCY)
+        with FinancialSentry.unlocked():
+            firm.wallet.add(1000, DEFAULT_CURRENCY)
         firm.finance_state.total_shares = 100.0
         firm.finance_state.treasury_shares = 0.0
 
@@ -50,7 +53,8 @@ class TestFirmBookValue:
         assert result == 10.0
 
     def test_book_value_with_liabilities(self, firm):
-        firm.wallet.add(1000, DEFAULT_CURRENCY)
+        with FinancialSentry.unlocked():
+            firm.wallet.add(1000, DEFAULT_CURRENCY)
         firm.finance_state.total_shares = 100.0
         firm.finance_state.treasury_shares = 0.0
 
@@ -62,7 +66,8 @@ class TestFirmBookValue:
         assert result == 8.0
 
     def test_book_value_with_treasury_shares(self, firm):
-        firm.wallet.add(1000, DEFAULT_CURRENCY)
+        with FinancialSentry.unlocked():
+            firm.wallet.add(1000, DEFAULT_CURRENCY)
         firm.finance_state.total_shares = 100.0
         firm.finance_state.treasury_shares = 20.0
 
@@ -71,7 +76,8 @@ class TestFirmBookValue:
         assert result == 12.5
 
     def test_book_value_negative_net_assets(self, firm):
-        firm.wallet.add(1000, DEFAULT_CURRENCY)
+        with FinancialSentry.unlocked():
+            firm.wallet.add(1000, DEFAULT_CURRENCY)
         firm.finance_state.total_shares = 100.0
         firm.finance_state.treasury_shares = 0.0
         firm.finance_state.total_debt_pennies = 2000
@@ -133,7 +139,8 @@ class TestFirmProduction:
         assert firm.production_state.capital_stock == 100.0
 
         # Run production
-        firm.produce(current_time=0)
+        with InventorySentry.unlocked():
+            firm.produce(current_time=0)
 
         produced_quantity = firm.get_quantity("test")
 

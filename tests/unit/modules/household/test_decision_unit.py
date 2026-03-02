@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import FinancialSentry
 import pytest
 from unittest.mock import MagicMock
 from collections import deque, defaultdict
@@ -22,7 +23,8 @@ class TestDecisionUnit:
     @pytest.fixture
     def econ_state(self):
         wallet = Wallet(1, {})
-        wallet.add(1000)
+        with FinancialSentry.unlocked():
+            wallet.add(1000)
         return EconStateDTO(
             wallet=wallet,
             inventory={},
@@ -78,7 +80,8 @@ class TestDecisionUnit:
         }
 
         # Setup state for BUY decision
-        econ_state.wallet.add(4000) # 1000 + 4000 = 5000
+        with FinancialSentry.unlocked():
+            econ_state.wallet.add(4000) # 1000 + 4000 = 5000
         econ_state.is_homeless = True
 
         # Construct DTOs

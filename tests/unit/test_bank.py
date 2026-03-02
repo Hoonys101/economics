@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import FinancialSentry
 import pytest
 from unittest.mock import MagicMock, patch
 from simulation.bank import Bank
@@ -58,18 +59,21 @@ def test_bank_assets_delegation(bank, mock_finance_system):
     assert bank.total_wealth == 100000
 
     # Modify Wallet
-    bank._deposit(50000)
+    with FinancialSentry.unlocked():
+        bank._deposit(50000)
     assert bank.total_wealth == 150000
 
 def test_bank_deposit_delegation(bank, mock_finance_system):
     # Use _deposit
-    bank._deposit(50000)
+    with FinancialSentry.unlocked():
+        bank._deposit(50000)
     assert bank.total_wealth == 150000
     # Ledger is NOT updated automatically by Bank.deposit anymore.
     # FinanceSystem would sync it.
 
 def test_bank_withdraw_delegation(bank, mock_finance_system):
-    bank._withdraw(20000)
+    with FinancialSentry.unlocked():
+        bank._withdraw(20000)
     assert bank.total_wealth == 80000
 
 def test_grant_loan_delegation(bank, mock_finance_system):

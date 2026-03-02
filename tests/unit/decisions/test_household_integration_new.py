@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import FinancialSentry
 import unittest
 import logging
 from unittest.mock import MagicMock
@@ -25,7 +26,8 @@ class TestHouseholdIntegrationNew(unittest.TestCase):
         config = create_household_config_dto(survival_budget_allocation=0.0)
         core_config = AgentCoreConfigDTO(id=1, value_orientation='wealth_and_needs', initial_needs={'survival': 80.0}, name='Household_1', logger=logging.getLogger('test_household'), memory_interface=None)
         household = Household(core_config=core_config, engine=mock_decision_engine, talent=Talent(base_learning_rate=0.5, max_potential=1.0), goods_data=[{'id': 'food', 'initial_price': 10.0, 'utility_effects': {'survival': 10}}], personality=Personality.CONSERVATIVE, config_dto=config, initial_assets_record=1000.0)
-        household.deposit(100000)
+        with FinancialSentry.unlocked():
+            household.deposit(100000)
         household._bio_state.needs = {'survival': 80.0}
         household.update_needs(100)
         self.assertIsNotNone(household.consumption_engine)

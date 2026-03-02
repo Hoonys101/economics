@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import InventorySentry
 import pytest
 from unittest.mock import MagicMock
 from simulation.firms import Firm
@@ -77,8 +78,10 @@ class TestPhase23Production:
         tech_manager.get_productivity_multiplier = MagicMock(side_effect=lambda fid: 3.0 if fid == firm_A.id else 1.0)
 
         # 4. Run produce
-        firm_A.produce(10, tech_manager)
-        firm_B.produce(10, tech_manager)
+        with InventorySentry.unlocked():
+            firm_A.produce(10, tech_manager)
+        with InventorySentry.unlocked():
+            firm_B.produce(10, tech_manager)
 
         qty_A = firm_A.get_quantity("food")
         qty_B = firm_B.get_quantity("food")

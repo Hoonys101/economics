@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import InventorySentry
 import pytest
 from unittest.mock import Mock, MagicMock
 from simulation.firms import Firm
@@ -47,7 +48,8 @@ def test_production_function_with_automation(firm_mock):
     # Alpha = 0.5 * (1 - 0) = 0.5
     # Y = 10 * (1^0.5) * (100^0.5) = 10 * 1 * 10 = 100
     firm_mock.production_state.automation_level = 0.0
-    firm_mock.produce(current_time=1)
+    with InventorySentry.unlocked():
+        firm_mock.produce(current_time=1)
     prod_zero = firm_mock.production_state.current_production
     assert 99.0 < prod_zero < 101.0
 
@@ -57,7 +59,8 @@ def test_production_function_with_automation(firm_mock):
     # Y = 10 * (1^0.25) * (100^0.75) = 10 * 1 * 31.62 = 316.2
     # Output should INCREASE because Capital is High (100) and we shifted weight to Capital.
     firm_mock.production_state.automation_level = 1.0
-    firm_mock.produce(current_time=2)
+    with InventorySentry.unlocked():
+        firm_mock.produce(current_time=2)
     prod_full = firm_mock.production_state.current_production
 
     assert prod_full > prod_zero # Automation helps when Capital is abundant

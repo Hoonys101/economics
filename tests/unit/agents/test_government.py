@@ -1,3 +1,4 @@
+from simulation.systems.settlement_system import FinancialSentry
 import pytest
 from unittest.mock import MagicMock, Mock, patch
 from simulation.agents.government import Government
@@ -130,9 +131,11 @@ def test_deficit_spending_allowed_within_limit(government_setup):
     # Mock Settlement success with wallet update
     def transfer_side_effect(sender, receiver, amount, memo, currency=DEFAULT_CURRENCY):
         if receiver == government:
-            government.wallet.add(int(amount), currency)
+            with FinancialSentry.unlocked():
+                government.wallet.add(int(amount), currency)
         elif sender == government:
-            government.wallet.subtract(int(amount), currency)
+            with FinancialSentry.unlocked():
+                government.wallet.subtract(int(amount), currency)
         return True
 
     government.settlement_system.transfer.side_effect = transfer_side_effect

@@ -46,7 +46,7 @@ def test_housing_service_handle_housing_updates_mortgage():
     # Verify
     assert unit.owner_id == 1
     # Check liens for mortgage
-    assert any(l['loan_id'] == "loan_999" and l['lien_type'] == "MORTGAGE" for l in unit.liens)
+    assert any(l.loan_id == "loan_999" and l.lien_type == "MORTGAGE" for l in unit.liens)
     buyer.add_property.assert_called_with(101)
     assert 101 not in seller.owned_properties
 
@@ -66,12 +66,13 @@ def test_housing_service_handle_housing_clears_mortgage_if_missing():
     unit.id = 101
     unit.owner_id = 2
     # Pre-existing mortgage
-    unit.liens = [{
-        "loan_id": "old_loan",
-        "lienholder_id": 99,
-        "principal_remaining": 500,
-        "lien_type": "MORTGAGE"
-    }]
+    from modules.finance.dtos import LienDTO
+    unit.liens = [LienDTO(
+        loan_id="old_loan",
+        lienholder_id=99,
+        principal_remaining=500,
+        lien_type="MORTGAGE"
+    )]
 
     real_estate_units = [unit]
     service.set_real_estate_units(real_estate_units)
@@ -91,4 +92,4 @@ def test_housing_service_handle_housing_clears_mortgage_if_missing():
 
     assert unit.owner_id == 1
     # Should have cleared mortgage
-    assert not any(l['lien_type'] == "MORTGAGE" for l in unit.liens)
+    assert not any(l.lien_type == "MORTGAGE" for l in unit.liens)

@@ -52,7 +52,9 @@ def test_infrastructure_investment():
     config_mock.INFRASTRUCTURE_INVESTMENT_COST = 5000
     config_mock.TICKS_PER_YEAR = 100 # Required for TaylorRulePolicy init
     config_mock.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
-    config_mock.TAX_BRACKETS = [] # Ensure this is a list, not a Mock
+    config_mock.TAX_BRACKETS = []
+    config_mock.ANNUAL_WEALTH_TAX_RATE = 0.05
+    config_mock.WEALTH_TAX_THRESHOLD = 50000.0 # Ensure this is a list, not a Mock
 
     gov = Government(id=1, initial_assets=6000, config_module=config_mock)
 
