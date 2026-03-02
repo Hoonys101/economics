@@ -4,9 +4,10 @@ from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.models import Talent
 from simulation.ai.api import Personality
-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IBirthContext, IFinanceTickContext
 from modules.simulation.dtos.api import HouseholdConfigDTO, FirmConfigDTO
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, IAgentRegistry
+from simulation.systems.settlement_system import InventorySentry, FinancialSentry
 
 def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
     defaults = {
@@ -235,6 +236,9 @@ def create_household(
         household._deposit(assets_pennies, DEFAULT_CURRENCY)
     return household
 
+from tests.utils.mocks import MockBirthContext, MockFinanceTickContext
+from simulation.factories.firm_factory import FirmFactory
+
 def create_firm(
     config_dto: FirmConfigDTO = None,
     id: int = 100,
@@ -245,6 +249,8 @@ def create_firm(
     initial_needs: dict = None,
     value_orientation: str = "PROFIT",
     engine: Optional[IDecisionEngine] = None,
+    birth_context: Optional[IBirthContext] = None,
+    finance_context: Optional[IFinanceTickContext] = None,
     **kwargs
 ) -> Firm:
     if config_dto is None:
@@ -253,32 +259,42 @@ def create_firm(
     if initial_needs is None:
         initial_needs = {}
 
-    core_config = AgentCoreConfigDTO(
-        id=id,
+    # 1. Setup Contexts (Protocol-compliant Mocks if not provided)
+    if birth_context is None:
+        birth_context = MockBirthContext(next_agent_id=id)
+    
+    if finance_context is None:
+        finance_context = MockFinanceTickContext()
+
+    # 2. Use Official FirmFactory (SSoT)
+    # Note: In most tests, we don't need a real config_module, so MagicMock suffices
+    factory = FirmFactory(config_module=MagicMock())
+    
+    firm = factory.create_firm(
         name=name,
-        initial_needs=initial_needs,
-        logger=MagicMock(),
-        memory_interface=None,
-        value_orientation=value_orientation
-    )
-
-    if engine is None:
-        engine = MagicMock()
-
-    firm = Firm(
-        core_config=core_config,
-        engine=engine,
-        specialization=specialization,
-        productivity_factor=productivity_factor,
         config_dto=config_dto,
-        initial_inventory=kwargs.get("initial_inventory"),
-        loan_market=kwargs.get("loan_market"),
-        sector=kwargs.get("sector", "FOOD_PROD"),
+        birth_context=birth_context,
+        finance_context=finance_context,
+        specialization=specialization,
+        decision_engine=engine or MagicMock(),
         personality=kwargs.get("personality")
     )
 
+    # 3. Asset Injection Hook (Test-specific override)
+    # Legacy tests expect 'assets' to be explicitly set, bypassing Bootstrapper logic
     assets_pennies = int(assets)
     if assets_pennies > 0:
+        # Use _deposit backdoor for test stability, satisfying Zero-Sum is verified in integration tests
         firm._deposit(assets_pennies, DEFAULT_CURRENCY)
+
+    # 4. Post-creation overrides from kwargs (to maintain backward compatibility with dirty tests)
+    # Sector is already handled by factory if passed in config_dto, 
+    # but some tests might pass it via kwargs for the Firm constructor.
+    # We should avoid direct assignment if it's a property without a setter.
+    
+    if "initial_inventory" in kwargs and kwargs["initial_inventory"]:
+        with InventorySentry.unlocked():
+            for item, qty in kwargs["initial_inventory"].items():
+                firm.add_item(item, qty)
 
     return firm

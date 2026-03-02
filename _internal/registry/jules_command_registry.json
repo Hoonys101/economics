@@ -3,38 +3,17 @@
     "version": "1.0"
   },
   "missions": {
-    "wo-ssot-cleanup": {
-      "key": "wo-ssot-cleanup",
-      "title": "[S1-4] Orchestration Cleanup",
-      "type": "jules",
-      "instruction_raw": "Delete redundant Phase_MonetaryProcessing (4.7). Remove ledger-processing logic from Phase3_Transaction to ensure side-effects are only handled by the Transaction Authority. MANDATORY: Ignore test regressions. Focus on Orchestration Cleanup.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [
-        "simulation/orchestration/phases/monetary_processing.py",
-        "simulation/orchestration/phases/transaction.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wo-firm-factory-tests": {
       "key": "wo-firm-factory-tests",
       "title": "[S2-3] FirmFactory Test & Fixture Overhaul",
       "type": "jules",
-      "instruction_raw": "Refactor all 20+ test call sites and fixtures to remove the 'simulation' God Object dependency. Align test factories with the new IFirmFactory protocol (agent_registry, world_state injection).",
+      "instruction_raw": "Migrate 20+ test files to use the refactored 'create_firm' in tests/utils/factories.py. Use MockBirthContext and MockFinanceTickContext from tests.utils.mocks to satisfy protocol requirements. Remove any remaining direct 'Simulation' God Object dependencies in firm creation code across the test suite.",
       "command": "create",
       "file_path": "gemini-output/spec/MISSION_spec_firm_factory.md",
       "wait": false,
       "session_id": null,
       "worker": null,
-      "context_files": [
-        "tests/simulation/test_firm_factory.py",
-        "simulation/factories/golden_agents.py"
-      ],
+      "context_files": [],
       "output_path": null,
       "model": null,
       "audit_requirements": null

@@ -743,7 +743,12 @@ class SettlementSystem(IMonetaryAuthority):
         SSoT Unified Entry Point: Transaction DTO의 데이터를 기반으로 정산을 수행합니다.
         """
         amount = tx.total_pennies
-        memo = tx.metadata.get("memo", tx.transaction_type) if tx.metadata else tx.transaction_type
+        # Improve logging granularity (WO-SSOT-INTENT suggestion)
+        item_id = getattr(tx, 'item_id', '')
+        if tx.metadata and "memo" in tx.metadata:
+            memo = tx.metadata["memo"]
+        else:
+            memo = f"{tx.transaction_type}:{item_id}" if item_id else tx.transaction_type
         currency = getattr(tx, 'currency', DEFAULT_CURRENCY)
         current_tick = tick if tick is not None else getattr(tx, 'time', 0)
 
