@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "impl-s3-1-decisions": {
-      "key": "impl-s3-1-decisions",
-      "title": "[S3-1] Implement: Decisions Mocks Refactor",
-      "type": "jules",
-      "instruction_raw": "Refactor tests/unit/decisions/conftest.py to enforce spec=RealClass and implement protocol-based cleanup (ICleanable).",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_SPEC_S3_1_decisions.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "impl-s3-1-corporate": {
       "key": "impl-s3-1-corporate",
       "title": "[S3-1] Implement: Corporate Mocks Refactor",
