@@ -41,9 +41,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
 
         if tx_type == "lender_of_last_resort":
             # Minting: Central Bank (Buyer/Source) -> Bank/Agent (Seller/Target)
-            success = context.settlement_system.transfer(
-                buyer, seller, trade_value, "lender_of_last_resort"
-            )
+            success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
             if success:
                 context.logger.info(
                     f"MONEY_SUPPLY_CHECK | LLR Expansion: +{trade_value}.",
@@ -53,9 +51,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
 
         elif tx_type == "asset_liquidation":
             # Minting: Gov/CB (Buyer) -> Agent (Seller)
-            success = context.settlement_system.transfer(
-                buyer, seller, trade_value, "asset_liquidation"
-            )
+            success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
             if success:
                 # Asset Transfer Logic (Stock/RE)
                 self._apply_asset_liquidation_effects(tx, buyer, seller, context)
@@ -65,15 +61,11 @@ class MonetaryTransactionHandler(ITransactionHandler):
                 )
 
         elif tx_type == "bond_interest":
-             success = context.settlement_system.transfer(
-                 buyer, seller, trade_value, tx_type
-             )
+             success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
 
         elif tx_type in ["bond_purchase", "omo_purchase"]:
             # QE: CB (Buyer) -> Gov/Agent (Seller)
-            success = context.settlement_system.transfer(
-                buyer, seller, trade_value, tx_type
-            )
+            success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
             if success:
                  context.logger.info(
                      f"QE | Central Bank purchased bond/asset {trade_value}.",
@@ -87,9 +79,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
         elif tx_type in ["bond_repayment", "omo_sale"]:
             # QT: Agent (Buyer) -> CB (Seller)
             # Burning: Money goes to CB and disappears.
-            success = context.settlement_system.transfer(
-                buyer, seller, trade_value, tx_type
-            )
+            success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
             if success:
                 context.logger.info(
                     f"QT | Central Bank sold bond/asset {trade_value}.",

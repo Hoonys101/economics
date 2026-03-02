@@ -18,9 +18,7 @@ class AssetTransferHandler(ITransactionHandler):
         trade_value = tx.total_pennies
 
         # 1. Execute Settlement (Direct Transfer)
-        settlement_success = context.settlement_system.transfer(
-            buyer, seller, trade_value, f"asset_transfer:{tx.item_id}"
-        )
+        settlement_success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
 
         # 2. Apply Side-Effects
         if settlement_success:

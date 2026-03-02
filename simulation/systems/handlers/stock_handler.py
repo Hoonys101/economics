@@ -19,7 +19,7 @@ class StockTransactionHandler(ITransactionHandler):
 
         # 1. Execute Settlement (Direct Transfer)
         # Stock trades typically don't have sales tax in this simulation model yet.
-        settlement_success = context.settlement_system.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
+        settlement_success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
 
         # 2. Apply Side-Effects
         if settlement_success:
