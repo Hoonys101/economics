@@ -105,7 +105,10 @@ def ai_decision_engine(firm_engine_config, mock_ai_engine):
     engine = AIDrivenFirmDecisionEngine(ai_engine=mock_ai_engine, config_module=firm_engine_config)
     engine.corporate_manager.system2_planner = Mock()
     engine.corporate_manager.system2_planner.project_future.return_value = {}
-    return engine
+    yield engine
+    # Cleanup to prevent leak
+    if hasattr(engine.corporate_manager, 'cleanup'):
+        engine.corporate_manager.cleanup()
 
 @pytest.fixture
 def create_firm_state_dto():

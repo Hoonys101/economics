@@ -5,7 +5,9 @@ from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
-class System2Planner:
+from simulation.ai.api import IPlanner
+
+class System2Planner(IPlanner):
     """
     The 'System 2' Planner (Slow, Deliberative).
     Projects future states to guide System 1 (Impulsive/Fast) constraints.
@@ -129,3 +131,12 @@ class System2Planner:
         }
         self.cached_projection = result
         return result
+
+    def cleanup(self) -> None:
+        """
+        WO-Mock-Leak-Repair: Clears state variables referencing objects,
+        especially when those objects might be Mock objects from tests.
+        """
+        self.agent = None
+        self.config = None
+        self.cached_projection.clear()

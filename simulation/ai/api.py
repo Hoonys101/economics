@@ -23,6 +23,17 @@ if TYPE_CHECKING:
     )  # For type hinting only, to avoid circular import
 
 
+from typing import runtime_checkable, Protocol
+
+@runtime_checkable
+class IPlanner(Protocol):
+    """
+    Protocol for planners to ensure proper cleanup and memory management.
+    """
+    def cleanup(self) -> None:
+        """Clears all references to agents, configs, and cached data."""
+        ...
+
 # BaseAIEngine 추상 클래스 정의 (수정)
 class BaseAIEngine(ABC):
     """
