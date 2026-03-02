@@ -1,5 +1,6 @@
 from __future__ import annotations
 import uuid
+import heapq
 import logging
 from typing import List, Dict, Any, Optional
 
@@ -37,7 +38,7 @@ class CallMarketService(ICallMarket):
         self.pending_offers: List[CallLoanOfferDTO] = []
         self.active_loans: Dict[str, CallLoanDTO] = {}
         self.last_clearing_rate: float = 0.0
-        self.loans_by_maturity: Dict[int, List[str]] = {}
+        self.maturity_queue: List[Tuple[int, str]] = []
 
         # Configuration
         self.ticks_per_year = float(
@@ -178,10 +179,8 @@ class CallMarketService(ICallMarket):
 
                         matched_loans.append(loan_dto)
                         self.active_loans[loan_id] = loan_dto
-                        if loan_dto["maturity_tick"] not in self.loans_by_maturity:
-                            self.loans_by_maturity[loan_dto["maturity_tick"]] = []
-                        self.loans_by_maturity[loan_dto["maturity_tick"]].append(
-                            loan_id
+                        heapq.heappush(
+                            self.maturity_queue, (loan_dto["maturity_tick"], loan_id)
                         )
 
                         total_volume += match_amount
@@ -238,69 +237,66 @@ class CallMarketService(ICallMarket):
         Processes loans that have reached their maturity date.
         """
         matured_ids = []
+        failed_loans = []
 
-        # We process any loans maturing on or before the current tick.
-        # This handles cases where ticks might be skipped or processed late.
-        ticks_to_process = [t for t in self.loans_by_maturity.keys() if t <= tick]
+        # Process from the min-heap until the earliest maturity tick is > current tick
+        while self.maturity_queue and self.maturity_queue[0][0] <= tick:
+            maturity_tick, loan_id = heapq.heappop(self.maturity_queue)
 
-        for t in ticks_to_process:
-            loan_ids = self.loans_by_maturity[t]
-            for loan_id in loan_ids:
-                if loan_id not in self.active_loans:
-                    continue  # Already settled or removed
+            if loan_id not in self.active_loans:
+                continue  # Already settled or removed
 
-                loan = self.active_loans[loan_id]
+            loan = self.active_loans[loan_id]
 
-                # Calculate Interest
-                duration_ticks = loan["maturity_tick"] - loan["origination_tick"]
-                if duration_ticks <= 0:
-                    duration_ticks = 1  # Safety
+            # Re-check maturity in case the loan was extended/modified
+            if loan["maturity_tick"] > tick:
+                heapq.heappush(self.maturity_queue, (loan["maturity_tick"], loan_id))
+                continue
 
-                time_fraction = duration_ticks / self.ticks_per_year
-                interest_amount = loan["amount"] * loan["interest_rate"] * time_fraction
+            # Calculate Interest
+            duration_ticks = loan["maturity_tick"] - loan["origination_tick"]
+            if duration_ticks <= 0:
+                duration_ticks = 1  # Safety
 
-                total_repayment = loan["amount"] + interest_amount
+            time_fraction = duration_ticks / self.ticks_per_year
+            interest_amount = loan["amount"] * loan["interest_rate"] * time_fraction
 
-                borrower = self.agent_registry.get_agent(loan["borrower_id"])
-                lender = self.agent_registry.get_agent(loan["lender_id"])
+            total_repayment = loan["amount"] + interest_amount
 
-                if borrower and lender:
-                    memo = f"CallMarket Repayment {loan['borrower_id']}->{loan['lender_id']} Principal: {loan['amount']:.2f} Int: {interest_amount:.2f}"
+            borrower = self.agent_registry.get_agent(loan["borrower_id"])
+            lender = self.agent_registry.get_agent(loan["lender_id"])
 
-                    tx = self.settlement_system.transfer(
-                        debit_agent=borrower,
-                        credit_agent=lender,
-                        amount=total_repayment,
-                        memo=memo,
-                        tick=tick,
-                        currency=DEFAULT_CURRENCY,
-                    )
+            if borrower and lender:
+                memo = f"CallMarket Repayment {loan['borrower_id']}->{loan['lender_id']} Principal: {loan['amount']:.2f} Int: {interest_amount:.2f}"
 
-                    if tx:
-                        matured_ids.append(loan_id)
-                    else:
-                        self.logger.error(
-                            f"CallMarket: Repayment FAILED for loan {loan_id}. Borrower {loan['borrower_id']} default?"
-                        )
-                        pass
+                tx = self.settlement_system.transfer(
+                    debit_agent=borrower,
+                    credit_agent=lender,
+                    amount=total_repayment,
+                    memo=memo,
+                    tick=tick,
+                    currency=DEFAULT_CURRENCY,
+                )
+
+                if tx:
+                    matured_ids.append(loan_id)
                 else:
                     self.logger.error(
-                        f"CallMarket: Agent lookup failed during repayment for loan {loan_id}"
+                        f"CallMarket: Repayment FAILED for loan {loan_id}. Borrower {loan['borrower_id']} default?"
                     )
+                    failed_loans.append(loan_id)
+            else:
+                self.logger.error(
+                    f"CallMarket: Agent lookup failed during repayment for loan {loan_id}"
+                )
+                failed_loans.append(loan_id)
 
-            # Collect failed loans to retry them on the next tick
-            failed_loans = [
-                lid
-                for lid in loan_ids
-                if lid in self.active_loans and lid not in matured_ids
-            ]
-            if failed_loans:
-                if (tick + 1) not in self.loans_by_maturity:
-                    self.loans_by_maturity[tick + 1] = []
-                self.loans_by_maturity[tick + 1].extend(failed_loans)
+        # Re-queue failed loans for the next tick
+        for lid in failed_loans:
+            if lid in self.active_loans:
+                # Retry next tick
+                heapq.heappush(self.maturity_queue, (tick + 1, lid))
 
-            # We can clear the list for this tick since we processed all loans.
-            del self.loans_by_maturity[t]
-
+        # Remove settled loans
         for mid in matured_ids:
             del self.active_loans[mid]
