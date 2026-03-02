@@ -23,13 +23,13 @@ class FinancialTransactionHandler(ITransactionHandler):
         success = False
 
         if tx_type in ["interest_payment", "loan_interest", "deposit_interest", "deposit", "withdrawal", "bank_profit_remittance", "holding_cost"]:
-             success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
+             success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
 
              if success and isinstance(buyer, IExpenseTracker):
                  buyer.record_expense(int(trade_value), tx.currency)
 
         elif tx_type == "dividend":
-             success = context.settlement_system.transfer(seller, buyer, trade_value, "dividend_payment")
+             success = context.settlement_system.process_transfer(tx, seller, buyer, context.time)
 
              if success and isinstance(buyer, Household):
                  # Household capital income tracking
@@ -69,7 +69,7 @@ class FinancialTransactionHandler(ITransactionHandler):
 
         elif tx_type in ["repayment", "loan_repayment"]:
              # Transfer Only. No Expense Recording (Principal Repayment).
-             success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
+             success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
 
              # Atomic Ledger Update (Phase 4.1)
              if success and tx_type == "loan_repayment":
@@ -82,7 +82,7 @@ class FinancialTransactionHandler(ITransactionHandler):
 
         elif tx_type in ["investment"]:
              # Transfer + Expense Recording (CAPEX treated as expense for consistency)
-             success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
+             success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
              if success and isinstance(buyer, IExpenseTracker):
                  buyer.record_expense(int(trade_value), tx.currency)
 

@@ -732,6 +732,31 @@ class SettlementSystem(IMonetaryAuthority):
         )
 
     @enforce_purity()
+    def process_transfer(
+        self,
+        tx: "Transaction",
+        debit_agent: IFinancialEntity,
+        credit_agent: IFinancialEntity,
+        tick: Optional[int] = None
+    ) -> Optional["ITransaction"]:
+        """
+        SSoT Unified Entry Point: Transaction DTO의 데이터를 기반으로 정산을 수행합니다.
+        """
+        amount = tx.total_pennies
+        memo = tx.metadata.get("memo", tx.transaction_type) if tx.metadata else tx.transaction_type
+        currency = getattr(tx, 'currency', DEFAULT_CURRENCY)
+        current_tick = tick if tick is not None else getattr(tx, 'time', 0)
+
+        return self.transfer(
+            debit_agent=debit_agent,
+            credit_agent=credit_agent,
+            amount=amount,
+            memo=memo,
+            tick=current_tick,
+            currency=currency
+        )
+
+    @enforce_purity()
     def transfer(
         self,
         debit_agent: IFinancialAgent,

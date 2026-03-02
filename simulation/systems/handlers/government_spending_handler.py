@@ -16,9 +16,7 @@ class GovernmentSpendingHandler(ITransactionHandler):
         # infrastructure_spending: Buyer is Government. Seller is typically System/Reflux or Agent.
         # TransactionProcessor logic: success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")
 
-        success = context.settlement_system.transfer(
-            buyer, seller, trade_value, tx.transaction_type
-        )
+        success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
 
         return success is not None
 

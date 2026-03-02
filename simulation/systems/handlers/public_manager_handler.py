@@ -62,9 +62,7 @@ class PublicManagerTransactionHandler(ITransactionHandler):
                     ))
         else:
              # Legacy/Non-taxable (e.g. assets)
-             success = context.settlement_system.transfer(
-                buyer, pm, trade_value, f"public_sale:{tx.item_id}"
-             )
+             success = context.settlement_system.process_transfer(tx, buyer, pm, context.time)
 
         if not success:
             context.logger.error(f"PUBLIC_MANAGER transaction failed: Settlement refused.")
