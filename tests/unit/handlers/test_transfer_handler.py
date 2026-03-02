@@ -37,7 +37,7 @@ class TestTransferHandler:
             destination_account_id="source_1",
             amount=1000,
             currency="USD",
-            description="ROLLBACK of rollback_tx_123"
+            description="ROLLBACK of original tx orig_tx_123"
         )
 
     def test_rollback_with_failed_ledger(self):
