@@ -3,24 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "wo-ssot-authority": {
-      "key": "wo-ssot-authority",
-      "title": "[S1-2] Behavioral Sinking (Settlement Authority)",
-      "type": "jules",
-      "instruction_raw": "Refactor SettlementSystem to sink side-effects (IMonetaryLedger, MetricsService) into the atomic transfer block. Ensure all public methods return transactions for 'Bubble-Up' logging. Eliminate 'God Mode' minting bypasses. MANDATORY: Ignore test regressions. Focus on SSoT Bubble-Up logic.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [
-        "simulation/systems/settlement_system.py",
-        "simulation/systems/central_bank_system.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wo-ssot-intent": {
       "key": "wo-ssot-intent",
       "title": "[S1-3] Intent Unification (Transaction Processor)",
