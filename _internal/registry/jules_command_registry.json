@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "impl-s3-1-corporate": {
-      "key": "impl-s3-1-corporate",
-      "title": "[S3-1] Implement: Corporate Mocks Refactor",
-      "type": "jules",
-      "instruction_raw": "Refactor tests/unit/corporate/conftest.py to replace raw dicts with DTOs and enforce protocol fidelity on reflux_system.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_SPEC_S3_1_corporate.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "impl-s3-1-diagnosis": {
       "key": "impl-s3-1-diagnosis",
       "title": "[S3-1] Implement: Scenario Diagnosis Fixtures Fix",
