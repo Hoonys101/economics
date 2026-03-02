@@ -1,0 +1,54 @@
+### 1. 🔍 Summary
+- `SettlementSystem`에 `Transaction` DTO를 기반으로 동작하는 단일 진입점 `process_transfer()` 메서드를 도입하여 결제 로직 호출 방식을 통일했습니다.
+- 여러 전문 핸들러(`financial_handler`, `monetary_handler` 등)가 개별적으로 `transfer()`를 호출하던 것을 리팩토링하여 중앙 집중화했습니다.
+- `DefaultTransferHandler`에 존재하던 중복된 M2 원장(monetary_ledger) 카운팅 로직을 제거하여, `transfer()` 내부의 단일 처리 로직만 작동하도록 정합성을 확보했습니다.
+
+### 2. 🚨 Critical Issues
+- **없음**: 즉시 수정이 필요한 보안 위반, 하드코딩, 혹은 Zero-Sum을 위반하는 치명적인 논리 오류는 발견되지 않았습니다.
+
+### 3. ⚠️ Logic & Spec Gaps
+- **Memo 메타데이터 해상도 유실 (Logging Granularity Loss)**: 
+  - 기존 `asset_transfer_handler`와 `stock_handler`, `public_manager_handler` 등에서는 `transfer()` 호출 시 `f"asset_transfer:{tx.item_id}"`, `f"stock_trade:{tx.item_id}"` 처럼 거래 대상을 명시하는 고유 메모를 생성하여 넘겼습니다. 
+  - 리팩토링된 `process_transfer()`는 `memo = tx.metadata.get("memo", tx.transaction_type)`를 사용하므로, `tx.metadata`에 사전에 `memo`가 명시되어 있지 않았다면 단순히 `"asset_transfer"`나 `"stock"`과 같은 범용적인 `transaction_type` 이름만 원장에 기록됩니다. 이는 추후 디버깅이나 감사(Audit) 시 자산 추적을 어렵게 만들 수 있습니다.
+- **Type Hint 불일치**: 
+  - `process_transfer`의 파라미터는 `debit_agent: IFinancialEntity, credit_agent: IFinancialEntity`로 지정되어 있으나, 실제 호출하는 타겟인 `transfer()`는 `IFinancialAgent` 타입을 요구하고 있습니다. 프로토콜 레벨에서 두 인터페이스 간의 차이가 존재할 수 있으므로, 명시적인 타입 일치를 권장합니다.
+
+### 4. 💡 Suggestions
+- **자동 Memo 조합 보완**: `process_transfer()` 내에서, `tx.metadata`에 `memo`가 없고 `tx.item_id`가 존재할 경우 이를 조합해 주도록 방어 코드를 추가하는 것을 제안합니다.
+  ```python
+  # 예시
+  if tx.metadata and "memo" in tx.metadata:
+      memo = tx.metadata["memo"]
+  else:
+      item_id = getattr(tx, 'item_id', '')
+      memo = f"{tx.transaction_type}:{item_id}" if item_id else tx.transaction_type
+  ```
+- 타입 힌트를 `IFinancialAgent` (또는 `transfer` 함수의 요구 사항에 맞게) 수정하여 정적 타입 검사기의 경고를 예방하십시오.
+
+### 5. 🧠 Implementation Insight Evaluation
+- **Original Insight**:
+  > - **Intent Unification:** Created `SettlementSystem.process_transfer()`, which bridges the intent described in a `Transaction` DTO with the execution layer in `SettlementSystem.transfer()`. This establishes a unified Single Source of Truth (SSoT) entry point for financial transactions.
+  > - **Double-Counting Risk Fixed:** Removed redundant manual `monetary_ledger` updates in `DefaultTransferHandler`. The system natively hooks M2 expansion/contraction inside `SettlementSystem.transfer()`, preventing metrics drift.
+  > - **Handler Consolidation:** Refactored various specialized transaction handlers (`financial`, `monetary`, `public_manager`, `government_spending`, etc.) to use the uniform `process_transfer` method, effectively centralizing standard transfer logic.
+  > - **Purity Decorator Restored:** Ensured the `@enforce_purity()` decorator on `transfer()` remained perfectly intact, preventing runtime protocol validation regression.
+
+- **Reviewer Evaluation**:
+  - `DefaultTransferHandler` 내부의 중복된 `monetary_ledger` M2 추적 로직을 짚어내고 삭제한 통찰은 시스템 정합성에 매우 중요한 기여를 했습니다 (Double-Counting 방지).
+  - 트랜잭션 DTO를 SSoT(Single Source of Truth)로 삼아 흩어져 있던 Intent 파이프라인을 통합(`process_transfer`)한 설계는 훌륭하며 유지보수성을 크게 높입니다.
+  - 다만 파편화된 로직을 통합할 때, 개별 핸들러에 하드코딩 되어있던 '컨텍스트(Item ID 매핑 등)'가 유실되는 부작용이 발생했습니다. 통합 시에는 추상화로 인해 비즈니스 로깅 해상도가 떨어지지 않는지 주의해야 한다는 교훈을 추가로 인지해야 합니다.
+
+### 6. 📚 Manual Update Proposal (Draft)
+- **Target File**: `design/2_operations/ledgers/TECH_DEBT_LEDGER.md`
+- **Draft Content**:
+```markdown
+## [Resolved] SSoT Intent Unification & Double-Counting Mitigation
+- **현상**: `DefaultTransferHandler`와 `SettlementSystem.transfer()` 양쪽에서 `monetary_ledger`의 M2 통화량을 중복으로 카운트할 위험이 있었고, 각 시스템 핸들러가 파편화된 방식으로 `transfer` API를 호출하고 있었습니다.
+- **원인**: 트랜잭션 실행(Execution) 레이어와 원장 회계(Ledger) 처리 레이어의 책임 분리가 불분명했으며, 단일 진입점이 부재했습니다.
+- **해결**: 
+  - `DefaultTransferHandler`의 M2 업데이트 하드코딩 로직을 제거하고 시스템 네이티브 훅(`SettlementSystem.transfer()`)에 온전히 위임했습니다.
+  - `Transaction` DTO를 SSoT로 활용하는 통합 진입점 `SettlementSystem.process_transfer()`를 신설하여 핸들러 의존성을 묶어냈습니다.
+- **교훈 (Insight)**: 다수의 분산된 호출을 단일 DTO 기반으로 통합(Unification)할 때는, 기존 하드코딩되어 있던 세부 컨텍스트(예: `memo` 내의 `item_id`)가 유실되어 디버깅 및 로깅의 해상도가 떨어지지 않도록 DTO 메타데이터 매핑에 각별히 주의해야 합니다.
+```
+
+### 7. ✅ Verdict
+**APPROVE** (로직 및 정합성에 심각한 결함이 없으며, M2 중복 카운팅 해결 및 SSoT 적용 등 전반적인 아키텍처 위생 상태를 크게 향상시킨 PR이므로 승인합니다. 잃어버린 메모 컨텍스트 복구는 마이너 리팩토링으로 진행해도 무방합니다.)

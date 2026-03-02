@@ -3,24 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "wo-ssot-intent": {
-      "key": "wo-ssot-intent",
-      "title": "[S1-3] Intent Unification (Transaction Processor)",
-      "type": "jules",
-      "instruction_raw": "Refactor TransactionProcessor handlers to use SettlementSystem.process_transfer() exclusively for all balance mutations. Remove logic duplication between handlers and systems. MANDATORY: Ignore test regressions. Focus on Intent Unification.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [
-        "simulation/systems/transaction_processor.py",
-        "simulation/systems/settlement_system.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wo-ssot-cleanup": {
       "key": "wo-ssot-cleanup",
       "title": "[S1-4] Orchestration Cleanup",
