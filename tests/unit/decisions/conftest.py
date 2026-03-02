@@ -5,6 +5,8 @@ from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngin
 from simulation.firms import Firm
 from simulation.schemas import FirmActionVector
 from simulation.dtos import FirmStateDTO
+from simulation.components.state.firm_state_models import FinanceState, ProductionState, HRState, SalesState
+from simulation.ai.firm_system2_planner import FirmSystem2Planner
 from tests.utils.factories import create_firm_config_dto
 
 @pytest.fixture(autouse=True)
@@ -59,37 +61,49 @@ def base_mock_firm(firm_engine_config):
     firm = Mock(spec=Firm)
     firm.id = 1
     firm.employees = []
-    firm.finance = Mock()
-    firm.production = Mock()
-    firm.sales = Mock()
-    firm.hr = Mock()
+    firm.finance = Mock(spec=FinanceState)
+    firm.production = Mock(spec=ProductionState)
+    firm.sales = Mock(spec=SalesState)
+    firm.hr = Mock(spec=HRState)
     firm.production_target = 100.0
     firm.inventory = {'food': 100.0}
     firm.productivity_factor = 1.0
     firm.last_prices = {'food': firm_engine_config.GOODS_MARKET_SELL_PRICE}
-    firm.finance.revenue_this_turn = 0.0
-    firm.finance.balance = 1000.0
-    firm.finance.last_revenue = 0.0
-    firm.finance.calculate_altman_z_score.return_value = 3.0
+    firm.finance.revenue_this_turn = {'USD': 0}
+    firm.finance.balance = 100000 # Using integer pennies
+    firm.finance.last_revenue_pennies = 0
+    firm.finance.calculate_altman_z_score = Mock(return_value=3.0)
     firm.finance.consecutive_loss_turns = 0
+    firm.finance.sales_volume_this_tick = 100.0
     firm.finance.last_sales_volume = 100.0
     firm.finance.treasury_shares = 1000.0
     firm.finance.total_shares = 1000.0
-    firm.cost_this_turn = 0.0
+    firm.finance.total_debt_pennies = 0
+    firm.finance.average_interest_rate = 0.05
+    firm.finance.dividend_rate = 0.05
+    firm.cost_this_turn = {'USD': 0}
     firm.profit_history = deque(maxlen=firm_engine_config.PROFIT_HISTORY_TICKS)
     firm.specialization = 'food'
     firm.logger = MagicMock()
     firm.age = 25
     firm.hr.employees = []
     firm.hr.employee_wages = {}
+    firm.hr.employees_data = {}
     firm.production.set_automation_level = Mock()
     firm.production.add_capital = Mock()
     firm.production.automation_level = 0.0
-    firm.production.capital_stock = 100.0
+    firm.production.capital_stock = 10000
     firm.production.productivity_factor = 1.0
-    firm.research_history = {'total_spent': 0.0, 'success_count': 0, 'last_success_tick': 0}
-    firm.base_quality = 1.0
-    firm.system2_planner = Mock()
+    firm.production.research_history = {'total_spent': 0.0, 'success_count': 0, 'last_success_tick': 0}
+    firm.production.base_quality = 1.0
+    firm.production.inventory_quality = {'food': 1.0}
+    firm.sales.last_prices = {'food': firm_engine_config.GOODS_MARKET_SELL_PRICE}
+    firm.sales.marketing_budget_pennies = 0
+    firm.sales.marketing_budget_rate = 0.05
+    firm.sales.brand_awareness = 0.0
+    firm.sales.perceived_quality = 0.0
+    firm.sales.adstock = 0.0
+    firm.system2_planner = Mock(spec=FirmSystem2Planner)
     firm.system2_planner.project_future.return_value = {}
     firm.get_agent_data.return_value = {}
     return firm
@@ -100,15 +114,25 @@ def mock_ai_engine():
     ai.decide_action_vector.return_value = FirmActionVector(sales_aggressiveness=0.5, hiring_aggressiveness=0.5, rd_aggressiveness=0.5, capital_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5)
     return ai
 
+from modules.system.api import ICleanable
+
 @pytest.fixture
 def ai_decision_engine(firm_engine_config, mock_ai_engine):
     engine = AIDrivenFirmDecisionEngine(ai_engine=mock_ai_engine, config_module=firm_engine_config)
-    engine.corporate_manager.system2_planner = Mock()
+    engine.corporate_manager.system2_planner = Mock(spec=FirmSystem2Planner)
     engine.corporate_manager.system2_planner.project_future.return_value = {}
     yield engine
-    # Cleanup to prevent leak
-    if hasattr(engine.corporate_manager, 'cleanup'):
+    # 1. Protocol Purity: explicit lifecycle cleanup
+    if isinstance(engine.corporate_manager, ICleanable):
         engine.corporate_manager.cleanup()
+
+    # 2. Prevent mock memory leak
+    if getattr(engine.corporate_manager, 'system2_planner', None) is not None:
+        if hasattr(engine.corporate_manager.system2_planner, 'reset_mock'):
+            engine.corporate_manager.system2_planner.reset_mock(return_value=True, side_effect=True)
+        engine.corporate_manager.system2_planner = None
+
+from modules.simulation.dtos.api import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 
 @pytest.fixture
 def create_firm_state_dto():
@@ -116,29 +140,39 @@ def create_firm_state_dto():
     def _create(firm, config):
         state = Mock(spec=FirmStateDTO)
         state.id = firm.id
-        state.agent_data = {}
-        state.finance = Mock()
-        state.production = Mock()
-        state.sales = Mock()
-        state.hr = Mock()
-        state.finance.balance = 1000.0
-        state.finance.revenue_this_turn = 0.0
-        state.finance.expenses_this_tick = 0.0
+        state.agent_data = getattr(firm, "agent_data", {})
+        if callable(state.agent_data):
+            state.agent_data = state.agent_data()
+        state.finance = Mock(spec=FinanceStateDTO)
+        state.production = Mock(spec=ProductionStateDTO)
+        state.sales = Mock(spec=SalesStateDTO)
+        state.hr = Mock(spec=HRStateDTO)
+        state.finance.balance = 100000 # Using integer pennies
+        state.finance.revenue_this_turn = {'USD': 0}
+        state.finance.expenses_this_tick = {'USD': 0}
         state.finance.consecutive_loss_turns = 0
         state.finance.altman_z_score = 3.0
         state.finance.treasury_shares = 1000.0
         state.finance.total_shares = 1000.0
+        state.finance.total_debt_pennies = 0
+        state.finance.average_interest_rate = 0.05
+        state.finance.dividend_rate = 0.05
         state.production.inventory = {'food': 100.0}
         state.production.input_inventory = {}
         state.production.production_target = 100.0
         state.production.specialization = 'food'
         state.production.base_quality = 1.0
         state.production.inventory_quality = {'food': 1.0}
-        state.production.capital_stock = 100.0
+        state.production.capital_stock = 10000
         state.production.productivity_factor = 1.0
         state.production.automation_level = 0.0
-        state.sales.marketing_budget = 0.0
+        state.sales.marketing_budget = 0
         state.sales.price_history = {'food': config.GOODS_MARKET_SELL_PRICE}
+        state.sales.brand_awareness = 0.0
+        state.sales.perceived_quality = 0.0
+        state.sales.adstock = 0.0
+        state.sales.marketing_budget_rate = 0.05
+        state.sales.inventory_last_sale_tick = {}
         state.hr.employees = []
         state.hr.employees_data = {}
         return state
