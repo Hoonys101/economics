@@ -196,8 +196,10 @@ class GoodsTransactionHandler(ITransactionHandler):
         if not source or not destination:
             return False
 
+        transfers = []
+
         # 1. Reverse Money (Seller -> Buyer)
-        success = context.settlement_system.transfer(destination, source, int(trade_value), f"rollback_goods:{tx.item_id}:{tx.id}")
+        transfers.append((destination, source, int(trade_value)))
 
         # 2. Reverse Tax (Gov -> Buyer)
         # Note: We need to know how much tax was paid. This information is ideally in metadata or recalculated.
@@ -205,7 +207,11 @@ class GoodsTransactionHandler(ITransactionHandler):
         if context.taxation_system:
              intents = context.taxation_system.calculate_tax_intents(tx, source, destination, context.government, context.market_data)
              for intent in intents:
-                 context.settlement_system.transfer(context.government, source, int(intent.amount), f"rollback_tax:{intent.reason}:{tx.id}")
+                 transfers.append((context.government, source, int(intent.amount)))
+
+        # Execute all transfers atomically
+        tx_records = context.settlement_system.execute_multiparty_settlement(transfers, context.time)
+        success = tx_records is not None
 
         # 3. Reverse Inventory (Buyer -> Seller)
         # Only if physical good
@@ -214,6 +220,9 @@ class GoodsTransactionHandler(ITransactionHandler):
         # For now, we only reverse money as "Goods" rollback is usually for failed atomic sets before consumption triggers.
         # If consumption triggered, we might need to "un-consume" which is hard.
 
-        context.logger.info(f"Rollback for Goods {tx.id} executed (Financial only). Inventory reversal skipped.")
+        if success:
+            context.logger.info(f"Rollback for Goods {tx.id} executed (Financial only). Inventory reversal skipped.")
+        else:
+            context.logger.error(f"Rollback for Goods {tx.id} failed during atomic multiparty settlement.")
 
-        return success is not None
+        return success
