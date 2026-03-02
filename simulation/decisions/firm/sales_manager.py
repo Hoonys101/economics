@@ -11,7 +11,7 @@ class SalesManager:
         firm = context.state
         config = context.config
         market_data = context.market_data
-        goods_map = {g['id']: g for g in context.goods_data}
+        goods_map = {g.id if hasattr(g, 'id') else g['id']: g for g in context.goods_data}
         orders = self._manage_pricing(firm, sales_aggressiveness, market_data, context.current_time, config, goods_map)
         return SalesPlanDTO(orders=orders)
 
@@ -26,11 +26,11 @@ class SalesManager:
             return orders
         market_price = 0.0
         if item_id in market_data:
-            market_price = market_data[item_id].get('avg_price', 0)
+            market_price = getattr(market_data[item_id], 'avg_price', 0) if hasattr(market_data[item_id], 'avg_price') else market_data[item_id].get('avg_price', 0)
         if market_price <= 0:
             market_price = firm.sales.price_history.get(item_id, 0)
         if market_price <= 0:
-            market_price = goods_map.get(item_id, {}).get('production_cost', 10.0)
+            market_price = getattr(goods_map.get(item_id), 'initial_price', 1000) / 100.0 if hasattr(goods_map.get(item_id), 'initial_price') else goods_map.get(item_id, {}).get('production_cost', 10.0)
         adjustment = (0.5 - aggressiveness) * 0.4
         target_price = market_price * (1.0 + adjustment)
         sales_vol = 1.0
