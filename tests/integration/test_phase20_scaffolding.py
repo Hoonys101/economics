@@ -110,6 +110,8 @@ class TestPhase20Scaffolding(unittest.TestCase):
         self.assertIsNone(bankruptcy_tick, "Should not go bankrupt with positive flow")
         self.assertGreater(npv, 1000.0, "NPV should be greater than initial assets with positive flow")
 
+        planner.cleanup()
+
     def test_system2_planner_projection_bankruptcy(self):
         """Verify System2Planner bankruptcy detection."""
         # Create a mock agent for the planner
@@ -148,6 +150,8 @@ class TestPhase20Scaffolding(unittest.TestCase):
         bankruptcy_tick = result["bankruptcy_tick"]
 
         self.assertEqual(bankruptcy_tick, 6)
+
+        planner.cleanup()
 
 if __name__ == '__main__':
     unittest.main()

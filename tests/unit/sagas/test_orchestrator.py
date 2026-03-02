@@ -16,7 +16,7 @@ def test_submit_saga(saga_orchestrator):
     saga = HousingTransactionSagaStateDTO(
         saga_id=saga_id,
         status="INITIATED", # Use a valid literal
-        buyer_context=HouseholdSnapshotDTO(household_id="1", cash=0, income=0, credit_score=0, existing_debt=0, assets_value=0),
+            buyer_context=HouseholdSnapshotDTO(household_id=1, cash_pennies=0, income_pennies=0, credit_score=0.0, existing_debt_pennies=0, assets_value_pennies=0),
         seller_context=HousingSagaAgentContext(id=2, monthly_income=0, existing_monthly_debt=0),
         property_id=500,
         offer_price=100.0,
@@ -35,7 +35,7 @@ def test_process_sagas_liveness_check(saga_orchestrator):
     saga = HousingTransactionSagaStateDTO(
         saga_id=saga_id,
         status="INITIATED",
-        buyer_context=HouseholdSnapshotDTO(household_id=str(buyer_id), cash=0, income=0, credit_score=0, existing_debt=0, assets_value=0),
+        buyer_context=HouseholdSnapshotDTO(household_id=buyer_id, cash_pennies=0, income_pennies=0, credit_score=0.0, existing_debt_pennies=0, assets_value_pennies=0),
         seller_context=HousingSagaAgentContext(id=seller_id, monthly_income=0, existing_monthly_debt=0),
         property_id=500,
         offer_price=100.0,
@@ -81,7 +81,7 @@ def test_process_sagas_active_participants(saga_orchestrator):
     saga = HousingTransactionSagaStateDTO(
         saga_id=saga_id,
         status="INITIATED",
-        buyer_context=HouseholdSnapshotDTO(household_id=str(buyer_id), cash=0, income=0, credit_score=0, existing_debt=0, assets_value=0),
+        buyer_context=HouseholdSnapshotDTO(household_id=buyer_id, cash_pennies=0, income_pennies=0, credit_score=0.0, existing_debt_pennies=0, assets_value_pennies=0),
         seller_context=HousingSagaAgentContext(id=seller_id, monthly_income=0, existing_monthly_debt=0),
         property_id=500,
         offer_price=100.0,
@@ -130,7 +130,7 @@ def test_find_and_compensate_by_agent_success(saga_orchestrator):
     saga = HousingTransactionSagaStateDTO(
         saga_id=saga_id,
         status="APPROVED", # Use something that triggers logic
-        buyer_context=HouseholdSnapshotDTO(household_id=str(agent_id), cash=0, income=0, credit_score=0, existing_debt=0, assets_value=0),
+        buyer_context=HouseholdSnapshotDTO(household_id=agent_id, cash_pennies=0, income_pennies=0, credit_score=0.0, existing_debt_pennies=0, assets_value_pennies=0),
         seller_context=HousingSagaAgentContext(id=other_id, monthly_income=0, existing_monthly_debt=0),
         property_id=500,
         offer_price=100.0,
@@ -161,7 +161,7 @@ def test_find_and_compensate_by_agent_no_handler(saga_orchestrator):
     saga = HousingTransactionSagaStateDTO(
         saga_id=saga_id,
         status="INITIATED",
-        buyer_context=HouseholdSnapshotDTO(household_id=str(agent_id), cash=0, income=0, credit_score=0, existing_debt=0, assets_value=0),
+        buyer_context=HouseholdSnapshotDTO(household_id=1, cash_pennies=0, income_pennies=0, credit_score=0.0, existing_debt_pennies=0, assets_value_pennies=0),
         seller_context=HousingSagaAgentContext(id=666, monthly_income=0, existing_monthly_debt=0),
         property_id=500,
         offer_price=100.0,

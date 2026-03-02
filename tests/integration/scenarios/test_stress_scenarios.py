@@ -129,10 +129,10 @@ class TestPhase28StressScenarios:
         # Verify settlement system calls
         # 1000 * 0.5 = 500
         # 5000 * 0.5 = 2500
-        assert event_system.settlement_system.mint_and_distribute.call_count == 2
+        assert event_system.settlement_system.create_and_transfer.call_count == 2
 
         # Check call args for first household
-        calls = event_system.settlement_system.mint_and_distribute.call_args_list
+        calls = event_system.settlement_system.create_and_transfer.call_args_list
         # Note: order depends on list iteration
         # h1: amount=500
         # h2: amount=2500

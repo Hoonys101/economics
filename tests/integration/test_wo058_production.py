@@ -149,12 +149,14 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer, mock_co
     sim.world_state.tracker = EconomicIndicatorTracker(config_module=mock_config)
 
     # Mock Settlement System for Bootstrapper
-    settlement_system = Mock()
-    def transfer_side_effect(debit, credit, amount, memo):
+    from modules.finance.api import IMonetaryAuthority, ICentralBank
+    settlement_system = MagicMock(spec=IMonetaryAuthority)
+    def transfer_side_effect(debit, credit, amount, memo, tick=0, currency=None):
         credit._deposit(amount)
         return True
+    settlement_system.create_and_transfer.side_effect = transfer_side_effect
     settlement_system.transfer.side_effect = transfer_side_effect
-    central_bank = Mock()
+    central_bank = MagicMock(spec=ICentralBank)
 
     Bootstrapper.inject_initial_liquidity(sim.firms, mock_config, settlement_system, central_bank)
     Bootstrapper.force_assign_workers(sim.firms, sim.households)
@@ -217,12 +219,14 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_conf
     sim.world_state.tracker = EconomicIndicatorTracker(config_module=mock_config)
 
     # Mock Settlement System for Bootstrapper
-    settlement_system = Mock()
-    def transfer_side_effect(debit, credit, amount, memo):
+    from modules.finance.api import IMonetaryAuthority, ICentralBank
+    settlement_system = MagicMock(spec=IMonetaryAuthority)
+    def transfer_side_effect(debit, credit, amount, memo, tick=0, currency=None):
         credit._deposit(amount)
         return True
+    settlement_system.create_and_transfer.side_effect = transfer_side_effect
     settlement_system.transfer.side_effect = transfer_side_effect
-    central_bank = Mock()
+    central_bank = MagicMock(spec=ICentralBank)
 
     Bootstrapper.inject_initial_liquidity(sim.firms, mock_config, settlement_system, central_bank)
     Bootstrapper.force_assign_workers(sim.firms, sim.households)

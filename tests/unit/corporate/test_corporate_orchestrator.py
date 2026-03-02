@@ -52,3 +52,5 @@ def test_orchestration(firm_dto, context_mock):
 
     # Sales (Sell)
     assert "SELL" in types
+
+    manager.cleanup()

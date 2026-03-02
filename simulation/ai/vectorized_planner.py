@@ -2,7 +2,9 @@ import numpy as np
 import logging
 from modules.system.api import DEFAULT_CURRENCY
 
-class VectorizedHouseholdPlanner:
+from simulation.ai.api import IPlanner
+
+class VectorizedHouseholdPlanner(IPlanner):
     def __init__(self, config):
         self.config = config
         # Global Caching: 반복 계산되는 상수 미리 저장
@@ -29,11 +31,7 @@ class VectorizedHouseholdPlanner:
         count = len(agents)
         if count == 0: return []
 
-        fertility = 0.15
-        try:
-            if 'Mock' not in str(type(self.fertility_rate)):
-                fertility = float(self.fertility_rate)
-        except: pass
+        fertility = float(getattr(self, "fertility_rate", 0.15))
 
         if getattr(self, "tech_enabled", True) == False:
             import numpy as np
@@ -47,13 +45,12 @@ class VectorizedHouseholdPlanner:
 
         for a in agents:
             try:
-                v = a.age
-                ages.append(float(v) if 'Mock' not in str(type(v)) else 20.0)
+                ages.append(float(a.age))
             except: ages.append(20.0)
 
             try:
                 v = getattr(a, "current_wage", 0.0)
-                wages.append(float(v) if 'Mock' not in str(type(v)) else 0.0)
+                wages.append(float(v))
             except: wages.append(0.0)
 
             try:
@@ -61,37 +58,17 @@ class VectorizedHouseholdPlanner:
                 children_counts.append(float(len(v)) if isinstance(v, list) else 0.0)
             except: children_counts.append(0.0)
 
-        c_monthly = 500.0
-        try:
-            if 'Mock' not in str(type(self.child_monthly_cost)):
-                c_monthly = float(self.child_monthly_cost)
-        except: pass
-
-        b_cost_base = c_monthly * 12 * 20
-        try:
-            if 'Mock' not in str(type(self.breeding_cost_base)):
-                b_cost_base = float(self.breeding_cost_base)
-        except: pass
-
-        o_factor = 0.3 * 12 * 20
-        try:
-            if 'Mock' not in str(type(self.opp_cost_factor)):
-                o_factor = float(self.opp_cost_factor)
-        except: pass
-
-        e_base = 500000.0
-        try:
-            if 'Mock' not in str(type(self.emotional_base)):
-                e_base = float(self.emotional_base)
-        except: pass
+        c_monthly = float(getattr(self, "child_monthly_cost", 500.0))
+        b_cost_base = float(getattr(self, "breeding_cost_base", c_monthly * 12 * 20))
+        o_factor = float(getattr(self, "opp_cost_factor", 0.3 * 12 * 20))
+        e_base = float(getattr(self, "emotional_base", 500000.0))
 
         start_age = 20.0
         end_age = 45.0
         try:
-            s = getattr(self.config, "REPRODUCTION_AGE_START", 20)
-            if 'Mock' not in str(type(s)): start_age = float(s)
-            e = getattr(self.config, "REPRODUCTION_AGE_END", 45)
-            if 'Mock' not in str(type(e)): end_age = float(e)
+            if hasattr(self, "config") and self.config is not None:
+                start_age = float(getattr(self.config, "REPRODUCTION_AGE_START", 20))
+                end_age = float(getattr(self.config, "REPRODUCTION_AGE_END", 45))
         except: pass
 
         decisions = []
@@ -127,7 +104,7 @@ class VectorizedHouseholdPlanner:
         for a in agents:
             try:
                 v = a.get_quantity("basic_food")
-                inv_list.append(float(v) if 'Mock' not in str(type(v)) else 0.0)
+                inv_list.append(float(v))
             except:
                 inv_list.append(0.0)
 
@@ -138,7 +115,7 @@ class VectorizedHouseholdPlanner:
                     v = a.assets.get("currency", 0.0)
                 else:
                     v = a.assets
-                asset_list.append(float(v) if 'Mock' not in str(type(v)) else 0.0)
+                asset_list.append(float(v))
             except:
                 asset_list.append(0.0)
 
@@ -149,7 +126,7 @@ class VectorizedHouseholdPlanner:
                     v = a.needs.get("survival", 50.0)
                 else:
                     v = a.needs
-                need_list.append(float(v) if 'Mock' not in str(type(v)) else 50.0)
+                need_list.append(float(v))
             except:
                 need_list.append(50.0)
 
@@ -162,39 +139,27 @@ class VectorizedHouseholdPlanner:
         food_price = 5.0
         try:
             v = goods_market.get("basic_food_current_sell_price", 5.0) if hasattr(goods_market, 'get') else 5.0
-            if 'Mock' not in str(type(v)):
-                food_price = float(v)
+            food_price = float(v)
         except: pass
         if food_price <= 0: food_price = 5.0
 
         threshold = 50.0
         try:
-            v = self.survival_threshold
-            if 'Mock' not in str(type(v)):
-                threshold = float(v)
+            threshold = float(self.survival_threshold)
         except: pass
 
-        consume_qty = 1.0
-        try:
-            if 'Mock' not in str(type(self.food_consumption_qty)):
-                consume_qty = float(self.food_consumption_qty)
-        except: pass
-
-        buy_qty = 5.0
-        try:
-            if 'Mock' not in str(type(self.max_purchase_qty)):
-                buy_qty = float(self.max_purchase_qty)
-        except: pass
+        consume_qty = float(getattr(self, "food_consumption_qty", 1.0))
+        buy_qty = float(getattr(self, "max_purchase_qty", 5.0))
 
         consume_amounts = []
         buy_amounts = []
 
         for i in range(count):
             try:
-                n = float(need_list[i]) if 'Mock' not in str(type(need_list[i])) else 50.0
-                inv = float(inv_list[i]) if 'Mock' not in str(type(inv_list[i])) else 0.0
-                ast = float(asset_list[i]) if 'Mock' not in str(type(asset_list[i])) else 0.0
-                t = float(threshold) if 'Mock' not in str(type(threshold)) else 50.0
+                n = float(need_list[i])
+                inv = float(inv_list[i])
+                ast = float(asset_list[i])
+                t = float(threshold)
 
                 if n > t and inv > 0.0:
                     c = min(consume_qty, inv)
@@ -218,3 +183,9 @@ class VectorizedHouseholdPlanner:
             'buy': buy_amounts,
             'price': float(food_price)
         }
+
+    def cleanup(self) -> None:
+        """
+        Clears cached references to config module to prevent mocks from persisting.
+        """
+        self.config = None

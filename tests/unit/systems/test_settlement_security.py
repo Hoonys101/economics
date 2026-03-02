@@ -208,14 +208,15 @@ def test_mint_and_distribute_security():
         return None
     mock_registry.get_agent.side_effect = get_agent_side_effect_v2
 
-    # Valid mint
-    success = system.mint_and_distribute(2, 500, reason="test")
-    assert success == True
+    # Valid mint (using create_and_transfer directly as mint_and_distribute is removed)
+    tx = system.create_and_transfer(central_bank_cb, target, 500, reason="test", tick=0)
+    assert tx is not None
     assert target.balance_pennies == 500
 
     # Invalid target
-    success = system.mint_and_distribute(3, 500, reason="test")
-    assert success == False
+    bad_agent = BadAgent()
+    tx = system.create_and_transfer(central_bank_cb, bad_agent, 500, reason="test", tick=0)
+    assert tx is None
 
 def test_settle_atomic_logging():
     """
@@ -229,4 +230,4 @@ def test_settle_atomic_logging():
 
     # Capture logs? pytest does it.
     success = system.settle_atomic(sender, credits, tick=0)
-    assert success == False
+    assert success is None

@@ -12,7 +12,9 @@ class HousingDecisionInputs(NamedTuple):
     risk_free_rate: float
     price_growth_expectation: float
 
-class HouseholdSystem2Planner:
+from simulation.ai.api import IPlanner
+
+class HouseholdSystem2Planner(IPlanner):
     """
     Household System 2 Planner (Specialized for Housing).
     Implements WO-046 Adaptive Housing Brain.
@@ -130,3 +132,10 @@ class HouseholdSystem2Planner:
         )
 
         return decision
+
+    def cleanup(self) -> None:
+        """
+        Clears references for memory management and leak prevention during testing.
+        """
+        self.agent = None
+        self.config = None

@@ -84,3 +84,11 @@ class CorporateManager:
         orders.extend(sales_plan.orders)
 
         return orders
+
+    def cleanup(self) -> None:
+        """
+        WO-Mock-Leak-Repair: Clears references to planners which might hold mock objects.
+        """
+        if self.system2_planner and hasattr(self.system2_planner, 'cleanup'):
+            self.system2_planner.cleanup()
+        self.system2_planner = None

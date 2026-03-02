@@ -86,6 +86,12 @@ class Bootstrapper:
         - Physical Goods (Inputs) are only magically created at Tick 0 (Genesis).
         """
         from simulation.systems.settlement_system import InventorySentry
+        from modules.finance.api import IMonetaryAuthority, ICentralBank, IBank
+
+        if not isinstance(settlement_system, IMonetaryAuthority):
+            raise TypeError("settlement_system must implement IMonetaryAuthority")
+        if not isinstance(central_bank, ICentralBank):
+            raise TypeError("central_bank must implement ICentralBank")
 
         BUFFER_DAYS = 30.0
         injected = False
@@ -115,29 +121,18 @@ class Bootstrapper:
         current_balance = firm.wallet.get_balance(DEFAULT_CURRENCY)
         if current_balance < Bootstrapper.MIN_CAPITAL:
             diff = round_to_pennies(Bootstrapper.MIN_CAPITAL - current_balance)
-            if settlement_system and central_bank:
-                from modules.system.constants import ID_CENTRAL_BANK
-                is_cb = False
-                if hasattr(central_bank, 'id'):
-                    is_cb = str(central_bank.id) == str(ID_CENTRAL_BANK)
 
-                if is_cb and hasattr(settlement_system, 'create_and_transfer'):
-                    from modules.finance.api import IBank
-                    if isinstance(firm, IBank):
-                        tx = settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_RESERVES")
-                    else:
-                        tx = settlement_system.create_and_transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION", tick=current_tick)
-                else:
-                    tx = settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
-
-                if tx is None:
-                    raise KeyError(f"Failed to inject liquidity to Firm {firm.id}. Agent possibly not registered.")
-                logger.info(f"BOOTSTRAPPER | Injected {diff} capital to Firm {firm.id} via Settlement.")
-                injected = True
+            # Zero-Sum Compliance via strictly typed ISettlementSystem calls
+            if isinstance(firm, IBank):
+                tx = settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_RESERVES")
             else:
-                msg = f"BOOTSTRAPPER | Failed to inject {diff} to Firm {firm.id}. SettlementSystem or CentralBank missing."
-                logger.critical(msg)
-                raise RuntimeError(msg)
+                tx = settlement_system.create_and_transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION", tick=current_tick)
+
+            if tx is None:
+                raise KeyError(f"Failed to inject liquidity to Firm {firm.id} via Settlement.")
+
+            logger.info(f"BOOTSTRAPPER | Injected {diff} capital to Firm {firm.id} via Settlement.")
+            injected = True
 
         return injected
 

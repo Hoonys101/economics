@@ -39,24 +39,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "wo-firm-factory-core": {
-      "key": "wo-firm-factory-core",
-      "title": "[S2-2] Atomic FirmFactory Code Refactor",
-      "type": "jules",
-      "instruction_raw": "Implement the core logic of Atomic FirmFactory spec. Ensure AgentRegistry.register() precedes Bank account creation and Liquidity Injection. Implement 'Soft-Kill' (is_active=False) on initialization failure. MANDATORY: Ignore test regressions. Focus on Atomicity. Final suite alignment in Phase 8.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_spec_firm_factory.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [
-        "simulation/factories/firm_factory.py",
-        "simulation/systems/bootstrapper.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wo-firm-factory-tests": {
       "key": "wo-firm-factory-tests",
       "title": "[S2-3] FirmFactory Test & Fixture Overhaul",
