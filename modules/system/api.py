@@ -15,6 +15,15 @@ DEFAULT_CURRENCY: CurrencyCode = "USD"
 AgentID = int
 
 @runtime_checkable
+class ICleanable(Protocol):
+    """
+    Protocol for components that require explicit resource cleanup
+    and breaking of circular references.
+    """
+    def cleanup(self) -> None:
+        ...
+
+@runtime_checkable
 class IAgent(Protocol):
     id: AgentID
     is_active: bool
