@@ -136,6 +136,7 @@ class TestCallMarketService(unittest.TestCase):
             "maturity_tick": 100
         }
         self.service.active_loans[loan_id] = loan
+        self.service.loans_by_maturity[100] = [loan_id]
 
         # Tick 99: Not matured
         self.service.settle_matured_loans(tick=99)
