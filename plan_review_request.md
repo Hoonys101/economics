@@ -1,38 +1,27 @@
-# Plan: Connectivity & SSoT Enforcement
+The goal of this task is to execute a structural audit based on `design/3_work_artifacts/specs/AUDIT_SPEC_STRUCTURAL.md`. The audit requires scanning for God Classes (>800 lines of code) and tracing raw agent leaks into decision engines.
 
-1. **Implement `FinancialSentry` and `InventorySentry` in `simulation/systems/settlement_system.py`**
-   - Create a `FinancialSentry` class with `_is_active`, `unlock()` and `lock()` class methods.
-   - Create an `InventorySentry` class with `_is_active`, `unlock()` and `lock()` class methods.
+Here is the plan:
+1.  **Analyze the current state**:
+    -   We have already run an initial scan script that identified the following:
+        -   **God Classes**:
+            -   `simulation/firms.py: Firm (1765 lines)`
+            -   `simulation/core_agents.py: Household (1181 lines)`
+            -   `simulation/systems/settlement_system.py: SettlementSystem (966 lines)`
+        -   **Abstraction Leaks (Raw Agent Leaks)**:
+            -   `simulation/agents/government.py: run_welfare_check` and `execute_social_policy` and `run_public_education` accept `agents: List[Any]`
+            -   `modules/government/api.py: run_welfare_check` accepts `agents: List[IAgent]`
+            -   `modules/government/engines/execution_engine.py: execute`, `_execute_social_policy`, `_execute_firm_bailout` accept `agents: List[Any]`
+            -   `modules/government/services/welfare_service.py: run_welfare_check` accepts `agents: List[IAgent]`
 
-2. **Update Protocols in `modules/finance/api.py`**
-   - Add `SystemicIntegrityError` to be raised when a sentry blocks a change.
+2.  **Generate the audit report**:
+    -   Create a new file `reports/audit/AUDIT_REPORT_STRUCTURAL.md` following the template and guidelines in `AUDIT_SPEC_STRUCTURAL.md`.
+    -   Include the God Classes found and their line counts.
+    -   Document the abstraction leaks found in `modules/government` and `simulation/agents/government.py`, where `List[Any]` or `List[IAgent]` is passed directly to decision engines or services like `WelfareService` and `PolicyExecutionEngine`.
+    -   Follow the required sections: `1. 용어 정의`, `2. 논리 전개`, `3. 구체적 방법 예시`, `4. 구조적 모듈 현황 진단`, `5. Output Configuration`.
 
-3. **Enforce `FinancialSentry` in `modules/finance/wallet/wallet.py`**
-   - Add a check at the top of `Wallet.add`, `Wallet.subtract`, and `Wallet.load_balances` that throws `SystemicIntegrityError` if `FinancialSentry._is_active` is False.
-   - Wait, `Wallet` may be initialized or loaded. I should also check `__init__` if it mutates `_balances`. Or `FinancialSentry.unlock()` around AgentFactory logic. Actually, we should check `add` and `subtract`. For initialization, we can provide an override or unlock the sentry in `AgentFactory`.
+3.  **Complete pre-commit steps**:
+    -   Complete pre commit steps to make sure proper testing, verifications, reviews and reflections are done.
 
-4. **Enforce `InventorySentry` in `modules/agent_framework/components/inventory_component.py`**
-   - Update `InventoryComponent.add_item` and `InventoryComponent.remove_item` (and `clear_inventory`) to raise `SystemicIntegrityError` if `InventorySentry._is_active` is False.
+4.  **Submit the change**:
+    -   Submit the newly created report.
 
-5. **Update `DefaultTransferHandler` in `simulation/systems/handlers/transfer_handler.py`**
-   - Update the `handle` method. It currently just returns `True`. It should notify `MonetaryLedger` if applicable. Wait, `SettlementSystem` already notifies `MonetaryLedger` when `process_transaction` in the Engine succeeds. Let's look at `SettlementSystem.transfer`.
-   - `SettlementSystem.transfer` does:
-     ```python
-     if self.monetary_ledger:
-         is_debit_m2 = self._is_m2_agent(debit_agent)
-         is_credit_m2 = self._is_m2_agent(credit_agent)
-         # ...
-     ```
-   - Ah! The MISSION_spec says: *Implement or update the transaction handler for the generic `"transfer"` type to ensure P2P visibility. Intercept `"transfer"` transactions. Notify `MonetaryLedger` of the shift.*
-   - Wait, if `SettlementSystem` *already* does this, maybe I just need to move that logic to `DefaultTransferHandler` or ensure it's called? Let me check `DefaultTransferHandler`. The requirement says: *Notify MonetaryLedger of the shift. Verify that if the transfer crosses the M2 boundary, expansion/contraction is recorded.*
-
-6. **Wrap mutations with Sentry locks**
-   - Wrap operations in `SettlementSystem` (e.g. `transfer`, `mint_and_distribute`, `transfer_and_destroy`, `execute_multiparty_settlement`, `settle_atomic`) with `FinancialSentry.unlock()` and `.lock()`.
-   - Wrap operations in `GoodsTransactionHandler` / `CommerceSystem` (where inventory changes hands) with `InventorySentry.unlock()` and `.lock()`.
-
-7. **Write Unit Tests**
-   - Test Sentry Violation: manual increment/decrement of `wallet.add()` and `inventory.add_item()` raises `SystemicIntegrityError`.
-   - Test Transfer Visibility: `MonetaryLedger` is updated.
-
-8. **Pre-commit and Output**
-   - Run `pytest` and `mypy`. Generate `communications/insights/WO-IMPL-CONNECTIVITY-ENFORCEMENT.md`.
