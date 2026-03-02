@@ -414,13 +414,13 @@ class SettlementSystem(IMonetaryAuthority):
         self,
         transfers: List[Tuple[IFinancialAgent, IFinancialAgent, int]],
         tick: int
-    ) -> bool:
+    ) -> Optional[List[Transaction]]:
         """
         Executes a batch of transfers atomically using TransactionEngine.
         Format: (DebitAgent, CreditAgent, Amount)
         """
         if not transfers:
-            return True
+            return []
 
         # Convert to TransactionDTOs
         dtos = []
@@ -433,7 +433,7 @@ class SettlementSystem(IMonetaryAuthority):
              # Prep Seamless
              if not self._prepare_seamless_funds(debit, amount, DEFAULT_CURRENCY):
                  self.logger.warning(f"MULTIPARTY_FAIL | Insufficient funds for {debit.id}")
-                 return False
+                 return None
 
              dtos.append(TransactionDTO(
                  transaction_id=f"batch_{tick}_{i}",
@@ -452,59 +452,72 @@ class SettlementSystem(IMonetaryAuthority):
         except RuntimeError:
              # If engine fails to init (no registry, no agents?), fail
              self.logger.error("MULTIPARTY_FAIL | Transaction Engine initialization failed.")
-             return False
+             return None
 
         # Check results
         all_success = all(r.status == 'COMPLETED' for r in results)
 
         if not all_success:
             self.logger.error("MULTIPARTY_FAIL | Batch execution failed.")
-            return False
+            return None
 
-        if all_success and self.monetary_ledger:
-            for debit, credit, amount in transfers:
-                 is_debit_m2 = self._is_m2_agent(debit)
-                 is_credit_m2 = self._is_m2_agent(credit)
+        tx_records = []
+        if all_success:
+            for i, (debit, credit, amount) in enumerate(transfers):
+                 if self.monetary_ledger:
+                     is_debit_m2 = self._is_m2_agent(debit)
+                     is_credit_m2 = self._is_m2_agent(credit)
 
-                 if not is_debit_m2 and is_credit_m2:
-                     # Injection (Non-M2 -> M2)
-                     # Note: Multiparty usually doesn't have memo per tx, constructing one.
-                     self.monetary_ledger.record_monetary_expansion(amount, source="multiparty_settlement", currency=DEFAULT_CURRENCY)
-                 elif is_debit_m2 and not is_credit_m2:
-                     # Leakage (M2 -> Non-M2)
-                     self.monetary_ledger.record_monetary_contraction(amount, source="multiparty_settlement", currency=DEFAULT_CURRENCY)
+                     if not is_debit_m2 and is_credit_m2:
+                         # Injection (Non-M2 -> M2)
+                         # Note: Multiparty usually doesn't have memo per tx, constructing one.
+                         self.monetary_ledger.record_monetary_expansion(amount, source="multiparty_settlement", currency=DEFAULT_CURRENCY)
+                     elif is_debit_m2 and not is_credit_m2:
+                         # Leakage (M2 -> Non-M2)
+                         self.monetary_ledger.record_monetary_contraction(amount, source="multiparty_settlement", currency=DEFAULT_CURRENCY)
 
-        return True
+                 # Construct and bubble up the transaction record
+                 tx_record = self._create_transaction_record(
+                     buyer_id=debit.id,
+                     seller_id=credit.id,
+                     amount=amount,
+                     memo=f"multiparty_seq_{i}",
+                     tick=tick
+                 )
+                 if tx_record:
+                     tx_records.append(tx_record)
+
+        return tx_records
 
     def settle_atomic(
         self,
         debit_agent: IFinancialAgent,
         credits_list: List[Tuple[IFinancialAgent, int, str]],
         tick: int
-    ) -> bool:
+    ) -> Optional[List[Transaction]]:
         """
         Executes a one-to-many atomic settlement.
         All credits are summed to determine the total debit amount.
         """
         if not credits_list:
-            return True
+            return []
 
         # 0. Validate Credits
         for _, amount, memo in credits_list:
              if not isinstance(amount, int) or amount < 0:
                  self.logger.error(f"SETTLEMENT_FAIL | Invalid credit amount {amount}. Memo: {memo}")
-                 return False
+                 return None
              if not self._validate_memo(memo):
-                 return False
+                 return None
 
         # 1. Calculate Total Debit
         total_debit = sum(amount for _, amount, _ in credits_list)
         if total_debit <= 0:
-             return True
+             return []
 
         # 2. Prepare Funds (Seamless)
         if not self._prepare_seamless_funds(debit_agent, total_debit, DEFAULT_CURRENCY):
-            return False
+            return None
 
         # 3. Create Batch DTOs
         dtos = []
@@ -529,29 +542,45 @@ class SettlementSystem(IMonetaryAuthority):
                 results = engine.process_batch(dtos)
         except RuntimeError:
             self.logger.error("SETTLEMENT_ATOMIC_FAIL | Engine init failed.")
-            return False
+            return None
 
         all_success = all(r.status == 'COMPLETED' for r in results)
 
-        if all_success and self.monetary_ledger:
+        if not all_success:
+            return None
+
+        tx_records = []
+        if all_success:
             is_debit_m2 = self._is_m2_agent(debit_agent)
 
             for credit_agent, amount, memo in credits_list:
                 if amount <= 0: continue
-                is_credit_m2 = self._is_m2_agent(credit_agent)
 
-                if not is_debit_m2 and is_credit_m2:
-                     # Injection (Non-M2 -> M2)
-                     self.monetary_ledger.record_monetary_expansion(amount, source=memo, currency=DEFAULT_CURRENCY)
-                elif is_debit_m2 and not is_credit_m2:
-                     # Leakage (M2 -> Non-M2)
-                     self.monetary_ledger.record_monetary_contraction(amount, source=memo, currency=DEFAULT_CURRENCY)
+                if self.monetary_ledger:
+                    is_credit_m2 = self._is_m2_agent(credit_agent)
+                    if not is_debit_m2 and is_credit_m2:
+                         # Injection (Non-M2 -> M2)
+                         self.monetary_ledger.record_monetary_expansion(amount, source=memo, currency=DEFAULT_CURRENCY)
+                    elif is_debit_m2 and not is_credit_m2:
+                         # Leakage (M2 -> Non-M2)
+                         self.monetary_ledger.record_monetary_contraction(amount, source=memo, currency=DEFAULT_CURRENCY)
 
-                     if "escheatment" in memo:
-                         final_bal = debit_agent.get_balance(DEFAULT_CURRENCY)
-                         self.logger.info(f"SETTLEMENT_DEBUG | Escheatment Check | Agent {debit_agent.id} | Balance: {final_bal}")
+                         if "escheatment" in memo:
+                             final_bal = debit_agent.get_balance(DEFAULT_CURRENCY)
+                             self.logger.info(f"SETTLEMENT_DEBUG | Escheatment Check | Agent {debit_agent.id} | Balance: {final_bal}")
 
-        return all_success
+                # Construct and bubble up the transaction record
+                tx_record = self._create_transaction_record(
+                    buyer_id=debit_agent.id,
+                    seller_id=credit_agent.id,
+                    amount=amount,
+                    memo=memo,
+                    tick=tick
+                )
+                if tx_record:
+                    tx_records.append(tx_record)
+
+        return tx_records
 
     def _validate_memo(self, memo: str) -> bool:
         if not isinstance(memo, str):
@@ -937,30 +966,6 @@ class SettlementSystem(IMonetaryAuthority):
             time=tick,
             metadata=metadata
         )
-
-    def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = "god_mode_injection") -> bool:
-        if not self.agent_registry: return False
-
-        central_bank = self.agent_registry.get_agent(ID_CENTRAL_BANK)
-        if not central_bank:
-             central_bank = self.agent_registry.get_agent(str(ID_CENTRAL_BANK))
-        if not central_bank: return False
-
-        target_agent = self.agent_registry.get_agent(target_agent_id)
-        if not target_agent: return False
-
-        # Pass DEFAULT_CURRENCY explicitly if not provided (though mint_and_distribute assumes default)
-        # create_and_transfer signature: (..., currency=DEFAULT_CURRENCY)
-        tx = self.create_and_transfer(
-            source_authority=central_bank,
-            destination=target_agent,
-            amount=amount,
-            reason=reason,
-            tick=tick,
-            currency=DEFAULT_CURRENCY
-        )
-
-        return tx is not None
 
     def _emit_zero_sum_check(self, debit_agent_id: AgentID, credit_agent_id: AgentID, amount: int) -> None:
         """Logs zero-sum integrity check."""

@@ -361,7 +361,7 @@ def test_execute_multiparty_settlement_success(settlement_system):
 
     success = settlement_system.execute_multiparty_settlement(transfers, tick=1)
 
-    assert success is True
+    assert success is not None
     assert settlement_system.get_balance(agent_a.id) == 50
     assert settlement_system.get_balance(agent_b.id) == 120 # 100 + 50 - 30
     assert settlement_system.get_balance(agent_c.id) == 130
@@ -382,7 +382,7 @@ def test_execute_multiparty_settlement_rollback(settlement_system):
 
     success = settlement_system.execute_multiparty_settlement(transfers, tick=1)
 
-    assert success is False
+    assert success is None
     assert settlement_system.get_balance(agent_a.id) == 100
     assert settlement_system.get_balance(agent_b.id) == 100
     assert settlement_system.get_balance(agent_c.id) == 0
@@ -403,7 +403,7 @@ def test_settle_atomic_success(settlement_system):
 
     success = settlement_system.settle_atomic(agent_a, credits, tick=1)
 
-    assert success is True
+    assert success is not None
     assert settlement_system.get_balance(agent_a.id) == 0
     assert settlement_system.get_balance(agent_b.id) == 50
     assert settlement_system.get_balance(agent_c.id) == 50
@@ -424,7 +424,7 @@ def test_settle_atomic_rollback(settlement_system):
 
     success = settlement_system.settle_atomic(agent_a, credits, tick=1)
 
-    assert success is False
+    assert success is None
     assert settlement_system.get_balance(agent_a.id) == 90
     assert settlement_system.get_balance(agent_b.id) == 0
 
@@ -443,6 +443,6 @@ def test_settle_atomic_credit_fail_rollback(settlement_system):
 
     success = settlement_system.settle_atomic(agent_a, credits, tick=1)
 
-    assert success is False
+    assert success is None
     assert settlement_system.get_balance(agent_a.id) == 100 # Refunded
     assert settlement_system.get_balance(agent_b.id) == 0

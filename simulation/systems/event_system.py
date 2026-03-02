@@ -68,25 +68,16 @@ class EventSystem(IEventSystem):
 
                     amount = int(assets_val * config.demand_shock_cash_injection)
 
-                    if isinstance(self.settlement_system, IMintingSystem):
-                        self.settlement_system.mint_and_distribute(
-                            target_agent_id=h.id,
+                    if central_bank:
+                        self.settlement_system.create_and_transfer(
+                            source_authority=central_bank,
+                            destination=h,
                             amount=amount,
-                            tick=time,
-                            reason="hyperinflation_stimulus"
+                            reason="hyperinflation_stimulus",
+                            tick=time
                         )
                     else:
-                        # Fallback for systems that don't implement mint_and_distribute
-                        if central_bank:
-                            self.settlement_system.create_and_transfer(
-                                source_authority=central_bank,
-                                destination=h,
-                                amount=amount,
-                                reason="hyperinflation_stimulus",
-                                tick=time
-                            )
-                        else:
-                            logger.warning("EventSystem: Missing CentralBank for legacy create_and_transfer fallback.")
+                        logger.warning("EventSystem: Missing CentralBank for create_and_transfer.")
 
                 logger.info(f"  -> Injected {config.demand_shock_cash_injection:.0%} cash into all households.")
             else:

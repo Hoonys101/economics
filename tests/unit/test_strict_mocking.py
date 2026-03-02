@@ -16,7 +16,7 @@ def test_strict_mock_isettlement_system():
 
     # Should NOT allow admin methods
     with pytest.raises(AttributeError):
-        mock.mint_and_distribute(1, 100)
+        mock.transfer_and_destroy(MagicMock(), MagicMock(), 100, "test", 0)
 
 def test_strict_mock_imonetary_authority():
     """
@@ -26,7 +26,7 @@ def test_strict_mock_imonetary_authority():
     mock = MagicMock(spec=IMonetaryAuthority)
 
     # Should allow admin methods
-    mock.mint_and_distribute(1, 100)
+    mock.transfer_and_destroy(MagicMock(), MagicMock(), 100, "test", 0)
     mock.audit_total_m2()
 
     # Should also allow standard methods (inheritance)
