@@ -20,11 +20,25 @@ class IndustryDomain(Enum):
     PUBLIC = auto()
 
 import logging
+from modules.system.api import CurrencyCode, IAgent, AgentID, DEFAULT_CURRENCY
 
-# --- Unified Agent Identifier ---
-AgentID = NewType('AgentID', int)
+AgentID = AgentID # Re-export from system.api for consistency
 SpecialAgentRole = Literal["GOVERNMENT", "CENTRAL_BANK", "BANK"]
 AnyAgentID = Union[AgentID, SpecialAgentRole]
+
+@dataclass(frozen=True)
+class TransactionData:
+    """SSoT Transaction Record. Mandates Integer Purity."""
+    run_id: int
+    time: int
+    buyer_id: AgentID
+    seller_id: AgentID
+    item_id: str
+    quantity: float
+    total_pennies: int
+    currency: CurrencyCode
+    market_id: str
+    transaction_type: str
 
 @runtime_checkable
 class ILifecycleRegistry(Protocol):
@@ -53,27 +67,27 @@ from modules.simulation.dtos.api import MoneySupplyDTO
 
 @dataclass(frozen=True)
 class EconStateDTO:
-    """Pure snapshot of an agent's economic standing."""
-    assets: float
-    liabilities: float
-    income: float
-    hidden_talent: float  # Solves TD-WAVE3-TALENT-VEIL
-    industry_domain: Optional[IndustryDomain] = None # Solves TD-WAVE3-DTO-SWAP
+    """Pure snapshot of an agent's economic standing (Pennies)."""
+    assets_pennies: int
+    liabilities_pennies: int
+    income_pennies: int
+    hidden_talent: float
+    industry_domain: Optional[IndustryDomain] = None
 
 @dataclass(frozen=True)
 class WelfareCandidateDTO:
-    """Safely encapsulates state for Government Welfare logic without leaking the raw Household."""
+    """Safely encapsulates state for Government Welfare logic (Pennies)."""
     agent_id: AgentID
-    current_assets: float
+    current_assets_pennies: int
     employment_status: bool
     needs_survival: float
     hidden_talent: float
 
 @dataclass(frozen=True)
 class HouseholdStateDTO:
-    """Read-only state transfer object replacing raw Household instances."""
+    """Read-only state transfer object replacing raw Household instances (Pennies)."""
     agent_id: AgentID
-    assets: float
+    assets_pennies: int
     inventory: Dict[str, float]
     is_active: bool
     education_xp: float
@@ -150,15 +164,24 @@ class SystemStateDTO:
 @dataclass(frozen=True)
 class HouseholdSnapshotDTO:
     """
-    Read-only snapshot of a household's financial state for saga processing.
+    Read-only snapshot of a household's financial state (Pennies).
     Ensures isolation from live agent state during long-running transactions.
     """
-    household_id: str
-    cash: float
-    income: float
+    household_id: AgentID
+    cash_pennies: int
+    income_pennies: int
     credit_score: float
-    existing_debt: float
-    assets_value: float
+    existing_debt_pennies: int
+    assets_value_pennies: int
+
+@dataclass(frozen=True)
+class FirmConfigDTO:
+    """Configuration for Firm crystallization."""
+    specialization: str
+    productivity_factor: float
+    initial_capital_pennies: int
+    personality: Optional[Any] = None
+    sector: str = "FOOD"
 
 @dataclass
 class LiquidationConfigDTO:
