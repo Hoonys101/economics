@@ -31,10 +31,9 @@
 | **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firms**: Race condition; capital injection attempted before registration. | **CRITICAL**: Reliability. | **ACTIVE (AUDIT)** |
 | **TD-ARCH-ORPHAN-SAGA** | Architecture | **Orphaned Sagas**: Sagas holding stale references to dead/failed agents. | **High**: Integrity. | **ACTIVE (AUDIT)** |
 | **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks. | **High**: Gap. | **RESOLVED** |
-| **TD-FIN-FLOAT-INCURSION** | Finance | **Float Incursion in Ledger**: Parsing metadata using `float()` risks integer math integrity. | **Critical**: Integrity. | **RESOLVED** |
-| **TD-SYS-IMPLICIT-REGISTRY-LOOKUP** | Architecture | **Duck-Typed Agent Resolution**: `MonetaryLedger` uses `hasattr` to find registries. | **Medium**: Rigidity. | **RESOLVED** |
-| **TD-TEST-DTO-MOCKING** | Testing | **DTO Mocking Anti-Pattern**: Replacing DTOs with MagicMocks breaks type safety and stability. | **Medium**: Quality. | **NEW (AUDIT)** |
-| **TD-ARCH-GOD-DTO** | Architecture | **SimulationState God DTO**: Monolithic dependency violating Interface Segregation. | **High**: Rigidity. | **ACTIVE** |
+| **TD-ARCH-TX-INJECTION** | Architecture | **Transaction Injection Bypass**: `CentralBankSystem` directly mutating `WorldState.transactions`. | **High**: Purity. | **DEFERRED (TECH DEBT)** |
+| **TD-FIN-FLOAT-INCURSION-RE**| Finance | **Recurring Float Incursion**: `monetary_ledger.py` using `float()` for debt principal. | **Critical**: Integrity. | **DEFERRED (TECH DEBT)** |
+| **TD-ARCH-GOD-DTO** | Architecture | **SimulationState God DTO**: Monolithic dependency violating Interface Segregation. | **High**: Rigidity. | **ACTIVE (V2 AUDIT)** |
 | **TD-ARCH-PROTOCOL-EVASION** | Architecture | **Protocol Evasion**: `hasattr()` usage in lifecycle logic bypasses Protocol Purity. | **Medium**: Safety. | **ACTIVE** |
 
 ---
@@ -138,12 +137,19 @@
 - **Solution**: Enforce strict `int()` casting for all monetary values in parsing logic and DTOs.
 - **Status**: **RESOLVED** (Enforced via `CommandBatchDTO` and strict `int` checks)
 
-### ID: TD-SYS-IMPLICIT-REGISTRY-LOOKUP
-- **Title**: Duck-Typed Agent Resolution in Ledger
-- **Symptom**: `MonetaryLedger._resolve_agent` utilizes `hasattr` chains to find `agent_registry` from `settlement_system` or `time_provider`.
-- **Risk**: Weak dependency coupling; overloads `time_provider` with unintended domain responsibilities.
-- **Solution**: Explicitly inject `IAgentRegistry` into `MonetaryLedger` and remove the fallback chain logic.
-- **Status**: NEW
+### ID: TD-ARCH-TX-INJECTION
+- **Title**: Transaction Injection State Mutation Bypass
+- **Symptom**: `CentralBankSystem` accepts a direct reference to `WorldState.transactions` and appends to it.
+- **Risk**: Violates "Stateless Engine" principle; breaks side-effect tracking; hard to audit.
+- **Resolution**: Refactor to return `Transaction` objects for orchestrator collection.
+- **Status**: **DEFERRED** (Planned for SSoT Wave 2)
+
+### ID: TD-FIN-FLOAT-INCURSION-RECUR
+- **Title**: Recurring Float Incursion in Ledger
+- **Symptom**: `monetary_ledger.py` uses `float(repayment_details["principal"])`.
+- **Risk**: Precision loss in debt repayment calculations.
+- **Resolution**: Use `int()` or dedicated penny-safe parser.
+- **Status**: **DEFERRED** (Planned for SSoT Wave 1.1)
 
 ### ID: TD-ECON-GHOST-MONEY
 - **Title**: Ghost Money from Implicit System Operations

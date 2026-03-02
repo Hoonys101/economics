@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "version": "1.0"
+  },
+  "missions": {
+    "wo-audit-god-dto-refinement": {
+      "key": "wo-audit-god-dto-refinement",
+      "title": "[S2-1.5] DTO Governance Refinement (Internal vs External)",
+      "type": "gemini",
+      "instruction_raw": "Refine the God DTO decomposition plan by explicitly separating data structures into Internal, External, and Common DTOs. Ensure `SimulationState` attributes are migrated to these categorized DTOs and update `modules/simulation/api.py` accordingly.",
+      "command": null,
+      "file_path": "gemini-output/audit/MISSION_GOD_DTO_DECOMPOSITION.md",
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "modules/simulation/api.py",
+        "simulation/world_state.py"
+      ],
+      "output_path": "gemini-output/audit/MISSION_GOD_DTO_REFINEMENT.md",
+      "model": null,
+      "audit_requirements": null
+    }
+  }
+}

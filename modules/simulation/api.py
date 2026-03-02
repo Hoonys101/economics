@@ -445,6 +445,24 @@ class ILifecycleSubsystem(Protocol):
 # ---------------------------------------------------------
 
 @runtime_checkable
+class IEconContext(Protocol):
+    """Protocol for financial SSoT and Macro-economic access."""
+    @property
+    def bank(self) -> Any: ...
+    @property
+    def central_bank(self) -> Any: ...
+    @property
+    def monetary_ledger(self) -> Any: ...
+    def calculate_total_money(self) -> MoneySupplyDTO: ...
+    def get_economic_indicators(self) -> EconomicIndicatorsDTO: ...
+
+@runtime_checkable
+class ISystemProvider(Protocol):
+    """Service locator for specialized domain engines."""
+    def get_tech_manager(self) -> Any: ...
+    def get_social_system(self) -> Any: ...
+
+@runtime_checkable
 class ICommerceTickContext(Protocol):
     """Restricted context for Commerce/Market operations. Eliminates God DTO coupling."""
     @property

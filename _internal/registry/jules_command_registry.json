@@ -3,27 +3,27 @@
     "version": "1.0"
   },
   "missions": {
-    "wo-test-fix": {
-      "key": "wo-test-fix",
-      "title": "Test Suite Restoration Fix",
+    "wo-dto-api-consolidation": {
+      "key": "wo-dto-api-consolidation",
+      "title": "[S0-1] DTO & API Governance Consolidation",
       "type": "jules",
-      "instruction_raw": "Restore the 27 failing tests (TypeError, BorrowerProfileDTO, etc.) identified in pytest_failures.log using the patterns defined in MISSION_spec_test_restoration_fix.md. Ensure 100% pass rate before closing.",
+      "instruction_raw": "Consolidate and categorize DTOs in `modules/simulation/api.py` and `modules/system/api.py` based on the God DTO V2 Audit. MANDATORY: 1) Move/verify Common types (AgentID, ItemDTO) in `modules/system/api.py`. 2) Enforce External vs Internal boundaries. 3) Standardize NewTypes and Enums. This is the mandatory baseline before any Stream 1/2 logic begins.",
       "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_spec_test_restoration_fix.md",
+      "file_path": "gemini-output/audit/MISSION_GOD_DTO_DECOMPOSITION_V2.md",
       "wait": false,
       "session_id": null,
       "worker": null,
       "context_files": [
-        "c:/coding/economics/_internal/scripts/run_jules_interactive.py",
-        "c:/coding/economics/pytest_failures.log"
+        "modules/simulation/api.py",
+        "modules/system/api.py"
       ],
-      "output_path": "communications/insights/wo-test-analysis.md",
+      "output_path": null,
       "model": null,
       "audit_requirements": null
     },
     "wo-mock-leak-repair": {
       "key": "wo-mock-leak-repair",
-      "title": "Resolve MagicMock Leaks in Planners",
+      "title": "[S3-1] Resolve MagicMock Leaks in Planners",
       "type": "jules",
       "instruction_raw": "Identify and fix MagicMock leaks where planners are not properly cleaned up after ticks. Ensure all mocks are disposed of to prevent memory growth.",
       "command": "create",
@@ -38,11 +38,11 @@
       "model": null,
       "audit_requirements": null
     },
-    "wo-ssot-purity": {
-      "key": "wo-ssot-purity",
-      "title": "[SSoT Wave 1] Integer Purity & ID Normalization",
+    "wo-ssot-purity-ledger": {
+      "key": "wo-ssot-purity-ledger",
+      "title": "[S1-1] Integer Purity (Ledger & Bank)",
       "type": "jules",
-      "instruction_raw": "Enforce strict integer arithmetic for all monetary values. Remove 'float()' calls in ledger.py and central_bank_system.py. Replace all 'str(id)' comparisons with direct 'int' comparisons in world_state.py and settlement_system.py.",
+      "instruction_raw": "Enforce strict integer arithmetic for all monetary values. Remove all 'float()' and 'round()' calls in ledger.py and central_bank_system.py. Ensure all balance mutations use Pennies (int).",
       "command": "create",
       "file_path": null,
       "wait": false,
@@ -50,8 +50,25 @@
       "worker": null,
       "context_files": [
         "modules/finance/kernel/ledger.py",
-        "simulation/world_state.py",
         "simulation/systems/central_bank_system.py"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "wo-ssot-purity-ids": {
+      "key": "wo-ssot-purity-ids",
+      "title": "[S2-1] Agent ID Normalization",
+      "type": "jules",
+      "instruction_raw": "Replace all 'str(id)' and string-based agent ID comparisons with direct 'int' (AgentID) comparisons in world_state.py and settlement_system.py. Standardize on the AgentID NewType.",
+      "command": "create",
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [
+        "simulation/world_state.py",
+        "simulation/systems/settlement_system.py"
       ],
       "output_path": null,
       "model": null,
@@ -59,7 +76,7 @@
     },
     "wo-ssot-authority": {
       "key": "wo-ssot-authority",
-      "title": "[SSoT Wave 2] Behavioral Sinking (Settlement Authority)",
+      "title": "[S1-2] Behavioral Sinking (Settlement Authority)",
       "type": "jules",
       "instruction_raw": "Refactor SettlementSystem to sink side-effects (IMonetaryLedger, MetricsService) into the atomic transfer block. Ensure all public methods return transactions for 'Bubble-Up' logging. Eliminate 'God Mode' minting bypasses.",
       "command": "create",
@@ -77,7 +94,7 @@
     },
     "wo-ssot-intent": {
       "key": "wo-ssot-intent",
-      "title": "[SSoT Wave 3] Intent Unification (Transaction Processor)",
+      "title": "[S1-3] Intent Unification (Transaction Processor)",
       "type": "jules",
       "instruction_raw": "Refactor TransactionProcessor handlers to use SettlementSystem.process_transfer() exclusively for all balance mutations. Remove logic duplication between handlers and systems.",
       "command": "create",
@@ -95,7 +112,7 @@
     },
     "wo-ssot-cleanup": {
       "key": "wo-ssot-cleanup",
-      "title": "[SSoT Wave 4] Orchestration Cleanup",
+      "title": "[S1-4] Orchestration Cleanup",
       "type": "jules",
       "instruction_raw": "Delete redundant Phase_MonetaryProcessing (4.7). Remove ledger-processing logic from Phase3_Transaction to ensure side-effects are only handled by the Transaction Authority.",
       "command": "create",
@@ -106,6 +123,42 @@
       "context_files": [
         "simulation/orchestration/phases/monetary_processing.py",
         "simulation/orchestration/phases/transaction.py"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "wo-firm-factory-core": {
+      "key": "wo-firm-factory-core",
+      "title": "[S2-2] Atomic FirmFactory Code Refactor",
+      "type": "jules",
+      "instruction_raw": "Implement the core logic of Atomic FirmFactory spec. Ensure AgentRegistry.register() precedes Bank account creation and Liquidity Injection. Implement 'Soft-Kill' (is_active=False) on initialization failure. Use strict Protocol validation in Bootstrapper.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_spec_firm_factory.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [
+        "simulation/factories/firm_factory.py",
+        "simulation/systems/bootstrapper.py"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "wo-firm-factory-tests": {
+      "key": "wo-firm-factory-tests",
+      "title": "[S2-3] FirmFactory Test & Fixture Overhaul",
+      "type": "jules",
+      "instruction_raw": "Refactor all 20+ test call sites and fixtures to remove the 'simulation' God Object dependency. Align test factories with the new IFirmFactory protocol (agent_registry, world_state injection).",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_spec_firm_factory.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [
+        "tests/simulation/test_firm_factory.py",
+        "simulation/factories/golden_agents.py"
       ],
       "output_path": null,
       "model": null,
