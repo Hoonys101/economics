@@ -2,5 +2,25 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {}
+  "missions": {
+    "wo-ssot-hardening": {
+      "key": "wo-ssot-hardening",
+      "title": "SSoT Architecture Hardening",
+      "type": "gemini",
+      "instruction_raw": "Draft the implementation specification for Bubble-Up transaction reporting, strict integer purity (pennies), and ID normalization. Reference MISSION_spec_ssot_hardening.md for core requirements.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "gemini-output/spec/MISSION_spec_ssot_hardening.md",
+        "simulation/systems/central_bank_system.py",
+        "simulation/world_state.py"
+      ],
+      "output_path": "gemini-output/spec/MISSION_spec_ssot_hardening_impl.md",
+      "model": null,
+      "audit_requirements": null
+    }
+  }
 }
