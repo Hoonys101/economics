@@ -6,7 +6,7 @@ from dataclasses import replace
 
 from simulation.firms import Firm
 from modules.simulation.dtos.api import FirmConfigDTO
-from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO
+from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO, IBirthContext, IFinanceTickContext
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.ai.enums import Personality
 from modules.finance.api import ISettlementSystem, ICentralBank
@@ -31,8 +31,8 @@ class FirmFactory:
         self,
         name: str,
         config_dto: FirmConfigDTO,
-        birth_context: Any,
-        finance_context: Any,
+        birth_context: 'IBirthContext',
+        finance_context: 'IFinanceTickContext',
         specialization: str,
         personality: Optional[Personality] = None,
         decision_engine: Optional[Any] = None,
@@ -103,8 +103,8 @@ class FirmFactory:
         source_firm: Firm,
         new_id: int,
         initial_assets_from_parent: int,
-        finance_context: Any,
-        birth_context: Any = None
+        finance_context: 'IFinanceTickContext',
+        birth_context: Optional['IBirthContext'] = None
     ) -> Firm:
         """
         Deep copy / Mitosis logic for Firms.

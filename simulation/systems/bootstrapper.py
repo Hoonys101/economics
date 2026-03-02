@@ -76,7 +76,7 @@ class Bootstrapper:
         logger.info(f'BOOTSTRAPPER | Total force-assigned workers: {assigned_count}')
         return assigned_count
     @staticmethod
-    def inject_liquidity_for_firm(firm: 'Firm', config: Any, settlement_system: Any, central_bank: Any, current_tick: int = 0) -> bool:
+    def inject_liquidity_for_firm(firm: 'Firm', config: Any, settlement_system: 'ISettlementSystem', central_bank: 'ICentralBank', current_tick: int = 0) -> bool:
         """
         Injects liquidity (inputs and capital) for a single firm.
         Returns True if any resource was injected.
@@ -86,10 +86,10 @@ class Bootstrapper:
         - Physical Goods (Inputs) are only magically created at Tick 0 (Genesis).
         """
         from simulation.systems.settlement_system import InventorySentry
-        from modules.finance.api import IMonetaryAuthority, ICentralBank, IBank
+        from modules.finance.api import IMonetaryAuthority, ICentralBank, IBank, ISettlementSystem
 
-        if not isinstance(settlement_system, IMonetaryAuthority):
-            raise TypeError("settlement_system must implement IMonetaryAuthority")
+        if not isinstance(settlement_system, ISettlementSystem):
+            raise TypeError("settlement_system must implement ISettlementSystem")
         if not isinstance(central_bank, ICentralBank):
             raise TypeError("central_bank must implement ICentralBank")
 
@@ -137,7 +137,7 @@ class Bootstrapper:
         return injected
 
     @staticmethod
-    def inject_initial_liquidity(firms: List['Firm'], config: Any, settlement_system: Any = None, central_bank: Any = None) -> None:
+    def inject_initial_liquidity(firms: List['Firm'], config: Any, settlement_system: 'ISettlementSystem' = None, central_bank: 'ICentralBank' = None) -> None:
         """
         Injects a 30-tick buffer of raw materials and minimum capital.
         """

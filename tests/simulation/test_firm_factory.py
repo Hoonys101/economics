@@ -101,4 +101,4 @@ class TestBootstrapperProtocolPurity:
         with pytest.raises(TypeError) as exc:
             Bootstrapper.inject_liquidity_for_firm(firm, config=MagicMock(), settlement_system=fake_system, central_bank=mock_central_bank)
 
-        assert "must implement IMonetaryAuthority" in str(exc.value)
+        assert "must implement ISettlementSystem" in str(exc.value)
