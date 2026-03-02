@@ -17,12 +17,12 @@ def test_saga_orchestrator_rejects_incomplete_dto():
     
     # buyer_context expects HouseholdSnapshotDTO
     buyer_context = HouseholdSnapshotDTO(
-        household_id="101",
-        cash=1000.0,
-        income=5000.0,
+        household_id=101,
+        cash_pennies=100000,
+        income_pennies=500000,
         credit_score=750.0,
-        existing_debt=0.0,
-        assets_value=100000.0
+        existing_debt_pennies=0,
+        assets_value_pennies=10000000
     )
     
     dirty_saga = HousingTransactionSagaStateDTO(

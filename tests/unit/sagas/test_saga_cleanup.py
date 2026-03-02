@@ -33,13 +33,13 @@ def test_saga_cleanup_inactive_buyer(saga_orchestrator, mock_registry, caplog):
         saga_id=saga_id,
         status="PENDING_OFFER",
         buyer_context=HouseholdSnapshotDTO(
-            household_id=str(buyer_id), cash=1000, income=100,
-            credit_score=700, existing_debt=0, assets_value=0
+            household_id=buyer_id, cash_pennies=1000, income_pennies=100,
+            credit_score=700.0, existing_debt_pennies=0, assets_value_pennies=0
         ),
         seller_context=HousingSagaAgentContext(id=seller_id, monthly_income=500, existing_monthly_debt=0),
         property_id=500,
-        offer_price=100,
-        down_payment_amount=20,
+        offer_price=100.0,
+        down_payment_amount=20.0,
         logs=[]
     )
 
@@ -104,13 +104,13 @@ def test_saga_cleanup_and_compensate(saga_orchestrator, mock_registry, caplog):
         saga_id=saga_id,
         status="CREDIT_CHECK", # Beyond discovery
         buyer_context=HouseholdSnapshotDTO(
-            household_id=str(buyer_id), cash=1000, income=100,
-            credit_score=700, existing_debt=0, assets_value=0
+            household_id=buyer_id, cash_pennies=1000, income_pennies=100,
+            credit_score=700.0, existing_debt_pennies=0, assets_value_pennies=0
         ),
         seller_context=HousingSagaAgentContext(id=seller_id, monthly_income=500, existing_monthly_debt=0),
         property_id=500,
-        offer_price=100,
-        down_payment_amount=20,
+        offer_price=100.0,
+        down_payment_amount=20.0,
         logs=[]
     )
 
@@ -165,13 +165,13 @@ def test_saga_compensate_failure_resilience(saga_orchestrator, mock_registry, ca
         saga_id=saga_id,
         status="CREDIT_CHECK",
         buyer_context=HouseholdSnapshotDTO(
-            household_id=str(buyer_id), cash=1000, income=100,
-            credit_score=700, existing_debt=0, assets_value=0
+            household_id=buyer_id, cash_pennies=1000, income_pennies=100,
+            credit_score=700.0, existing_debt_pennies=0, assets_value_pennies=0
         ),
         seller_context=HousingSagaAgentContext(id=seller_id, monthly_income=500, existing_monthly_debt=0),
         property_id=500,
-        offer_price=100,
-        down_payment_amount=20,
+        offer_price=100.0,
+        down_payment_amount=20.0,
         logs=[]
     )
 

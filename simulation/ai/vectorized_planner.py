@@ -46,17 +46,17 @@ class VectorizedHouseholdPlanner(IPlanner):
         for a in agents:
             try:
                 ages.append(float(a.age))
-            except: ages.append(20.0)
+            except (AttributeError, TypeError, ValueError): ages.append(20.0)
 
             try:
                 v = getattr(a, "current_wage", 0.0)
                 wages.append(float(v))
-            except: wages.append(0.0)
+            except (AttributeError, TypeError, ValueError): wages.append(0.0)
 
             try:
                 v = getattr(a, "children_ids", [])
                 children_counts.append(float(len(v)) if isinstance(v, list) else 0.0)
-            except: children_counts.append(0.0)
+            except (AttributeError, TypeError, ValueError): children_counts.append(0.0)
 
         c_monthly = float(getattr(self, "child_monthly_cost", 500.0))
         b_cost_base = float(getattr(self, "breeding_cost_base", c_monthly * 12 * 20))
@@ -69,7 +69,7 @@ class VectorizedHouseholdPlanner(IPlanner):
             if hasattr(self, "config") and self.config is not None:
                 start_age = float(getattr(self.config, "REPRODUCTION_AGE_START", 20))
                 end_age = float(getattr(self.config, "REPRODUCTION_AGE_END", 45))
-        except: pass
+        except (AttributeError, TypeError, ValueError): pass
 
         decisions = []
         for i in range(count):
@@ -90,7 +90,7 @@ class VectorizedHouseholdPlanner(IPlanner):
                     decisions.append(True)
                 else:
                     decisions.append(False)
-            except:
+            except (AttributeError, TypeError, ValueError):
                 decisions.append(False)
 
         return decisions
@@ -105,7 +105,7 @@ class VectorizedHouseholdPlanner(IPlanner):
             try:
                 v = a.get_quantity("basic_food")
                 inv_list.append(float(v))
-            except:
+            except (AttributeError, TypeError, ValueError):
                 inv_list.append(0.0)
 
         asset_list = []
@@ -116,7 +116,7 @@ class VectorizedHouseholdPlanner(IPlanner):
                 else:
                     v = a.assets
                 asset_list.append(float(v))
-            except:
+            except (AttributeError, TypeError, ValueError):
                 asset_list.append(0.0)
 
         need_list = []
@@ -127,26 +127,26 @@ class VectorizedHouseholdPlanner(IPlanner):
                 else:
                     v = a.needs
                 need_list.append(float(v))
-            except:
+            except (AttributeError, TypeError, ValueError):
                 need_list.append(50.0)
 
         goods_market = {}
         try:
             if hasattr(market_data, 'get'):
                 goods_market = market_data.get("goods_market", {})
-        except: pass
+        except (AttributeError, TypeError, ValueError): pass
 
         food_price = 5.0
         try:
             v = goods_market.get("basic_food_current_sell_price", 5.0) if hasattr(goods_market, 'get') else 5.0
             food_price = float(v)
-        except: pass
+        except (AttributeError, TypeError, ValueError): pass
         if food_price <= 0: food_price = 5.0
 
         threshold = 50.0
         try:
             threshold = float(self.survival_threshold)
-        except: pass
+        except (AttributeError, TypeError, ValueError): pass
 
         consume_qty = float(getattr(self, "food_consumption_qty", 1.0))
         buy_qty = float(getattr(self, "max_purchase_qty", 5.0))

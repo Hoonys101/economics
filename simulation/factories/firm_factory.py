@@ -29,62 +29,72 @@ class FirmFactory:
 
     def create_firm(
         self,
-        agent_id: int,
         name: str,
         config_dto: FirmConfigDTO,
-        settlement_system: ISettlementSystem,
+        birth_context: Any,
+        finance_context: Any,
         specialization: str,
-        productivity_factor: float,
-        central_bank: Optional[ICentralBank] = None,
-        sector: str = "FOOD",
         personality: Optional[Personality] = None,
-        initial_inventory: Optional[Dict[str, float]] = None,
-        loan_market: Optional[LoanMarket] = None,
         decision_engine: Optional[Any] = None,
-        simulation: Optional[Any] = None # For logger/memory access if needed
     ) -> Firm:
         """
-        Creates a new Firm agent.
+        Creates a new Firm agent atomically.
         """
+        agent_id = birth_context.next_agent_id
+        productivity_factor = getattr(config_dto, "productivity_factor", 1.0)
+        sector = getattr(config_dto, "sector", "FOOD")
+
         # Core Config
         core_config = AgentCoreConfigDTO(
             id=agent_id,
             name=name,
-            value_orientation="Growth", # Firms usually default to Growth?
+            value_orientation="Growth", # Firms usually default to Growth
             initial_needs={}, # Firms don't have bio needs
-            logger=logger if not simulation else simulation.logger,
-            memory_interface=None if not simulation else getattr(simulation, "persistence_manager", None)
+            logger=birth_context.logger,
+            memory_interface=None
         )
 
         firm = Firm(
             core_config=core_config,
-            engine=decision_engine, # Must be provided or created externally for now
+            engine=decision_engine,
             specialization=specialization,
             productivity_factor=productivity_factor,
             config_dto=config_dto,
-            initial_inventory=initial_inventory,
-            loan_market=loan_market,
+            initial_inventory=None,
+            loan_market=None,
             sector=sector,
             personality=personality
         )
 
-        # Atomic Registration: Open Bank Account
+        # 1. Global Registration (Atomic)
+        if hasattr(birth_context, "agent_registry") and birth_context.agent_registry:
+            birth_context.agent_registry.register(firm)
+        else:
+            # Fallback for mocked/legacy contexts without agent_registry
+            if hasattr(birth_context, "firms"):
+                birth_context.firms.append(firm)
+
+        # 2. Atomic Registration: Open Bank Account
+        settlement_system = getattr(finance_context, "settlement_system", None)
         if settlement_system:
             try:
                 settlement_system.register_account(ID_BANK, firm.id)
                 logger.info(f"FirmFactory: Registered bank account for Firm {firm.id} at Bank {ID_BANK}")
             except Exception as e:
+                firm.is_active = False
                 logger.error(f"FirmFactory: Failed to register bank account for Firm {firm.id}: {e}")
                 raise RuntimeError(f"Failed to open bank account for Firm {firm.id}") from e
 
-        # Atomic Liquidity Injection
+        # 3. Atomic Liquidity Injection
+        central_bank = getattr(finance_context, "central_bank", None)
         if central_bank and settlement_system:
-             try:
-                 current_tick = simulation.time if simulation else 0
-                 Bootstrapper.inject_liquidity_for_firm(firm, self.config_module, settlement_system, central_bank, current_tick)
-             except Exception as e:
-                 logger.error(f"FirmFactory: Failed to inject liquidity for Firm {firm.id}: {e}")
-                 raise RuntimeError(f"Failed to inject liquidity for Firm {firm.id}") from e
+            try:
+                current_tick = getattr(finance_context, "current_time", 0)
+                Bootstrapper.inject_liquidity_for_firm(firm, self.config_module, settlement_system, central_bank, current_tick)
+            except Exception as e:
+                firm.is_active = False
+                logger.error(f"FirmFactory: Failed to inject liquidity for Firm {firm.id}: {e}")
+                raise RuntimeError(f"Failed to inject liquidity for Firm {firm.id}") from e
 
         return firm
 
@@ -93,8 +103,8 @@ class FirmFactory:
         source_firm: Firm,
         new_id: int,
         initial_assets_from_parent: int,
-        current_tick: int,
-        settlement_system: ISettlementSystem
+        finance_context: Any,
+        birth_context: Any = None
     ) -> Firm:
         """
         Deep copy / Mitosis logic for Firms.
@@ -131,7 +141,17 @@ class FirmFactory:
         new_firm._input_inventory_quality = copy.deepcopy(source_firm._input_inventory_quality)
         new_firm.inventory_quality = copy.deepcopy(source_firm.inventory_quality)
 
+        # Global Registration (Atomic Mitosis)
+        if birth_context:
+            if hasattr(birth_context, "agent_registry") and birth_context.agent_registry:
+                birth_context.agent_registry.register(new_firm)
+            elif hasattr(birth_context, "firms"):
+                birth_context.firms.append(new_firm)
+
         # Atomic Registration: Open Bank Account
+        settlement_system = getattr(finance_context, "settlement_system", None)
+        current_tick = getattr(finance_context, "current_time", 0)
+
         if settlement_system:
              try:
                  settlement_system.register_account(ID_BANK, new_firm.id)

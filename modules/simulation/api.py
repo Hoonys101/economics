@@ -60,8 +60,9 @@ if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
     from modules.finance.kernel.api import IMonetaryLedger
 
-from modules.system.api import CurrencyCode, IAgent
+from modules.system.api import CurrencyCode, IAgent, IAgentRegistry
 from modules.simulation.dtos.api import MoneySupplyDTO
+from simulation.ai.enums import Personality
 
 # --- DTOs ---
 
@@ -448,6 +449,7 @@ class IBirthContext(ILifecycleContext, Protocol):
     logger: Any # Needed for logging
     tracker: Any # Needed for ImmigrationManager
     bank: Any # Needed for FirmFactory bootstrap check (AttributeError fix)
+    agent_registry: IAgentRegistry # Needed for atomic Firm registration
 
 @runtime_checkable
 class IAgingContext(ILifecycleContext, Protocol):
@@ -508,6 +510,9 @@ class IGovernanceTickContext(Protocol):
     @property
     def taxation_system(self) -> Any: ...
 
+if TYPE_CHECKING:
+    from modules.finance.api import IMonetaryAuthority
+
 @runtime_checkable
 class IFinanceTickContext(Protocol):
     """Restricted context for Banking and Monetary operations."""
@@ -521,6 +526,27 @@ class IFinanceTickContext(Protocol):
     def monetary_ledger(self) -> Any: ...
     @property
     def saga_orchestrator(self) -> Any: ...
+    @property
+    def settlement_system(self) -> "IMonetaryAuthority": ...
+
+@runtime_checkable
+class IFirmFactory(Protocol):
+    """
+    Protocol for FirmFactory ensuring strict dependency injection and atomic creation.
+    Uses IBirthContext to encapsulate dependencies.
+    """
+    def create_firm(
+        self,
+        name: str,
+        config_dto: FirmConfigDTO,
+        birth_context: IBirthContext,
+        finance_context: IFinanceTickContext,
+        specialization: str,
+        personality: Optional[Personality] = None,
+        decision_engine: Optional[Any] = None,
+    ) -> IFirm:
+        """Atomic birth: Registration -> Bank Account -> Liquidity"""
+        ...
 
 @runtime_checkable
 class IMutationTickContext(Protocol):

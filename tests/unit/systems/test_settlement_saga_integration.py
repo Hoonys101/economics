@@ -42,11 +42,11 @@ class TestSettlementSagaIntegration:
         # Create DTO contexts
         buyer_ctx = HouseholdSnapshotDTO(
              household_id=1,
-             cash=20000.0,
-             income=5000.0,
+             cash_pennies=2000000,
+             income_pennies=500000,
              credit_score=700.0,
-             existing_debt=0.0,
-             assets_value=0.0
+             existing_debt_pennies=0,
+             assets_value_pennies=0
         )
 
         seller_ctx = HousingSagaAgentContext(
@@ -154,11 +154,11 @@ class TestSettlementSagaIntegration:
 
         buyer_ctx = HouseholdSnapshotDTO(
              household_id=1,
-             cash=20000.0,
-             income=5000.0,
+             cash_pennies=0, # NO CASH!
+             income_pennies=500000,
              credit_score=700.0,
-             existing_debt=0.0,
-             assets_value=0.0
+             existing_debt_pennies=0,
+             assets_value_pennies=0
         )
 
         seller_ctx = HousingSagaAgentContext(
