@@ -6,7 +6,9 @@ from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
-class FirmSystem2Planner:
+from simulation.ai.api import IPlanner
+
+class FirmSystem2Planner(IPlanner):
     """
     Firm System 2 Planner (Phase 21).
     Responsible for long-term strategic guidance based on NPV projections.
@@ -162,3 +164,11 @@ class FirmSystem2Planner:
             npv += cash_flow * discount
 
         return npv
+
+    def cleanup(self) -> None:
+        """
+        Clears references for memory management and leak prevention during testing.
+        """
+        self.firm = None
+        self.config = None
+        self.cached_guidance.clear()

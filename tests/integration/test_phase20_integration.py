@@ -149,6 +149,8 @@ class TestPhase20Integration:
         # Should go bankrupt
         assert result_high["bankruptcy_tick"] is not None
 
+        planner.cleanup()
+
     def test_system2_housing_cost_owner(self, mock_config):
         """Test System2Planner deducting mortgage interest for owners."""
         agent = MagicMock()
@@ -181,3 +183,5 @@ class TestPhase20Integration:
         # Verify calculation indirectly or by mocking project logic specifics if needed
         # Here just ensuring it runs without error and returns reasonable NPV
         assert result["npv_wealth"] > 1000.0
+
+        planner.cleanup()

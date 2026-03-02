@@ -105,6 +105,10 @@ def test_growth_scenario_with_golden_firm(golden_firms, golden_config):
     # Simulate high demand
     market_data = {"food": {"demand_signal": 1.5}}
 
+    # Cleanup to prevent memory leak
+    if hasattr(engine.corporate_manager, 'cleanup'):
+        engine.corporate_manager.cleanup()
+
     # We need to ensure state.production.inventory has the key "food" if specialization is food
     if "food" not in state.production.inventory:
         state.production.inventory["food"] = 0.0

@@ -57,5 +57,9 @@ class TestStep1Foundation(unittest.TestCase):
         # NPV should be > 1000.
         self.assertGreater(result["npv_wealth"], 1000.0)
 
+    def tearDown(self):
+        if hasattr(self.agent, 'system2_planner') and self.agent.system2_planner:
+            self.agent.system2_planner.cleanup()
+
 if __name__ == "__main__":
     unittest.main()

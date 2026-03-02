@@ -98,5 +98,9 @@ class TestSystem2Integration(unittest.TestCase):
 
         self.assertGreater(res_light['npv_wealth'], res_dark['npv_wealth'], "Tech should improve Female NPV")
 
+    def tearDown(self):
+        if hasattr(self.agent, 'system2_planner') and self.agent.system2_planner:
+            self.agent.system2_planner.cleanup()
+
 if __name__ == "__main__":
     unittest.main()
