@@ -25,12 +25,24 @@ class SalesManager:
         if current_inventory <= 0:
             return orders
         market_price = 0.0
-        if item_id in market_data:
-            market_price = getattr(market_data[item_id], 'avg_price', 0) if hasattr(market_data[item_id], 'avg_price') else market_data[item_id].get('avg_price', 0)
+
+        # Enforce SSoT pure DTO dot-notation access
+        market_history = market_data.get(item_id)
+        if market_history:
+            # Assumes market_history is a MarketHistoryDTO
+            market_price = market_history.avg_price
+
         if market_price <= 0:
-            market_price = firm.sales.price_history.get(item_id, 0)
+            market_price = firm.sales.price_history.get(item_id, 0.0)
+
         if market_price <= 0:
-            market_price = getattr(goods_map.get(item_id), 'initial_price', 1000) / 100.0 if hasattr(goods_map.get(item_id), 'initial_price') else goods_map.get(item_id, {}).get('production_cost', 10.0)
+            good_dto = goods_map.get(item_id)
+            if good_dto:
+                # Assumes good_dto is a GoodsDTO
+                market_price = good_dto.initial_price / 100.0
+            else:
+                market_price = 10.0
+
         adjustment = (0.5 - aggressiveness) * 0.4
         target_price = market_price * (1.0 + adjustment)
         sales_vol = 1.0

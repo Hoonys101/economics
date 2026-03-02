@@ -47,15 +47,21 @@ class ProductionStrategy:
             current = firm.production.input_inventory.get(mat, 0.0)
             deficit = needed - current
             if deficit > 0:
-                mat_market_data = market_data.get('goods_market', {})
-                last_price_key = f'{mat}_avg_traded_price'
-                fallback_price_key = f'{mat}_current_sell_price'
-                last_price = mat_market_data.get(last_price_key, 0.0)
-                if last_price <= 0:
-                    last_price = mat_market_data.get(fallback_price_key, 0.0)
+                mat_market_data = market_data.get(mat)
+                last_price = 0.0
+
+                if mat_market_data:
+                    # Enforce SSoT via explicit MarketHistoryDTO attribute access
+                    last_price = mat_market_data.avg_price
+
                 if last_price <= 0:
                     mat_info = goods_map.get(mat)
-                    last_price = mat_info.initial_price if mat_info else 1000
+                    if mat_info:
+                        # Enforce SSoT via explicit GoodsDTO attribute access
+                        last_price = mat_info.initial_price
+                    else:
+                        last_price = 1000.0
+
                 bid_price = last_price * 1.05
                 # last_price is already in pennies, so bid_price is in pennies.
                 # Do NOT multiply by 100 again.
