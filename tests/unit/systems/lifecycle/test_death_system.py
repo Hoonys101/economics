@@ -66,8 +66,9 @@ class TestDeathSystem:
 
         death_system.liquidation_manager.initiate_liquidation.assert_called_once_with(firm, context)
 
-        # Verify removal from global list
-        assert firm not in context.firms
+        # Verify removal from global list is no longer handled directly by DeathSystem
+        # The list modifications are deferred to AgentLifecycleManager
+        assert firm in context.firms
 
     def test_firm_liquidation_cancels_orders(self, death_system):
         firm = MagicMock(spec=IFirm)
@@ -135,4 +136,5 @@ class TestDeathSystem:
         assert len(transactions) == 1
         assert transactions[0] == dummy_tx
         death_system.inheritance_manager.process_death.assert_called_once()
-        assert household not in context.households
+        # Ensure household remains in context.households as removal is deferred
+        assert household in context.households

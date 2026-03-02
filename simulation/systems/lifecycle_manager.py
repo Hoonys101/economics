@@ -48,10 +48,12 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                  hr_service: Optional[IHRService] = None,
                  tax_service: Optional[ITaxService] = None,
                  agent_registry: Optional[IAgentRegistry] = None,
-                 estate_registry: Optional[IEstateRegistry] = None):
+                 estate_registry: Optional[IEstateRegistry] = None,
+                 persistence_manager: Optional[Any] = None):
 
         self.config = config_module
         self.logger = logger
+        self.persistence_manager = persistence_manager
 
         # Dependencies for LiquidationManager
         # Prefer injected dependencies, fallback to instantiation for backward compatibility
@@ -148,6 +150,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         birth_txs = self.birth_system.execute(birth_context)
         all_transactions.extend(birth_txs)
 
+        # Guarantee AGENT_BIRTH events are flushed
+        if self.persistence_manager:
+            self.persistence_manager.flush_buffers(state.time)
+
         # 3. Marriage Phase (Wave 4)
         # Execute before Death to ensure spouses are linked if one dies.
         # Not refactored yet, passes state directly.
@@ -158,6 +164,19 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         # DeathSystem returns transactions (inheritance, liquidation leftovers)
         death_txs = self.death_system.execute(death_context)
         all_transactions.extend(death_txs)
+
+        # Purge inactive agents ONLY AFTER persistence is complete
+        if self.persistence_manager:
+            self.persistence_manager.flush_buffers(state.time)
+
+        # Note: List removal is now deferred from DeathSystem to here
+        state.households[:] = [h for h in state.households if h.is_active]
+        state.firms[:] = [f for f in state.firms if f.is_active]
+
+        # Purge from AgentRegistry cache
+        for agent_id, agent in list(state.agents.items()):
+            if not getattr(agent, "is_active", True):
+                del state.agents[agent_id]
 
         return all_transactions
 

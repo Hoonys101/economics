@@ -130,7 +130,7 @@ class Phase5_PostSequence(IPhaseStrategy):
              )
 
              if state.time % self.world_state.batch_save_interval == 0:
-                 self.world_state.persistence_manager.flush_buffers(state.time)
+                 self.world_state.persistence_manager.checkpoint_state(state.time, self.world_state.global_registry)
 
         # Reset counters
         for h in state.households:

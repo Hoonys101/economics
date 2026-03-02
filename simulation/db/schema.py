@@ -15,7 +15,19 @@ def create_tables(conn: sqlite3.Connection):
             start_time TEXT NOT NULL,
             end_time TEXT,
             description TEXT,
-            config_hash TEXT NOT NULL
+            config_hash TEXT NOT NULL,
+            last_safe_tick INTEGER DEFAULT 0
+        )
+    """)
+
+    # Registry Snapshots 테이블
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS registry_snapshots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL,
+            time INTEGER NOT NULL,
+            data JSON NOT NULL,
+            FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
         )
     """)
 

@@ -8,6 +8,7 @@ from simulation.dtos import (
     MarketHistoryData,
 )
 from modules.system.api import DEFAULT_CURRENCY
+import json
 
 if TYPE_CHECKING:
     from simulation.models import Transaction
@@ -88,4 +89,28 @@ class PersistenceManager:
         logger.info(
             f"DB_FLUSH_END | Finished flushing buffers to DB at tick {current_tick}",
             extra={"tick": current_tick, "tags": ["db_flush"]}
+        )
+
+    def checkpoint_state(self, current_tick: int, global_registry: Any):
+        """
+        Creates a checkpoint of the current simulation state to ensure zero data loss.
+        Flushes all buffers, snapshots the GlobalRegistry, and updates the last safe tick.
+        """
+        # 1. Flush pending data
+        self.flush_buffers(current_tick)
+
+        # 2. Snapshot GlobalRegistry
+        if global_registry:
+            snapshot = global_registry.snapshot()
+            # Convert RegistryValueDTOs to dict
+            snapshot_dict = {key: entry.value for key, entry in snapshot.items()}
+            registry_json = json.dumps(snapshot_dict)
+            self.repository.runs.save_registry_snapshot(self.run_id, current_tick, registry_json)
+
+        # 3. Update last safe tick marker
+        self.repository.runs.update_last_safe_tick(self.run_id, current_tick)
+
+        logger.info(
+            f"PERSISTENCE | Checkpoint saved at Tick {current_tick}",
+            extra={"tick": current_tick, "tags": ["checkpoint"]}
         )

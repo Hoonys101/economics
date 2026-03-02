@@ -133,22 +133,18 @@ class DeathSystem(IDeathSystem):
         for household in inactive_households:
             self._decommission_agent(household, context)
 
-        # Modify lists in place to reflect removals
-        context.households[:] = [h for h in context.households if h.is_active]
-        context.firms[:] = [f for f in context.firms if f.is_active]
+        # Modify lists in place to reflect removals deferred to AgentLifecycleManager
 
         return transactions
 
     def _decommission_agent(self, agent: Any, context: IDeathContext) -> None:
         """
-        Standardized Decommission: Moves agent to estate and removes from global map.
-        Note: List removal (households/firms) is handled in bulk for performance.
+        Standardized Decommission: Moves agent to estate.
+        Note: List removal (households/firms/agents) is deferred to AgentLifecycleManager
+        to guarantee persistence.
         """
         if self.estate_registry:
             self.estate_registry.add_to_estate(agent)
-
-        if agent.id in context.agents:
-            del context.agents[agent.id]
 
     def _recover_external_assets(self, agent_id: int, context: IDeathContext, transactions: List[Transaction]) -> None:
         """

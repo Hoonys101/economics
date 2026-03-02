@@ -101,16 +101,17 @@ class TestDeathSystemPerformance:
             death_system.execute(state)
 
         # Assertions
+        # Since cache purging is deferred to AgentLifecycleManager, the agents are NOT removed here
         assert 1 in state.agents
         assert 101 in state.agents
-        assert 2 not in state.agents
-        assert 102 not in state.agents
+        assert 2 in state.agents
+        assert 102 in state.agents
 
         # KEY ASSERTION: Ghost agent must remain if we are NOT rebuilding
         assert 999 in state.agents, "Optimization Failed: state.agents was rebuilt, removing the Ghost agent."
 
         # Verify list updates
         assert active_firm in state.firms
-        assert dead_firm not in state.firms
+        assert dead_firm in state.firms
         assert active_hh in state.households
-        assert dead_hh not in state.households
+        assert dead_hh in state.households
