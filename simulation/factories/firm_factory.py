@@ -71,7 +71,8 @@ class FirmFactory:
             birth_context.agent_registry.register(firm)
         else:
             # Fallback for mocked/legacy contexts without agent_registry
-            birth_context.households.append(firm)
+            if hasattr(birth_context, "firms"):
+                birth_context.firms.append(firm)
 
         # 2. Atomic Registration: Open Bank Account
         settlement_system = getattr(finance_context, "settlement_system", None)
@@ -102,7 +103,8 @@ class FirmFactory:
         source_firm: Firm,
         new_id: int,
         initial_assets_from_parent: int,
-        finance_context: Any
+        finance_context: Any,
+        birth_context: Any = None
     ) -> Firm:
         """
         Deep copy / Mitosis logic for Firms.
@@ -138,6 +140,13 @@ class FirmFactory:
         # new_firm._input_inventory is empty
         new_firm._input_inventory_quality = copy.deepcopy(source_firm._input_inventory_quality)
         new_firm.inventory_quality = copy.deepcopy(source_firm.inventory_quality)
+
+        # Global Registration (Atomic Mitosis)
+        if birth_context:
+            if hasattr(birth_context, "agent_registry") and birth_context.agent_registry:
+                birth_context.agent_registry.register(new_firm)
+            elif hasattr(birth_context, "firms"):
+                birth_context.firms.append(new_firm)
 
         # Atomic Registration: Open Bank Account
         settlement_system = getattr(finance_context, "settlement_system", None)

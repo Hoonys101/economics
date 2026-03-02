@@ -352,7 +352,7 @@ def test_adapter_registry_accessor():
     # Test get_participant with digit string, expect int conversion
     participant = accessor.get_participant("123")
     assert participant.get_balance() == 1000
-    mock_registry.get_agent.assert_called_with(123)
+    mock_registry.get_agent.assert_called_with("123")
 
     # Test exists
     assert accessor.exists("123")

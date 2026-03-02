@@ -23,7 +23,7 @@ class IMintingSystem(Protocol):
     Protocol for systems capable of minting currency (God Mode / Central Bank Injection).
     This capability is distinct from standard settlement to enforce Zero-Sum integrity elsewhere.
     """
-    def create_and_transfer(self, source_authority: Any, destination: Any, amount: int, reason: str, tick: int, currency: str = "USD") -> Any:
+    def create_and_transfer(self, source_authority: Any, destination: Any, amount: int, reason: str, tick: int, currency: str = DEFAULT_CURRENCY) -> Any:
         ...
 
 # Legacy Aliases to ensure backward compatibility while migrating to modules.finance.api protocols
