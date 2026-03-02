@@ -2,25 +2,5 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {
-    "wo-ssot-behavior-audit": {
-      "key": "wo-ssot-behavior-audit",
-      "title": "Behavioral SSoT Conceptual Audit",
-      "type": "gemini",
-      "instruction_raw": "Identify modules bypassing SettlementSystem or IInventoryHandler via direct mutation. Verify if side-effects are properly 'sunk' into the ledger.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "audit",
-      "context_files": [
-        "simulation/systems/settlement_system.py",
-        "simulation/systems/transaction_processor.py",
-        "simulation/firms.py"
-      ],
-      "output_path": "gemini-output/audit/MISSION_SSOT_BEHAVIOR_AUDIT.md",
-      "model": null,
-      "audit_requirements": null
-    }
-  }
+  "missions": {}
 }

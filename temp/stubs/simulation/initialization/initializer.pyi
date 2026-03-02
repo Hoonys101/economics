@@ -1,5 +1,6 @@
 import logging
 from _typeshed import Incomplete
+from collections import deque as deque
 from modules.common.config_manager.api import ConfigManager as ConfigManager
 from modules.system.api import ICurrencyHolder as ICurrencyHolder
 from simulation.agents.central_bank import CentralBank as CentralBank

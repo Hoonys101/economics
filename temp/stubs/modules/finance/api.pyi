@@ -11,11 +11,31 @@ from modules.finance.wallet.api import IWallet as IWallet
 from modules.government.api import IGovernment as IGovernment
 from modules.hr.api import IHRService as IHRService
 from modules.simulation.api import AgentID as AgentID, AnyAgentID as AnyAgentID, EconomicIndicatorsDTO as EconomicIndicatorsDTO
-from modules.system.api import CurrencyCode as CurrencyCode, DEFAULT_CURRENCY as DEFAULT_CURRENCY, MarketContextDTO as MarketContextDTO
+from modules.system.api import CurrencyCode as CurrencyCode, DEFAULT_CURRENCY as DEFAULT_CURRENCY, IAgentRegistry as IAgentRegistry, MarketContextDTO as MarketContextDTO
 from simulation.dtos.api import GovernmentSensoryDTO as GovernmentSensoryDTO
 from simulation.models import Order as Order, Transaction as Transaction
 from typing import Any, Callable, Literal, Protocol
 from uuid import UUID
+
+class IDustReceiver(Protocol):
+    """Protocol for an entity capable of receiving zero-sum fractional dust."""
+    def inject_dust(self, amount_pennies: int) -> None: ...
+
+class ICurrencyHolderRegistry(Protocol):
+    """Protocol for strictly tracking valid currency holders."""
+    def register_holder(self, agent: ICurrencyHolder) -> None: ...
+    def get_all(self) -> list['ICurrencyHolder']: ...
+
+class ILiquidityOracle(Protocol):
+    """
+    Tier 1 Protocol: Live Liquidity Oracle.
+    Provides real-time, intra-tick balance and solvency checks for agents.
+    Decouples settlement systems from stale point-in-time DTOs and the SimulationState God Class.
+    """
+    def get_live_balance(self, agent_id: AgentID, currency: CurrencyCode = ...) -> int:
+        """Returns the current intra-tick balance of the agent in integer pennies."""
+    def check_solvency(self, agent_id: AgentID, required_pennies: int, currency: CurrencyCode = ...) -> bool:
+        """Returns True if the agent has at least 'required_pennies'."""
 
 class IFinancialEntity(Protocol):
     """
@@ -54,6 +74,8 @@ class FloatIncursionError(TypeError):
     """Raised when a float is passed to a strict integer financial API."""
 class ZeroSumViolationError(RuntimeError):
     """Raised when a settlement operation fails to balance (Debits != Credits)."""
+class SystemicIntegrityError(RuntimeError):
+    """Raised when a direct mutation is attempted on a sentry-protected property."""
 
 class ITransaction(Protocol):
     """Module A: Protocol for a completed financial transaction."""
@@ -361,11 +383,6 @@ class IMonetaryAuthority(ISettlementSystem, Protocol):
     Extended interface for authorized NON-ZERO-SUM operations.
     Used by Central Bank and Government (Minting/Burning).
     """
-    def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = 'god_mode_injection') -> bool:
-        """
-        Creates new money (M2 Expansion).
-        Records creation event in MonetaryLedger.
-        """
     def transfer_and_destroy(self, source: IFinancialEntity, sink_authority: IFinancialEntity, amount: int, reason: str, tick: int, currency: CurrencyCode = ...) -> Any:
         """
         Destroys money (M2 Contraction).
@@ -460,6 +477,12 @@ class ICentralBank(IMonetaryOperations, Protocol):
         a completed OMO transaction, allowing it to update internal state if needed.
         This is primarily for logging and verification. The actual money supply
         update happens in Government's ledger.
+        """
+    def check_and_provide_liquidity(self, bank_agent: Any, amount_needed: int) -> Any | None:
+        """
+        Checks if the bank has sufficient liquidity.
+        If not, provides emergency liquidity via minting (LLR).
+        Returns the Transaction if liquidity was provided, None otherwise.
         """
 
 @dataclass(frozen=True)
@@ -707,6 +730,7 @@ class BondIssuanceRequestDTO:
     coupon_rate: float
     maturity_tick: int
     bond_series_id: str | None = ...
+    transaction_id: str | None = ...
 
 class ITransactionHandler(Protocol):
     """
@@ -738,6 +762,10 @@ class IBondMarketSystem(Protocol):
     def issue_bond(self, request: BondIssuanceRequestDTO) -> bool:
         """
         Creates the Bond asset, assigns it to the Buyer, and registers the Liability to the Issuer.
+        """
+    def cancel_bond(self, bond_id: str) -> bool:
+        """
+        Cancels a previously issued bond, typically during a rollback.
         """
     def register_bond_series(self, issuer_id: AgentID, series_id: str, details: dict[str, Any]) -> None:
         """

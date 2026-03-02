@@ -34,6 +34,7 @@
 | **TD-ARCH-TX-INJECTION** | Architecture | **Transaction Injection Bypass**: `CentralBankSystem` directly mutating `WorldState.transactions`. | **High**: Purity. | **DEFERRED (TECH DEBT)** |
 | **TD-FIN-FLOAT-INCURSION-RE**| Finance | **Recurring Float Incursion**: `monetary_ledger.py` using `float()` for debt principal. | **Critical**: Integrity. | **DEFERRED (TECH DEBT)** |
 | **TD-ARCH-GOD-DTO** | Architecture | **SimulationState God DTO**: Monolithic dependency violating Interface Segregation. | **High**: Rigidity. | **ACTIVE (V2 AUDIT)** |
+| **TD-TEST-MOCK-LEAK** | Testing | **[S3-1] MagicMock Leaks**: Reference cycles in God DTO causing OOM and GC hangs. | **High**: Reliability. | **ACTIVE (SPECCED)** |
 | **TD-ARCH-PROTOCOL-EVASION** | Architecture | **Protocol Evasion**: `hasattr()` usage in lifecycle logic bypasses Protocol Purity. | **Medium**: Safety. | **ACTIVE** |
 
 ---
@@ -67,7 +68,7 @@
 - **Risk**: Sagas consume compute cycles for dead agents; memory leaks; state corruption in subsequent ticks.
 - **Audit Update (PH21)**: Confirmed `SAGA_SKIP | Saga ... missing participant IDs`. Sagas become "Orphaned Processes" consuming cycles without effect.
 - **Solution**: Implement `SagaCaretaker` to purge dead references or use weak references for participants.
-- **Status**: **ACTIVE** (Phase 21 Forensic Confirm)
+- **Status**: **ACTIVE** (Phase 21 Forensic Confirm - Ref: `design/3_work_artifacts/reports/inbound/fix-economic-integrity-audit-14122884625116750406__forensic_audit_ph21_report.md` et al.)
 
 ### ID: TD-ARCH-GOD-DTO
 - **Title**: SimulationState God DTO
@@ -121,7 +122,7 @@
 - **Risk**: Economic calculations (GDP, inflation) become meaningless; accounting violation of Zero-Sum Integrity.
 - **Audit Update (PH21)**: Debt (overdrafts) masks liquidity. M2 should equal `Sum(max(0, balance_i))`.
 - **Solution**: Modify `calculate_total_money` to sum `max(0, balance)` and track negative balances as `SystemDebt`.
-- **Status**: **ACTIVE** (CRITICAL - Forensic Audit)
+- **Status**: **ACTIVE** (CRITICAL - Forensic Audit - Ref: `design/3_work_artifacts/reports/inbound/parity-audit-report-10282891024934435760__forensic_audit_ph21_report.md` et al.)
 
 ### ID: TD-FIN-FLOAT-RESIDUE
 - **Title**: Float Price Residue in Transaction model
@@ -175,7 +176,7 @@
 - **Risk**: Investor funds debited without firm capitalization; "Zombie" firms with 0 capital.
 - **Audit Update (PH21)**: Race condition where Capital Injection is attempted *before* Firm Agent registration in Bank/WorldState.
 - **Solution**: Implement atomic `FirmFactory` ensuring registration and bank account opening before injection.
-- **Status**: **ACTIVE** (CRITICAL - Forensic Audit)
+- **Status**: **ACTIVE** (CRITICAL - Forensic Audit - Ref: `design/3_work_artifacts/reports/inbound/feature-audit-structural-report-9484393130979949659__forensic_audit_ph21_report.md` et al.)
 
 ---
 

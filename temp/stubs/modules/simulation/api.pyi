@@ -2,13 +2,14 @@ import logging
 from _typeshed import Incomplete
 from dataclasses import dataclass, field
 from enum import Enum
-from modules.finance.api import IBankService as IBankService
+from modules.finance.api import IBankService as IBankService, IMonetaryAuthority as IMonetaryAuthority
 from modules.finance.kernel.api import IMonetaryLedger as IMonetaryLedger
 from modules.government.api import IGovernment as IGovernment
 from modules.housing.api import IHousingService as IHousingService
 from modules.memory.api import MemoryV2Interface as MemoryV2Interface
 from modules.simulation.dtos.api import MoneySupplyDTO as MoneySupplyDTO
-from modules.system.api import CurrencyCode as CurrencyCode, IAgent as IAgent
+from modules.system.api import AgentID as AgentID, CurrencyCode as CurrencyCode, DEFAULT_CURRENCY as DEFAULT_CURRENCY, IAgent as IAgent, IAgentRegistry as IAgentRegistry
+from simulation.ai.enums import Personality as Personality
 from simulation.finance.api import ISettlementSystem as ISettlementSystem
 from simulation.interfaces.market_interface import IMarket as IMarket
 from simulation.systems.api import IRegistry as IRegistry
@@ -22,6 +23,32 @@ class LifecycleState(Enum):
     LIQUIDATING = ...
     DELETED = ...
 
+class IndustryDomain(Enum):
+    """Replaces the string-based 'major' field for robust domain categorization."""
+    TECHNOLOGY = ...
+    AGRICULTURE = ...
+    MANUFACTURING = ...
+    SERVICES = ...
+    FINANCE = ...
+    PUBLIC = ...
+AgentID = AgentID
+SpecialAgentRole: Incomplete
+AnyAgentID = AgentID | SpecialAgentRole
+
+@dataclass(frozen=True)
+class TransactionData:
+    """SSoT Transaction Record. Mandates Integer Purity."""
+    run_id: int
+    time: int
+    buyer_id: AgentID
+    seller_id: AgentID
+    item_id: str
+    quantity: float
+    total_pennies: int
+    currency: CurrencyCode
+    market_id: str
+    transaction_type: str
+
 class ILifecycleRegistry(Protocol):
     """Module C: Registry protocol for atomic state transitions."""
     def transition_agent(self, agent_id: AgentID, next_state: LifecycleState) -> bool:
@@ -29,9 +56,32 @@ class ILifecycleRegistry(Protocol):
     def get_state(self, agent_id: AgentID) -> LifecycleState:
         """Retrieves the current lifecycle state of an agent."""
 
-AgentID: Incomplete
-SpecialAgentRole: Incomplete
-AnyAgentID = AgentID | SpecialAgentRole
+@dataclass(frozen=True)
+class EconStateDTO:
+    """Pure snapshot of an agent's economic standing (Pennies)."""
+    assets_pennies: int
+    liabilities_pennies: int
+    income_pennies: int
+    hidden_talent: float
+    industry_domain: IndustryDomain | None = ...
+
+@dataclass(frozen=True)
+class WelfareCandidateDTO:
+    """Safely encapsulates state for Government Welfare logic (Pennies)."""
+    agent_id: AgentID
+    current_assets_pennies: int
+    employment_status: bool
+    needs_survival: float
+    hidden_talent: float
+
+@dataclass(frozen=True)
+class HouseholdStateDTO:
+    """Read-only state transfer object replacing raw Household instances (Pennies)."""
+    agent_id: AgentID
+    assets_pennies: int
+    inventory: dict[str, float]
+    is_active: bool
+    education_xp: float
 
 @dataclass
 class AgentCoreConfigDTO:
@@ -105,15 +155,24 @@ class SystemStateDTO:
 @dataclass(frozen=True)
 class HouseholdSnapshotDTO:
     """
-    Read-only snapshot of a household's financial state for saga processing.
+    Read-only snapshot of a household's financial state (Pennies).
     Ensures isolation from live agent state during long-running transactions.
     """
-    household_id: str
-    cash: float
-    income: float
+    household_id: AgentID
+    cash_pennies: int
+    income_pennies: int
     credit_score: float
-    existing_debt: float
-    assets_value: float
+    existing_debt_pennies: int
+    assets_value_pennies: int
+
+@dataclass(frozen=True)
+class FirmConfigDTO:
+    """Configuration for Firm crystallization."""
+    specialization: str
+    productivity_factor: float
+    initial_capital_pennies: int
+    personality: Any | None = ...
+    sector: str = ...
 
 @dataclass
 class LiquidationConfigDTO:
@@ -158,6 +217,7 @@ class IAgent(Protocol):
     id: AgentID
     is_active: bool
     name: str
+    def get_agent_banks(self) -> list[AgentID]: ...
 
 class IEstateRegistry(Protocol):
     """Protocol for the Estate Registry managing dead/liquidated agents."""
@@ -176,6 +236,7 @@ class IOrchestratorAgent(IAgent, Protocol):
 class IFirm(IAgent, Protocol):
     productivity_factor: float
     def reset(self) -> None: ...
+    def hr_state(self) -> Any: ...
 
 class IHousehold(IAgent, Protocol):
     inventory: dict[str, float]
@@ -286,3 +347,138 @@ class HouseholdFactoryContext:
 
 class IHouseholdFactory(Protocol):
     def create_newborn(self, parent: Any, simulation: Any, child_id: int) -> Any: ...
+
+class ILifecycleContext(Protocol):
+    """
+    Base protocol context for lifecycle operations.
+    Eradicates God-Class SimulationState dependency by ensuring strict data boundaries.
+    """
+    time: int
+    agents: dict[AgentID, IAgent]
+    markets: dict[str, Any]
+
+class IDeathContext(ILifecycleContext, Protocol):
+    households: list[IHousehold]
+    firms: list[IFirm]
+    inactive_agents: dict[AgentID, IAgent]
+    currency_registry_handler: Any
+    currency_holders: list[Any]
+    settlement_system: Any
+    primary_government: Any
+    real_estate_units: list[Any]
+    bank: Any
+    transaction_processor: Any
+    transactions: list[Any]
+
+class IBirthContext(ILifecycleContext, Protocol):
+    government_agent: Any
+    next_agent_id: int
+    households: list[Any]
+    currency_registry_handler: Any
+    currency_holders: list[Any]
+    stock_market: Any
+    shareholder_registry: Any
+    ai_training_manager: Any
+    ai_trainer: Any
+    goods_data: Any
+    logger: Any
+    tracker: Any
+    bank: Any
+    agent_registry: IAgentRegistry
+
+class IAgingContext(ILifecycleContext, Protocol):
+    demographic_registry: Any
+    households: list[Any]
+    firms: list[Any]
+    market_data: dict[str, Any]
+    stock_market: Any
+
+class ILifecycleSubsystem(Protocol):
+    """
+    Adheres to SEO Pattern: Stateless execution using pure Context Protocols.
+    """
+    def execute(self, context: ILifecycleContext) -> list[Any]: ...
+
+class IEconContext(Protocol):
+    """Protocol for financial SSoT and Macro-economic access."""
+    @property
+    def bank(self) -> Any: ...
+    @property
+    def central_bank(self) -> Any: ...
+    @property
+    def monetary_ledger(self) -> Any: ...
+    def calculate_total_money(self) -> MoneySupplyDTO: ...
+    def get_economic_indicators(self) -> EconomicIndicatorsDTO: ...
+
+class ISystemProvider(Protocol):
+    """Service locator for specialized domain engines."""
+    def get_tech_manager(self) -> Any: ...
+    def get_social_system(self) -> Any: ...
+
+class ICommerceTickContext(Protocol):
+    """Restricted context for Commerce/Market operations. Eliminates God DTO coupling."""
+    @property
+    def current_time(self) -> int: ...
+    @property
+    def market_data(self) -> dict[str, Any]: ...
+    @property
+    def goods_data(self) -> dict[str, Any]: ...
+
+class IGovernanceTickContext(Protocol):
+    """Restricted context for Taxation and Government operations."""
+    @property
+    def current_time(self) -> int: ...
+    @property
+    def primary_government(self) -> Any: ...
+    @property
+    def taxation_system(self) -> Any: ...
+
+class IFinanceTickContext(Protocol):
+    """Restricted context for Banking and Monetary operations."""
+    @property
+    def current_time(self) -> int: ...
+    @property
+    def bank(self) -> Any: ...
+    @property
+    def central_bank(self) -> Any: ...
+    @property
+    def monetary_ledger(self) -> Any: ...
+    @property
+    def saga_orchestrator(self) -> Any: ...
+    @property
+    def settlement_system(self) -> IMonetaryAuthority: ...
+
+class IFirmFactory(Protocol):
+    """
+    Protocol for FirmFactory ensuring strict dependency injection and atomic creation.
+    Uses IBirthContext to encapsulate dependencies.
+    """
+    def create_firm(self, name: str, config_dto: FirmConfigDTO, birth_context: IBirthContext, finance_context: IFinanceTickContext, specialization: str, personality: Personality | None = None, decision_engine: Any | None = None) -> IFirm:
+        """Atomic birth: Registration -> Bank Account -> Liquidity"""
+
+class IMutationTickContext(Protocol):
+    """Restricted write-only context for appending side-effects safely."""
+    def append_transaction(self, transaction: Any) -> None: ...
+    def append_effect(self, effect: dict[str, Any]) -> None: ...
+    def append_god_command(self, command: Any) -> None: ...
+
+@dataclass(frozen=True)
+class FirmSpawnRequestDTO:
+    owner_id: AgentID
+    firm_type: str
+    initial_capital_pennies: int
+    location_id: str | None = ...
+
+class IFirmLifecycleManager(Protocol):
+    def register_new_firm(self, request: FirmSpawnRequestDTO, ctx: IFinanceTickContext) -> AgentID: ...
+    def deregister_firm(self, firm_id: AgentID, ctx: IMutationTickContext) -> None: ...
+
+@dataclass(frozen=True)
+class ConfigOverrideDTO:
+    target_module: str
+    override_keys: dict[str, Any]
+    expires_at_tick: int | None
+
+class IConfigTimelineManager(Protocol):
+    def get_active_config(self, module: str, current_tick: int) -> Any: ...
+    def apply_override(self, override: ConfigOverrideDTO) -> None: ...
