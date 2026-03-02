@@ -37,12 +37,10 @@ class Phase3_Transaction(IPhaseStrategy):
             if state.taxation_system:
                 state.taxation_system.record_revenue(results)
 
-            # MONETARY_LEDGER INTEGRATION:
-            # Only process successful transactions to ensure Zero-Sum Integrity.
-            # Replaces Phase_MonetaryProcessing which indiscriminately processed all queued transactions.
-            if state.primary_government and hasattr(state.primary_government, "monetary_ledger"):
-                successful_txs = [r.original_transaction for r in results if r.success]
-                state.primary_government.monetary_ledger.process_transactions(successful_txs)
+            # NOTE: Monetary Ledger processing has been delegated exclusively to
+            # the system components that cause side effects (Transaction Authority,
+            # SettlementSystem, CentralBankSystem, etc.) to ensure zero-sum integrity
+            # without double-counting.
 
         else:
             state.logger.error("TransactionProcessor not initialized.")

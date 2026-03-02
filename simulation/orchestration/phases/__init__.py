@@ -7,7 +7,6 @@ from .bank_debt import Phase_BankAndDebt
 from .firm_operations import Phase_FirmProductionAndSalaries
 from .government_programs import Phase_GovernmentPrograms
 from .taxation_intents import Phase_TaxationIntents
-from .monetary_processing import Phase_MonetaryProcessing
 from .transaction import Phase3_Transaction
 from .bankruptcy import Phase_Bankruptcy
 from .consumption import Phase_Consumption
@@ -31,7 +30,6 @@ __all__ = [
     "Phase_FirmProductionAndSalaries",
     "Phase_GovernmentPrograms",
     "Phase_TaxationIntents",
-    "Phase_MonetaryProcessing",
     "Phase3_Transaction",
     "Phase_Bankruptcy",
     "Phase_Consumption",
