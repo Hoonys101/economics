@@ -3,24 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "wo-ssot-purity-ledger": {
-      "key": "wo-ssot-purity-ledger",
-      "title": "[S1-1] Integer Purity (Ledger & Bank)",
-      "type": "jules",
-      "instruction_raw": "Enforce strict integer arithmetic for all monetary values. Remove all 'float()' and 'round()' calls in ledger.py and central_bank_system.py. Ensure all balance mutations use Pennies (int). MANDATORY: Ignore all test regressions for this mission. Verification is strictly based on structural correctness against the spec. Final suite alignment is deferred to Phase 8.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [
-        "modules/finance/kernel/ledger.py",
-        "simulation/systems/central_bank_system.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wo-ssot-purity-ids": {
       "key": "wo-ssot-purity-ids",
       "title": "[S2-1] Agent ID Normalization",
