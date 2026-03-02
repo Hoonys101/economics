@@ -99,7 +99,7 @@ class MonetaryLedger(IMonetaryLedger):
             seller_id=-1,
             item_id=f"monetary_expansion_{self._current_tick}",
             quantity=1.0,
-            price=amount_pennies / 100.0,
+            price=0.0, # Removed float arithmetic
             market_id="monetary_policy",
             transaction_type="monetary_expansion",
             time=self._current_tick,
@@ -128,7 +128,7 @@ class MonetaryLedger(IMonetaryLedger):
             seller_id=-1,
             item_id=f"monetary_contraction_{self._current_tick}",
             quantity=1.0,
-            price=amount_pennies / 100.0,
+            price=0.0, # Removed float arithmetic
             market_id="monetary_policy",
             transaction_type="monetary_contraction",
             time=self._current_tick,
@@ -256,14 +256,14 @@ class MonetaryLedger(IMonetaryLedger):
         return issued_delta - destroyed_delta
 
     # Legacy wrappers
-    def record_credit_expansion(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None:
-        # Convert float amount to pennies
-        amount_pennies = int(amount * 100)
+    def record_credit_expansion(self, amount: int, saga_id: UUID, loan_id: Any, reason: str) -> None:
+        # Expecting int pennies directly
+        amount_pennies = amount
         source = f"saga_{saga_id}_loan_{loan_id}_{reason}"
         self.record_monetary_expansion(amount_pennies, source)
 
-    def record_credit_destruction(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None:
-        # Convert float amount to pennies
-        amount_pennies = int(amount * 100)
+    def record_credit_destruction(self, amount: int, saga_id: UUID, loan_id: Any, reason: str) -> None:
+        # Expecting int pennies directly
+        amount_pennies = amount
         source = f"saga_{saga_id}_loan_{loan_id}_{reason}"
         self.record_monetary_contraction(amount_pennies, source)
