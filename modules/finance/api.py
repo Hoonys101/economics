@@ -1060,6 +1060,7 @@ class BondIssuanceRequestDTO:
     coupon_rate: float      # Annual coupon rate (0.05 = 5%)
     maturity_tick: int      # Tick when the bond matures
     bond_series_id: Optional[str] = None # Optional ID for grouping
+    transaction_id: Optional[str] = None # Optional ID for tracking
 
 @runtime_checkable
 class ITransactionHandler(Protocol):
@@ -1098,6 +1099,12 @@ class IBondMarketSystem(Protocol):
     def issue_bond(self, request: BondIssuanceRequestDTO) -> bool:
         """
         Creates the Bond asset, assigns it to the Buyer, and registers the Liability to the Issuer.
+        """
+        ...
+
+    def cancel_bond(self, bond_id: str) -> bool:
+        """
+        Cancels a previously issued bond, typically during a rollback.
         """
         ...
 

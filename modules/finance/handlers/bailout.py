@@ -1,6 +1,10 @@
-from typing import Any
+from typing import Any, Dict
+import logging
+import uuid
 from modules.finance.api import ITransactionHandler
 from modules.system.api import AssetBuyoutRequestDTO, IAssetRecoverySystem, AssetBuyoutResultDTO
+
+logger = logging.getLogger(__name__)
 
 class BailoutHandler(ITransactionHandler):
     """
@@ -9,6 +13,7 @@ class BailoutHandler(ITransactionHandler):
     """
     def __init__(self, asset_recovery_system: IAssetRecoverySystem):
         self.asset_recovery_system = asset_recovery_system
+        self._results: Dict[str, AssetBuyoutResultDTO] = {}
 
     def validate(self, request: Any, context: Any) -> bool:
         """
@@ -29,12 +34,29 @@ class BailoutHandler(ITransactionHandler):
         if not isinstance(request, AssetBuyoutRequestDTO):
              raise ValueError("Invalid request type for BailoutHandler")
 
-        return self.asset_recovery_system.execute_asset_buyout(request)
+        result = self.asset_recovery_system.execute_asset_buyout(request)
+        if result.success:
+            tx_id = result.transaction_id or str(uuid.uuid4())
+            self._results[tx_id] = result
+        return result
 
     def rollback(self, transaction_id: str, context: Any) -> bool:
         """
-        Rollback for bailouts is complex (returning assets).
-        Currently not supported/implemented for Phase 1.
+        Rollback for bailouts delegates to Asset Recovery System.
         """
-        # TODO: Implement generic rollback
-        return False
+        result = self._results.get(transaction_id)
+        if not result:
+            logger.warning(f"Rollback requested for unknown bailout transaction: {transaction_id}")
+            return False
+
+        try:
+            success = self.asset_recovery_system.rollback_asset_buyout(result)
+            if success:
+                del self._results[transaction_id]
+                logger.info(f"Successfully rolled back bailout transaction {transaction_id}.")
+            else:
+                logger.error(f"Failed to rollback bailout transaction {transaction_id}.")
+            return success
+        except Exception as e:
+            logger.critical(f"CRITICAL: Rollback exception for Bailout {transaction_id}. Error: {e}")
+            return False

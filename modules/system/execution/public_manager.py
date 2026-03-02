@@ -146,6 +146,26 @@ class PublicManager(IAssetRecoverySystem, ILiquidator, ICurrencyHolder, IFinanci
             buyer_id=self.id
         )
 
+    def rollback_asset_buyout(self, result: AssetBuyoutResultDTO) -> bool:
+        """
+        Reverses an executed asset buyout.
+        Deducts the items from inventory.
+        """
+        if not result.success:
+            return False
+
+        for item_id, quantity in result.items_acquired.items():
+            self.managed_inventory[item_id] -= quantity
+            self.last_tick_recovered_assets[item_id] -= quantity
+            # Ensure it doesn't go below zero if somehow manipulated
+            if self.managed_inventory[item_id] < 0:
+                self.managed_inventory[item_id] = 0
+            if self.last_tick_recovered_assets[item_id] < 0:
+                self.last_tick_recovered_assets[item_id] = 0
+
+        self.logger.info(f"Rolled back Asset Buyout. Refunded: {result.total_paid_pennies}, Items: {len(result.items_acquired)}")
+        return True
+
     def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
         """
         Receives inventory from a liquidated firm via asset buyout.
