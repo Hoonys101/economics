@@ -6,7 +6,7 @@ from simulation.models import Talent
 from simulation.ai.api import Personality
 from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IBirthContext, IFinanceTickContext
 from modules.simulation.dtos.api import HouseholdConfigDTO, FirmConfigDTO
-from modules.system.api import DEFAULT_CURRENCY, IAgentRegistry
+from modules.system.api import DEFAULT_CURRENCY, IAgentRegistry, IConfigurationRegistry
 from simulation.systems.settlement_system import InventorySentry, FinancialSentry
 
 def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
@@ -195,6 +195,8 @@ def create_household(
     initial_needs: dict = None,
     value_orientation: str = "needs_and_social_status",
     engine: Optional[IDecisionEngine] = None,
+    registry: Optional[IAgentRegistry] = None,
+    config_registry: Optional[IConfigurationRegistry] = None,
     **kwargs
 ) -> Household:
     if config_dto is None:
@@ -234,6 +236,10 @@ def create_household(
     )
     if assets_pennies > 0:
         household._deposit(assets_pennies, DEFAULT_CURRENCY)
+
+    if registry is not None:
+        registry.register_agent(household)
+
     return household
 
 from tests.utils.mocks import MockBirthContext, MockFinanceTickContext
@@ -251,6 +257,8 @@ def create_firm(
     engine: Optional[IDecisionEngine] = None,
     birth_context: Optional[IBirthContext] = None,
     finance_context: Optional[IFinanceTickContext] = None,
+    registry: Optional[IAgentRegistry] = None,
+    config_registry: Optional[IConfigurationRegistry] = None,
     **kwargs
 ) -> Firm:
     if config_dto is None:
@@ -268,7 +276,7 @@ def create_firm(
 
     # 2. Use Official FirmFactory (SSoT)
     # Note: In most tests, we don't need a real config_module, so MagicMock suffices
-    factory = FirmFactory(config_module=MagicMock())
+    factory = FirmFactory(config_module=config_registry if config_registry is not None else MagicMock())
     
     firm = factory.create_firm(
         name=name,
@@ -279,6 +287,9 @@ def create_firm(
         decision_engine=engine or MagicMock(),
         personality=kwargs.get("personality")
     )
+
+    if registry is not None:
+        registry.register_agent(firm)
 
     # 3. Asset Injection Hook (Test-specific override)
     # Legacy tests expect 'assets' to be explicitly set, bypassing Bootstrapper logic

@@ -5,11 +5,11 @@ from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.models import Transaction
 from simulation.markets.order_book_market import OrderBookMarket
 
-def test_indicator_aggregation(simple_household, mock_config_module):
+def test_indicator_aggregation(simple_household, mock_config_registry):
     """Spec 2: EconomicIndicatorTracker 지표 집계 검증"""
     # Arrange
     # Initialize Tracker with config
-    tracker = EconomicIndicatorTracker(config_module=mock_config_module)
+    tracker = EconomicIndicatorTracker(config_module=mock_config_registry)
 
     # Setup Household state
     # tracker calculates total_consumption from household._econ_state.consumption_expenditure_this_tick_pennies
