@@ -1,0 +1,35 @@
+M2 누수 현상(Leakage) 및 감사 체계 복원을 위해 `TickOrchestrator`의 트랜잭션 처리 Phase를 통합하고, 채권 상환 시 원금과 이자를 분리하여 추적하도록 개선했습니다. 또한 `CentralBankSystem`과 `Government` 객체에서 LLR 개입 등의 거래 내역을 수집하기 위한 로직 변경이 포함되었습니다.
+
+2.  **🚨 Critical Issues**: 
+- **⚠️ Vibe Check Fail (SSoT 우회 및 Global State Leakage)**: `initializer.py`와 `simulation/systems/central_bank_system.py`를 보면 `CentralBankSystem`의 초기화 시점에 전역 상태인 `sim.world_state.transactions` 리스트의 참조를 직접 넘겨(`self.transactions = transactions`), 하위 메서드(예: `mint`)에서 `self.transactions.append(tx)`를 호출하여 **전역 상태를 직접 돌연변이(Mutation)** 시키고 있습니다. 이는 순수 함수/엔진 원칙과 SSoT 아키텍처를 정면으로 위반하는 "부작용(Side-effect) 주입" 안티 패턴입니다.
+- **⚠️ Vibe Check Fail (Duct-Tape Debugging)**: `simulation/world_state.py` (L190-195)에서 M2 제외 대상을 식별할 때 `str(holder.id) == str(ID_CENTRAL_BANK)`처럼 객체 ID를 일괄 강제 형변환(String Coercion)하여 비교하고 있습니다. 이는 근본적인 데이터 타입(int vs string) 불일치를 숨기기 위한 임시방편(Duct-Tape)이며 시스템 무결성을 해칩니다.
+
+3.  **⚠️ Logic & Spec Gaps**: 
+- `simulation/agents/government.py` (L594-610)의 `execute_social_policy`는 올바르게 `List[Transaction]`을 반환(Return)하여 외부에서 취합하도록 수정되었으나, `CentralBankSystem.mint` 구현은 이와 정반대로 전역 리스트를 내부에서 직접 조작하는 등 코드베이스 내 **일관성(Inconsistency)**이 결여되어 있습니다.
+- `CentralBankSystem.mint` 내부에 `target_agent.total_money_issued += amount`와 같은 상태의 직접적인 멤버 변수 수정(Direct Field Mutation) 로직이 여전히 존재합니다. 이는 Stateless Purity 원칙에 위배됩니다.
+- (Phase 2 Diff 기반) `modules/finance/system.py`에서 `hasattr(self.monetary_authority, 'check_and_provide_liquidity')`를 통한 덕 타이핑(Duck Typing) 검사가 존재합니다. 이는 인터페이스 프로토콜 설계 누락에 해당합니다.
+
+4.  **💡 Suggestions**: 
+- **Type Safety 강화**: `str()`을 통한 회피를 제거하고, 모든 Agent와 시스템 레벨에서 사용하는 ID의 타입을 `int` 또는 `AgentID`와 같은 전용 Value Object로 통일하여 강제해야 합니다.
+- **Transaction 반환 아키텍처 적용 (Bubble Up)**: `CentralBankSystem`에 `transactions` 리스트를 주입하는 로직을 완전히 제거하십시오. `check_and_provide_liquidity`, `mint` 등 통화 조작 메서드는 발생한 `Transaction` 객체를 반환(Return)하도록 시그니처를 수정하고, 상위 호출자(Orchestrator)에서 이를 취합하여 Phase 내에 일괄 병합(Append)하도록 구조를 리팩토링해야 합니다.
+- **Interface 명세**: `IMonetaryAuthority` 프로토콜에 `check_and_provide_liquidity` 메서드 서명을 추가하고 `hasattr` 우회 로직을 제거하여 타입 안정성을 확보하십시오.
+
+5.  **🧠 Implementation Insight Evaluation**:
+    - **Original Insight**: 
+    > ### 1. Ledger Synchronization via Transaction Injection
+    > The root cause of the M2 leakage was identified as "ghost money" creation during implicit system operations, specifically Lender of Last Resort (LLR) injections. These operations used the `SettlementSystem` but failed to bubble up the resulting transactions to the `WorldState` transaction queue, which is the single source of truth for the `MonetaryLedger`.
+    > To fix this, we implemented a **Transaction Injection Pattern** for the `CentralBankSystem`. By injecting the `WorldState.transactions` list into the `CentralBankSystem` upon initialization, we enable it to directly append side-effect transactions (like LLR minting) to the global ledger. This ensures that every penny created or destroyed is visible to the audit system, regardless of where in the call stack the operation occurred.
+    - **Reviewer Evaluation**: LLR 개입으로 인한 "Ghost Money"를 M2 Leakage의 근본 원인으로 진단한 점은 정확하며 훌륭합니다. 그러나 "해결책"으로 고안한 **Transaction Injection Pattern**은 완전히 잘못된 접근입니다. 전역 상태 큐(`WorldState.transactions`)를 엔진 내부로 주입하여 콜스택 깊은 곳에서 몰래 `.append()` 하는 행위는 SSoT를 심각하게 훼손하며, 추후 디버깅과 Race Condition 추적을 불가능하게 만듭니다. 원문 스스로 "failed to bubble up"을 문제로 지적했으므로, 해결책 역시 "객체를 강제 주입"하는 것이 아니라 **"정상적으로 Bubble Up (return List[Transaction]) 할 수 있는 구조로 리팩토링"**하는 것이어야 합니다.
+
+6.  **📚 Manual Update Proposal (Draft)**: 
+    - **Target File**: `design/2_operations/ledgers/TECH_DEBT_LEDGER.md`
+    - **Draft Content**:
+```markdown
+### [YYYY-MM-DD] Side-Effect Injection Anti-Pattern in Financial Systems
+- **현상**: `CentralBankSystem` 등 깊은 Call Stack을 가지는 시스템 객체에서 LLR(Lender of Last Resort) 개입과 같은 암묵적인 통화 창출/소각 연산이 발생할 때, 해당 트랜잭션이 전역 Orchestrator 큐에 수집되지 않아 M2 회계 감사가 어긋나는 현상 (Ghost Money 발생).
+- **원인**: Engine/System 레벨에서 트랜잭션을 반환(Bubble up)하지 않고 로직을 종결시킴. 이를 우회하기 위해 `WorldState.transactions` 리스트의 참조를 클래스 초기화 단계에서 직접 주입받고(`.append()` 강제 호출) 전역 상태를 오염시키는 안티 패턴(Transaction Injection)을 적용함.
+- **해결/교훈**: (향후 리팩토링 필요) 전역 상태의 참조를 시스템 내부로 주입받아 임의 조작하는 것은 Vibe Coding 및 SSoT 규칙 위반임. 모든 시스템 로직은 순수 함수/명시적 반환 규칙을 따라야 함. 발생한 `Transaction` 객체(List)는 항상 호출자에게 반환(Return)되어 상위 Orchestrator의 지정된 Phase(`Phase3_Transaction`)에서만 전역 `WorldState`에 원자적으로 통합(Append)되어야 함. 또한, ID 비교 시 `str()` 변환과 같은 Duct-tape 식 타입 강제 캐스팅은 데이터 타입의 불일치를 근본적으로 해결하지 못하므로, 즉시 일관된 타입 강제 체계로 롤백 및 수정해야 함.
+```
+
+7.  **✅ Verdict**:
+    *   **REQUEST CHANGES (Hard-Fail)**: Vibe Check Fail (Transaction Injection Pattern 도입을 통한 SSoT/Lifecycle 우회 돌연변이 발생, Duct-Tape 형식의 문자열 형변환 ID 검증, `target_agent.total_money_issued += amount`의 Direct Field Mutation 유지)
