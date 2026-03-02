@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "impl-s3-1-global": {
-      "key": "impl-s3-1-global",
-      "title": "[S3-1] Implement: Global Test Setup Fix",
-      "type": "jules",
-      "instruction_raw": "Refactor tests/conftest.py to remove global sys.modules poisoning and implement registry teardowns. Follow the 'Hybrid Module Patching' strategy in the spec.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_SPEC_S3_1_global.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "impl-s3-1-scenarios": {
       "key": "impl-s3-1-scenarios",
       "title": "[S3-1] Implement: Scenario Runner Leak Fix",
