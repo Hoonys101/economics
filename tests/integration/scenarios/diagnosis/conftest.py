@@ -9,23 +9,30 @@ from simulation.core_markets import Market
 from modules.market.api import IIndexCircuitBreaker
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.ai.api import Personality # Import Personality enum
-import config
+from modules.system.api import IConfigurationRegistry, IAgentRegistry
 from tests.utils.factories import create_household_config_dto, create_firm_config_dto, create_household, create_firm
 
 # Disable logging for cleaner test output
 logging.getLogger().setLevel(logging.CRITICAL)
 
-@pytest.fixture
-def mock_config_module():
-    mock_config = MagicMock()
-    # Copy essential values from actual config to avoid breaking things
-    for key in dir(config):
-        if not key.startswith("__"):
-            setattr(mock_config, key, getattr(config, key))
-    return mock_config
+@pytest.fixture(autouse=True)
+def clean_room_teardown():
+    yield
+    # Safely clear any global states or caches if necessary.
 
 @pytest.fixture
-def simple_household(mock_config_module):
+def mock_config_registry():
+    mock_registry = MagicMock(spec=IConfigurationRegistry)
+    # Define minimal safe defaults required for diagnosis scenarios
+    mock_registry.get.return_value = None
+    return mock_registry
+
+@pytest.fixture
+def mock_agent_registry():
+    return MagicMock(spec=IAgentRegistry)
+
+@pytest.fixture
+def simple_household(mock_config_registry, mock_agent_registry):
     mock_engine = MagicMock(spec=BaseDecisionEngine)
     household = create_household(
         config_dto=create_household_config_dto(),
@@ -35,12 +42,14 @@ def simple_household(mock_config_module):
         initial_needs={"survival": 50.0},
         goods_data=[],
         personality=Personality.MISER,
-        value_orientation="wealth_and_needs"
+        value_orientation="wealth_and_needs",
+        registry=mock_agent_registry,
+        config_registry=mock_config_registry
     )
     return household
 
 @pytest.fixture
-def simple_firm(mock_config_module):
+def simple_firm(mock_config_registry, mock_agent_registry):
     mock_engine = MagicMock(spec=BaseDecisionEngine)
     firm = create_firm(
         config_dto=create_firm_config_dto(),
@@ -50,7 +59,9 @@ def simple_firm(mock_config_module):
         specialization="basic_food",
         productivity_factor=1.0,
         value_orientation="wealth_and_needs",
-        initial_inventory={}
+        initial_inventory={},
+        registry=mock_agent_registry,
+        config_registry=mock_config_registry
     )
     return firm
 
