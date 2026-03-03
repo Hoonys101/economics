@@ -122,21 +122,6 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
-    },
-    "fix_market_tests": {
-      "key": "fix_market_tests",
-      "title": "Harden Market Tests (Lifecycle Hygiene & Mock Drift)",
-      "type": "jules",
-      "instruction_raw": "Improve Market tests: 1) Convert `unittest.TestCase` usage in `test_precision_matching.py` to `pytest` format. 2) Replace manual `MockBuyer` and `MockSeller` in `test_housing_transaction_handler.py` with `MagicMock(spec=...)` or proper `create_autospec` to prevent mock drift. 3) Enforce `price_pennies` (int) usage over deprecated `price_limit` (float) in CanonicalOrderDTO interactions.",
-      "command": "create",
-      "file_path": "gemini-output/analysis/test_report_market.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
     }
   }
 }
