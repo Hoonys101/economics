@@ -19,16 +19,9 @@ logging.getLogger().setLevel(logging.CRITICAL)
 @pytest.fixture(autouse=True)
 def clean_room_teardown(mock_agent_registry, mock_config_registry):
     yield
-    # Unlink internal states tracking registered agents explicitly on the mocks if created via attributes.
-    if hasattr(mock_agent_registry, 'agents') and isinstance(mock_agent_registry.agents, dict):
-        mock_agent_registry.agents.clear()
-    if hasattr(mock_agent_registry, 'registered_agents') and isinstance(mock_agent_registry.registered_agents, list):
-        mock_agent_registry.registered_agents.clear()
-
     # Reset mock invocation tracking
     mock_agent_registry.reset_mock()
     mock_config_registry.reset_mock()
-    gc.collect(2)
 
 @pytest.fixture
 def mock_config_registry():

@@ -45,7 +45,10 @@ for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklear
         def __getattr__(self, name):
             if name.startswith("_"):
                 return super().__getattr__(name)
-            return MagicMock(return_value=None)
+            # 상태를 저장하여 동일한 Mock 반환 (Identity 보장)
+            mock_obj = MagicMock(return_value=None)
+            setattr(self, name, mock_obj)
+            return mock_obj
 
     mock = ShallowModuleMock()
     # IMPORTANT: Setting __path__ = [] allows the mock to be treated as a package,
@@ -182,12 +185,13 @@ def mock_bank():
 @pytest.fixture
 def finance_system(mock_central_bank, mock_bank, mock_config):
     """Provides a mocked FinanceSystem attached to a mock government."""
-    import weakref
     # We create a mock government shell first for the FinanceSystem constructor
-    # and pass it as a weakref proxy to prevent circular reference accumulation
-    # in case the FinanceSystem constructor holds onto it internally.
     mock_gov_shell = Mock()
-    system = FinanceSystem(weakref.proxy(mock_gov_shell), mock_central_bank, mock_bank, mock_config)
+    # FinanceSystem uses weakref.proxy internally for government.
+    # We must keep a strong reference to mock_gov_shell alive so the proxy doesn't die.
+    system = FinanceSystem(mock_gov_shell, mock_central_bank, mock_bank, mock_config)
+    system._mock_gov_shell = mock_gov_shell  # Prevent garbage collection of the shell
+
     # Spy on the real methods so we can assert calls if needed
     system.issue_treasury_bonds = MagicMock(wraps=system.issue_treasury_bonds)
     # Unconditionally wrap grant_bailout_loan (it exists, deprecated or not)
