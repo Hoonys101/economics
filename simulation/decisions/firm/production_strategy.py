@@ -12,7 +12,7 @@ class ProductionStrategy:
         firm = context.state
         config = context.config
         market_data = context.market_data
-        goods_map = {g['id']: g for g in context.goods_data}
+        goods_map = {g.id: g for g in context.goods_data}
         orders = []
         target_order = self._manage_production_target(firm, config)
         if target_order:
@@ -37,8 +37,8 @@ class ProductionStrategy:
         WO-030: Manage Raw Material Procurement.
         """
         orders = []
-        good_info = goods_map.get(firm.production.specialization, {})
-        input_config = good_info.get('inputs', {})
+        good_info = goods_map.get(firm.production.specialization)
+        input_config = good_info.inputs if good_info else {}
         if not input_config:
             return orders
         target_production = firm.production.production_target
@@ -47,19 +47,24 @@ class ProductionStrategy:
             current = firm.production.input_inventory.get(mat, 0.0)
             deficit = needed - current
             if deficit > 0:
-                mat_market_data = market_data.get('goods_market', {})
-                last_price_key = f'{mat}_avg_traded_price'
-                fallback_price_key = f'{mat}_current_sell_price'
-                last_price = mat_market_data.get(last_price_key, 0.0)
+                mat_market_data = market_data.get(mat)
+                last_price = 0.0
+
+                if mat_market_data:
+                    # Enforce SSoT via explicit MarketHistoryDTO attribute access
+                    last_price = mat_market_data.avg_price
+
                 if last_price <= 0:
-                    last_price = mat_market_data.get(fallback_price_key, 0.0)
-                if last_price <= 0:
-                    mat_info = goods_map.get(mat, {})
-                    last_price = mat_info.get('initial_price', 1000)
+                    mat_info = goods_map.get(mat)
+                    if mat_info:
+                        # Enforce SSoT via explicit GoodsDTO attribute access, convert pennies to float dollars
+                        last_price = mat_info.initial_price / 100.0
+                    else:
+                        last_price = 10.0
+
                 bid_price = last_price * 1.05
-                # last_price is already in pennies, so bid_price is in pennies.
-                # Do NOT multiply by 100 again.
-                orders.append(Order(agent_id=firm.id, side='BUY', item_id=mat, quantity=deficit, price_pennies=int(bid_price), price_limit=bid_price, market_id=mat))
+                # bid_price is in float dollars. Convert to pennies for Order creation.
+                orders.append(Order(agent_id=firm.id, side='BUY', item_id=mat, quantity=deficit, price_pennies=int(bid_price * 100), price_limit=bid_price, market_id=mat))
         return orders
 
     def _manage_automation(self, firm: FirmStateDTO, aggressiveness: float, guidance: Dict[str, Any], current_time: int, config: FirmConfigDTO) -> List[Order]:

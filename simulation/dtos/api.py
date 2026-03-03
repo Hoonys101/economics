@@ -178,6 +178,7 @@ class GoodsDTO:
     type: str
     satiety: float
     decay_rate: float
+    inputs: Dict[str, float] = field(default_factory=dict)
 
 @dataclass(frozen=True)
 class MarketHistoryDTO:

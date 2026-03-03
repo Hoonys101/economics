@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
+from simulation.dtos.api import GoodsDTO, MarketHistoryDTO
 from modules.simulation.dtos.api import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from tests.utils.factories import create_firm_config_dto
 
@@ -171,8 +172,31 @@ def context_mock(firm_dto, firm_config_dto):
             "food_avg_traded_price": 10.0,
             "food_current_sell_price": 10.0
         },
+        "food": MarketHistoryDTO(
+            avg_price=10.0,
+            trade_volume=100.0,
+            best_ask=1000,
+            best_bid=1000,
+            avg_ask=10.0,
+            avg_bid=10.0,
+            worst_ask=1100,
+            worst_bid=900
+        ),
         "debt_data": {1: {"total_principal": 0.0}}
     }
-    context.goods_data = [{"id": "food", "production_cost": 10.0, "inputs": {}}]
-    context.reflux_system = MagicMock()
+    context.goods_data = [
+        GoodsDTO(
+            id="food",
+            name="Food",
+            category="basic",
+            is_durable=False,
+            is_essential=True,
+            initial_price=1000,
+            base_need_satisfaction=1.0,
+            quality_modifier=1.0,
+            type="consumable",
+            satiety=1.0,
+            decay_rate=0.1
+        )
+    ]
     return context
