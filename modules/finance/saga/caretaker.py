@@ -4,7 +4,7 @@ from uuid import UUID
 
 from modules.finance.saga.api import ISagaCaretaker, ISagaRepository, ISagaOrchestrator, OrphanedSagaDTO
 from modules.system.api import IAgentRegistry, AgentID
-from modules.finance.api import SagaStateDTO
+from modules.finance.api import ISagaState
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +26,10 @@ class SagaCaretaker:
         active_sagas = self._saga_repository.get_all_active_sagas()
 
         for saga in active_sagas:
-            if getattr(saga, "state", getattr(saga, "status", None)) in ("FAILED", "COMPLETED", "COMPENSATING", "COMPENSATED", "FAILED_ROLLED_BACK", "CANCELLED"):
+            if saga.status in ("FAILED", "COMPLETED", "COMPENSATING", "COMPENSATED", "FAILED_ROLLED_BACK", "CANCELLED"):
                 continue
 
-            participant_ids = getattr(saga, "participant_ids", [])
+            participant_ids = saga.participant_ids
             if not participant_ids:
                 logger.warning(f"SagaCaretaker: Could not extract participant IDs for saga {saga.saga_id}.")
                 continue

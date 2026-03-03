@@ -737,15 +737,29 @@ class ICentralBank(IMonetaryOperations, Protocol):
 
 # --- Interfaces for Data Access ---
 
+@runtime_checkable
+class ISagaState(Protocol):
+    """
+    Protocol enforcing uniform saga interface.
+    """
+    saga_id: UUID
+    status: str
+    participant_ids: List[int]
+
+
 @dataclass(frozen=True)
-class SagaStateDTO:
+class SagaStateDTO(ISagaState):
     """Generic DTO for representing the state of a saga."""
     saga_id: UUID
     state: str
-    participant_ids: List[int]
     payload: Dict[str, Any]
     created_at: int
     updated_at: int
+    participant_ids: List[int] = field(default_factory=list, hash=False)
+
+    @property
+    def status(self) -> str:
+        return self.state
 
 class IRealEstateRegistry(ABC):
     """

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from modules.system.api import AgentID, IAgentRegistry
-from modules.finance.api import SagaStateDTO
+from modules.finance.api import ISagaState
 from modules.finance.kernel.api import ISagaOrchestrator
 
 @dataclass(frozen=True)
@@ -18,7 +18,7 @@ class OrphanedSagaDTO:
 @runtime_checkable
 class ISagaRepository(Protocol):
     """Provides read-only access to saga states. Separates data fetching from execution."""
-    def get_all_active_sagas(self) -> List[SagaStateDTO]:
+    def get_all_active_sagas(self) -> List[ISagaState]:
         """Returns a list of all currently active (non-terminal) sagas."""
         ...
 
