@@ -17,8 +17,8 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-PERF-GETATTR-LOOP** | Performance | **getattr Bottleneck**: Tight loops (100k+) using `getattr` for config lookups. | **High**: Runtime. | **RESOLVED** |
 | **TD-FIN-MAGIC-BASE-RATE** | Finance | `FinanceSystem.issue_treasury_bonds` uses hardcoded `0.03`. | **Low**: Config. | Identified |
-| **TD-ARCH-SSOT-BYPASS** | Architecture | **Protocol Evasion**: Modules bypassing `SettlementSystem` and `IInventoryHandler` via direct mutation. | **CRITICAL**: SSoT. | **NEW (AUDIT)** |
-| **TD-SYS-TRANSFER-HANDLER-GAP** | Finance | **Invisible P2P**: Generic `"transfer"` type lacks handler; invisible in ledger. | **CRITICAL**: Integrity. | **NEW (AUDIT)** |
+| **TD-ARCH-SSOT-BYPASS** | Architecture | **Protocol Evasion**: Direct mutation bypassing `SettlementSystem`. Linked to `AUDIT-S3-2A-SSOT-BYPASS`. | **CRITICAL**: SSoT. | **ACTIVE (AUDIT)** |
+| **TD-SYS-TRANSFER-HANDLER-GAP**| Finance | **Invisible P2P**: Generic `transfer` lacks handler. Linked to `AUDIT-S3-2B-TRANSFER-GAP`. | **CRITICAL**: Integrity. | **ACTIVE (AUDIT)** |
 | **TD-WAVE3-DTO-SWAP** | DTO | **IndustryDomain Shift**: Replace `major` with `IndustryDomain` enum. | **Medium**: Structure. | **SPECCED** |
 | **TD-WAVE3-TALENT-VEIL** | Agent | **Hidden Talent**: `EconStateDTO` missing `hidden_talent`. | **High**: Intent. | **RESOLVED** |
 | **TD-WAVE3-MATCH-REWRITE** | Market | **Bargaining vs OrderBook**: Existing LaborMarket assumes sorting. | **High**: Economy. | **RESOLVED** |
@@ -28,14 +28,16 @@
 | **TD-BANK-RESERVE-CRUNCH** | Finance | **Bank Reserve Structural Constraint**: Bank 2 lacks reserves for bond issuance. | **High**: Macro. | Identified |
 | **TD-ECON-ZOMBIE-FIRM** | Agent | **Zombie Firms**: Rapid extinction of basic_food firms. | **High**: Economy. | **RESOLVED** |
 | **TD-FIN-NEGATIVE-M2** | Finance | **M2 Black Hole**: Aggregate M2 sums raw balances including overdrafts (Negative M2). | **CRITICAL**: Accounting. | **ACTIVE (AUDIT)** |
-| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firms**: Race condition; capital injection attempted before registration. | **CRITICAL**: Reliability. | **ACTIVE (AUDIT)** |
-| **TD-ARCH-ORPHAN-SAGA** | Architecture | **Orphaned Sagas**: Sagas holding stale references to dead/failed agents. | **High**: Integrity. | **ACTIVE (AUDIT)** |
+| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firms**: Race condition; capital injection attempted before registration. | **CRITICAL**: Reliability. | **RESOLVED** |
+| **TD-ARCH-ORPHAN-SAGA** | Architecture | **Orphaned Sagas**: Sagas holding stale references to dead/failed agents. | **High**: Integrity. | **ACTIVE (PH35)** |
 | **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks. | **High**: Gap. | **RESOLVED** |
 | **TD-ARCH-TX-INJECTION** | Architecture | **Transaction Injection Bypass**: `CentralBankSystem` directly mutating `WorldState.transactions`. | **High**: Purity. | **DEFERRED (TECH DEBT)** |
 | **TD-FIN-FLOAT-INCURSION-RE**| Finance | **Recurring Float Incursion**: `monetary_ledger.py` using `float()` for debt principal. | **Critical**: Integrity. | **DEFERRED (TECH DEBT)** |
 | **TD-ARCH-GOD-DTO** | Architecture | **SimulationState God DTO**: Monolithic dependency violating Interface Segregation. | **High**: Rigidity. | **ACTIVE (V2 AUDIT)** |
-| **TD-TEST-MOCK-LEAK** | Testing | **[S3-1] MagicMock Leaks**: Reference cycles in God DTO causing OOM and GC hangs. | **High**: Reliability. | **ACTIVE (SPECCED)** |
-| **TD-ARCH-PROTOCOL-EVASION** | Architecture | **Protocol Evasion**: `hasattr()` usage in lifecycle logic bypasses Protocol Purity. | **Medium**: Safety. | **ACTIVE** |
+| **TD-TEST-MOCK-LEAK** | Testing | **[S3-1] MagicMock Leaks**: Reference cycles in God DTO causing OOM and GC hangs. | **High**: Reliability. | **RESOLVED** |
+| **TD-ARCH-PROTOCOL-EVASION** | Architecture | **[S3-1] Protocol Evasion**: `hasattr()` usage in lifecycle logic (Ref: [AUDIT_PLATFORM_DEEP.md](file:///c:/coding/economics/reports/audits/AUDIT_PLATFORM_DEEP.md)). | **Medium**: Safety. | **ACTIVE** |
+| **TD-ARCH-GOD-WORLDSTATE** | Architecture | **God Class Incursion**: `WorldState` holding service instances instead of pure data (Ref: [AUDIT_PLATFORM_DEEP.md](file:///c:/coding/economics/reports/audits/AUDIT_PLATFORM_DEEP.md)). | **High**: Purity. | **NEW** |
+| **TD-ARCH-DTO-FRAGMENTATION** | Architecture | **Loose Typing**: Event queues using `Dict/Any` instead of DTOs (Ref: [AUDIT_PLATFORM_DEEP.md](file:///c:/coding/economics/reports/audits/AUDIT_PLATFORM_DEEP.md)). | **Medium**: Type Safety. | **NEW** |
 
 ---
 

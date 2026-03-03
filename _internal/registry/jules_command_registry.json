@@ -32,21 +32,6 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
-    },
-    "IMPL-PH35-STABILIZATION-SAGA": {
-      "key": "IMPL-PH35-STABILIZATION-SAGA",
-      "title": "[Phase 35] Saga Caretaker Implementation",
-      "type": "jules",
-      "instruction_raw": "Implement the `SagaCaretaker` to sweep and purge orphaned sagas holding stale references to dead agents. Enforce ISagaRepository/ISagaOrchestrator segregation. Refer to the spec for details.",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_PH35_SAGA_CARETAKER.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
     }
   }
 }

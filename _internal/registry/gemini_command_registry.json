@@ -2,5 +2,42 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {}
+  "missions": {
+    "AUDIT-S3-2A-SSOT-BYPASS": {
+      "key": "AUDIT-S3-2A-SSOT-BYPASS",
+      "title": "Track A: SSoT Integrity Audit (Direct Mutation Search)",
+      "type": "gemini",
+      "instruction_raw": "Search for all instances where modules bypass SettlementSystem or IInventoryHandler to directly mutate agent 'cash', 'inventory', or 'assets'. Map these violations to specific files and recommend protocol hardening points.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "simulation/",
+        "modules/"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "AUDIT-S3-2B-TRANSFER-GAP": {
+      "key": "AUDIT-S3-2B-TRANSFER-GAP",
+      "title": "Track B: Ledger Completeness Audit (Transfer Handler Gap)",
+      "type": "gemini",
+      "instruction_raw": "Analyze the flow of 'transfer' type transactions that lack dedicated handlers. Identify all P2P asset movements that are currently invisible in the ledger or missing from the SSoT record. Map the source and destination logic.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "simulation/systems/",
+        "modules/finance/"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    }
+  }
 }

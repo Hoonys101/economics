@@ -80,10 +80,11 @@
 
 ### Phase 23: The Great Expansion (Industrial Revolution) 🔄 **[IN PROGRESS]**
 - **Goal**: Escape the Malthusian Trap via Technology & Education.
-- **Wave 1: Scaling & Standardization** 🟢 **[STABILIZED]**
+- **Wave 1: Scaling & Standardization** 🟢 **[STABILIZED -> HARDENING]**
   - [x] Penny Standard Enforcement (Integer Precision Hardened)
   - [x] Economic Scaling (HH: 200k, Firm: 5M Asset Boosing)
   - [x] 5-Phase Atomic Initialization (Race Condition Resolved)
+  - [ ] **Phase 35 Hardening**: (Current) Integrity audit and Orphan Cleanup.
 - **Wave 1.5: Config Cleanup** 🏗️ **[PENDING]**
 - **Wave 2+: Development**
   - [x] Productivity Revolution (Chemical Fertilizer)

@@ -21,10 +21,10 @@
             - [x] **Wave 4 Mission**: Verified Jules' "Connectivity & SSoT Enforcement" (FinancialSentry, InventorySentry, M2 boundary split).
             - [x] **Handover Generated**: Architecture Handover Report for Phase 34/35 complete.
             - [x] **Wave 5 Tracking**: [S3-1] Forensic Audit complete; 5 parallel implementation missions armed.
-            - [ ] **M2 Integrity (Confirmed via Audit)**: Sum `max(0, balance)` to prevent negative money supply.
-            - [ ] **Atomic Lifecycle (Confirmed via Audit)**: Implement `FirmFactory` to prevent registration race conditions.
-            - [ ] **Saga Caretaker (Confirmed via Audit)**: Purge orphaned saga references for dead agents.
-            - [/] **Lifecycle Adaptation**: Hardening protocols and adapters for `IBirthContext`/`IDeathContext`.
+            - [x] **M2 Integrity (Confirmed via Audit)**: Sum `max(0, balance)` to prevent negative money supply. ✅
+            - [x] **Atomic Lifecycle (Implemented)**: `FirmFactory` ensures registration-before-injection. ✅
+            - [/] **Saga Caretaker (In Progress)**: Purging orphaned saga references via `SagaCaretaker`.
+            - [x] **Lifecycle Adaptation**: Hardened protocols for `IBirthContext`/`IDeathContext`. ✅
 
     - **`Phase 34: Project Rebirth (Batch Simulation & Reporting)`** 📈 🚀 (2026-02-28)
         - **Goal**: Decommission failed "Cockpit" web infrastructure and pivot to a high-performance Batch Reporting pipeline.
