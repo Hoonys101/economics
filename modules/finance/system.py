@@ -41,7 +41,8 @@ class FinanceSystem(IFinanceSystem):
     """
 
     def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None, bank_registry: Optional[IBankRegistry] = None, monetary_authority: Optional[Any] = None, monetary_ledger: Optional[IMonetaryLedger] = None):
-        self.government = government
+        import weakref
+        self.government = weakref.proxy(government)
         self.central_bank = central_bank
         self.bank = bank
         self.config_module = config_module

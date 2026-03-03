@@ -6,6 +6,7 @@ import time
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.agents.central_bank import CentralBank
 from simulation.bank import Bank
+from mem_observer import observer
 
 print(f"DEBUG: [conftest.py] Root conftest loading at {time.strftime('%H:%M:%S')}")
 
@@ -60,6 +61,11 @@ for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklear
         mock.bool_ = MockBool
 
     sys.modules[module_name] = mock
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_setup(item):
+    """Take a memory snapshot before each test."""
+    observer.take_snapshot(f"PRE_{item.name}")
 
 print(f"DEBUG: [conftest.py] Import phase complete at {time.strftime('%H:%M:%S')}")
 
@@ -317,15 +323,19 @@ def pytest_runtest_teardown(item, nextitem):
     to prevent state leaks across test executions.
     """
     # Force garbage collection to remove cyclic references
-    # (e.g., between Government and FinanceSystem)
-    gc.collect()
+    gc.collect(2) # Exhaustive collection
 
     # Try to clear global singleton registries
     try:
-        from tests.conftest import mission_registry, fixed_registry
-        if hasattr(mission_registry, 'clear'):
-            mission_registry.clear()
-        if hasattr(fixed_registry, 'clear'):
-            fixed_registry.clear()
-    except ImportError:
+        from _internal.registry.api import mission_registry
+        from _internal.registry.fixed_commands import fixed_registry
+        if hasattr(mission_registry, '_missions') and hasattr(mission_registry._missions, 'clear'):
+            mission_registry._missions.clear()
+        if hasattr(fixed_registry, '_commands') and hasattr(fixed_registry._commands, 'clear'):
+            fixed_registry._commands.clear()
+    except (ImportError, AttributeError):
         pass
+
+    # Take post-test snapshot and report delta
+    observer.take_snapshot(f"POST_{item.name}")
+    observer.report_delta(f"PRE_{item.name}", f"POST_{item.name}")

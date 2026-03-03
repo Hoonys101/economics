@@ -32,6 +32,21 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "STABILIZATION-PH35": {
+      "key": "STABILIZATION-PH35",
+      "title": "System Stabilization & Memory Leak Resolution",
+      "type": "jules",
+      "instruction_raw": "Implement lifecycle hygiene fixes, break reference cycles, and refactor engine caching to resolve system-level memory leaks and crashes.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-IMPL-STABILIZATION-PH35_SPEC.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }
