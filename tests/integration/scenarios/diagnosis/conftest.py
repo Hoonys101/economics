@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import MagicMock
 import logging
+import gc
 from simulation.core_agents import Household, Talent
 from simulation.firms import Firm
 from simulation.markets.order_book_market import OrderBookMarket
@@ -18,9 +19,16 @@ logging.getLogger().setLevel(logging.CRITICAL)
 @pytest.fixture(autouse=True)
 def clean_room_teardown(mock_agent_registry, mock_config_registry):
     yield
-    # Safely clear any global states or caches if necessary.
+    # Unlink internal states tracking registered agents explicitly on the mocks if created via attributes.
+    if hasattr(mock_agent_registry, 'agents') and isinstance(mock_agent_registry.agents, dict):
+        mock_agent_registry.agents.clear()
+    if hasattr(mock_agent_registry, 'registered_agents') and isinstance(mock_agent_registry.registered_agents, list):
+        mock_agent_registry.registered_agents.clear()
+
+    # Reset mock invocation tracking
     mock_agent_registry.reset_mock()
     mock_config_registry.reset_mock()
+    gc.collect(2)
 
 @pytest.fixture
 def mock_config_registry():
