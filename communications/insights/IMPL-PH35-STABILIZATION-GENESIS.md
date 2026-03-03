@@ -20,9 +20,8 @@
 
 ### [Debt] Transaction & Lien DTO Migration Gaps
 - **Component**: `HousingTransactionHandler`, `MonetaryLedger`, Core Test Mocks
-- **Description**: The migration to `TransactionMetadataDTO` and `LienDTO` left several dictionary-access patterns (e.g., `lien['lien_type']`) intact in subsystem handlers. Coupled with overly broad `except Exception` blocks, these type-mismatches caused silent logical failures and sagas to abort invisibly rather than throwing loud errors.
-- **Required Action / Fix**: Removed broad exception handlers in market transaction components to expose underlying runtime errors. Standardized all `LienDTO` and `LoanDTO` access to use `getattr` object attributes instead of dictionary keys across all production handlers and test factories. Finally, explicitly fixed transaction emitters (`liquidation_manager.py`, `goods_handler.py`, `labor_handler.py`) to emit strict `TransactionMetadataDTO` to eliminate false negatives.
-
+- **Description**: The migration to `TransactionMetadataDTO` and `LienDTO` left several dictionary-access patterns (e.g., `lien['lien_type']`) intact in subsystem handlers. Coupled with overly broad `except Exception` blocks, these type-mismatches caused silent logical failures and sagas to abort invisibly rather than throwing loud errors. Test mocks returning dicts instead of standardized DTOs obscured the issue.
+- **Required Action / Fix**: Removed broad exception handlers in market transaction components to expose underlying runtime errors. Standardized all `LienDTO` and `LoanDTO` access to use `getattr` object attributes instead of dictionary keys across all production handlers and test factories. Explicitly fixed transaction emitters (`liquidation_manager.py`, `goods_handler.py`, `labor_handler.py`) to emit strict `TransactionMetadataDTO` to eliminate false negatives. Removed all leftover debug artifact scripts.
 ## [Test Evidence]
 ```text
 ============================= test session starts ==============================
