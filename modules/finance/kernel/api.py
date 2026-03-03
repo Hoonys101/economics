@@ -32,6 +32,14 @@ class ISagaOrchestrator(Protocol):
         """
         ...
 
+
+    def compensate_and_fail_saga(self, saga_id: UUID, reason: str) -> None:
+        """
+        Forces a saga into a COMPENSATING or FAILED state, triggering
+        necessary rollback logic.
+        """
+        ...
+
     def get_active_sagas(self) -> Dict[UUID, HousingTransactionSagaStateDTO]:
         """Returns a view of the currently active sagas."""
         ...

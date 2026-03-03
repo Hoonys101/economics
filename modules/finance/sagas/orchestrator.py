@@ -209,5 +209,43 @@ class SagaOrchestrator(ISagaOrchestrator):
             except (ValueError, TypeError, AttributeError):
                 continue
 
+
+    def compensate_and_fail_saga(self, saga_id: UUID, reason: str) -> None:
+        """
+        Forces a saga into a FAILED_ROLLED_BACK state, triggering
+        necessary rollback logic.
+        """
+        if saga_id not in self.active_sagas:
+            logger.warning(f"SAGA_COMPENSATE_FAIL | Saga {saga_id} not found.")
+            return
+
+        saga = self.active_sagas[saga_id]
+
+        # Ensure dependencies are set
+        if not (self.settlement_system and self.housing_service and self.loan_market and self.bank and self.government and self.agent_registry):
+            logger.warning(f"SAGA_COMPENSATE_FAIL | Dependencies not fully injected. Cannot compensate {saga_id}.")
+            raise RuntimeError(f"Dependencies not fully injected. Cannot compensate {saga_id}.")
+
+        handler = HousingTransactionSagaHandler(
+            settlement_system=self.settlement_system,
+            housing_service=self.housing_service,
+            loan_market=self.loan_market,
+            bank=self.bank,
+            government=self.government,
+            monetary_ledger=self.monetary_ledger,
+            agent_registry=self.agent_registry,
+            current_tick=0 # Tick is not strictly needed for compensate
+        )
+
+        logger.info(f"SAGA_COMPENSATE | Compensating Saga {saga_id}. Reason: {reason}")
+
+        try:
+            handler.compensate_step(saga)
+        except Exception as e:
+            logger.error(f"SAGA_COMPENSATE_ERROR | Failed to compensate Saga {saga_id}: {e}")
+            raise
+
+        del self.active_sagas[saga_id]
+
     def get_active_sagas(self) -> Dict[UUID, HousingTransactionSagaStateDTO]:
         return self.active_sagas
