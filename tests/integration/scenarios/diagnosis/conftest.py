@@ -2,7 +2,6 @@
 import pytest
 from unittest.mock import MagicMock
 import logging
-import gc
 from simulation.core_agents import Household, Talent
 from simulation.firms import Firm
 from simulation.markets.order_book_market import OrderBookMarket
