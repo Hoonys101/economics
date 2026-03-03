@@ -5,6 +5,7 @@ from simulation.agents.government import Government
 from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.models import RealEstateUnit
 from simulation.portfolio import Portfolio
+from modules.system.api import DEFAULT_CURRENCY
 
 @pytest.mark.usefixtures("golden_households")
 class TestInheritance:
@@ -26,6 +27,11 @@ class TestInheritance:
 
         # Pre-test validation
         # Assert that selected households have sufficient and diverse assets
+        # Golden households might be SimpleNamespace objects, so we need to mock get_balance or use assets
+        if not hasattr(self.deceased, 'get_balance'):
+            self.deceased.get_balance = MagicMock(return_value=self.deceased.assets)
+        if not hasattr(self.heir, 'get_balance'):
+            self.heir.get_balance = MagicMock(return_value=self.heir.assets)
         assert self.deceased.get_balance() > 0, "Deceased must have assets"
 
         if not hasattr(self.deceased, 'shares_owned'):
@@ -44,14 +50,38 @@ class TestInheritance:
         # Setup Deceased State
         self.deceased.id = 1
         # Override assets for consistency with original test logic
-        self.deceased._econ_state.wallet.clear()
-        self.deceased._deposit(50000)
+        if hasattr(self.deceased, '_econ_state') and hasattr(self.deceased._econ_state, 'wallet'):
+            self.deceased._econ_state.wallet.clear()
+        if hasattr(self.deceased, '_deposit'):
+            self.deceased._deposit(5000000) # 50000 dollars -> 5,000,000 pennies
+        else:
+            self.deceased.assets = 5000000
+        self.deceased.get_balance = MagicMock(return_value=5000000)
+
+        # Ensure _bio_state and _econ_state exist for the inheritance manager logic
+        if not hasattr(self.deceased, '_bio_state'):
+            self.deceased._bio_state = MagicMock()
+            self.deceased._bio_state.children_ids = [self.heir.id]
+        else:
+            self.deceased._bio_state.children_ids = [self.heir.id]
+
+        if not hasattr(self.heir, '_bio_state'):
+            self.heir._bio_state = MagicMock()
+            self.heir._bio_state.is_active = True
+
+        if not hasattr(self.deceased, '_econ_state'):
+            self.deceased._econ_state = MagicMock()
+            self.deceased._econ_state.portfolio = self.deceased.portfolio
+        else:
+            self.deceased._econ_state.portfolio = self.deceased.portfolio
+
         self.deceased.shares_owned = {}
         self.deceased.owned_properties = []
         self.deceased.children_ids = [self.heir.id] # Use dynamic ID from heir
 
         # Setup Heir State
-        self.heir._econ_state.wallet.clear() # Reset assets
+        if hasattr(self.heir, '_econ_state') and hasattr(self.heir._econ_state, 'wallet'):
+            self.heir._econ_state.wallet.clear() # Reset assets
         self.heir.shares_owned = {}
         self.heir.is_active = True
         self.heir.owned_properties = []
@@ -96,8 +126,13 @@ class TestInheritance:
             self.deceased.get_balance(cur) if aid == self.deceased.id else \
             (self.simulation.agents[aid].get_balance(cur) if aid in self.simulation.agents else 0)
 
-        self.deceased._econ_state.wallet.clear()
-        self.deceased._deposit(1000.0) # Low cash
+        if hasattr(self.deceased._econ_state, 'wallet') and hasattr(self.deceased._econ_state.wallet, 'clear'):
+            self.deceased._econ_state.wallet.clear()
+        if hasattr(self.deceased, '_deposit'):
+            self.deceased._deposit(1000.0) # Low cash
+        else:
+            self.deceased.get_balance = MagicMock(return_value=1000.0)
+            self.deceased.assets = 1000.0
         self.deceased.portfolio.add(99, 100, 100.0) # 100 shares of Firm 99 @ 100.0
         # Value = 10000.0
         # Total Wealth = 11000.0

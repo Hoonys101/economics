@@ -1,0 +1,523 @@
+{
+    "simulation/bank.py": [
+        {
+            "line": 269,
+            "code": "balance = self.finance_system.close_deposit_account(self.id, agent_id)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 367,
+            "code": "bank_state.deposits[dep_id].balance_pennies -= amount",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 417,
+            "code": "balance_pennies=0,",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 425,
+            "code": "bank_state.deposits[dep_id].balance_pennies += int(amount)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/firms.py": [
+        {
+            "line": 258,
+            "code": "assets=self.financial_component.get_all_balances(),",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 665,
+            "code": "assets = sum(self.financial_component.get_all_balances().values())",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 925,
+            "code": "balance=self.financial_component.get_all_balances(),",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 1075,
+            "code": "balance=self.financial_component.get_balance(DEFAULT_CURRENCY), # Public API uses float balance for main currency often",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/core_agents.py": [
+        {
+            "line": 365,
+            "code": "assets=self._econ_state.wallet.get_all_balances(),",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 1006,
+            "code": "assets=self._econ_state.wallet.get_all_balances(),",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/policies/smart_leviathan_policy.py": [
+        {
+            "line": 65,
+            "code": "assets=getattr(government, 'assets', {}),",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/viewmodels/agent_state_viewmodel.py": [
+        {
+            "line": 38,
+            "code": "assets = [s[\"assets\"] for s in states]",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/factories/agent_factory.py": [
+        {
+            "line": 100,
+            "code": "assets={}, # Assets handled separately via deposit for legacy compatibility",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/factories/household_factory.py": [
+        {
+            "line": 102,
+            "code": "assets={DEFAULT_CURRENCY: 0},",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 256,
+            "code": "assets = int(random.gauss(mean_assets, mean_assets * 0.2))",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 257,
+            "code": "assets = max(0, assets)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/factories/firm_factory.py": [
+        {
+            "line": 132,
+            "code": "assets={DEFAULT_CURRENCY: 0},",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/decisions/action_proposal.py": [
+        {
+            "line": 36,
+            "code": "assets_val = float(agent.assets)",
+            "type": "Float Cast on Monetary Value"
+        },
+        {
+            "line": 45,
+            "code": "self.logger.debug(f'DEBUG: Household {agent.id} labor conditions: is_employed={agent.is_employed}, assets={assets_val:.2f} < threshold={self.config_module.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY} ({condition_assets_low}), random_check={condition_random_check}', extra={'tick': current_time, 'agent_id': agent.id, 'tags': ['debug_labor_conditions']})",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/decisions/ai_driven_firm_engine.py": [
+        {
+            "line": 91,
+            "code": "assets = assets_raw",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 93,
+            "code": "assets = assets_raw.get(DEFAULT_CURRENCY, 0.0)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/decisions/household/asset_manager.py": [
+        {
+            "line": 20,
+            "code": "assets = household.assets",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 101,
+            "code": "cash = available_cash",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/decisions/firm/hr_strategy.py": [
+        {
+            "line": 87,
+            "code": "balance = firm.finance.balance",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 88,
+            "code": "cash = balance.get(DEFAULT_CURRENCY, 0.0) if isinstance(balance, dict) else float(balance)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 96,
+            "code": "balance = firm.finance.balance",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 97,
+            "code": "cash = balance.get(DEFAULT_CURRENCY, 0.0) if isinstance(balance, dict) else float(balance)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 102,
+            "code": "balance = firm.finance.balance",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 103,
+            "code": "cash = balance.get(DEFAULT_CURRENCY, 0.0) if isinstance(balance, dict) else float(balance)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/components/engines/finance_engine.py": [
+        {
+            "line": 34,
+            "code": "balance = finance_state.balance.get(DEFAULT_CURRENCY, 0)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/db/db_manager.py": [
+        {
+            "line": 365,
+            "code": "assets=500.0,",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 378,
+            "code": "assets=2000.0,",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/db/repository.py": [
+        {
+            "line": 111,
+            "code": "assets=1000.0,",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/ai/household_ai.py": [
+        {
+            "line": 132,
+            "code": "assets = assets_data.get(DEFAULT_CURRENCY, 0.0)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 134,
+            "code": "assets = float(assets_data)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 250,
+            "code": "assets = assets_data.get(DEFAULT_CURRENCY, 0.0)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 252,
+            "code": "assets = float(assets_data)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 484,
+            "code": "assets = assets_data.get(DEFAULT_CURRENCY, 0.0)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 486,
+            "code": "assets = float(assets_data)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/ai/api.py": [
+        {
+            "line": 128,
+            "code": "cash = cash_data.get(DEFAULT_CURRENCY, 0.0)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 130,
+            "code": "cash = float(cash_data)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/ai/firm_ai.py": [
+        {
+            "line": 70,
+            "code": "cash = assets_raw",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 73,
+            "code": "cash = assets_raw[\"balances\"].get(DEFAULT_CURRENCY, 0.0)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 75,
+            "code": "cash = assets_raw.get(DEFAULT_CURRENCY, 0.0)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 77,
+            "code": "cash = assets_raw.balances.get(DEFAULT_CURRENCY, 0.0)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/ai/service_firm_ai.py": [
+        {
+            "line": 54,
+            "code": "cash = agent_data.get(\"assets\", 0)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/ai/system2_planner.py": [
+        {
+            "line": 47,
+            "code": "current_wealth = float(self.agent.assets)",
+            "type": "Float Cast on Monetary Value"
+        }
+    ],
+    "simulation/ai/firm_system2_planner.py": [
+        {
+            "line": 80,
+            "code": "assets = assets_raw",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 82,
+            "code": "assets = assets_raw.get(DEFAULT_CURRENCY, 0.0)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/systems/inheritance_manager.py": [
+        {
+            "line": 59,
+            "code": "cash = float(wallet_balance) * joint_share_ratio",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 63,
+            "code": "cash = float(cash_raw.get(DEFAULT_CURRENCY, 0.0))",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 65,
+            "code": "cash = float(cash_raw)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 66,
+            "code": "cash = round(cash, 2)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 119,
+            "code": "cash -= repay_amount",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 166,
+            "code": "cash += proceeds",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 198,
+            "code": "cash += sale_price",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 226,
+            "code": "cash -= tax_to_pay",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/systems/generational_wealth_audit.py": [
+        {
+            "line": 41,
+            "code": "wealth = float(agent.assets)",
+            "type": "Float Cast on Monetary Value"
+        }
+    ],
+    "simulation/systems/analytics_system.py": [
+        {
+            "line": 50,
+            "code": "assets = snapshot.econ_state.assets",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 81,
+            "code": "assets=assets,",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 99,
+            "code": "assets = {DEFAULT_CURRENCY: state_dto.finance.balance}",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 113,
+            "code": "assets=assets,",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 128,
+            "code": "assets = agent.get_assets_by_currency()",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 137,
+            "code": "assets=assets,",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/systems/firm_management.py": [
+        {
+            "line": 47,
+            "code": "assets = founder_household.assets",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 180,
+            "code": "assets = h.assets",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/systems/commerce_system.py": [
+        {
+            "line": 91,
+            "code": "assets = household._econ_state.assets",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 92,
+            "code": "cash = assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(assets, dict) else float(assets)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 150,
+            "code": "assets = household._econ_state.assets",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 151,
+            "code": "cash = assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(assets, dict) else float(assets)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/systems/housing_system.py": [
+        {
+            "line": 201,
+            "code": "balance = 0.0",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 204,
+            "code": "balance = loan.outstanding_balance",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 207,
+            "code": "balance = loan.get('outstanding_balance', 0.0)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 255,
+            "code": "cash_balance = float(household.balance_pennies)",
+            "type": "Float Cast on Monetary Value"
+        },
+        {
+            "line": 259,
+            "code": "cash_balance = float(household.assets)",
+            "type": "Float Cast on Monetary Value"
+        },
+        {
+            "line": 268,
+            "code": "cash=cash_balance,",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/systems/settlement_system.py": [
+        {
+            "line": 294,
+            "code": "balance = 0",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 297,
+            "code": "balance = agent.balance_pennies",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 300,
+            "code": "balance = agent.get_balance(currency)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 303,
+            "code": "balance = agent.get_assets_by_currency().get(currency, 0)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/systems/event_system.py": [
+        {
+            "line": 67,
+            "code": "assets_val = float(h._econ_state.assets) if hasattr(h._econ_state, 'assets') else 0.0",
+            "type": "Float Cast on Monetary Value"
+        },
+        {
+            "line": 96,
+            "code": "assets_val = float(agent.assets)",
+            "type": "Float Cast on Monetary Value"
+        }
+    ],
+    "simulation/systems/handlers/escheatment_handler.py": [
+        {
+            "line": 39,
+            "code": "balance = context.settlement_system.get_balance(buyer.id, DEFAULT_CURRENCY)",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/agents/government.py": [
+        {
+            "line": 312,
+            "code": "assets=self.wallet.get_all_balances(),",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 513,
+            "code": "assets=int(firm.total_wealth) if hasattr(firm, 'total_wealth') else (int(firm.assets) if hasattr(firm, 'assets') else 0),",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 529,
+            "code": "assets=self.wallet.get_all_balances(),",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 738,
+            "code": "assets = []",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 745,
+            "code": "return PortfolioDTO(assets=assets)",
+            "type": "Direct State Mutation"
+        },
+        {
+            "line": 779,
+            "code": "assets=self.wallet.get_all_balances(),",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/metrics/stock_tracker.py": [
+        {
+            "line": 226,
+            "code": "assets = [h.total_wealth for h in members]",
+            "type": "Direct State Mutation"
+        }
+    ],
+    "simulation/metrics/economic_tracker.py": [
+        {
+            "line": 247,
+            "code": "assets = f.assets",
+            "type": "Direct State Mutation"
+        }
+    ]
+}
