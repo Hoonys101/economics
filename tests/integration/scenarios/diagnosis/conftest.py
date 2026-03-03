@@ -18,7 +18,7 @@ logging.getLogger().setLevel(logging.CRITICAL)
 @pytest.fixture(autouse=True)
 def clean_room_teardown(mock_agent_registry, mock_config_registry):
     yield
-    # Safely clear any global states or caches if necessary.
+    # Reset mock invocation tracking
     mock_agent_registry.reset_mock()
     mock_config_registry.reset_mock()
 

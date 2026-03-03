@@ -39,12 +39,23 @@ for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklear
         except ImportError:
             pass
 
-    # Limit MagicMock to object spec to prevent infinite chaining for modules like numpy
-    mock = MagicMock()
+    # ShallowModuleMock restricts deep mock chaining on standard attribute access
+    # while supporting module import behaviors (__path__, __spec__).
+    class ShallowModuleMock(MagicMock):
+        def __getattr__(self, name):
+            if name.startswith("_"):
+                return super().__getattr__(name)
+            # 상태를 저장하여 동일한 Mock 반환 (Identity 보장)
+            mock_obj = MagicMock(return_value=None)
+            setattr(self, name, mock_obj)
+            return mock_obj
+
+    mock = ShallowModuleMock()
     # IMPORTANT: Setting __path__ = [] allows the mock to be treated as a package,
     # supporting submodule imports like 'websockets.asyncio'.
     mock.__path__ = []  # Ensure it is treated as a package
     mock.__spec__ = None # Ensure it satisfies import system expectations
+    mock.__name__ = module_name # Prevent AttributeError for __name__
 
     if module_name == "yaml":
         mock.safe_load.return_value = {}
@@ -59,6 +70,10 @@ for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklear
         # Create a mock bool_ class for isinstance checks
         class MockBool(int): pass
         mock.bool_ = MockBool
+        # Avoid strictly typing with list which breaks numpy attribute access.
+        # However, to prevent runaway Mock trees on arithmetic, you can configure return values
+        # if specific tests exhibit infinite chaining, though MagicMock defaults are usually fine
+        # if not returning `self`.
 
     sys.modules[module_name] = mock
 
@@ -172,7 +187,11 @@ def finance_system(mock_central_bank, mock_bank, mock_config):
     """Provides a mocked FinanceSystem attached to a mock government."""
     # We create a mock government shell first for the FinanceSystem constructor
     mock_gov_shell = Mock()
+    # FinanceSystem uses weakref.proxy internally for government.
+    # We must keep a strong reference to mock_gov_shell alive so the proxy doesn't die.
     system = FinanceSystem(mock_gov_shell, mock_central_bank, mock_bank, mock_config)
+    system._mock_gov_shell = mock_gov_shell  # Prevent garbage collection of the shell
+
     # Spy on the real methods so we can assert calls if needed
     system.issue_treasury_bonds = MagicMock(wraps=system.issue_treasury_bonds)
     # Unconditionally wrap grant_bailout_loan (it exists, deprecated or not)
