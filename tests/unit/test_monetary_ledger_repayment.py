@@ -6,6 +6,12 @@ from simulation.models import Transaction
 from modules.system.constants import ID_CENTRAL_BANK
 
 class TestMonetaryLedgerRepayment:
+
+    def teardown_method(self, method):
+        if hasattr(self, 'ledger') and hasattr(self.ledger, 'transaction_log'):
+            self.ledger.transaction_log.clear()
+        if hasattr(self, 'transaction_log'):
+            self.transaction_log.clear()
     def test_bond_repayment_split(self):
         """
         Verify that bond repayment uses SSoT (total_pennies) and destroys full amount.

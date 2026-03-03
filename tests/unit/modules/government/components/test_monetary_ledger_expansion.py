@@ -7,6 +7,10 @@ from modules.system.api import DEFAULT_CURRENCY
 from modules.system.constants import ID_PUBLIC_MANAGER
 
 class TestMonetaryLedgerExpansion(unittest.TestCase):
+    def tearDown(self):
+        if hasattr(self, 'ledger') and hasattr(self.ledger, 'transaction_log'):
+            self.ledger.transaction_log.clear()
+
     def setUp(self):
         self.ledger = MonetaryLedger(transaction_log=[], time_provider=MagicMock())
         self.ledger.reset_tick_flow()

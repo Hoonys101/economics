@@ -3,6 +3,10 @@ from unittest.mock import Mock, MagicMock, patch
 import pytest
 import time
 
+from simulation.metrics.economic_tracker import EconomicIndicatorTracker
+from simulation.agents.central_bank import CentralBank
+from simulation.bank import Bank
+
 print(f"DEBUG: [conftest.py] Root conftest loading at {time.strftime('%H:%M:%S')}")
 
 import importlib.util
@@ -34,6 +38,7 @@ for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklear
         except ImportError:
             pass
 
+    # Limit MagicMock to object spec to prevent infinite chaining for modules like numpy
     mock = MagicMock()
     # IMPORTANT: Setting __path__ = [] allows the mock to be treated as a package,
     # supporting submodule imports like 'websockets.asyncio'.
@@ -137,7 +142,7 @@ def mock_config():
 @pytest.fixture
 def mock_tracker():
     """Provides a mock economic tracker."""
-    tracker = Mock()
+    tracker = Mock(spec=EconomicIndicatorTracker)
     return tracker
 
 @pytest.fixture
@@ -145,14 +150,14 @@ def mock_central_bank(mock_tracker, mock_config):
     """Provides a mock CentralBank."""
     # Using a real instance might be better if its logic is simple
     # but for now, a mock is sufficient.
-    cb = Mock()
+    cb = Mock(spec=CentralBank)
     cb.get_base_rate.return_value = 0.02
     return cb
 
 @pytest.fixture
 def mock_bank():
     """Provides a mock commercial Bank."""
-    bank = Mock()
+    bank = Mock(spec=Bank)
     bank._assets = 5000000.0
     return bank
 
@@ -183,7 +188,8 @@ def government(mock_config, mock_tracker, finance_system):
     # Replace the real finance system with our mocked one
     gov.finance_system = finance_system
     # The FinanceSystem was created with a shell, now we link it to the real government instance
-    gov.finance_system.government = gov
+    import weakref
+    gov.finance_system.government = weakref.proxy(gov)
 
     # Inject Mock SettlementSystem (Strict)
     # Uses ISettlementSystem to ensure Government only accesses standard methods
@@ -298,3 +304,28 @@ def golden_config():
     if loader is None:
         return None
     return loader.create_config_mock()
+
+# ============================================================================
+# 🗑️ Global Teardown Hook (Memory Leak Fix)
+# ============================================================================
+import gc
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_teardown(item, nextitem):
+    """
+    Defensively clear global singleton registries and force garbage collection
+    to prevent state leaks across test executions.
+    """
+    # Force garbage collection to remove cyclic references
+    # (e.g., between Government and FinanceSystem)
+    gc.collect()
+
+    # Try to clear global singleton registries
+    try:
+        from tests.conftest import mission_registry, fixed_registry
+        if hasattr(mission_registry, 'clear'):
+            mission_registry.clear()
+        if hasattr(fixed_registry, 'clear'):
+            fixed_registry.clear()
+    except ImportError:
+        pass

@@ -6,6 +6,12 @@ from simulation.models import Transaction
 from unittest.mock import MagicMock
 
 class TestMonetaryLedgerM2:
+
+    def teardown_method(self, method):
+        if hasattr(self, 'ledger') and hasattr(self.ledger, 'transaction_log'):
+            self.ledger.transaction_log.clear()
+        if hasattr(self, 'transaction_log'):
+            self.transaction_log.clear()
     def test_m2_initialization(self):
         ledger = MonetaryLedger(transaction_log=[], time_provider=MagicMock())
         assert ledger.get_total_m2_pennies() == 0
