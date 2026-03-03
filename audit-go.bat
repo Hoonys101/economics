@@ -1,4 +1,10 @@
 @echo off
+
+:: Activate Virtual Environment
+if exist .venv\Scripts\activate.bat (
+    call .venv\Scripts\activate.bat
+)
+
 echo 🦅 [Watchtower] Initiating Routine Project Audit...
 python _internal/scripts/audit_watchtower.py
 if %ERRORLEVEL% EQU 0 (
