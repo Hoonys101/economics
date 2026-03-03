@@ -67,7 +67,7 @@ class TestInheritanceManager:
         dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
         assert dist_tx is not None
         assert dist_tx.buyer_id == 1
-        assert set(dist_tx.metadata["heir_ids"] if isinstance(dist_tx.metadata, dict) else dist_tx.metadata.original_metadata["heir_ids"]) == {2, 3}
+        assert set(dist_tx.metadata.original_metadata["heir_ids"]) == {2, 3}
         assert dist_tx.market_id == "system"
 
     def test_multiple_heirs_metadata(self, setup_manager, mocks):
@@ -84,7 +84,7 @@ class TestInheritanceManager:
 
         dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
         assert dist_tx is not None
-        assert set(dist_tx.metadata["heir_ids"] if isinstance(dist_tx.metadata, dict) else dist_tx.metadata.original_metadata["heir_ids"]) == {2, 3, 4}
+        assert set(dist_tx.metadata.original_metadata["heir_ids"]) == {2, 3, 4}
 
     def test_escheatment_when_no_heirs(self, setup_manager, mocks):
         """Test Case 3: Verify escheatment transaction when no heirs exist."""

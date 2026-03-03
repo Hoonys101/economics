@@ -25,10 +25,17 @@ class Transaction:
     total_pennies: int = 0 # SSoT for settlement. Default 0 allows legacy init, caught in post_init.
     currency: str = DEFAULT_CURRENCY # TD-213: Multi-currency support
     quality: float = 1.0  # Phase 15: Durables Quality
-    metadata: Optional[Union[TransactionMetadataDTO, Dict[str, Any]]] = None  # WO-109: Metadata for side-effects. Union for backward compatibility.
+    metadata: Optional[TransactionMetadataDTO] = None  # WO-109: Metadata for side-effects
 
     def __post_init__(self):
-        # 1. Float Guard for total_pennies
+        # 1. Centralize DTO Transformation
+        if isinstance(self.metadata, dict):
+            # Intercept legacy dictionary injection and cast to pure DTO
+            is_gen = self.metadata.get("is_genesis", False)
+            m = self.metadata.get("memo", None)
+            self.metadata = TransactionMetadataDTO(is_genesis=is_gen, memo=m, original_metadata=self.metadata)
+
+        # 2. Float Guard for total_pennies
         if isinstance(self.total_pennies, float):
             raise FloatIncursionError(f"total_pennies must be int, got float: {self.total_pennies}")
 
@@ -76,10 +83,8 @@ class Transaction:
     @property
     def memo(self) -> Optional[str]:
         """Accessor for memo within metadata."""
-        if isinstance(self.metadata, TransactionMetadataDTO):
+        if self.metadata:
             return self.metadata.memo
-        elif isinstance(self.metadata, dict):
-            return self.metadata.get("memo")
         return None
 
 

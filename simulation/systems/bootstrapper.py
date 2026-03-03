@@ -100,13 +100,8 @@ class Bootstrapper:
         # 1. Input Injection (Supply Side) - ONLY AT GENESIS
         if current_tick == 0:
             with InventorySentry.unlocked():
-                try:
-                    goods_config = config.GOODS
-                except AttributeError:
-                    goods_config = {}
-
-                if firm.specialization in goods_config:
-                    item_config = goods_config[firm.specialization]
+                if hasattr(config, "GOODS") and firm.specialization in config.GOODS:
+                    item_config = config.GOODS[firm.specialization]
 
                     if 'inputs' in item_config and item_config['inputs']:
                         for mat, qty_per_unit in item_config['inputs'].items():

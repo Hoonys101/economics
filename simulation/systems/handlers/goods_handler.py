@@ -106,6 +106,7 @@ class GoodsTransactionHandler(ITransactionHandler):
                         transaction_type="tax",
                         time=context.time,
                         total_pennies=int(intent.amount),
+                        metadata={'executed': True, 'tax_type': intent.reason}
                     )
                     context.transaction_queue.append(tax_tx)
 

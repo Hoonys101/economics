@@ -255,4 +255,4 @@ def test_money_creation_metadata_executed():
 
     assert tx is not None
     assert tx.metadata is not None
-    assert (tx.metadata.get("executed") if isinstance(tx.metadata, dict) else tx.metadata.original_metadata.get("executed")) is True, "Metadata should contain 'executed': True for money_creation"
+    assert tx.metadata.original_metadata.get("executed") is True, "Metadata should contain 'executed': True for money_creation"

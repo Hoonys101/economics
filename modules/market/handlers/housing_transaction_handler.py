@@ -178,10 +178,19 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             self._apply_housing_effects(unit, buyer, seller, loan_id, loan_amount, lender_id, context)
 
             if loan_id:
-                if not tx.metadata: tx.metadata = {}
-                tx.metadata["mortgage_id"] = loan_id
-                tx.metadata["loan_principal"] = loan_amount
-                tx.metadata["lender_id"] = lender_id
+                from modules.system.api import TransactionMetadataDTO
+
+                original = {}
+                if tx.metadata and hasattr(tx.metadata, "original_metadata") and tx.metadata.original_metadata:
+                    original = tx.metadata.original_metadata.copy()
+                elif isinstance(tx.metadata, dict):
+                    original = tx.metadata.copy()
+
+                original["mortgage_id"] = loan_id
+                original["loan_principal"] = loan_amount
+                original["lender_id"] = lender_id
+
+                tx.metadata = TransactionMetadataDTO(original_metadata=original)
 
             logger.info(f"HOUSING | Success: Unit {unit.id} sold to {buyer.id}. Price: {sale_price}")
             return True

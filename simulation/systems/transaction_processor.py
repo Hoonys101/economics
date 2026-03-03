@@ -158,13 +158,12 @@ class TransactionProcessor(SystemInterface):
             # Safeguard: Do not re-process transactions that are purely for audit/ledger visibility.
             is_executed = False
             if hasattr(tx, "metadata") and tx.metadata:
-                from modules.system.api import TransactionMetadataDTO
-                if isinstance(tx.metadata, TransactionMetadataDTO):
-                    if tx.metadata.original_metadata:
-                        is_executed = tx.metadata.original_metadata.get("executed", False)
-                elif isinstance(tx.metadata, dict):
+                if hasattr(tx.metadata, "original_metadata") and tx.metadata.original_metadata:
+                    is_executed = tx.metadata.original_metadata.get("executed", False)
+                elif hasattr(tx.metadata, "get"):
                     is_executed = tx.metadata.get("executed", False)
             if is_executed:
+
 
                 continue
 
