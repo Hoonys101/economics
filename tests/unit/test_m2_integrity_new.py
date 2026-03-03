@@ -39,7 +39,7 @@ class TestM2IntegrityNew(unittest.TestCase):
         tx = self.transaction_log[0]
         self.assertEqual(tx.transaction_type, "monetary_expansion")
         self.assertEqual(tx.total_pennies, 50000)
-        self.assertTrue(tx.metadata["is_monetary_expansion"])
+        self.assertTrue(tx.metadata.original_metadata["is_monetary_expansion"])
 
     def test_record_monetary_contraction(self):
         """Verify contraction updates expected M2 and logs transaction."""
@@ -52,7 +52,7 @@ class TestM2IntegrityNew(unittest.TestCase):
         tx = self.transaction_log[0]
         self.assertEqual(tx.transaction_type, "monetary_contraction")
         self.assertEqual(tx.total_pennies, 20000)
-        self.assertTrue(tx.metadata["is_monetary_destruction"])
+        self.assertTrue(tx.metadata.original_metadata["is_monetary_destruction"])
 
 if __name__ == '__main__':
     unittest.main()

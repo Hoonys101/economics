@@ -1,4 +1,5 @@
 from __future__ import annotations
+from modules.system.api import TransactionMetadataDTO
 from collections import deque
 from typing import List, Dict, Any, Optional, override, TYPE_CHECKING, Tuple
 import logging
@@ -1624,12 +1625,12 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
                     price_limit=float(offered_wage)/100.0,
                     market_id='labor',
                     major=major_enum,
-                    metadata={
+                    metadata=TransactionMetadataDTO(original_metadata={
                         'major': context.major, # Phase 4.1: Use Major instead of Specialization
                         'specialization': context.specialization, # Keep specialization for debugging/specific matching if needed
                         'required_education': 0, # Could be dynamic based on tech level
                         'is_liquidity_verified': True
-                    }
+                    })
                 ))
             else:
                 self.logger.warning(
@@ -1729,7 +1730,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
                  priority=PaymentPriority.MARKETING,
                  recipient_id=gov_id,
                  description="Marketing Spend",
-                 metadata={'type': 'marketing'}
+                 metadata=TransactionMetadataDTO(original_metadata={'type': 'marketing'})
              ))
 
         # 2. BUDGET GATEKEEPER

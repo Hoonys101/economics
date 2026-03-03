@@ -4,7 +4,8 @@ import uuid
 import warnings
 from modules.market.api import CanonicalOrderDTO
 from modules.finance.api import LienDTO, FloatIncursionError
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, TransactionMetadataDTO
+from typing import Union
 
 # Alias for backward compatibility and migration
 Order = CanonicalOrderDTO
@@ -24,7 +25,7 @@ class Transaction:
     total_pennies: int = 0 # SSoT for settlement. Default 0 allows legacy init, caught in post_init.
     currency: str = DEFAULT_CURRENCY # TD-213: Multi-currency support
     quality: float = 1.0  # Phase 15: Durables Quality
-    metadata: Optional[Dict[str, Any]] = None  # WO-109: Metadata for side-effects
+    metadata: Optional[Union[TransactionMetadataDTO, Dict[str, Any]]] = None  # WO-109: Metadata for side-effects. Union for backward compatibility.
 
     def __post_init__(self):
         # 1. Float Guard for total_pennies
@@ -75,7 +76,9 @@ class Transaction:
     @property
     def memo(self) -> Optional[str]:
         """Accessor for memo within metadata."""
-        if self.metadata:
+        if isinstance(self.metadata, TransactionMetadataDTO):
+            return self.metadata.memo
+        elif isinstance(self.metadata, dict):
             return self.metadata.get("memo")
         return None
 

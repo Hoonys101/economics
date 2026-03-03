@@ -1,4 +1,5 @@
 from __future__ import annotations
+from modules.system.api import TransactionMetadataDTO
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import logging
 from simulation.models import Transaction, Order
@@ -158,7 +159,6 @@ class FinanceEngine(IFinanceEngine):
                 priority=PaymentPriority.ESSENTIAL_OPEX,
                 recipient_id=gov_id,
                 description="Inventory Holding Cost",
-                metadata={'type': 'holding_cost'}
             ))
 
         # 2. Maintenance Fee (Tax/Essential)
@@ -170,7 +170,6 @@ class FinanceEngine(IFinanceEngine):
                 priority=PaymentPriority.TAX, # Or Essential OPEX? Usually fees are mandatory like tax.
                 recipient_id=gov_id,
                 description="Firm Maintenance Fee",
-                metadata={'type': 'maintenance_fee'}
             ))
 
         # 3. Bailout Repayment (Secured Debt)
@@ -184,7 +183,6 @@ class FinanceEngine(IFinanceEngine):
                     priority=PaymentPriority.SECURED_DEBT,
                     recipient_id=gov_id,
                     description="Bailout Repayment",
-                    metadata={'type': 'bailout_repayment'}
                 ))
 
         # 4. Dividends (Dividend)
@@ -214,7 +212,6 @@ class FinanceEngine(IFinanceEngine):
                     priority=PaymentPriority.DIVIDEND,
                     recipient_id=firm_id, # Self as distributor? Or generic?
                     description=f"Dividend Payout ({cur})",
-                    metadata={'type': 'dividend', 'currency': cur, 'total_distributable': distributable}
                 ))
 
         return obligations
@@ -382,8 +379,10 @@ class FinanceEngine(IFinanceEngine):
                     market_id="system",
                     transaction_type="holding_cost",
                     time=current_time,
-                    currency=DEFAULT_CURRENCY
-                , total_pennies=holding_cost_pennies)
+                    currency=DEFAULT_CURRENCY,
+                    total_pennies=holding_cost_pennies,
+                    metadata=TransactionMetadataDTO(original_metadata={'type': 'holding_cost'})
+                )
             )
 
         # 2. Maintenance Fee
@@ -403,8 +402,10 @@ class FinanceEngine(IFinanceEngine):
                     market_id="system",
                     transaction_type="tax",
                     time=current_time,
-                    currency=DEFAULT_CURRENCY
-                , total_pennies=payment)
+                    currency=DEFAULT_CURRENCY,
+                    total_pennies=payment,
+                    metadata=TransactionMetadataDTO(original_metadata={'type': 'maintenance_fee'})
+                )
             )
 
         # 3. Profit Distribution (Dividends & Bailout Repayment)
@@ -469,8 +470,10 @@ class FinanceEngine(IFinanceEngine):
                         market_id="system",
                         transaction_type="repayment",
                         time=current_time,
-                        currency=DEFAULT_CURRENCY
-                    , total_pennies=repayment)
+                        currency=DEFAULT_CURRENCY,
+                        total_pennies=repayment,
+                        metadata=TransactionMetadataDTO(original_metadata={'type': 'bailout_repayment'})
+                    )
                 )
 
                 state.total_debt_pennies -= repayment
@@ -506,8 +509,10 @@ class FinanceEngine(IFinanceEngine):
                                 market_id="financial",
                                 transaction_type="dividend",
                                 time=current_time,
-                                currency=cur
-                            , total_pennies=dividend_amount)
+                                currency=cur,
+                                total_pennies=dividend_amount,
+                                metadata=TransactionMetadataDTO(original_metadata={'type': 'dividend', 'currency': cur, 'total_distributable': distributable_profit})
+                            )
                         )
 
         # 4. Reset Period Counters

@@ -266,64 +266,17 @@ class WorldState:
         """
         Calculates M2 (Total Money Supply) and System Debt.
         M2 is delegated to the Unified Monetary Ledger (SSoT).
-        SystemDebt = Sum(abs(balance)) where balance < 0.
         Returns: MoneySupplyDTO with strict penny values.
         """
-        # M2 from SSoT
         if self.monetary_ledger:
-            total_m2_pennies = self.monetary_ledger.get_total_m2_pennies(DEFAULT_CURRENCY)
-            # expected_m2 = self.monetary_ledger.get_expected_m2_pennies()
-            
-            # Debt Calculation (Phase 33 Hardening)
-            # We defer system debt calculation to a future update or macro tracker
-            # to strictly decouple WorldState from agent iteration.
-            system_debt_pennies = self.monetary_ledger.get_system_debt_pennies(DEFAULT_CURRENCY)
-            
-            return MoneySupplyDTO(
-                total_m2_pennies=total_m2_pennies,
-                system_debt_pennies=system_debt_pennies,
-                currency=DEFAULT_CURRENCY
-            )
+            return self.monetary_ledger.calculate_total_money()
 
         # Legacy Fallback (O(N) Iteration)
         return self._legacy_calculate_total_money()
 
     def _legacy_calculate_total_money(self) -> MoneySupplyDTO:
-        # Fallback logic mirroring original implementation
-        total_m2_pennies = 0
-        system_debt_pennies = 0
-        processed_ids = set()
+        raise DeprecationWarning("M2 calculation must be delegated to MonetaryLedger SSoT.")
 
-        def process_agent(agent):
-            nonlocal total_m2_pennies, system_debt_pennies
-            if not hasattr(agent, 'id') or agent.id in processed_ids: return
-            processed_ids.add(agent.id)
-
-            if not hasattr(agent, 'get_assets_by_currency'): return
-            val = int(agent.get_assets_by_currency().get(DEFAULT_CURRENCY, 0))
-            if val >= 0: total_m2_pennies += val
-            else: system_debt_pennies += abs(val)
-
-        excluded_ids = {
-            ID_CENTRAL_BANK,
-            ID_SYSTEM,
-            ID_ESCROW,
-            ID_PUBLIC_MANAGER
-        }
-        if self.bank:
-            excluded_ids.add(self.bank.id)
-
-        for agent in self.agents.values():
-            if hasattr(agent, 'is_active') and not agent.is_active: continue
-            if hasattr(agent, 'id') and agent.id in excluded_ids: continue
-            if isinstance(agent, IBank): continue
-            process_agent(agent)
-
-        if self.estate_registry:
-            for agent in self.estate_registry.get_all_estate_agents():
-                process_agent(agent)
-
-        return MoneySupplyDTO(total_m2_pennies, system_debt_pennies, DEFAULT_CURRENCY)
 
     def get_economic_indicators(self) -> EconomicIndicatorsDTO:
         """

@@ -150,7 +150,7 @@ class TestLaborThaw:
         firm.financial_component.get_balance.return_value = 5000 # Enough for ~1000 wage
         orders = firm._generate_hr_orders(intent, context)
         assert len(orders) == 1
-        assert orders[0].metadata['is_liquidity_verified'] == True
+        assert orders[0].metadata.original_metadata['is_liquidity_verified'] == True
 
         # Case 2: Insufficient Cash
         firm.financial_component.get_balance.return_value = 500 # Less than wage ~1000

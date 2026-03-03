@@ -1,4 +1,5 @@
 from __future__ import annotations
+from modules.system.api import TransactionMetadataDTO
 from typing import List, TYPE_CHECKING, Optional, Any, Dict
 import logging
 from modules.common.financial.dtos import Claim
@@ -171,7 +172,6 @@ class LiquidationManager:
                                 transaction_type="liquidation_dividend",
                                 time=state.time,
                                 total_pennies=int(distribution),
-                                metadata={"executed": True}
                             )
                             state.transactions.append(tx)
 
@@ -208,7 +208,6 @@ class LiquidationManager:
                     transaction_type="liquidation",
                     time=state.time,
                     total_pennies=amount_pennies,
-                    metadata={"executed": True, "claim_tier": claim.tier}
                 )
                 state.transactions.append(tx)
 

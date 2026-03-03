@@ -1,3 +1,4 @@
+from modules.system.api import TransactionMetadataDTO
 from typing import List, Any, TYPE_CHECKING, Dict, Optional
 import logging
 from modules.system.api import DEFAULT_CURRENCY
@@ -40,11 +41,11 @@ class Bootstrapper:
                  from modules.finance.api import IBank
                  # If target is Bank, it is M0 seeding. Do not use create_and_transfer which expands M2.
                  if isinstance(target_agent, IBank):
-                     tx = settlement_system.transfer(central_bank, target_agent, amount_pennies, "GENESIS_RESERVES")
+                     tx = settlement_system.transfer(central_bank, target_agent, amount_pennies, "GENESIS_RESERVES", metadata=TransactionMetadataDTO(is_genesis=True, memo="GENESIS_RESERVES"))
                  else:
-                     tx = settlement_system.create_and_transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT", tick=0)
+                     tx = settlement_system.create_and_transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT", tick=0, metadata=TransactionMetadataDTO(is_genesis=True, memo="GENESIS_GRANT"))
              else:
-                 tx = settlement_system.transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT")
+                 tx = settlement_system.transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT", metadata=TransactionMetadataDTO(is_genesis=True, memo="GENESIS_GRANT"))
 
              if tx is None:
                  raise KeyError(f"Failed to distribute wealth to Agent {target_agent.id}. Agent possibly not registered.")
@@ -99,8 +100,13 @@ class Bootstrapper:
         # 1. Input Injection (Supply Side) - ONLY AT GENESIS
         if current_tick == 0:
             with InventorySentry.unlocked():
-                if firm.specialization in config.GOODS:
-                    item_config = config.GOODS[firm.specialization]
+                try:
+                    goods_config = config.GOODS
+                except AttributeError:
+                    goods_config = {}
+
+                if firm.specialization in goods_config:
+                    item_config = goods_config[firm.specialization]
 
                     if 'inputs' in item_config and item_config['inputs']:
                         for mat, qty_per_unit in item_config['inputs'].items():

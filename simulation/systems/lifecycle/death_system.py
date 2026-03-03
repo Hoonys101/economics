@@ -195,7 +195,7 @@ class DeathSystem(IDeathSystem):
                             transaction_type="withdrawal", # Or 'asset_recovery'
                             time=context.time,
                             total_pennies=amount,
-                            metadata={"executed": True, "reason": "liquidation_recovery"}
+                            metadata=TransactionMetadataDTO(original_metadata={"executed": True, "reason": "liquidation_recovery"})
                         )
                         transactions.append(tx)
 
@@ -295,7 +295,7 @@ class DeathSystem(IDeathSystem):
                     transaction_type="asset_buyout",
                     time=context.time,
                     total_pennies=result.total_paid_pennies,
-                    metadata={"executed": True}
+                    metadata=TransactionMetadataDTO(original_metadata={"executed": True})
                 )
                 transactions.append(tx)
 

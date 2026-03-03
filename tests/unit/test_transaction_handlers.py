@@ -96,7 +96,7 @@ class TestGoodsTransactionHandler(unittest.TestCase):
         tax_tx = self.state.transaction_queue[0]
         self.assertEqual(tax_tx.transaction_type, "tax")
         self.assertEqual(tax_tx.total_pennies, 100)
-        self.assertEqual(tax_tx.metadata["executed"], True)
+        self.assertEqual(tax_tx.metadata.original_metadata["executed"], True)
 
     def test_goods_settle_fail(self):
         tx = Transaction(

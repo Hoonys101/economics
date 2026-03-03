@@ -1,3 +1,4 @@
+from modules.system.api import TransactionMetadataDTO
 from typing import Any, List, Tuple
 import logging
 from simulation.systems.api import ITransactionHandler, TransactionContext
@@ -95,7 +96,6 @@ class LaborTransactionHandler(ITransactionHandler):
                             transaction_type="tax",
                             time=context.time,
                             total_pennies=int(intent.amount),
-                            metadata={"executed": True, "tax_type": intent.reason}
                         )
                         context.transaction_queue.append(tax_tx)
 

@@ -1,3 +1,4 @@
+from modules.system.api import TransactionMetadataDTO
 from typing import List, Any, Optional, Dict
 from uuid import UUID
 from simulation.models import Transaction
@@ -63,12 +64,21 @@ class MonetaryLedger(IMonetaryLedger):
         total_m2 = 0
         total_debt = 0
 
-        for agent in self._currency_holder_registry:
-            balance = agent.get_balance(DEFAULT_CURRENCY)
-            if balance > 0:
-                total_m2 += balance
-            else:
-                total_debt += abs(balance)
+        # M2 Calculation based on SSoT settlement system
+        if self.settlement_system:
+            for agent in self._currency_holder_registry:
+                balance = self.settlement_system.get_balance(agent.id)
+                if balance > 0:
+                    total_m2 += balance
+                elif balance < 0:
+                    total_debt += abs(balance)
+        else:
+            for agent in self._currency_holder_registry:
+                balance = agent.get_balance(DEFAULT_CURRENCY)
+                if balance > 0:
+                    total_m2 += balance
+                elif balance < 0:
+                    total_debt += abs(balance)
 
         return MoneySupplyDTO(
             total_m2_pennies=total_m2,
@@ -103,13 +113,13 @@ class MonetaryLedger(IMonetaryLedger):
             market_id="monetary_policy",
             transaction_type="monetary_expansion",
             time=self._current_tick,
-            metadata={
+            metadata=TransactionMetadataDTO(original_metadata={
                 "source": source,
                 "currency": currency,
                 "is_monetary_expansion": True,
                 "executed": True,
                 "is_audit": True
-            },
+            }),
             total_pennies=amount_pennies
         )
         self.transaction_log.append(tx)
@@ -132,13 +142,13 @@ class MonetaryLedger(IMonetaryLedger):
             market_id="monetary_policy",
             transaction_type="monetary_contraction",
             time=self._current_tick,
-            metadata={
+            metadata=TransactionMetadataDTO(original_metadata={
                 "source": source,
                 "currency": currency,
                 "is_monetary_destruction": True,
                 "executed": True,
                 "is_audit": True
-            },
+            }),
             total_pennies=amount_pennies
         )
         self.transaction_log.append(tx)
