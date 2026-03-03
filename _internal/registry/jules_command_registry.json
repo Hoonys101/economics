@@ -93,21 +93,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "fix_gc_mock_leak": {
-      "key": "fix_gc_mock_leak",
-      "title": "Resolve GC Mock Leaks in Initialization Tests",
-      "type": "jules",
-      "instruction_raw": "Refactor `tests/system/test_engine.py` based on the hypothesis_5_gc_mock_leak_report. Convert un-specced `MagicMock` usage (like `mock_logger` and injected components) to `MagicMock(spec=...)` or lightweight stub classes to break cyclic references and halt GC hangs.",
-      "command": "create",
-      "file_path": "gemini-output/analysis/hypothesis_5_gc_mock_leak_report.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "fix_household_tests": {
       "key": "fix_household_tests",
       "title": "Harden Household Tests (Unit Integrity & Protocol Adherence)",
