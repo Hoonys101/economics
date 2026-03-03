@@ -37,22 +37,33 @@ logger = logging.getLogger("ScenarioRunner")
 SCENARIO_DIR = os.path.join(os.path.dirname(__file__), "definitions")
 SCENARIO_FILES = glob.glob(os.path.join(SCENARIO_DIR, "*.json"))
 
+class MockRunRepository:
+    def save_simulation_run(self, **kwargs): return "mock_run_id"
+    def update_simulation_run_end_time(self, run_id): pass
+
+class MockAgentRepository:
+    def save_agent_states_batch(self, batch): pass
+
+class MockMarketRepository:
+    def save_transactions_batch(self, batch): pass
+    def save_market_history_batch(self, batch): pass
+
+class MockMetricsRepository:
+    def save_economic_indicators_batch(self, batch): pass
+
+class MockAnalyticsRepository:
+    def save_ai_decision(self, decision): pass
+
 class MockRepository:
     """Mock repository to avoid DB overhead during tests."""
     def __init__(self):
-        self.runs = self
-        self.agents = self
-        self.markets = self
-        self.metrics = self
-        self.market_history = self
-        self.analytics = self
-    def save_simulation_run(self, **kwargs): return "mock_run_id"
-    def update_simulation_run_end_time(self, run_id): pass
-    def save_agent_states_batch(self, batch): pass
-    def save_transactions_batch(self, batch): pass
-    def save_economic_indicators_batch(self, batch): pass
-    def save_market_history_batch(self, batch): pass
-    def save_ai_decision(self, decision): pass
+        self.runs = MockRunRepository()
+        self.agents = MockAgentRepository()
+        self.markets = MockMarketRepository()
+        self.metrics = MockMetricsRepository()
+        self.market_history = MockMarketRepository()
+        self.analytics = MockAnalyticsRepository()
+
     def close(self): pass
     def migrate(self): pass
 
@@ -226,6 +237,17 @@ class TestScenarioRunner:
 
         sim = initializer.build_simulation()
 
+        import gc
+        from unittest.mock import Mock
+
+        def gc_collect_harder():
+            # 1단계: 메모리 상의 모든 Mock 객체를 찾아 이력(history)을 강제 초기화하여 순환 참조 고리 파괴
+            for obj in gc.get_objects():
+                if isinstance(obj, Mock):
+                    obj.reset_mock()
+            # 2단계: GC 강제 실행
+            gc.collect()
+
         try:
             # 5. Create Judges
             judges = judge_factory.create_judges(strategy)
@@ -270,3 +292,10 @@ class TestScenarioRunner:
         except Exception as e:
             logger.error(f"Scenario failed with exception: {e}", exc_info=True)
             raise e
+        finally:
+            try:
+                sim.finalize_simulation()
+            except Exception as fe:
+                logger.error(f"Error finalizing simulation: {fe}")
+            finally:
+                gc_collect_harder()
