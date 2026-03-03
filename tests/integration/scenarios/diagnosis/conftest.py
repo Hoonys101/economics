@@ -16,9 +16,11 @@ from tests.utils.factories import create_household_config_dto, create_firm_confi
 logging.getLogger().setLevel(logging.CRITICAL)
 
 @pytest.fixture(autouse=True)
-def clean_room_teardown():
+def clean_room_teardown(mock_agent_registry, mock_config_registry):
     yield
     # Safely clear any global states or caches if necessary.
+    mock_agent_registry.reset_mock()
+    mock_config_registry.reset_mock()
 
 @pytest.fixture
 def mock_config_registry():

@@ -6,6 +6,12 @@ from modules.system.constants import ID_GOVERNMENT, ID_CENTRAL_BANK, ID_BANK, ID
 
 class TestAtomicStartup:
 
+    def teardown_method(self, method):
+        if hasattr(self, 'ledger') and hasattr(self.ledger, 'transaction_log'):
+            self.ledger.transaction_log.clear()
+        if hasattr(self, 'transaction_log'):
+            self.transaction_log.clear()
+
     @pytest.mark.no_lock_mock
     @patch.dict('os.environ', {"FORCE_SIM_LOCK_TEST": "1"})
     @patch('simulation.initialization.initializer.PlatformLockManager', autospec=True)

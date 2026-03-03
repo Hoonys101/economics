@@ -5,6 +5,10 @@ from modules.finance.kernel.ledger import MonetaryLedger
 from modules.system.api import DEFAULT_CURRENCY
 
 class TestM2Integrity(unittest.TestCase):
+    def tearDown(self):
+        if hasattr(self, 'ledger') and hasattr(self.ledger, 'transaction_log'):
+            self.ledger.transaction_log.clear()
+
     def setUp(self):
         from unittest.mock import MagicMock
         self.ledger = MonetaryLedger(transaction_log=[], time_provider=MagicMock())

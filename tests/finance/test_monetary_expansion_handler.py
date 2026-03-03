@@ -6,6 +6,12 @@ from simulation.dtos.api import SimulationState, DecisionContext
 from simulation.models import Transaction
 
 class TestMonetaryExpansionWarning(unittest.TestCase):
+    def tearDown(self):
+        if hasattr(self, 'ledger') and hasattr(self.ledger, 'transaction_log'):
+            self.ledger.transaction_log.clear()
+        if hasattr(self, 'transaction_log'):
+            self.transaction_log.clear()
+
 
     def setUp(self):
         self.config_module = MagicMock()

@@ -5,6 +5,12 @@ from modules.system.api import DEFAULT_CURRENCY
 
 class TestMonetaryLedgerDebt:
 
+    def teardown_method(self, method):
+        if hasattr(self, 'ledger') and hasattr(self.ledger, 'transaction_log'):
+            self.ledger.transaction_log.clear()
+        if hasattr(self, 'transaction_log'):
+            self.transaction_log.clear()
+
     def test_initial_debt_is_zero(self):
         ledger = MonetaryLedger([], MagicMock())
         assert ledger.get_system_debt_pennies(DEFAULT_CURRENCY) == 0
