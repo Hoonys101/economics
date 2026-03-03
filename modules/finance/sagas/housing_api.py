@@ -2,9 +2,12 @@ from typing import TypedDict, Literal, Optional, Protocol, List, Dict
 from uuid import UUID
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+import logging
 
-from modules.finance.api import MortgageApplicationDTO
+from modules.finance.api import MortgageApplicationDTO, ISagaState
 from modules.simulation.api import HouseholdSnapshotDTO
+
+logger = logging.getLogger(__name__)
 
 # --- DTOs for Saga State & Payloads ---
 
@@ -25,7 +28,7 @@ class HousingSagaAgentContext:
     existing_monthly_debt: float
 
 @dataclass
-class HousingTransactionSagaStateDTO:
+class HousingTransactionSagaStateDTO(ISagaState):
     """
     State object for the multi-tick housing purchase Saga.
     This object is persisted across ticks to manage the transaction lifecycle.
@@ -47,6 +50,18 @@ class HousingTransactionSagaStateDTO:
     buyer_context: HouseholdSnapshotDTO
     seller_context: HousingSagaAgentContext
     property_id: int
+
+    @property
+    def participant_ids(self) -> List[int]:
+        ids = []
+        try:
+            if self.buyer_context and self.buyer_context.household_id is not None:
+                ids.append(int(self.buyer_context.household_id))
+            if self.seller_context and self.seller_context.id is not None:
+                ids.append(int(self.seller_context.id))
+        except (ValueError, TypeError) as e:
+            logger.error(f"SAGA_DTO_ERROR | Failed to cast participant_ids in saga {self.saga_id}: {e}")
+        return ids
     offer_price: float
     down_payment_amount: float
 
