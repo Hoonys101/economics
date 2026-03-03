@@ -11,7 +11,7 @@ class SalesManager:
         firm = context.state
         config = context.config
         market_data = context.market_data
-        goods_map = {g.id if hasattr(g, 'id') else g['id']: g for g in context.goods_data}
+        goods_map = {g.id: g for g in context.goods_data}
         orders = self._manage_pricing(firm, sales_aggressiveness, market_data, context.current_time, config, goods_map)
         return SalesPlanDTO(orders=orders)
 

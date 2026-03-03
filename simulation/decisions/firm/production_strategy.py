@@ -12,7 +12,7 @@ class ProductionStrategy:
         firm = context.state
         config = context.config
         market_data = context.market_data
-        goods_map = {g.id if hasattr(g, 'id') else g['id']: g for g in context.goods_data}
+        goods_map = {g.id: g for g in context.goods_data}
         orders = []
         target_order = self._manage_production_target(firm, config)
         if target_order:
@@ -57,15 +57,14 @@ class ProductionStrategy:
                 if last_price <= 0:
                     mat_info = goods_map.get(mat)
                     if mat_info:
-                        # Enforce SSoT via explicit GoodsDTO attribute access
-                        last_price = mat_info.initial_price
+                        # Enforce SSoT via explicit GoodsDTO attribute access, convert pennies to float dollars
+                        last_price = mat_info.initial_price / 100.0
                     else:
-                        last_price = 1000.0
+                        last_price = 10.0
 
                 bid_price = last_price * 1.05
-                # last_price is already in pennies, so bid_price is in pennies.
-                # Do NOT multiply by 100 again.
-                orders.append(Order(agent_id=firm.id, side='BUY', item_id=mat, quantity=deficit, price_pennies=int(bid_price), price_limit=bid_price, market_id=mat))
+                # bid_price is in float dollars. Convert to pennies for Order creation.
+                orders.append(Order(agent_id=firm.id, side='BUY', item_id=mat, quantity=deficit, price_pennies=int(bid_price * 100), price_limit=bid_price, market_id=mat))
         return orders
 
     def _manage_automation(self, firm: FirmStateDTO, aggressiveness: float, guidance: Dict[str, Any], current_time: int, config: FirmConfigDTO) -> List[Order]:
