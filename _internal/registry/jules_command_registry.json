@@ -152,21 +152,6 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
-    },
-    "fix_integration_tests": {
-      "key": "fix_integration_tests",
-      "title": "Harden Integration Scenarios (Mock Cleanup & Fragility)",
-      "type": "jules",
-      "instruction_raw": "Improve integration test stability: 1) Move the `gc_collect_harder` logic from `test_scenario_runner.py` into a standard `pytest` fixture in `conftest.py` for uniform cleanup. 2) Replace hardcoded `time.sleep` in E2E tests with appropriate wait conditions. 3) Address the skipped assertion in `verify_leviathan.py`.",
-      "command": "create",
-      "file_path": "gemini-output/analysis/test_report_integration.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
     }
   }
 }
