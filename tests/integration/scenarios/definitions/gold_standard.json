@@ -1,7 +1,7 @@
 {
   "id": "gold_standard_conservation",
   "category": "MONETARY",
-  "duration_ticks": 50,
+  "duration_ticks": 3,
   "config_params": {
     "GOLD_STANDARD_MODE": true,
     "INITIAL_MONEY_SUPPLY": 100000.0,

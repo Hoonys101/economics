@@ -1,0 +1,142 @@
+/
+|-- _internal/
+|   |-- design/
+|   |-- manuals/
+|   |-- registry/
+|   |-- reports/
+|   |-- scripts/
+|   +-- templates/
+|-- analysis/
+|-- analysis_report/
+|-- artifacts/
+|   |-- reports/
+|   +-- specs/
+|-- audits/
+|-- benchmarks/
+|-- communications/
+|   |-- audit/
+|   |-- insights/
+|   |-- jules_logs/
+|   |-- jules_missions/
+|   |-- reports/
+|   +-- requests/
+|-- config/
+|   |-- domains/
+|   +-- scenarios/
+|-- dashboard/
+|   |-- components/
+|   +-- services/
+|-- data/
+|-- design/
+|   |-- 1_governance/
+|   |-- 2_operations/
+|   |-- 3_specs/
+|   |-- 3_work_artifacts/
+|   |-- 4_hard_planning/
+|   |-- _archive/
+|   +-- blueprints/
+|-- docs/
+|   +-- concepts/
+|-- experiments/
+|-- gemini-output/
+|   |-- audit/
+|   |-- context/
+|   |-- insight/
+|   |-- review/
+|   +-- spec/
+|-- logs/
+|   +-- prompt_dumps/
+|-- modules/
+|   |-- agent_framework/
+|   |-- analysis/
+|   |-- analytics/
+|   |-- api/
+|   |-- common/
+|   |-- demographics/
+|   |-- events/
+|   |-- finance/
+|   |-- firm/
+|   |-- governance/
+|   |-- government/
+|   |-- household/
+|   |-- housing/
+|   |-- hr/
+|   |-- inventory/
+|   |-- labor/
+|   |-- lifecycle/
+|   |-- market/
+|   |-- memory/
+|   |-- platform/
+|   |-- scenarios/
+|   |-- simulation/
+|   |-- system/
+|   |-- testing/
+|   +-- tools/
+|-- reports/
+|   |-- audit/
+|   |-- audits/
+|   |-- diagnostics/
+|   +-- snapshots/
+|-- results/
+|-- scenarios/
+|-- scripts/
+|   |-- _archive/
+|   |-- experiments/
+|   |-- git_hooks/
+|   +-- observer/
+|-- simulation/
+|   |-- agents/
+|   |-- ai/
+|   |-- components/
+|   |-- db/
+|   |-- decisions/
+|   |-- dtos/
+|   |-- factories/
+|   |-- finance/
+|   |-- initialization/
+|   |-- interface/
+|   |-- interfaces/
+|   |-- markets/
+|   |-- metrics/
+|   |-- orchestration/
+|   |-- policies/
+|   |-- registries/
+|   |-- scenarios/
+|   |-- systems/
+|   |-- utils/
+|   +-- viewmodels/
+|-- simulation_results/
+|-- static/
+|   |-- css/
+|   +-- js/
+|-- templates/
+|-- tests/
+|   |-- benchmarks/
+|   |-- common/
+|   |-- factories/
+|   |-- finance/
+|   |-- fixtures/
+|   |-- forensics/
+|   |-- goldens/
+|   |-- initialization/
+|   |-- integration/
+|   |-- internal/
+|   |-- logs/
+|   |-- market/
+|   |-- mocks/
+|   |-- modules/
+|   |-- orchestration/
+|   |-- platform/
+|   |-- scenarios/
+|   |-- security/
+|   |-- simulation/
+|   |-- system/
+|   |-- unit/
+|   |-- utils/
+|   +-- verification/
+|-- tools/
+|-- utils/
+|-- verification/
++-- watchtower/
+    |-- public/
+    +-- src/

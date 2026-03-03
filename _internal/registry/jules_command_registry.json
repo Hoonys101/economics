@@ -3,13 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "IMPL-PH35-STABILIZATION-GENESIS": {
-      "key": "IMPL-PH35-STABILIZATION-GENESIS",
-      "title": "[Phase 35] Genesis Protocol & M2 Integrity Implementation",
+    "IMPL-PH35-STABILIZATION-FIRM": {
+      "key": "IMPL-PH35-STABILIZATION-FIRM",
+      "title": "[Phase 35] Atomic Firm Factory Implementation",
       "type": "jules",
-      "instruction_raw": "Implement the 'Sacred Sequence' for initialization and the new M2/SystemDebt calculation logic. Ensure all genesis transfers are tagged with `TransactionMetadataDTO(is_genesis=True)`. Refer to the spec for details.",
+      "instruction_raw": "Implement the atomic `FirmFactory` providing registration, account opening, and capitalization in a single workflow. Prevent 'Ghost Firms' (TD-LIFECYCLE-GHOST-FIRM). Refer to the spec for details.",
       "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_PH35_GENESIS.md",
+      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_PH35_FIRM_FACTORY.md",
       "wait": false,
       "session_id": null,
       "worker": null,
@@ -18,13 +18,13 @@
       "model": null,
       "audit_requirements": null
     },
-    "IMPL-PH35-STABILIZATION-FIRM": {
-      "key": "IMPL-PH35-STABILIZATION-FIRM",
-      "title": "[Phase 35] Atomic Firm Factory Implementation",
+    "WO-IMPL-MEMORY-LEAK-FIX": {
+      "key": "WO-IMPL-MEMORY-LEAK-FIX",
+      "title": "Implement Memory Leak & Stability Fixes from Audit",
       "type": "jules",
-      "instruction_raw": "Implement the atomic `FirmFactory` providing registration, account opening, and capitalization in a single workflow. Prevent 'Ghost Firms' (TD-LIFECYCLE-GHOST-FIRM). Refer to the spec for details.",
+      "instruction_raw": "\ucd5c\uadfc \uc9c4\ud589\ub41c \uba54\ubaa8\ub9ac \ub204\uc218 \uac10\uc0ac(Memory Leak Audit) \uacb0\uacfc\ub97c \ubc14\ud0d5\uc73c\ub85c \ud14c\uc2a4\ud2b8 \uc2a4\uc704\ud2b8\uc758 GC(\uac00\ube44\uc9c0 \uceec\ub809\ud130) \ub204\uc218 \ubc0f \uc624\uc5fc \ubb38\uc81c\ub97c \ud574\uacb0\ud558\uc2ed\uc2dc\uc624.\n\n## \ud575\uc2ec \uad6c\ud604 \uacfc\uc81c (Audit Report \uae30\ubc18)\n1. **\uc21c\ud658 \ucc38\uc870 \uace0\ub9ac \uc81c\uac70 (tests/conftest.py)**: `finance_system`\uacfc `government` \uac04\uc758 \uac15\ud55c \uc0c1\ud638 \ucc38\uc870(`system.government = gov`) \uad6c\uc870\ub97c \ubd84\ub9ac\ud558\uac70\ub098, Python\uc758 `weakref.proxy(gov)`\ub97c \uc0ac\uc6a9\ud558\uc5ec \ud14c\uc2a4\ud2b8\ub9c8\ub2e4 \uc21c\ud658 \ucc38\uc870\uc5d0 \uc758\ud55c \uac1d\uccb4 \uba54\ubaa8\ub9ac \ub77d\uc744 \ubc29\uc9c0\ud558\uc138\uc694.\n2. **\uba85\uc2dc\uc801 Teardown \uad6c\ud604 (tests/integration/scenarios/diagnosis/conftest.py)**: \ud604\uc7ac No-Op(\uc544\ubb34 \uc77c\ub3c4 \uc548 \ud568)\uc778 `clean_room_teardown` \ud53d\uc2a4\ucc98 \uc548\uc5d0 `registry.clear()` \ub610\ub294 `mock_agent_registry.reset_mock()` \ub4f1 \ud1b5\ud569 \ud14c\uc2a4\ud2b8 \uc2dc\ub098\ub9ac\uc624 \uc885\ub8cc \uc2dc \ub9cc\ub4e4\uc5b4\uc9c4 \uac1d\uccb4/\uc5d0\uc774\uc804\ud2b8\ub4e4\uc774 \uc644\uc804\ud788 \uc18c\uba78\ub418\ub3c4\ub85d \ud30c\uad34(teardown) \ucf54\ub4dc\ub97c \ucc44\uc6cc\ub123\uc73c\uc138\uc694.\n3. **MonetaryLedger \ucc0c\uaebc\uae30 \uc0ad\uc81c**: `MonetaryLedger`\uc758 `transaction_log`\ub098 `transactions_this_tick` \ub4f1\uc774 `conftest.py` \ub4f1 \ud14c\uc2a4\ud2b8 \uac04\uc5d0 \uacf5\uc720\ub418\uc5b4 \uc2a4\ub178\uc6b0\ubcfc\ucc98\ub7fc \ucee4\uc9c0\uace0 \uc788\ub294 \uacbd\uc6b0, \ud14c\uc2a4\ud2b8 \ud6c4 \ub610\ub294 \ub2e8\uc704 \ud14c\uc2a4\ud2b8 \uc548\uc5d0\uc11c \uba85\ud655\ud788 \ucd08\uae30\ud654\ud558\ub3c4\ub85d \ubc29\uc5b4 \ucf54\ub4dc\ub97c \uc791\uc131\ud558\uc138\uc694.\n4. **MagicMock\uc758 \uc21c\ud658/\uc740\uc720\uc801 \uccb4\uc774\ub2dd \uc81c\uac70**: `mock.parent = mock`\ucc98\ub7fc \ubb34\ud55c \ubc18\ubcf5\ub418\ub294 Mock \uc124\uc815\uc774 \uc788\ub2e4\uba74 \ucc3e\uc544 \uc218\uc815\ud558\uace0, \ub418\ub3c4\ub85d \ubaa8\ub4e0 \ub3c4\uba54\uc778 Mock\uc5d0 `spec=Class` \uc635\uc158\uc744 \ubd99\uc5ec \uc774\uc0c1\ud55c \uc18d\uc131\uc744 \ud0c0\uace0 \ub4e4\uc5b4\uac00\uba70 \ubb34\ud55c \ud2b8\ub9ac \uad6c\uc870\ub97c \ub9cc\ub4dc\ub294 \uac83\uc744 \ub9c9\uc73c\uc138\uc694.\n\n\ub2e8\uc21c\ud788 \uc218\uc815\ud558\ub294 \uac83\uc5d0 \uadf8\uce58\uc9c0 \ub9d0\uace0, `pytest tests/` \uc804\uccb4 \ud1b5\uacfc\ub97c \ud655\uc778\ud558\uc5ec \uc218\uc815 \uc0ac\ud56d\uc774 \ub2e4\ub978 \ud14c\uc2a4\ud2b8 \ucf54\ub4dc\ub97c \ub9dd\uac00\ub728\ub9ac\uc9c0 \uc54a\uc558\ub294\uc9c0 \ucca0\uc800\ud788 \uc785\uc99d(Verify)\ud558\uc2ed\uc2dc\uc624.",
       "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_PH35_FIRM_FACTORY.md",
+      "file_path": "gemini-output/audit/memory_leak_audit.md",
       "wait": false,
       "session_id": null,
       "worker": null,

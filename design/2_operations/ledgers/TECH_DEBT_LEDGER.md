@@ -17,8 +17,8 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-PERF-GETATTR-LOOP** | Performance | **getattr Bottleneck**: Tight loops (100k+) using `getattr` for config lookups. | **High**: Runtime. | **RESOLVED** |
 | **TD-FIN-MAGIC-BASE-RATE** | Finance | `FinanceSystem.issue_treasury_bonds` uses hardcoded `0.03`. | **Low**: Config. | Identified |
-| **TD-ARCH-SSOT-BYPASS** | Architecture | **Protocol Evasion**: Direct mutation bypassing `SettlementSystem`. Linked to `AUDIT-S3-2A-SSOT-BYPASS`. | **CRITICAL**: SSoT. | **ACTIVE (AUDIT)** |
-| **TD-SYS-TRANSFER-HANDLER-GAP**| Finance | **Invisible P2P**: Generic `transfer` lacks handler. Linked to `AUDIT-S3-2B-TRANSFER-GAP`. | **CRITICAL**: Integrity. | **ACTIVE (AUDIT)** |
+| **TD-ARCH-SSOT-BYPASS** | Architecture | **Protocol Evasion**: Direct mutation bypassing `SettlementSystem`. Linked to `AUDIT-S3-2A-SSOT-BYPASS`. | **CRITICAL**: SSoT. | **ACTIVE (SPEC)** |
+| **TD-SYS-TRANSFER-HANDLER-GAP**| Finance | **Invisible P2P**: Generic `transfer` lacks handler. Linked to `AUDIT-S3-2B-TRANSFER-GAP`. | **CRITICAL**: Integrity. | **ACTIVE (SPEC)** |
 | **TD-WAVE3-DTO-SWAP** | DTO | **IndustryDomain Shift**: Replace `major` with `IndustryDomain` enum. | **Medium**: Structure. | **SPECCED** |
 | **TD-WAVE3-TALENT-VEIL** | Agent | **Hidden Talent**: `EconStateDTO` missing `hidden_talent`. | **High**: Intent. | **RESOLVED** |
 | **TD-WAVE3-MATCH-REWRITE** | Market | **Bargaining vs OrderBook**: Existing LaborMarket assumes sorting. | **High**: Economy. | **RESOLVED** |
@@ -38,6 +38,8 @@
 | **TD-ARCH-PROTOCOL-EVASION** | Architecture | **[S3-1] Protocol Evasion**: `hasattr()` usage in lifecycle logic (Ref: [AUDIT_PLATFORM_DEEP.md](file:///c:/coding/economics/reports/audits/AUDIT_PLATFORM_DEEP.md)). | **Medium**: Safety. | **ACTIVE** |
 | **TD-ARCH-GOD-WORLDSTATE** | Architecture | **God Class Incursion**: `WorldState` holding service instances instead of pure data (Ref: [AUDIT_PLATFORM_DEEP.md](file:///c:/coding/economics/reports/audits/AUDIT_PLATFORM_DEEP.md)). | **High**: Purity. | **NEW** |
 | **TD-ARCH-DTO-FRAGMENTATION** | Architecture | **Loose Typing**: Event queues using `Dict/Any` instead of DTOs (Ref: [AUDIT_PLATFORM_DEEP.md](file:///c:/coding/economics/reports/audits/AUDIT_PLATFORM_DEEP.md)). | **Medium**: Type Safety. | **NEW** |
+| **TD-ECON-MASLOW-STATIC** | AI/Economy | **Maslow Static Weights**: `NeedsEngine` uses static `desire_weights` instead of dynamic suppression formula $W_{L+1}$. Blocks emergent Veblen/network effects. | **Medium**: Economy. | **NEW (ROADMAP)** |
+| **TD-ECON-SIGNALING-DRIFT** | AI/Economy | **Signaling→HumanCapital Drift**: Education modeled as direct productivity enhancement instead of labor market signal. `HRDepartment` missing Halo Effect logic. | **Medium**: Economy. | **NEW (ROADMAP)** |
 
 ---
 

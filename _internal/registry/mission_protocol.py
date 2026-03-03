@@ -61,6 +61,7 @@ WORKER_MODEL_MAP = {
     "report": "gemini-3-flash-preview",
     "verify": "gemini-3-flash-preview",
     "audit": "gemini-3-flash-preview",
+    "roadmap": "gemini-3-flash-preview",
 }
 
 DEFAULT_MODELS = {

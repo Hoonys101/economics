@@ -1,7 +1,7 @@
 import abc
 from _typeshed import Incomplete
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field as field
+from dataclasses import dataclass, field
 from enum import Enum
 from modules.common.financial.api import IFinancialAgent as IFinancialAgent
 from modules.common.financial.dtos import Claim as Claim, MoneyDTO as MoneyDTO
@@ -485,14 +485,25 @@ class ICentralBank(IMonetaryOperations, Protocol):
         Returns the Transaction if liquidity was provided, None otherwise.
         """
 
+class ISagaState(Protocol):
+    """
+    Protocol enforcing uniform saga interface.
+    """
+    saga_id: UUID
+    status: str
+    participant_ids: list[int]
+
 @dataclass(frozen=True)
-class SagaStateDTO:
+class SagaStateDTO(ISagaState):
     """Generic DTO for representing the state of a saga."""
     saga_id: UUID
     state: str
     payload: dict[str, Any]
     created_at: int
     updated_at: int
+    participant_ids: list[int] = field(default_factory=list, hash=False)
+    @property
+    def status(self) -> str: ...
 
 class IRealEstateRegistry(ABC, metaclass=abc.ABCMeta):
     """

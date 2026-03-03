@@ -269,7 +269,7 @@ def mock_ai_trainer():
     }  # Default mock return
     trainer.collect_experience = Mock()
     trainer.end_episode = Mock()
-    return mock_ai_trainer
+    return trainer
 
 
 @pytest.fixture

@@ -1,0 +1,17 @@
+
+tests/system/test_connectivity_enforcement.py::test_default_transfer_handler_m2_visibility FAILED [100%]
+
+================================== FAILURES ===================================
+_________________ test_default_transfer_handler_m2_visibility _________________
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:990: in assert_called_once_with
+    raise AssertionError(msg)
+E   AssertionError: Expected 'record_monetary_contraction' to be called once. Called 0 times.
+
+During handling of the above exception, another exception occurred:
+tests\system\test_connectivity_enforcement.py:71: in test_default_transfer_handler_m2_visibility
+    mock_ledger.record_monetary_contraction.assert_called_once_with(1000, source="loan_repayment", currency="USD")
+E   AssertionError: Expected 'record_monetary_contraction' to be called once. Called 0 times.
+=========================== short test summary info ===========================
+FAILED tests/system/test_connectivity_enforcement.py::test_default_transfer_handler_m2_visibility
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+============================== 1 failed in 5.15s ==============================

@@ -25,11 +25,14 @@ def mock_config_registry():
     mock_registry = MagicMock(spec=IConfigurationRegistry)
     # Define minimal safe defaults required for diagnosis scenarios
     mock_registry.get.return_value = None
+    mock_registry.GOODS = {'basic_food': {}}
     return mock_registry
 
 @pytest.fixture
 def mock_agent_registry():
-    return MagicMock(spec=IAgentRegistry)
+    mock_registry = MagicMock(spec=IAgentRegistry)
+    mock_registry.register_agent = MagicMock()
+    return mock_registry
 
 @pytest.fixture
 def simple_household(mock_config_registry, mock_agent_registry):

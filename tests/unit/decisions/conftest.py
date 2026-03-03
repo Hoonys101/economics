@@ -114,7 +114,6 @@ def mock_ai_engine():
     ai.decide_action_vector.return_value = FirmActionVector(sales_aggressiveness=0.5, hiring_aggressiveness=0.5, rd_aggressiveness=0.5, capital_aggressiveness=0.5, dividend_aggressiveness=0.5, debt_aggressiveness=0.5)
     return ai
 
-from modules.system.api import ICleanable
 
 @pytest.fixture
 def ai_decision_engine(firm_engine_config, mock_ai_engine):
@@ -122,8 +121,8 @@ def ai_decision_engine(firm_engine_config, mock_ai_engine):
     engine.corporate_manager.system2_planner = Mock(spec=FirmSystem2Planner)
     engine.corporate_manager.system2_planner.project_future.return_value = {}
     yield engine
-    # 1. Protocol Purity: explicit lifecycle cleanup
-    if isinstance(engine.corporate_manager, ICleanable):
+    # Lifecycle cleanup: call cleanup if available
+    if hasattr(engine.corporate_manager, 'cleanup') and callable(engine.corporate_manager.cleanup):
         engine.corporate_manager.cleanup()
 
     # 2. Prevent mock memory leak

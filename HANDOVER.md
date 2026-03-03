@@ -1,29 +1,24 @@
-# 🚀 [S3-1] Parallel Implementation Handover
-**Date**: 2026-03-02
-**Phase**: Phase 8: [S3-1] Jules Parallel Implementation
+# Session Handover - 2026-03-03
 
-## 🏆 Session Achievements
-1. **Gemini Forensic Audit (S3-1)**: Completed a deep audit of 5 critical test components, identifying `MagicMock` reference cycles, global `sys.modules` poisoning, and missing teardown hooks as the root causes of memory leaks and GC hangs.
-2. **Parallel Spec Generation**: Generated 5 specialized `MISSION_SPEC` files for targeted resolution.
-3. **S3-1 Forensic Audit Complete**: Identified root causes for MagicMock leaks and GC hangs. See [AUDIT_S3_1_MAGICMOCK_LEAKS.md](file:///c:/coding/economics/communications/insights/AUDIT_S3_1_MAGICMOCK_LEAKS.md) for details.
-4. **Mission Arming**: Successfully armed 5 parallel implementation missions in `jules_manifest.py`.
+## 🚨 CRITICAL PRIORITY: GEMINI-CLI & WORKER RECOVERY
+This session has identified severe architectural bottlenecks and instability in the Gemini tooling layer. **The next session MUST NOT proceed with feature implementation (Phase 35/36) until the following are resolved:**
 
-## 🛑 Pending Work / Next Session (START HERE)
+1. **`gemini-cli` Resource Management**: The CLI frequently hangs or errors out during large context missions. We need a reliable process heartbeat or a more robust CLI interface.
+2. **`gemini_worker.py` Logic Fix**: Resolve the `UnboundLocalError: 'context_block'` during reporting. The worker is currently failing when context injection returns empty nodes or fails to initialize properly.
+3. **Context Tier Reliability**: Ensure the pruning logic doesn't just stop but provides a stable, reduced context that the LLM can actually ingest without timing out.
 
-**1. Execute Parallel Implementation**
-Run the armed missions for Jules to resolve the leaks:
-- `.\jules-go.bat` (Batch execution)
-- Or individual: `jules-go impl-s3-1-global`, `jules-go impl-s3-1-scenarios`, etc.
+## Accomplishments (Stability Focused)
+- **Memory Hardening**: Worker RAM limit increased to **3072MB** (`WinError 1455` mitigation).
+- **Context Isolation**: Eliminated recursive directory expansion. Context injection now uses strict, non-recursive file targeting (`*.py`) to prevent 2MB+ bloat.
+- **Safety Caps**: Implemented a **256kb** hard limit on raw context and a **128kb** limit for injected context blocks.
+- **Audit Hardening**: Registered `AUDIT-S3-2A-SSOT-BYPASS` with strict detection signatures for financial integrity audits.
+- **Codebase Purity**: Reverted all partial Phase 35 implementation changes (DTOs, Ledger modifications) to ensure a stable baseline.
 
-**2. Verify GC Stability**
-After implementation, run the scenario tests to confirm the `gc.collect()` hang is resolved:
-- `pytest tests/integration/scenarios/test_scenario_runner.py`
+## Current Bottlenecks
+- `session-go.bat` is failing due to worker internal errors during handover generation.
+- High-concurrency mission execution (parallelism) is currently unsafe due to shared resource locks in the CLI.
 
-**3. Monitor Memory Usage**
-Ensure that the "Mock Pollution" fix in `conftest.py` allows previously failing tests (XFAIL) to either pass or skip cleanly with proper diagnostics.
-
-## 🗺️ Roadmap Status
-We are now entering **Phase 8 (Parallel Implementation)**. Successful resolution will unblock high-fidelity backtesting and resolve long-standing `KeyboardInterrupt` hangs during garbage collection.
-
----
-*End of session. Run `gemini-go.bat` to verify no pending missions remain and `git status` to prepare for commit.*
+## Next Steps
+1. **Tooling Restoration**: Repair `gemini_worker.py` and stabilize the local Gemini process manager.
+2. **SSoT Re-Audit**: Once stable, re-run the `S3-2A` and `S3-2B` audits with the newly hardened signatures.
+3. **Phase 35 Genesis**: Resume only after the audit platform is 100% reliable.
