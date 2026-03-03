@@ -33,3 +33,6 @@ def test_monetary_ledger_uses_pennies_source_and_returns_pennies():
     
     # Expected: 100 pennies
     assert delta == 100, f"Unit Mismatch! Expected 100 pennies, got {delta}"
+
+    # Deepcopy Explicit Ledger Clearing
+    ledger.transaction_log.clear()

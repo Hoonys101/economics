@@ -1,3 +1,4 @@
+import weakref
 import sys
 from unittest.mock import Mock, MagicMock, patch
 import pytest
@@ -62,7 +63,8 @@ import config
 from simulation.agents.government import Government
 from modules.finance.system import FinanceSystem
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
-from modules.finance.api import ISettlementSystem, IMonetaryAuthority, ILiquidityOracle
+from modules.finance.api import ISettlementSystem, IMonetaryAuthority, ILiquidityOracle, IBank
+from modules.simulation.api import IEconomicIndicatorTracker
 
 # def pytest_collect_file(file_path, parent):
 #     """Log file collection progress to help debug hangs."""
@@ -137,7 +139,7 @@ def mock_config():
 @pytest.fixture
 def mock_tracker():
     """Provides a mock economic tracker."""
-    tracker = Mock()
+    tracker = MagicMock(spec=IEconomicIndicatorTracker)
     return tracker
 
 @pytest.fixture
@@ -145,14 +147,14 @@ def mock_central_bank(mock_tracker, mock_config):
     """Provides a mock CentralBank."""
     # Using a real instance might be better if its logic is simple
     # but for now, a mock is sufficient.
-    cb = Mock()
+    cb = MagicMock(spec=IMonetaryAuthority)
     cb.get_base_rate.return_value = 0.02
     return cb
 
 @pytest.fixture
 def mock_bank():
     """Provides a mock commercial Bank."""
-    bank = Mock()
+    bank = MagicMock(spec=IBank)
     bank._assets = 5000000.0
     return bank
 
@@ -183,7 +185,7 @@ def government(mock_config, mock_tracker, finance_system):
     # Replace the real finance system with our mocked one
     gov.finance_system = finance_system
     # The FinanceSystem was created with a shell, now we link it to the real government instance
-    gov.finance_system.government = gov
+    gov.finance_system.government = weakref.proxy(gov)
 
     # Inject Mock SettlementSystem (Strict)
     # Uses ISettlementSystem to ensure Government only accesses standard methods
@@ -298,3 +300,14 @@ def golden_config():
     if loader is None:
         return None
     return loader.create_config_mock()
+
+
+def pytest_runtest_teardown(item, nextitem):
+    """Defensively clear global singleton registries across tests."""
+    try:
+        from _internal.registry.api import mission_registry
+        mission_registry._missions.clear()
+    except ImportError:
+        pass
+    import gc
+    gc.collect()
