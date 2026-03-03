@@ -5,6 +5,7 @@ from uuid import UUID
 
 from modules.system.api import AgentID, IAgentRegistry
 from modules.finance.api import SagaStateDTO
+from modules.finance.kernel.api import ISagaOrchestrator
 
 @dataclass(frozen=True)
 class OrphanedSagaDTO:
@@ -19,16 +20,6 @@ class ISagaRepository(Protocol):
     """Provides read-only access to saga states. Separates data fetching from execution."""
     def get_all_active_sagas(self) -> List[SagaStateDTO]:
         """Returns a list of all currently active (non-terminal) sagas."""
-        ...
-
-@runtime_checkable
-class ISagaOrchestrator(Protocol):
-    """Executes state transitions and commands for sagas. Owns the mutation rights."""
-    def compensate_and_fail_saga(self, saga_id: UUID, reason: str) -> None:
-        """
-        Forces a saga into a COMPENSATING or FAILED state, triggering
-        necessary rollback logic (e.g., releasing property contracts, returning escrow).
-        """
         ...
 
 @runtime_checkable

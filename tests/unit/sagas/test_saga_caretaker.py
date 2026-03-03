@@ -32,6 +32,7 @@ def test_happy_path_sweep(caretaker, mock_saga_repository, mock_saga_orchestrato
         SagaStateDTO(
             saga_id=saga_id,
             state="PENDING_INSPECTION",
+            participant_ids=[1, 2],
             payload={"buyer_id": 1, "seller_id": 2},
             created_at=0,
             updated_at=0
@@ -56,7 +57,8 @@ def test_happy_path_sweep(caretaker, mock_saga_repository, mock_saga_orchestrato
 
     mock_saga_orchestrator.compensate_and_fail_saga.assert_called_once_with(
         saga_id,
-        "Participant(s) Dead: [2]"
+        "Participant(s) Dead: [2]",
+        1
     )
 
 def test_idempotency_ignores_already_failed_sagas(caretaker, mock_saga_repository, mock_saga_orchestrator, mock_agent_registry):
@@ -69,6 +71,7 @@ def test_idempotency_ignores_already_failed_sagas(caretaker, mock_saga_repositor
         SagaStateDTO(
             saga_id=saga_id_failed,
             state="FAILED",
+            participant_ids=[1, 2],
             payload={"buyer_id": 1, "seller_id": 2},
             created_at=0,
             updated_at=0
@@ -76,6 +79,7 @@ def test_idempotency_ignores_already_failed_sagas(caretaker, mock_saga_repositor
         SagaStateDTO(
             saga_id=saga_id_compensating,
             state="COMPENSATING",
+            participant_ids=[3, 4],
             payload={"buyer_id": 3, "seller_id": 4},
             created_at=0,
             updated_at=0
@@ -98,6 +102,7 @@ def test_error_isolation(caretaker, mock_saga_repository, mock_saga_orchestrator
         SagaStateDTO(
             saga_id=saga_id_error,
             state="PENDING",
+            participant_ids=[1, 2],
             payload={"buyer_id": 1, "seller_id": 2},
             created_at=0,
             updated_at=0
@@ -105,6 +110,7 @@ def test_error_isolation(caretaker, mock_saga_repository, mock_saga_orchestrator
         SagaStateDTO(
             saga_id=saga_id_success,
             state="PENDING",
+            participant_ids=[3, 4],
             payload={"buyer_id": 3, "seller_id": 4},
             created_at=0,
             updated_at=0

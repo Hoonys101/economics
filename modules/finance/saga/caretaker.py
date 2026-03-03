@@ -20,46 +20,16 @@ class SagaCaretaker:
         self._saga_orchestrator = saga_orchestrator
         self._agent_registry = agent_registry
 
-    def _extract_participant_ids(self, saga: SagaStateDTO) -> List[AgentID]:
-        """
-        Extracts participant IDs from the unstructured payload dictionary.
-        Supports both generic transaction roles (buyer_id, seller_id)
-        and other potential legacy keys.
-        """
-        participants = set()
-
-        if not saga.payload:
-            return []
-
-        # Direct explicit key
-        if "participant_ids" in saga.payload and isinstance(saga.payload["participant_ids"], list):
-            for pid in saga.payload["participant_ids"]:
-                participants.add(AgentID(int(pid)))
-
-        # Housing specific roles
-        if "buyer_id" in saga.payload:
-            participants.add(AgentID(int(saga.payload["buyer_id"])))
-        if "seller_id" in saga.payload:
-            participants.add(AgentID(int(saga.payload["seller_id"])))
-
-        # Bond/Financial roles
-        if "issuer_id" in saga.payload:
-            participants.add(AgentID(int(saga.payload["issuer_id"])))
-        if "investor_id" in saga.payload:
-            participants.add(AgentID(int(saga.payload["investor_id"])))
-
-        return list(participants)
-
     def sweep_orphaned_sagas(self, current_tick: int) -> List[OrphanedSagaDTO]:
         purged_sagas: List[OrphanedSagaDTO] = []
 
         active_sagas = self._saga_repository.get_all_active_sagas()
 
         for saga in active_sagas:
-            if saga.state in ("FAILED", "COMPLETED", "COMPENSATING", "COMPENSATED"):
+            if getattr(saga, "state", getattr(saga, "status", None)) in ("FAILED", "COMPLETED", "COMPENSATING", "COMPENSATED", "FAILED_ROLLED_BACK", "CANCELLED"):
                 continue
 
-            participant_ids = self._extract_participant_ids(saga)
+            participant_ids = getattr(saga, "participant_ids", [])
             if not participant_ids:
                 logger.warning(f"SagaCaretaker: Could not extract participant IDs for saga {saga.saga_id}.")
                 continue
@@ -72,7 +42,7 @@ class SagaCaretaker:
             if dead_agents:
                 try:
                     reason = f"Participant(s) Dead: {dead_agents}"
-                    self._saga_orchestrator.compensate_and_fail_saga(saga.saga_id, reason)
+                    self._saga_orchestrator.compensate_and_fail_saga(saga.saga_id, reason, current_tick)
 
                     orphaned_dto = OrphanedSagaDTO(
                         saga_id=saga.saga_id,

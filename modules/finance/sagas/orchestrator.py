@@ -210,7 +210,7 @@ class SagaOrchestrator(ISagaOrchestrator):
                 continue
 
 
-    def compensate_and_fail_saga(self, saga_id: UUID, reason: str) -> None:
+    def compensate_and_fail_saga(self, saga_id: UUID, reason: str, current_tick: int) -> None:
         """
         Forces a saga into a FAILED_ROLLED_BACK state, triggering
         necessary rollback logic.
@@ -234,18 +234,21 @@ class SagaOrchestrator(ISagaOrchestrator):
             government=self.government,
             monetary_ledger=self.monetary_ledger,
             agent_registry=self.agent_registry,
-            current_tick=0 # Tick is not strictly needed for compensate
+            current_tick=current_tick
         )
 
         logger.info(f"SAGA_COMPENSATE | Compensating Saga {saga_id}. Reason: {reason}")
 
         try:
             handler.compensate_step(saga)
+            saga.status = "FAILED_ROLLED_BACK"
         except Exception as e:
             logger.error(f"SAGA_COMPENSATE_ERROR | Failed to compensate Saga {saga_id}: {e}")
-            raise
-
-        del self.active_sagas[saga_id]
+            saga.status = "FAILED_ROLLED_BACK_ERROR"
+            raise e
+        finally:
+            if saga_id in self.active_sagas:
+                del self.active_sagas[saga_id]
 
     def get_active_sagas(self) -> Dict[UUID, HousingTransactionSagaStateDTO]:
         return self.active_sagas

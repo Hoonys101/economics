@@ -742,6 +742,7 @@ class SagaStateDTO:
     """Generic DTO for representing the state of a saga."""
     saga_id: UUID
     state: str
+    participant_ids: List[int]
     payload: Dict[str, Any]
     created_at: int
     updated_at: int

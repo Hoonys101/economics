@@ -33,7 +33,7 @@ class ISagaOrchestrator(Protocol):
         ...
 
 
-    def compensate_and_fail_saga(self, saga_id: UUID, reason: str) -> None:
+    def compensate_and_fail_saga(self, saga_id: UUID, reason: str, current_tick: int) -> None:
         """
         Forces a saga into a COMPENSATING or FAILED state, triggering
         necessary rollback logic.

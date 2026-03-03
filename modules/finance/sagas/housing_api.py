@@ -47,6 +47,15 @@ class HousingTransactionSagaStateDTO:
     buyer_context: HouseholdSnapshotDTO
     seller_context: HousingSagaAgentContext
     property_id: int
+
+    @property
+    def participant_ids(self) -> List[int]:
+        ids = []
+        if self.buyer_context and self.buyer_context.household_id:
+            ids.append(int(self.buyer_context.household_id))
+        if self.seller_context and self.seller_context.id is not None:
+            ids.append(int(self.seller_context.id))
+        return ids
     offer_price: float
     down_payment_amount: float
 
