@@ -1,0 +1,77 @@
+# MISSION_REPORT: IMPL-PH36-A-ACCOUNTING
+## Phase 36 - Financial Integrity & SSoT Hardening (Accounting)
+
+### 1. Architectural Insights
+- **Dual Aggregation (TD-FIN-NEGATIVE-M2)**: We implemented the requested separation of gross assets (M2) and gross liabilities (System Debt).
+    - `MonetaryLedger.calculate_total_money` now sums max(0, balance) for M2 and abs(min(0, balance)) for system debt.
+    - `SettlementSystem.get_total_m2_pennies` has been updated identically, which removes debt offsets that artificially suppressed the M2 reporting.
+- **Unified Transfer Dispatch (TD-SYS-TRANSFER-HANDLER-GAP)**:
+    - Added `TransactionType` pre-lookup before executing a `SettlementSystem.transfer()`.
+    - Adapted legacy transaction handlers to `ITransferHandler` instances (e.g., `GenericTransferHandler`), allowing us to enforce specialized processing for distinct `TransactionType` events.
+    - Added explicitly specialized handlers (`WageHandler`, `TaxHandler`, `BailoutHandler`, `DividendHandler`) to the system.
+- **SSoT Enforced Lock (TD-ARCH-SSOT-BYPASS)**:
+    - Implemented a `FinancialSentry.unlocked()` context manager. We placed this in the core `Wallet.add` and `Wallet.subtract` methods (and in tests/factories) to throw a `SystemicIntegrityError` upon any direct modification. Agents like `Firm` and `Household` are now prevented from modifying cash pools outside the boundaries of the `SettlementSystem` SSoT.
+- **DTO Circular References**: Disentangled an extensive web of circular imports by strictly isolating `MoneySupplyDTO`, `LienDTO`, `BorrowerProfileDTO`, `PortfolioDTO`, `BondDTO`, etc., into `modules/finance/dtos.py` instead of the monolithic `api.py`.
+
+### 2. Regression Analysis
+- Legacy tests that instantiated agent state directly experienced `SystemicIntegrityError` due to the new SSoT locks in `Wallet`.
+    - **Fix**: Wrapped legacy state-setup logic in `simulation/factories/golden_agents.py` with `FinancialSentry.unlocked()` to ensure tests could setup correctly while blocking agent execution time bypasses.
+- Circular Import Errors (`tests/unit/test_m2_integrity_new.py`) blocked verification for the ledger adjustments.
+    - **Fix**: Decoupled `api.py` dependency references and moved DTO definitions (`MoneySupplyDTO`, `PortfolioDTO`, etc.) to pure DTO modules. Refactored the `TYPE_CHECKING` blocks. This touched over 15 different files and modules that relied on the monolith API import strategy.
+
+### 3. Test Evidence
+Test verification script successfully loads modules without circular import errors, confirming SSoT enforcement for negative assets (tests/unit/test_m2_integrity_new.py):
+
+```
+tests/unit/test_m2_integrity_new.py::TestM2IntegrityNew::test_get_total_m2_delegates_to_settlement
+PASSED                                                                   [ 33%]
+tests/unit/test_m2_integrity_new.py::TestM2IntegrityNew::test_record_monetary_contraction
+PASSED                                                                   [ 66%]
+tests/unit/test_m2_integrity_new.py::TestM2IntegrityNew::test_record_monetary_expansion
+PASSED                                                                   [100%]
+
+============================== 3 passed in 3.09s ===============================
+```
+
+A manual test of the lock implementation (`test_sentry_guard()`) outputs:
+```
+Sentry effectively blocked direct mutation.
+```
+
+Subsequent suite testing of the `tests/unit/finance/` dir verified the SSoT sentries and DTOs did not regress any existing financial mechanics (`tests/unit/finance/test_settlement_system_overdraft.py`, `tests/unit/finance/test_bank_service_interface.py`, etc.):
+
+```
+tests/unit/finance/test_settlement_system_overdraft.py::TestSettlementSystemOverdraft::test_normal_agent_cannot_overdraft
+PASSED                                                                   [ 50%]
+tests/unit/finance/test_settlement_system_overdraft.py::TestSettlementSystemOverdraft::test_system_agent_can_overdraft
+PASSED                                                                   [100%]
+
+============================== 2 passed in 4.21s ===============================
+```
+
+```
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_bank_methods_presence
+PASSED                                                                   [ 16%]
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_grant_loan
+PASSED                                                                   [ 33%]
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_repay_loan
+PASSED                                                                   [ 50%]
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_balance
+PASSED                                                                   [ 66%]
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_debt_status
+PASSED                                                                   [ 83%]
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_interface_compliance_mypy
+PASSED                                                                   [100%]
+
+============================== 6 passed in 5.21s ===============================
+```
+
+```
+tests/unit/finance/test_utils.py::test_round_to_pennies_basic PASSED                                                                   [ 89%]
+tests/unit/finance/test_utils.py::test_round_to_pennies_decimal PASSED                                                                   [ 91%]
+tests/unit/finance/test_utils.py::test_round_to_pennies_int PASSED                                                                   [ 94%]
+tests/unit/finance/test_utils.py::test_round_to_pennies_large PASSED                                                                   [ 97%]
+tests/unit/finance/test_utils.py::test_round_to_pennies_negative PASSED                                                                   [100%]
+
+============================= 37 passed in 21.87s ==============================
+```
