@@ -156,11 +156,15 @@ class TransactionProcessor(SystemInterface):
         for tx in tx_list:
             # 0. Skip Executed Transactions (TD-160: Atomic Inheritance & WO-IMPL-LEDGER-HARDENING: Receipt Log)
             # Safeguard: Do not re-process transactions that are purely for audit/ledger visibility.
-            if (
-                hasattr(tx, "metadata")
-                and tx.metadata
-                and tx.metadata.get("executed", False)
-            ):
+            is_executed = False
+            if hasattr(tx, "metadata") and tx.metadata:
+                if hasattr(tx.metadata, "original_metadata") and tx.metadata.original_metadata:
+                    is_executed = tx.metadata.original_metadata.get("executed", False)
+                elif hasattr(tx.metadata, "get"):
+                    is_executed = tx.metadata.get("executed", False)
+            if is_executed:
+
+
                 continue
 
             # 1. Special Routing: Public Manager (Seller)

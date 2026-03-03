@@ -80,10 +80,10 @@ class InfrastructureManager:
                 market_id="system",
                 transaction_type="infrastructure_spending",
                 time=current_tick,
-                metadata={
+                metadata=TransactionMetadataDTO(original_metadata={
                     "triggers_effect": "GOVERNMENT_INFRA_UPGRADE" if h == active_households[0] else None,
                     "is_public_works": True
-                },
+                }),
                 total_pennies=amount_per_hh_pennies
             )
             transactions.append(tx)

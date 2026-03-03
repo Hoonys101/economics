@@ -249,8 +249,10 @@ def test_money_creation_metadata_executed():
 
     cb_agent = TrueCB(ID_CENTRAL_BANK, 0)
 
+    settlement_system.register_account(cb_agent.id, cb_agent.id)
+    settlement_system.register_account(1, receiver.id)
     tx = settlement_system.create_and_transfer(cb_agent, receiver, 100, "Minting", 0)
 
     assert tx is not None
     assert tx.metadata is not None
-    assert tx.metadata.get("executed") is True, "Metadata should contain 'executed': True for money_creation"
+    assert tx.metadata.original_metadata.get("executed") is True, "Metadata should contain 'executed': True for money_creation"

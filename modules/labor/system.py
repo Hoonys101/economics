@@ -1,4 +1,5 @@
 from __future__ import annotations
+from modules.system.api import TransactionMetadataDTO
 from typing import List, Dict, Any, Optional
 import logging
 from modules.labor.api import ILaborMarket, JobOfferDTO, JobSeekerDTO, LaborMarketMatchResultDTO, LaborConfigDTO
@@ -232,13 +233,13 @@ class LaborMarket(ILaborMarket, IMarket):
                 transaction_type="HIRE",
                 time=current_time,
                 total_pennies=res.matched_wage_pennies,
-                metadata={
+                metadata=TransactionMetadataDTO(original_metadata={
                     "match_score": res.match_score,
                     "major_compatibility": res.major_compatibility,
                     "base_wage": float(res.base_wage_pennies) / 100.0,
                     "surplus": float(res.surplus_pennies) / 100.0,
                     "bargaining_power": res.bargaining_power
-                }
+                })
             )
             transactions.append(tx)
 

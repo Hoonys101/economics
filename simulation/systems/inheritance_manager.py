@@ -1,3 +1,4 @@
+from modules.system.api import TransactionMetadataDTO
 import logging
 from typing import Optional, Dict, List, Any, TYPE_CHECKING
 from simulation.models import Order, Transaction
@@ -148,7 +149,7 @@ class InheritanceManager:
                         market_id="stock_market",
                         transaction_type="asset_liquidation",
                         time=current_tick,
-                        metadata={"executed": False}
+                        metadata=TransactionMetadataDTO(original_metadata={"executed": False})
                     )
 
                     results = simulation.transaction_processor.execute(simulation, [tx])
@@ -184,7 +185,7 @@ class InheritanceManager:
                         market_id="real_estate_market",
                         transaction_type="asset_liquidation",
                         time=current_tick,
-                        metadata={"executed": False}
+                        metadata=TransactionMetadataDTO(original_metadata={"executed": False})
                     )
 
                     results = simulation.transaction_processor.execute(simulation, [tx])
@@ -264,7 +265,7 @@ class InheritanceManager:
                         market_id="real_estate_market",
                         transaction_type="asset_transfer",
                         time=current_tick,
-                        metadata={"executed": False}
+                        metadata=TransactionMetadataDTO(original_metadata={"executed": False})
                      )
 
                  results = simulation.transaction_processor.execute(simulation, [tx])
@@ -286,7 +287,7 @@ class InheritanceManager:
                     market_id="system",
                     transaction_type="inheritance_distribution",
                     time=current_tick,
-                    metadata={"heir_ids": [h.id for h in heirs]}
+                    metadata=TransactionMetadataDTO(original_metadata={"heir_ids": [h.id for h in heirs]})
                 )
                 results = simulation.transaction_processor.execute(simulation, [tx])
                 if results and results[0].success:
@@ -307,7 +308,7 @@ class InheritanceManager:
                         market_id="real_estate_market",
                         transaction_type="asset_transfer",
                         time=current_tick,
-                        metadata={"executed": False}
+                        metadata=TransactionMetadataDTO(original_metadata={"executed": False})
                      )
 
                 results = simulation.transaction_processor.execute(simulation, [tx])

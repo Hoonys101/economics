@@ -55,8 +55,8 @@ class TestMonetaryExpansionWarning(unittest.TestCase):
         self.assertEqual(tx.transaction_type, "monetary_expansion")
 
         # Verify metadata
-        self.assertTrue(tx.metadata.get("executed"))
-        self.assertTrue(tx.metadata.get("is_audit"))
+        self.assertTrue(tx.metadata.original_metadata.get("executed"))
+        self.assertTrue(tx.metadata.original_metadata.get("is_audit"))
 
         # 2. Execute via Processor
         # We expect NO warning now

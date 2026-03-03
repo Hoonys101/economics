@@ -1,4 +1,5 @@
 from __future__ import annotations
+from modules.system.api import TransactionMetadataDTO
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
 import logging
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
@@ -200,10 +201,10 @@ class HREngine(IHREngine, IHRDepartment):
                 price_pennies=offered_wage,
                 price_limit=float(offered_wage)/100.0,
                 market_id='labor',
-                metadata={
+                metadata=TransactionMetadataDTO(original_metadata={
                     'major': context.specialization,
-                    'required_education': 0 # Dynamic logic can be added here
-                }
+                    'required_education': 0
+                })
             ))
 
         return HRDecisionOutputDTO(
@@ -314,7 +315,6 @@ class HREngine(IHREngine, IHRDepartment):
                     priority=PaymentPriority.WAGE,
                     recipient_id=employee.id,
                     description=f"Wage for {employee.id}",
-                    metadata={'type': 'wage', 'employee_id': employee.id}
                 ))
                 total_wages += net_wage
 
@@ -326,7 +326,6 @@ class HREngine(IHREngine, IHRDepartment):
                     priority=PaymentPriority.TAX, # Tax is higher priority than Wage? Or same? Spec says Tax=1, Wage=2.
                     recipient_id=context.tax_policy.government_agent_id,
                     description=f"Income Tax for {employee.id}",
-                    metadata={'type': 'income_tax', 'employee_id': employee.id}
                 ))
                 total_wages += income_tax
 

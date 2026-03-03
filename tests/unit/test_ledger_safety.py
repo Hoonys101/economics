@@ -82,7 +82,7 @@ class TestLedgerSafety(unittest.TestCase):
 
         # Assertions
         # 1. Settlement Transfer Called (Wallet Update)
-        context.settlement_system.transfer.assert_called_with(buyer, seller, 5000, "loan_interest")
+        context.settlement_system.process_transfer.assert_called_with(tx, buyer, seller, context.time)
 
         # 2. Ledger DTO NOT touched
         # We assume Handler is unaware of DTO structure.

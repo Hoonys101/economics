@@ -238,7 +238,7 @@ def create_household(
         household._deposit(assets_pennies, DEFAULT_CURRENCY)
 
     if registry is not None:
-        registry.register_agent(household)
+        registry.register(household)
 
     return household
 
@@ -289,7 +289,7 @@ def create_firm(
     )
 
     if registry is not None:
-        registry.register_agent(firm)
+        registry.register(firm)
 
     # 3. Asset Injection Hook (Test-specific override)
     # Legacy tests expect 'assets' to be explicitly set, bypassing Bootstrapper logic

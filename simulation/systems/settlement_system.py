@@ -1,3 +1,4 @@
+from modules.system.api import TransactionMetadataDTO
 from typing import Optional, Dict, Any, cast, TYPE_CHECKING, Tuple, List, Set
 import logging
 from uuid import UUID
@@ -724,11 +725,11 @@ class SettlementSystem(IMonetaryAuthority):
             market_id="fx_market",
             transaction_type="FX_SWAP",
             time=match.match_tick,
-            metadata={
+            metadata=TransactionMetadataDTO(original_metadata={
                 "swap_leg_2_amount": match.amount_b_pennies,
                 "swap_leg_2_currency": match.currency_b,
                 "rate": match.rate_a_to_b
-            }
+            })
         )
 
     @enforce_purity()
@@ -975,11 +976,13 @@ class SettlementSystem(IMonetaryAuthority):
         if buyer_id is None or seller_id is None:
              return None
 
-        metadata = {"memo": memo}
+        original = {"memo": memo}
 
         # WO-IMPL-FINANCIAL-INTEGRITY-FIX: Mark creation/destruction as executed
         if transaction_type in ["money_creation", "money_destruction"]:
-            metadata["executed"] = True
+            original["executed"] = True
+
+        metadata = TransactionMetadataDTO(original_metadata=original)
 
         return Transaction(
             buyer_id=buyer_id,

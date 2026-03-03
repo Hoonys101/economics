@@ -149,7 +149,7 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
     # Since seller is MagicMock, hasattr(seller, 'remove_property') is True, so it calls it.
     seller.remove_property.assert_called_with(101)
 
-    assert tx.metadata["mortgage_id"] == "loan_123"
+    assert tx.metadata.original_metadata["mortgage_id"] == "loan_123"
 
 def test_housing_transaction_insufficient_down_payment(handler, context, buyer, seller, unit, escrow_agent):
     context.real_estate_units = [unit]

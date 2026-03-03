@@ -178,17 +178,26 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             self._apply_housing_effects(unit, buyer, seller, loan_id, loan_amount, lender_id, context)
 
             if loan_id:
-                if not tx.metadata: tx.metadata = {}
-                tx.metadata["mortgage_id"] = loan_id
-                tx.metadata["loan_principal"] = loan_amount
-                tx.metadata["lender_id"] = lender_id
+                from modules.system.api import TransactionMetadataDTO
+
+                original = {}
+                if tx.metadata and hasattr(tx.metadata, "original_metadata") and tx.metadata.original_metadata:
+                    original = tx.metadata.original_metadata.copy()
+                elif isinstance(tx.metadata, dict):
+                    original = tx.metadata.copy()
+
+                original["mortgage_id"] = loan_id
+                original["loan_principal"] = loan_amount
+                original["lender_id"] = lender_id
+
+                tx.metadata = TransactionMetadataDTO(original_metadata=original)
 
             logger.info(f"HOUSING | Success: Unit {unit.id} sold to {buyer.id}. Price: {sale_price}")
             return True
 
         except Exception as e:
             logger.error(f"HOUSING | Unexpected error: {e}", exc_info=True)
-            return False
+            raise
 
     def _build_context(self, state: Any) -> HousingTransactionContextDTO:
         """Adapts SimulationState or TransactionContext to DTO."""
@@ -248,7 +257,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                              loan_amount: int, lender_id: int, context: HousingTransactionContextDTO):
         unit_id = unit.id
         unit.owner_id = buyer.id
-        unit.liens = [lien for lien in unit.liens if lien['lien_type'] != 'MORTGAGE']
+        unit.liens = [lien for lien in unit.liens if getattr(lien, 'lien_type', None) != 'MORTGAGE']
 
         if mortgage_id:
              new_lien = LienDTO(

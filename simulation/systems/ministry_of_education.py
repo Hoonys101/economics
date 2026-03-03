@@ -1,3 +1,4 @@
+from modules.system.api import TransactionMetadataDTO
 import logging
 import random
 from typing import List, Any, Optional, TYPE_CHECKING, Dict
@@ -72,10 +73,10 @@ class MinistryOfEducation:
                         market_id="system",
                         transaction_type="education_spending",
                         time=current_tick,
-                        metadata={
+                        metadata=TransactionMetadataDTO(original_metadata={
                             "triggers_effect": "EDUCATION_UPGRADE",
                             "target_agent_id": agent.id
-                        }
+                        })
                     , total_pennies=int(cost * 1.0 * 100))
                     transactions.append(tx)
                     edu_budget -= cost
@@ -100,10 +101,10 @@ class MinistryOfEducation:
                             market_id="system",
                             transaction_type="education_spending",
                             time=current_tick,
-                            metadata={
+                            metadata=TransactionMetadataDTO(original_metadata={
                                 "triggers_effect": "EDUCATION_UPGRADE",
                                 "target_agent_id": agent.id
-                            }
+                            })
                         , total_pennies=int(subsidy * 1.0 * 100))
                         # 2. Student Share Tx (Student -> Teacher)
                         tx_student = Transaction(

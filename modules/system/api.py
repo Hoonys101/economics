@@ -14,6 +14,16 @@ CurrencyCode = str
 DEFAULT_CURRENCY: CurrencyCode = "USD"
 AgentID = int
 
+@dataclass(frozen=True)
+class TransactionMetadataDTO:
+    """
+    Replaces raw dict `metadata` in Transactions to enforce DTO Purity.
+    Ensures genesis transfers are strictly trackable.
+    """
+    is_genesis: bool = False
+    memo: Optional[str] = None
+    original_metadata: Optional[Dict[str, Any]] = None  # Fallback for unmigrated fields
+
 @runtime_checkable
 class IAgent(Protocol):
     id: AgentID
