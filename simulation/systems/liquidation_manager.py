@@ -172,7 +172,7 @@ class LiquidationManager:
                                 transaction_type="liquidation_dividend",
                                 time=state.time,
                                 total_pennies=int(distribution),
-                                metadata={'executed': True}
+                                metadata=TransactionMetadataDTO(original_metadata={'executed': True})
                             )
                             state.transactions.append(tx)
 
@@ -209,7 +209,7 @@ class LiquidationManager:
                     transaction_type="liquidation",
                     time=state.time,
                     total_pennies=amount_pennies,
-                    metadata={'executed': True, 'claim_tier': getattr(claim, 'tier', None)}
+                    metadata=TransactionMetadataDTO(original_metadata={'executed': True, 'claim_tier': getattr(claim, 'tier', None)})
                 )
                 state.transactions.append(tx)
 
