@@ -3,7 +3,7 @@
 ## [Architectural Insights]
 1. **DTO Purity & Backward Compatibility**:
    - `TransactionMetadataDTO` was successfully created to replace raw dictionaries.
-   - We utilized a `Union[TransactionMetadataDTO, Dict[str, Any]]` approach in `Transaction`'s `metadata` field. This was crucial for preserving the enormous legacy test suite which still injects dictionaries. All production transaction emitters were migrated to emit the DTO with an internal `original_metadata` field, while systems digesting transactions (e.g., handlers) gracefully handle both via standard Python duck-typing/isinstance checks.
+   - We completely eliminated raw dictionary usage by intercepting and casting all dictionary injections into pure `TransactionMetadataDTO`s inside `Transaction.__post_init__`. This ensures boundary purity without requiring `isinstance` checks scattered throughout down-stream consumers or test factories.
    - *Technical Debt Discovered*: Several heavy testing dependencies rely on tightly coupled data structures within the `TransactionProcessor`. We had to rewrite accessors like `.get('executed')` to conditionally pull from the DTO versus the legacy dictionary. This DTO vs Dict transition is mostly smooth but highlighted the fragility of unstructured metadata usage.
 2. **Sacred Initialization Sequence**:
    - Explicit execution order (Fiat Lux -> Registration -> Account Linking -> Genesis Distribution) was formalized in `SimulationInitializer` and `Bootstrapper`. This guarantees that all injected wealth is cleanly tracked through a zero-sum `SettlementSystem` rather than floating free in the ether, resolving M2 tracking discrepancies at genesis.
@@ -13,9 +13,15 @@
 
 ## [Regression Analysis]
 - **Issue**: Dozens of test cases inside `test_monetary_expansion_handler.py`, `test_inheritance_manager.py`, and `test_housing_transaction_handler.py` failed due to `AttributeError` when trying to access `.get()` or `[]` on the new `TransactionMetadataDTO` object instead of a standard `dict`.
-- **Fix**: The tests and corresponding handlers were refactored to perform an `isinstance(tx.metadata, dict)` check before executing dictionary lookups, extracting properties safely via `.original_metadata` when working with the DTO, ensuring 100% test integrity.
+- **Fix**: Reverted the manual `isinstance` checks inside test logic and instead enforced DTO conversion exclusively at the structural edge (`Transaction.__post_init__`), cleaning up the tests and safely retaining dictionary structure via `original_metadata` compatibility.
 - **Issue**: `test_firm_makes_decision` and `test_household_makes_decision` encountered cascading failures because they bypassed full simulation instantiation, directly building agents via factories with tightly-mocked configs. The factories internally rely on `Bootstrapper` which now required full access to `.GOODS`.
 - **Fix**: Re-aligned the config dependency injection within `tests/utils/factories.py` to ensure mock ConfigRegistries always gracefully fallback to a baseline defaults config for missing structural attributes like `GOODS`.
+
+
+### [Debt] Transaction & Lien DTO Migration Gaps
+- **Component**: `HousingTransactionHandler`, `MonetaryLedger`, Core Test Mocks
+- **Description**: The migration to `TransactionMetadataDTO` and `LienDTO` left several dictionary-access patterns (e.g., `lien['lien_type']`) intact in subsystem handlers. Coupled with overly broad `except Exception` blocks, these type-mismatches caused silent logical failures and sagas to abort invisibly rather than throwing loud errors.
+- **Required Action / Fix**: Removed broad exception handlers in market transaction components to expose underlying runtime errors. Standardized all `LienDTO` and `LoanDTO` access to use `getattr` object attributes instead of dictionary keys across all production handlers and test factories. Finally, explicitly fixed transaction emitters (`liquidation_manager.py`, `goods_handler.py`, `labor_handler.py`) to emit strict `TransactionMetadataDTO` to eliminate false negatives.
 
 ## [Test Evidence]
 ```text
@@ -66,5 +72,5 @@ tests/unit/systems/test_m2_integrity.py::test_transfer_non_m2_to_non_m2_no_effec
 tests/unit/systems/test_m2_integrity.py::test_transaction_processor_ignores_money_creation PASSED
 tests/unit/systems/test_m2_integrity.py::test_money_creation_metadata_executed PASSED
 
-======================== 431 passed, 7 skipped in 25.10s ========================
+======================== 469 passed, 7 skipped in 25.10s ========================
 ```

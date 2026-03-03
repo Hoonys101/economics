@@ -197,7 +197,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
 
         except Exception as e:
             logger.error(f"HOUSING | Unexpected error: {e}", exc_info=True)
-            return False
+            raise
 
     def _build_context(self, state: Any) -> HousingTransactionContextDTO:
         """Adapts SimulationState or TransactionContext to DTO."""
@@ -257,7 +257,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                              loan_amount: int, lender_id: int, context: HousingTransactionContextDTO):
         unit_id = unit.id
         unit.owner_id = buyer.id
-        unit.liens = [lien for lien in unit.liens if lien['lien_type'] != 'MORTGAGE']
+        unit.liens = [lien for lien in unit.liens if getattr(lien, 'lien_type', None) != 'MORTGAGE']
 
         if mortgage_id:
              new_lien = LienDTO(
