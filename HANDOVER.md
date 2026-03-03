@@ -13,6 +13,7 @@ This session has identified severe architectural bottlenecks and instability in 
 - **Safety Caps**: Implemented a **256kb** hard limit on raw context and a **128kb** limit for injected context blocks.
 - **Audit Hardening**: Registered `AUDIT-S3-2A-SSOT-BYPASS` with strict detection signatures for financial integrity audits.
 - **Codebase Purity**: Reverted all partial Phase 35 implementation changes (DTOs, Ledger modifications) to ensure a stable baseline.
+- **Test GC Leak Identification**: Diagnosed severe GC (Garbage Collection) pauses and test suite slowdowns (tens of seconds per step) as a `MagicMock` explosion/reference leak. Created technical debt item `TD-TEST-GC-MOCK-EXPLOSION` and armed Gemini with mission `WO-HYPOTHESIS-5-GC-MOCK-LEAK` to fix standard test fixtures.
 
 ## Current Bottlenecks
 - `session-go.bat` is failing due to worker internal errors during handover generation.

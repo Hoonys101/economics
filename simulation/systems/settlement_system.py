@@ -246,84 +246,75 @@ class SettlementSystem(IMonetaryAuthority):
 
     def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         """
-        Calculates total M2 = Sum(balances of Household + Firm + Government + Estate Registry agents).
-        Strictly excludes ID_SYSTEM, ID_CENTRAL_BANK, ID_ESCROW, ID_PUBLIC_MANAGER, and any agent implementing IBank.
-        Ensures agents are not counted twice (e.g. if in both registries).
+        Calculates total M2 = Sum(max(0, balance) of non-system agents).
+        Assets only. strictly excludes debt/overdrafts from the M2 total.
         """
-        total_m2 = 0
+        assets, _ = self._aggregate_system_balances(currency)
+        return assets
+
+    def get_total_system_debt_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """
+        Calculates Total System Debt = Sum(abs(min(0, balance)) of non-system agents).
+        Liabilities only.
+        """
+        _, debt = self._aggregate_system_balances(currency)
+        return debt
+
+    def _aggregate_system_balances(self, currency: CurrencyCode) -> Tuple[int, int]:
+        """
+        Internal helper to aggregate both assets and debt in a single pass over registries.
+        Returns (total_assets, total_debt).
+        """
+        total_assets = 0
+        total_debt = 0
         processed_ids = set()
         processed_wallets = set()
 
-        # System Agents to Exclude
-        # Use a set with both raw and string representations to avoid casting in the tight loop
-        excluded_ids = set()
-        for uid in NON_M2_SYSTEM_AGENT_IDS:
-            excluded_ids.add(uid)
-
+        excluded_ids = set(NON_M2_SYSTEM_AGENT_IDS)
         if self.bank:
-             excluded_ids.add(self.bank.id)
+            excluded_ids.add(self.bank.id)
 
-        def process_agent_balance(agent: Any) -> int:
-            if not agent: return 0
-
-            # 0. Deduplication (Agent ID)
-            if agent.id in processed_ids:
-                return 0
+        def process_agent(agent: Any) -> Tuple[int, int]:
+            if not agent or agent.id in processed_ids or agent.id in excluded_ids:
+                return 0, 0
             processed_ids.add(agent.id)
 
-            # 0. ID Check (PRIORITY: Do not poison shared wallets with system exclusions)
-            if agent.id in excluded_ids:
-                return 0
-
-            # 0.1 Deduplication (Shared Wallet Identity)
-            # Fixes M2 Double Counting when spouses share a wallet object
             if hasattr(agent, "_econ_state") and hasattr(agent._econ_state, "wallet"):
-                # Use object identity (memory address) to detect shared instances
                 wallet_id = id(agent._econ_state.wallet)
                 if wallet_id in processed_wallets:
-                    # self.logger.debug(f"M2_CALC | Deduplicated Shared Wallet {wallet_id} for Agent {agent.id}")
-                    return 0
+                    return 0, 0
                 processed_wallets.add(wallet_id)
 
-            # 2. Type Check (Exclude Banks - Reserves are M0)
             if isinstance(agent, IBank):
-                # self.logger.debug(f"M2_CALC | Excluded Bank by Type: {agent.id}")
-                return 0
+                return 0, 0
 
-            # 3. Get Balance
             balance = 0
-            # Prefer IFinancialEntity for direct access
             if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
                 balance = agent.balance_pennies
-            # Fallback to IFinancialAgent
             elif isinstance(agent, IFinancialAgent):
                 balance = agent.get_balance(currency)
-            # Fallback to ICurrencyHolder
             elif isinstance(agent, ICurrencyHolder):
-                 balance = agent.get_assets_by_currency().get(currency, 0)
+                balance = agent.get_assets_by_currency().get(currency, 0)
 
-            # Debug high balances or specific tick
-            if balance > 10000000:
-                 wallet_id = "N/A"
-                 if hasattr(agent, "_econ_state") and hasattr(agent._econ_state, "wallet"):
-                     wallet_id = id(agent._econ_state.wallet)
+            if balance > 0:
+                return balance, 0
+            elif balance < 0:
+                return 0, abs(balance)
+            return 0, 0
 
-                 self.logger.info(f"M2_AUDIT | Agent {agent.id} | Balance: {balance} | Active: {getattr(agent, 'is_active', '?')} | WalletID: {wallet_id} | AgentID: {id(agent)}")
-
-            return balance
-
-        # 1. Active Agents
         if self.agent_registry:
-            agents = self.agent_registry.get_all_financial_agents()
-            for agent in agents:
-                total_m2 += process_agent_balance(agent)
+            for agent in self.agent_registry.get_all_financial_agents():
+                a, d = process_agent(agent)
+                total_assets += a
+                total_debt += d
 
-        # 2. Estate Agents
         if self.estate_registry:
             for agent in self.estate_registry.get_all_estate_agents():
-                total_m2 += process_agent_balance(agent)
+                a, d = process_agent(agent)
+                total_assets += a
+                total_debt += d
 
-        return total_m2
+        return total_assets, total_debt
 
     def _is_m2_agent(self, agent: Any) -> bool:
         """

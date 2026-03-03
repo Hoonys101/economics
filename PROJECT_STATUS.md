@@ -1,6 +1,6 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-03-01 (Wave 4 Connectivity & SSoT Enforcement Complete / Handover 34/35 Generated)
+**최종 업데이트**: 2026-03-03 (Wave 5 GC Mock Leak Identified / Phase 35 Stability Audit Deepened)
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
 
@@ -25,6 +25,7 @@
             - [x] **Atomic Lifecycle (Implemented)**: `FirmFactory` ensures registration-before-injection. ✅
             - [x] **Saga Caretaker (Implemented)**: Purged orphaned saga references via `SagaCaretaker`. ✅
             - [x] **Lifecycle Adaptation**: Hardened protocols for `IBirthContext`/`IDeathContext`. ✅
+            - [x] **GC Mock Leak Identification (Critical)**: Diagnosed massive test suite hangs (tens of seconds) caused by `MagicMock` explosion and GC stalling. Registered `TD-TEST-GC-MOCK-EXPLOSION` and armed Gemini mission `WO-HYPOTHESIS-5-GC-MOCK-LEAK`. 🛡️
 
     - **`Phase 34: Project Rebirth (Batch Simulation & Reporting)`** 📈 🚀 (2026-02-28)
         - **Goal**: Decommission failed "Cockpit" web infrastructure and pivot to a high-performance Batch Reporting pipeline.
