@@ -126,7 +126,7 @@ def test_set_tax_rate_no_government_warning(caplog):
     processor.execute(cmd, state)
 
     # Assert
-    assert "Government agent is None" in caplog.text
+    assert "Government agent is None." in caplog.text
 
 def test_set_tax_rate_invalid_protocol(caplog):
     processor = SystemCommandProcessor()

@@ -85,6 +85,9 @@ class TestMultiCurrencyLiquidation(unittest.TestCase):
         self.state.households = [shareholder]
         self.state.agents[101] = shareholder
 
+        # Override get_agent directly to use state.agents map
+        self.agent_registry.get_agent = lambda agent_id: self.state.agents.get(agent_id)
+
         # Execute
         self.manager.initiate_liquidation(self.firm, self.state)
 

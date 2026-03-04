@@ -95,19 +95,34 @@ def test_growth_scenario_with_golden_firm(golden_firms, golden_config):
 
     engine = AIDrivenFirmDecisionEngine(ai_engine=mock_ai_engine, config_module=golden_config)
 
-    # Mock system2_planner
-    engine.corporate_manager.system2_planner = Mock()
-    engine.corporate_manager.system2_planner.project_future.return_value = {}
+    # Cleanup to prevent memory leak
+    if hasattr(engine.corporate_manager, 'cleanup'):
+        engine.corporate_manager.cleanup()
+
+    # Mock system2_planner AFTER cleanup
+    mock_planner = Mock()
+    mock_planner.last_calc_tick = -999
+    mock_planner.calc_interval = 10
+    mock_planner.cached_guidance = {}
+    mock_planner.project_future.return_value = {}
+    engine.corporate_manager.system2_planner = mock_planner
 
     # Create a State DTO from the mock
     state = create_firm_state_dto(healthy_firm_mock, golden_config)
 
-    # Simulate high demand
-    market_data = {"food": {"demand_signal": 1.5}}
-
-    # Cleanup to prevent memory leak
-    if hasattr(engine.corporate_manager, 'cleanup'):
-        engine.corporate_manager.cleanup()
+    # Simulate high demand using correct DTO
+    from simulation.dtos.api import MarketHistoryDTO
+    market_history = MarketHistoryDTO(
+        avg_price=5.0,
+        trade_volume=100.0,
+        best_ask=5,
+        best_bid=5,
+        avg_ask=5.0,
+        avg_bid=5.0,
+        worst_ask=5,
+        worst_bid=5
+    )
+    market_data = {"food": market_history}
 
     # We need to ensure state.production.inventory has the key "food" if specialization is food
     if "food" not in state.production.inventory:

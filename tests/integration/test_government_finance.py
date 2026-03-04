@@ -100,8 +100,8 @@ def test_invest_infrastructure_generates_transaction():
     assert tx.buyer_id == government.id
     assert tx.seller_id == mock_household.id
     assert tx.price == config.INFRASTRUCTURE_INVESTMENT_COST
-    assert tx.metadata.get("triggers_effect") == "GOVERNMENT_INFRA_UPGRADE"
-    assert tx.metadata.get("is_public_works") == True
+    assert getattr(tx.metadata, "original_metadata", {}).get("triggers_effect") == "GOVERNMENT_INFRA_UPGRADE"
+    assert getattr(tx.metadata, "original_metadata", {}).get("is_public_works") == True
 
     # 5. Assert No Immediate State Change (Sacred Sequence)
     # The transaction object is created, but not executed yet.

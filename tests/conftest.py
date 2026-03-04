@@ -45,9 +45,9 @@ for module_name in ["yaml", "joblib", "sklearn", "sklearn.linear_model", "sklear
         def __getattr__(self, name):
             if name.startswith("_"):
                 return super().__getattr__(name)
-            # 상태를 저장하여 동일한 Mock 반환 (Identity 보장)
-            mock_obj = MagicMock(return_value=None)
-            setattr(self, name, mock_obj)
+            # Create a TERMINAL mock that does NOT chain further
+            mock_obj = Mock(return_value=None)  # Mock, not MagicMock
+            object.__setattr__(self, name, mock_obj)
             return mock_obj
 
     mock = ShallowModuleMock()
@@ -180,6 +180,7 @@ def mock_bank():
     """Provides a mock commercial Bank."""
     bank = Mock(spec=Bank)
     bank._assets = 5000000.0
+    bank.base_rate = 0.05
     return bank
 
 @pytest.fixture

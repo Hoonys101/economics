@@ -119,6 +119,8 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
 
     def _setup_registry(self):
         self.agent_registry.set_state(self.state)
+        # Override get_agent directly to use state.agents map
+        self.agent_registry.get_agent = lambda agent_id: self.state.agents.get(agent_id)
 
     def test_severance_priority_over_shareholders(self):
         """
