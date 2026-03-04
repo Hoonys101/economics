@@ -381,3 +381,7 @@ class WorldState:
         self.household_time_allocation.clear()
         self._governments.clear()
         self.markets.clear()
+        self.system_commands.clear()
+        self.god_commands.clear()
+        self.agent_registry = None
+        self.global_registry = None
