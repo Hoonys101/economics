@@ -86,4 +86,4 @@ def test_infrastructure_investment():
 
     # Verify metadata trigger instead of immediate level change
     # Infrastructure update is now deferred to EffectSystem
-    assert txs[0].metadata.get("triggers_effect") == "GOVERNMENT_INFRA_UPGRADE"
+    assert getattr(txs[0].metadata, "original_metadata", {}).get("triggers_effect") == "GOVERNMENT_INFRA_UPGRADE"
