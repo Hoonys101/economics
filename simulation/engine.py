@@ -162,6 +162,11 @@ class Simulation:
             except Exception as e:
                 self.world_state.logger.error(f"Failed to release simulation.lock: {e}")
 
+        # Break cyclic references (Memory Leak Fix)
+        self.world_state.teardown()
+        self.tick_orchestrator = None
+        self.action_processor = None
+
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
         # 1. Process Control Commands (Pause/Resume/Step) via Ingress
         if self.command_ingress:
