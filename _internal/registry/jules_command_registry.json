@@ -62,21 +62,6 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
-    },
-    "LEAK_FIX_5_DEAD_AGENT_CLEANUP": {
-      "key": "LEAK_FIX_5_DEAD_AGENT_CLEANUP",
-      "title": "Memory Fix 5: Dead Agent State Cleanup",
-      "type": "jules",
-      "instruction_raw": "[FILE]: simulation/systems/demographic_manager.py\n[TASK]: In `register_death()`, after setting `agent.is_active = False`, clear heavy state references.\n\nAdd after the existing death registration logic:\n```python\n# Memory Fix: Release heavy state references from dead agents\nif hasattr(agent, '_econ_state'):\n    agent._econ_state = None\nif hasattr(agent, 'portfolio') and agent.portfolio is not None:\n    agent.portfolio = None\nif hasattr(agent, 'bio_state'):\n    agent.bio_state = None\n```\n\n[IMPORTANT]: Do NOT remove the agent from any registry. Only clear internal state.\n[SCOPE]: ~6 lines in ONE method in ONE file.\n[TEST]: pytest tests/benchmarks/test_demographic_perf.py -x --tb=short\n[PR]: Submit immediately after passing.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
     }
   }
 }
