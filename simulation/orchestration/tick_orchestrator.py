@@ -180,6 +180,19 @@ class TickOrchestrator:
         # TD-160: Clear world_state transactions to prevent memory leak
         state.transactions.clear()
 
+        # LEAK_FIX_1_QUEUE_CLEANUP: Clear leaked queues
+        state.effects_queue.clear()
+
+        system_commands = getattr(state, "system_commands", None)
+        if system_commands is not None:
+            system_commands.clear()
+
+        event_system = getattr(state, "event_system", None)
+        if event_system is not None:
+            god_commands = getattr(event_system, "god_commands", None)
+            if god_commands is not None:
+                god_commands.clear()
+
         # LIFECYCLE_PULSE: Reset tick-level counters
         if state.lifecycle_manager and hasattr(state.lifecycle_manager, "reset_agents_tick_state"):
             state.lifecycle_manager.reset_agents_tick_state(state)
