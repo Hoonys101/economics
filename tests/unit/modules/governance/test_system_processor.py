@@ -108,6 +108,8 @@ def test_set_interest_rate_base_rate():
     assert result_state == state
 
 def test_set_tax_rate_no_government_warning(caplog):
+    import logging
+    caplog.set_level(logging.ERROR)
     processor = SystemCommandProcessor()
 
     # Setup state with no government
@@ -129,6 +131,8 @@ def test_set_tax_rate_no_government_warning(caplog):
     assert "Government agent is None" in caplog.text
 
 def test_set_tax_rate_invalid_protocol(caplog):
+    import logging
+    caplog.set_level(logging.ERROR)
     processor = SystemCommandProcessor()
 
     # Setup state with invalid government (doesn't implement IGovernment)
@@ -150,6 +154,8 @@ def test_set_tax_rate_invalid_protocol(caplog):
     assert "does not satisfy IGovernment protocol" in caplog.text
 
 def test_set_interest_rate_no_central_bank_warning(caplog):
+    import logging
+    caplog.set_level(logging.ERROR)
     processor = SystemCommandProcessor()
 
     # Setup state with no central bank
@@ -171,6 +177,8 @@ def test_set_interest_rate_no_central_bank_warning(caplog):
     assert "Central Bank agent is None" in caplog.text
 
 def test_set_interest_rate_invalid_protocol(caplog):
+    import logging
+    caplog.set_level(logging.ERROR)
     processor = SystemCommandProcessor()
 
     # Setup state with invalid central bank
