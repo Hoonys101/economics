@@ -97,6 +97,14 @@ class DemographicManager(IDemographicManager):
         
         self.logger.info(f"LIFE_END | Agent {getattr(agent, 'id', 'unknown')} terminated. Cause: {cause}")
 
+        # Memory Fix: Release heavy state references from dead agents
+        if hasattr(agent, '_econ_state'):
+            agent._econ_state = None
+        if hasattr(agent, 'portfolio') and agent.portfolio is not None:
+            agent.portfolio = None
+        if hasattr(agent, 'bio_state'):
+            agent.bio_state = None
+
     def update_labor_hours(self, gender: str, delta: float) -> None:
         """Updates labor hour running totals (called by agents on time allocation change)."""
         if gender in self._stats_cache:
