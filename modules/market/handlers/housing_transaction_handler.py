@@ -181,10 +181,11 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                 from modules.system.api import TransactionMetadataDTO
 
                 original = {}
-                if tx.metadata and hasattr(tx.metadata, "original_metadata") and tx.metadata.original_metadata:
-                    original = tx.metadata.original_metadata.copy()
-                elif isinstance(tx.metadata, dict):
-                    original = tx.metadata.copy()
+                if tx.metadata:
+                    if hasattr(tx.metadata, "original_metadata") and tx.metadata.original_metadata:
+                        original = tx.metadata.original_metadata.copy()
+                    elif isinstance(tx.metadata, dict):
+                        original = tx.metadata.copy()
 
                 original["mortgage_id"] = loan_id
                 original["loan_principal"] = loan_amount

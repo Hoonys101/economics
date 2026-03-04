@@ -737,8 +737,12 @@ class SettlementSystem(IMonetaryAuthority):
         amount = tx.total_pennies
         # Improve logging granularity (WO-SSOT-INTENT suggestion)
         item_id = getattr(tx, 'item_id', '')
-        if tx.metadata and "memo" in tx.metadata:
-            memo = tx.metadata["memo"]
+        if tx.metadata:
+            memo = getattr(tx.metadata, "memo", None)
+            if memo is None and hasattr(tx.metadata, "original_metadata") and isinstance(tx.metadata.original_metadata, dict):
+                memo = tx.metadata.original_metadata.get("memo")
+            elif memo is None and isinstance(tx.metadata, dict):
+                memo = tx.metadata.get("memo")
         else:
             memo = f"{tx.transaction_type}:{item_id}" if item_id else tx.transaction_type
         currency = getattr(tx, 'currency', DEFAULT_CURRENCY)

@@ -1,4 +1,5 @@
 import os
+import asyncio
 import sys
 import logging
 from typing import Optional, TextIO
@@ -220,3 +221,15 @@ class PlatformLockManager(ILockManager):
             except IOError:
                 pass
             self._lock_file = None
+
+    async def async_acquire(self) -> None:
+        """
+        Asynchronously acquires the lock using asyncio.to_thread to prevent blocking the event loop.
+        """
+        await asyncio.to_thread(self.acquire)
+
+    async def async_release(self) -> None:
+        """
+        Asynchronously releases the lock using asyncio.to_thread.
+        """
+        await asyncio.to_thread(self.release)
