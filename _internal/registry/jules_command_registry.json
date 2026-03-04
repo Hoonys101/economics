@@ -47,21 +47,6 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
-    },
-    "LEAK_FIX_4_LEDGER_COMPACTION": {
-      "key": "LEAK_FIX_4_LEDGER_COMPACTION",
-      "title": "Memory Fix 4: Finance Ledger Compaction",
-      "type": "jules",
-      "instruction_raw": "[FILE]: modules/finance/system.py\n[TASK]: Add `compact_ledger(current_tick)` method to remove completed financial instruments.\n\nImplementation:\n```python\ndef compact_ledger(self, current_tick: int) -> int:\n    \"\"\"Remove completed loans and matured bonds. Returns count of purged items.\"\"\"\n    purged = 0\n    # Purge completed loans from all banks\n    for bank_id, bank_state in self.ledger.banks.items():\n        if hasattr(bank_state, 'loans'):\n            completed = [lid for lid, loan in bank_state.loans.items()\n                        if getattr(loan, 'remaining_principal', 1) <= 0]\n            for lid in completed:\n                del bank_state.loans[lid]\n                purged += 1\n    # Purge matured bonds\n    if hasattr(self.ledger.treasury, 'bonds'):\n        matured = [bid for bid, bond in self.ledger.treasury.bonds.items()\n                  if getattr(bond, 'maturity_tick', float('inf')) <= current_tick]\n        for bid in matured:\n            del self.ledger.treasury.bonds[bid]\n            purged += 1\n    return purged\n```\n\n[SCOPE]: ONE new method in ONE file. Do NOT call it from anywhere yet.\n[TEST]: pytest tests/finance/ -x --tb=short\n[PR]: Submit immediately after passing.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
     }
   }
 }
