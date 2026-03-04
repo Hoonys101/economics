@@ -3,60 +3,40 @@
     "version": "1.0"
   },
   "missions": {
-    "inheritance_remediation_spec": {
-      "key": "inheritance_remediation_spec",
-      "title": "Inheritance Manager Remediation Spec",
+    "DIAGNOSTIC_TEST_SLOWNESS": {
+      "key": "DIAGNOSTIC_TEST_SLOWNESS",
+      "title": "Deep Audit: Test Suite Performance & GC Overhead",
       "type": "gemini",
-      "instruction_raw": "Based on the FAILED PR review (pr_review_fix-economic-leaks-atomicity-1241896888021299611.md), draft a new MISSION_SPEC that addresses the atomicity fixes and Penny/Int conversion WITHOUT polluting production code with MagicMock or TEST_MODE checks. Focus on fixing the tests (verify_inheritance.py) to use proper DTO/Agent specs instead of lazy mocks.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "gemini-output/review/pr_review_fix-economic-leaks-atomicity-1241896888021299611.md",
-        "simulation/systems/inheritance_manager.py",
-        "tests/integration/scenarios/verification/verify_inheritance.py"
-      ],
-      "output_path": "gemini-output/spec/MISSION_INHERITANCE_REMEDIATION_SPEC.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "test_analysis_finance": {
-      "key": "test_analysis_finance",
-      "title": "Module Audit: Finance (Test Speed & Errors)",
-      "type": "gemini",
-      "instruction_raw": "Analyze all tests in 'tests/unit/modules/finance' and 'tests/finance'. Identify any failing tests, errors, or significant performance bottlenecks (slow setup/cleanup). Investigate the root cause (e.g., SSoT mismatches, Mock leaks).",
+      "instruction_raw": "Analyze the extreme test slowness (1h+ hangs). Focus exclusively on the performance impact of `gc.get_objects()` in `tests/conftest.py::gc_collect_harder`. Profile the object iteration cost and determine if this broad loop is the primary bottleneck. Output a detailed profile and a targeted optimization strategy. Path: gemini-output/analysis/REPORT_TEST_SLOWNESS.md",
       "command": null,
       "file_path": null,
       "wait": false,
       "session_id": null,
       "worker": "audit",
       "context_files": [
-        "tests/unit/modules/finance",
-        "tests/finance",
-        "modules/finance"
+        "tests/conftest.py",
+        "tests/integration/scenarios/test_scenario_runner.py"
       ],
-      "output_path": "gemini-output/analysis/test_report_finance.md",
+      "output_path": "gemini-output/analysis/REPORT_TEST_SLOWNESS.md",
       "model": null,
       "audit_requirements": null
     },
-    "test_analysis_firm": {
-      "key": "test_analysis_firm",
-      "title": "Module Audit: Firm (Test Speed & Errors)",
+    "DIAGNOSTIC_WEAKREF_ERROR": {
+      "key": "DIAGNOSTIC_WEAKREF_ERROR",
+      "title": "Deep Audit: ReferenceError & Weakref Stability",
       "type": "gemini",
-      "instruction_raw": "Analyze all tests in 'tests/unit/modules/firm' and 'tests/simulation/test_firms.py'. Identify any failing tests, errors, or significant performance bottlenecks (slow setup/cleanup). Investigate the root cause (e.g., capital injection race conditions).",
+      "instruction_raw": "Analyze the `ReferenceError: weakly-referenced object no longer exists` encountered in `tests/finance/test_settlement_integrity.py`. Audit the `weakref.proxy(government)` usage in `modules/finance/system.py` against the lifecycle of pytest fixtures in `conftest.py`. Identify exactly when the referenced object is GC'd and why the proxy fails. Output a root-cause analysis and a memory-safe redesign. Path: gemini-output/analysis/REPORT_WEAKREF_ERROR.md",
       "command": null,
       "file_path": null,
       "wait": false,
       "session_id": null,
       "worker": "audit",
       "context_files": [
-        "tests/unit/modules/firm",
-        "modules/firm",
-        "simulation/firms.py"
+        "modules/finance/system.py",
+        "tests/finance/test_settlement_integrity.py",
+        "tests/conftest.py"
       ],
-      "output_path": "gemini-output/analysis/test_report_firm.md",
+      "output_path": "gemini-output/analysis/REPORT_WEAKREF_ERROR.md",
       "model": null,
       "audit_requirements": null
     }

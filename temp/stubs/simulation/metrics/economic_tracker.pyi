@@ -20,6 +20,13 @@ class EconomicIndicatorTracker:
     gdp_history: deque[float]
     cpi_history: deque[float]
     m2_leak_history: deque[float]
+    inflation_buffer: deque[float]
+    unemployment_buffer: deque[float]
+    gdp_growth_buffer: deque[float]
+    wage_buffer: deque[float]
+    approval_buffer: deque[float]
+    last_avg_price_for_sma: float
+    last_gdp_for_sma: float
     config_module: Incomplete
     exchange_engine: Incomplete
     all_fieldnames: list[str]
