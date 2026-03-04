@@ -77,21 +77,6 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
-    },
-    "LEAK_FIX_6_REGISTRY_PURGE": {
-      "key": "LEAK_FIX_6_REGISTRY_PURGE",
-      "title": "Memory Fix 6: AgentRegistry Cleanup Methods",
-      "type": "jules",
-      "instruction_raw": "[FILE]: modules/system/registry.py\n[TASK]: Add `purge_inactive()` and `clear()` methods to AgentRegistry.\n\nImplementation:\n```python\ndef purge_inactive(self) -> int:\n    \"\"\"Move inactive agents to inactive_agents dict. Returns purge count.\"\"\"\n    purged = 0\n    inactive_ids = [aid for aid, agent in self.agents.items()\n                   if hasattr(agent, 'is_active') and not agent.is_active]\n    for aid in inactive_ids:\n        self.inactive_agents[aid] = self.agents.pop(aid)\n        purged += 1\n    # Also remove from typed lists\n    self.households = [h for h in self.households if getattr(h, 'is_active', True)]\n    self.firms = [f for f in self.firms if getattr(f, 'is_active', True)]\n    return purged\n\ndef clear(self):\n    \"\"\"Full teardown for simulation finalization.\"\"\"\n    self.agents.clear()\n    self.inactive_agents.clear()\n    self.households.clear()\n    self.firms.clear()\n```\n\n[SCOPE]: TWO new methods in ONE file. Do NOT modify existing methods.\n[TEST]: pytest tests/unit/modules/ -x --tb=short\n[PR]: Submit immediately after passing.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
     }
   }
 }
