@@ -2,16 +2,20 @@
 
 ## 1. Architectural Insights
 Implemented `compact_ledger(self, current_tick: int) -> int` in `modules/finance/system.py` inside the `FinanceSystem` class.
-The requested implementation snippet from the prompt contained `hasattr()` blocks and legacy field lookups (`remaining_principal` without `_pennies` suffix).
-To strictly adhere to **Protocol Purity** and **DTO Purity** guardrails, the method was adapted to access typed dictionary (`FinancialLedgerDTO`) and fields directly:
+The initially requested implementation snippet from the prompt contained `hasattr()` blocks and legacy field lookups.
+
+To strictly adhere to **Protocol Purity**, **DTO Purity**, and **Zero-Sum Integrity** guardrails:
 - Removed `hasattr()` checks.
 - Iterated over typed structures (`ledger.banks.items()`, `ledger.treasury.bonds.items()`).
-- Used structured DTO access for `loan.remaining_principal_pennies` and `bond.maturity_tick` as expected in the `LoanStateDTO` and `BondStateDTO`.
+- Used structured DTO access for `loan.remaining_principal_pennies` as expected in `LoanStateDTO`.
+- Modified `BondStateDTO` to add `is_settled: bool = False`.
+- Refactored `modules/finance/engines/debt_servicing_engine.py` to correctly calculate and append the principal repayment transaction upon reaching maturity, and to flip the bond's `is_settled` flag to `True` only after this payout is processed.
+- The condition to purge bonds from the ledger in `compact_ledger` now evaluates `bond.is_settled`, eliminating the critical "Debt Oblivion" defect where relying purely on `maturity_tick <= current_tick` could silently destroy government liabilities before principal settlement actually occurs.
 
 ## 2. Regression Analysis
 - `pytest tests/finance/` and `pytest tests/simulation/` passed successfully with no new errors.
-- The change was strictly adding a new uncalled method `compact_ledger`, hence zero regression impact on existing test flows.
-- During initial pytest setup, `pydantic` was missing from the environment. `pip install -r requirements.txt` was executed to ensure dependencies and proper pytest test execution.
+- Added bond principal transaction generation logic to the `debt_servicing_engine`.
+- The fix prevents financial integrity violations without breaking existing components since the engine's interface and the DTO structural integrity are strictly preserved.
 
 ## 3. Test Evidence
 
@@ -36,6 +40,6 @@ tests/simulation/test_firm_factory.py ..                                 [ 85%]
 tests/simulation/test_firm_refactor.py ...                               [ 91%]
 tests/simulation/test_initializer.py .                                   [ 93%]
 
-... (49 passed in 20.15s)
+... (49 passed in 23.02s)
 ================================================================================
 ```

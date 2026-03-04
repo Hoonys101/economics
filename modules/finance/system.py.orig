@@ -112,6 +112,24 @@ class FinanceSystem(IFinanceSystem):
         gov_balance = self.settlement_system.get_balance(gov_id, DEFAULT_CURRENCY)
         self.ledger.treasury.balance[DEFAULT_CURRENCY] = gov_balance
 
+    def compact_ledger(self, current_tick: int) -> int:
+        """Remove completed loans and matured bonds. Returns count of purged items."""
+        purged = 0
+        # Purge completed loans from all banks
+        for bank_id, bank_state in self.ledger.banks.items():
+            completed = [lid for lid, loan in bank_state.loans.items()
+                        if loan.remaining_principal_pennies <= 0]
+            for lid in completed:
+                del bank_state.loans[lid]
+                purged += 1
+        # Purge matured bonds
+        matured = [bid for bid, bond in self.ledger.treasury.bonds.items()
+                  if bond.maturity_tick <= current_tick]
+        for bid in matured:
+            del self.ledger.treasury.bonds[bid]
+            purged += 1
+        return purged
+
     # --- ORCHESTRATOR METHODS ---
 
     def process_loan_application(

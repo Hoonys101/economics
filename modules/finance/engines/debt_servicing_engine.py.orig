@@ -35,7 +35,7 @@ class DebtServicingEngine(IDebtServicingEngine):
                 payment_made = 0
 
                 if deposit and deposit.balance_pennies >= interest_pennies:
-                    # [Double-Entry Accounting] Update Accounting Ledger (DTO) immediately. 
+                    # [Double-Entry Accounting] Update Accounting Ledger (DTO) immediately.
                     # FinancialTransactionHandler will update the Cash Ledger (SSoT) via emitted Transaction.
                     current_balance = deposit.balance_pennies
 
@@ -105,14 +105,10 @@ class DebtServicingEngine(IDebtServicingEngine):
         # 2. Service Treasury Bonds
         treasury = ledger.treasury
         for bond_id, bond in treasury.bonds.items():
-            if getattr(bond, 'is_settled', False):
-                continue
-
             # Calculate Interest
             interest_pennies = round_to_pennies(
                 Decimal(bond.face_value_pennies) * Decimal(bond.yield_rate) / Decimal(365)
             )
-            principal_pennies = bond.face_value_pennies if ledger.current_tick >= bond.maturity_tick else 0
 
             # Check receiver
             receiver_id = bond.owner_id
@@ -124,14 +120,14 @@ class DebtServicingEngine(IDebtServicingEngine):
                 # Update reserves
                 curr = "USD" # Default
                 if curr not in bank.reserves: bank.reserves[curr] = 0
-                bank.reserves[curr] += (interest_pennies + principal_pennies)
+                bank.reserves[curr] += interest_pennies
 
                 # [Double-Entry] Credit Equity (Interest Income)
                 bank.retained_earnings_pennies += interest_pennies
 
                 # Treasury pays
                 if curr not in treasury.balance: treasury.balance[curr] = 0
-                treasury.balance[curr] -= (interest_pennies + principal_pennies)
+                treasury.balance[curr] -= interest_pennies
 
                 txs.append(Transaction(
                     buyer_id=treasury.government_id,
@@ -143,20 +139,6 @@ class DebtServicingEngine(IDebtServicingEngine):
                     transaction_type="bond_interest",
                     time=ledger.current_tick
                 , total_pennies=interest_pennies))
-
-                if principal_pennies > 0:
-                    txs.append(Transaction(
-                        buyer_id=treasury.government_id,
-                        seller_id=receiver_id,
-                        item_id=bond_id,
-                        quantity=1,
-                        price=principal_pennies / 100.0,
-                        market_id="financial",
-                        transaction_type="bond_repayment",
-                        time=ledger.current_tick
-                    , total_pennies=principal_pennies))
-                    # Mark bond as settled only when principal is paid
-                    bond.is_settled = True
 
         return EngineOutputDTO(
             updated_ledger=ledger,

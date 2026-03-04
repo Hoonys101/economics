@@ -124,7 +124,7 @@ class FinanceSystem(IFinanceSystem):
                 purged += 1
         # Purge matured bonds
         matured = [bid for bid, bond in self.ledger.treasury.bonds.items()
-                  if bond.maturity_tick <= current_tick]
+                  if getattr(bond, 'is_settled', False)]
         for bid in matured:
             del self.ledger.treasury.bonds[bid]
             purged += 1

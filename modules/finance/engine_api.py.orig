@@ -33,7 +33,6 @@ class BondStateDTO:
     yield_rate: float
     issue_tick: int
     maturity_tick: int
-    is_settled: bool = False
 
 # State specific to the banking system
 @dataclass
