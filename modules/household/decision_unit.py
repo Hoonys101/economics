@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 import logging
 from modules.household.api import IDecisionUnit, OrchestrationContextDTO
 from modules.household.dtos import EconStateDTO
+from modules.system.api import DEFAULT_CURRENCY
 from modules.household.connectors.housing_connector import IHousingSystem
 
 from simulation.dtos import StressScenarioConfig
@@ -76,7 +77,7 @@ class DecisionUnit(IDecisionUnit):
             # This comparison < int is invalid.
             # Fix: Use wallet balance.
             # assets_val and threshold are both evaluated in integer pennies.
-            assets_val = new_state.wallet.get_balance('USD') # Default currency
+            assets_val = new_state.wallet.get_balance(DEFAULT_CURRENCY)
             if assets_val < threshold:
                 for firm_id, share in new_state.portfolio.holdings.items():
                     if share.quantity > 0:
