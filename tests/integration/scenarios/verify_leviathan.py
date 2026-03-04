@@ -12,11 +12,10 @@ from modules.government.political.api import VoteRecordDTO
 # Convert to pytest to use golden fixtures
 
 @pytest.fixture
-def government(golden_config):
-    if golden_config:
-        config = golden_config
-    else:
-        config = MagicMock()
+def government():
+    class DummyConfig:
+        pass
+    config = DummyConfig()
 
     config.INCOME_TAX_RATE = 0.1
     config.CORPORATE_TAX_RATE = 0.2
@@ -29,30 +28,34 @@ def government(golden_config):
     config.AUTO_COUNTER_CYCLICAL_ENABLED = True
     config.POLICY_ACTUATOR_STEP_SIZES = (0.01, 0.0025, 0.1)
     config.POLICY_ACTUATOR_BOUNDS = {}
-    config.FISCAL_POLICY_ADJUSTMENT_SPEED = 0.1 # Ensure non-zero speed if used
+    config.FISCAL_POLICY_ADJUSTMENT_SPEED = 0.1
     config.TICKS_PER_YEAR = 100
     config.ANNUAL_WEALTH_TAX_RATE = 0.0
-    config.GOV_ACTION_INTERVAL = 30
-    config.BUDGET_ALLOCATION_MIN = 0.1
-    config.NORMAL_BUDGET_MULTIPLIER_CAP = 1.0
-    config.EMERGENCY_BUDGET_MULTIPLIER_CAP = 2.0
-    config.GOV_ACTION_INTERVAL = 30
-    config.BUDGET_ALLOCATION_MIN = 0.1
-    config.NORMAL_BUDGET_MULTIPLIER_CAP = 1.0
-    config.EMERGENCY_BUDGET_MULTIPLIER_CAP = 2.0
+    config.WEALTH_TAX_THRESHOLD = 0.0
+    config.debt_ceiling_ratio = 1.5
     config.DEBT_CEILING_HARD_LIMIT_RATIO = 1.5
+    config.epsilon = 0.1
+    config.learning_rate = 0.1
+    config.discount_factor = 0.9
+    config.GOV_ACTION_INTERVAL = 30
+    config.BUDGET_ALLOCATION_MIN = 0.1
+    config.NORMAL_BUDGET_MULTIPLIER_CAP = 1.0
+    config.EMERGENCY_BUDGET_MULTIPLIER_CAP = 2.0
     config.tax_rate_min = 0.05
     config.tax_rate_max = 0.60
-    config.debt_ceiling_ratio = 1.5
+    config.auto_counter_cyclical_enabled = True
+    config.gamma = 0.9
+    config.alpha = 0.1
+    config.q_table_filename = 'mock.pkl'
 
     gov = Government(id=1, config_module=config)
     gov._assets = 10000.0
 
-    # Ensure AI is initialized if not already (lazy init)
     if gov.ai is None:
         gov.ai = GovernmentAI(gov, config)
 
     return gov
+
 
 @pytest.fixture
 def politics_system(government):
@@ -206,7 +209,7 @@ def test_ai_policy_execution(government, simulation_state):
     # We want to verify AI policy application, so we isolate it from Rule-Based Engine.
     from modules.government.engines.api import FiscalDecisionDTO
     # Note: If FiscalEngine returns None for taxes, the Government class will NOT overwrite the taxes modified by AI.
-    with patch.object(government.ai, 'decide_policy', return_value=action_fiscal_ease):
+    with patch.object(government.policy_engine.ai, 'decide_policy', return_value=action_fiscal_ease):
         with patch.object(government.fiscal_engine, 'decide') as mock_fiscal:
             mock_fiscal.return_value = FiscalDecisionDTO(
                 new_income_tax_rate=None,
@@ -218,6 +221,4 @@ def test_ai_policy_execution(government, simulation_state):
 
     # Verification: Check that tax/subsidy changed in the direction of easing
     # For Blue party, this usually means cutting corp tax
-    # Note: Assertion disabled due to complex Mock/Config interaction in test environment.
-    # We verify orchestration flow via mock calls.
     assert government.corporate_tax_rate < 0.2

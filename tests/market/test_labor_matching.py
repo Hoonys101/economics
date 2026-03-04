@@ -1,25 +1,19 @@
-
 import pytest
 from simulation.markets.matching_engine import OrderBookMatchingEngine, MatchingResultDTO, OrderBookStateDTO, CanonicalOrderDTO
 from simulation.models import Transaction
+
 
 class TestLaborMatching:
 
     def setup_method(self):
         self.engine = OrderBookMatchingEngine()
 
-    def create_order(self, agent_id, side, price_pennies, quantity=1.0, brand_info=None, target_agent_id=None):
-        return CanonicalOrderDTO(
-            agent_id=agent_id,
-            side=side,
-            item_id='labor',
-            quantity=quantity,
-            price_pennies=price_pennies,
-            price_limit=price_pennies / 100.0,
-            market_id='labor',
-            brand_info=brand_info,
-            target_agent_id=target_agent_id
-        )
+    def create_order(self, agent_id, side, price_pennies, quantity=1.0,
+        brand_info=None, target_agent_id=None):
+        return CanonicalOrderDTO(agent_id=agent_id, side=side, item_id=
+            'labor', quantity=quantity, price_pennies=price_pennies,
+            market_id='labor', brand_info=brand_info, target_agent_id=
+            target_agent_id)
 
     def test_utility_priority_matching(self):
         """
@@ -30,26 +24,22 @@ class TestLaborMatching:
 
         Expect: Firm A matches with Worker 2 first.
         """
-        firm_order = self.create_order(agent_id='FirmA', side='BUY', price_pennies=2000, quantity=1.0)
-
-        worker1 = self.create_order(agent_id='Worker1', side='SELL', price_pennies=1000, quantity=1.0,
-                                    brand_info={'labor_skill': 1.0, 'education_level': 0})
-        worker2 = self.create_order(agent_id='Worker2', side='SELL', price_pennies=1000, quantity=1.0,
-                                    brand_info={'labor_skill': 2.0, 'education_level': 0})
-
-        state = OrderBookStateDTO(
-            buy_orders={'labor': [firm_order]},
-            sell_orders={'labor': [worker1, worker2]},
-            market_id='labor'
-        )
-
+        firm_order = self.create_order(agent_id='FirmA', side='BUY',
+            price_pennies=2000, quantity=1.0)
+        worker1 = self.create_order(agent_id='Worker1', side='SELL',
+            price_pennies=1000, quantity=1.0, brand_info={'labor_skill':
+            1.0, 'education_level': 0})
+        worker2 = self.create_order(agent_id='Worker2', side='SELL',
+            price_pennies=1000, quantity=1.0, brand_info={'labor_skill':
+            2.0, 'education_level': 0})
+        state = OrderBookStateDTO(buy_orders={'labor': [firm_order]},
+            sell_orders={'labor': [worker1, worker2]}, market_id='labor')
         result = self.engine.match(state, current_tick=1)
-
         assert len(result.transactions) == 1
         tx = result.transactions[0]
         assert tx.buyer_id == 'FirmA'
-        assert tx.seller_id == 'Worker2' # Expected matching with higher utility worker
-        assert tx.quality == 2.0 # Skill should be reflected in quality
+        assert tx.seller_id == 'Worker2'
+        assert tx.quality == 2.0
 
     def test_affordability_constraint(self):
         """
@@ -69,21 +59,17 @@ class TestLaborMatching:
         Worker 1 has higher utility but is unaffordable.
         Expect match with Worker 2.
         """
-        firm_order = self.create_order(agent_id='FirmA', side='BUY', price_pennies=1500, quantity=1.0)
-
-        worker1 = self.create_order(agent_id='Worker1', side='SELL', price_pennies=2000, quantity=1.0,
-                                    brand_info={'labor_skill': 5.0, 'education_level': 0})
-        worker2 = self.create_order(agent_id='Worker2', side='SELL', price_pennies=1000, quantity=1.0,
-                                    brand_info={'labor_skill': 1.0, 'education_level': 0})
-
-        state = OrderBookStateDTO(
-            buy_orders={'labor': [firm_order]},
-            sell_orders={'labor': [worker1, worker2]},
-            market_id='labor'
-        )
-
+        firm_order = self.create_order(agent_id='FirmA', side='BUY',
+            price_pennies=1500, quantity=1.0)
+        worker1 = self.create_order(agent_id='Worker1', side='SELL',
+            price_pennies=2000, quantity=1.0, brand_info={'labor_skill':
+            5.0, 'education_level': 0})
+        worker2 = self.create_order(agent_id='Worker2', side='SELL',
+            price_pennies=1000, quantity=1.0, brand_info={'labor_skill':
+            1.0, 'education_level': 0})
+        state = OrderBookStateDTO(buy_orders={'labor': [firm_order]},
+            sell_orders={'labor': [worker1, worker2]}, market_id='labor')
         result = self.engine.match(state, current_tick=1)
-
         assert len(result.transactions) == 1
         tx = result.transactions[0]
         assert tx.buyer_id == 'FirmA'
@@ -98,19 +84,15 @@ class TestLaborMatching:
 
         Expect: Firm B matches with Worker 1.
         """
-        firmA = self.create_order(agent_id='FirmA', side='BUY', price_pennies=2000, quantity=1.0)
-        firmB = self.create_order(agent_id='FirmB', side='BUY', price_pennies=3000, quantity=1.0)
-
-        worker1 = self.create_order(agent_id='Worker1', side='SELL', price_pennies=1000, quantity=1.0)
-
-        state = OrderBookStateDTO(
-            buy_orders={'labor': [firmA, firmB]},
-            sell_orders={'labor': [worker1]},
-            market_id='labor'
-        )
-
+        firmA = self.create_order(agent_id='FirmA', side='BUY',
+            price_pennies=2000, quantity=1.0)
+        firmB = self.create_order(agent_id='FirmB', side='BUY',
+            price_pennies=3000, quantity=1.0)
+        worker1 = self.create_order(agent_id='Worker1', side='SELL',
+            price_pennies=1000, quantity=1.0)
+        state = OrderBookStateDTO(buy_orders={'labor': [firmA, firmB]},
+            sell_orders={'labor': [worker1]}, market_id='labor')
         result = self.engine.match(state, current_tick=1)
-
         assert len(result.transactions) == 1
         tx = result.transactions[0]
         assert tx.buyer_id == 'FirmB'
@@ -125,21 +107,17 @@ class TestLaborMatching:
 
         Expect: Firm A matches with Worker 2.
         """
-        firm_order = self.create_order(agent_id='FirmA', side='BUY', price_pennies=2000, quantity=1.0)
-
-        worker1 = self.create_order(agent_id='Worker1', side='SELL', price_pennies=1000, quantity=1.0,
-                                    brand_info={'labor_skill': 1.0, 'education_level': 0})
-        worker2 = self.create_order(agent_id='Worker2', side='SELL', price_pennies=1000, quantity=1.0,
-                                    brand_info={'labor_skill': 1.0, 'education_level': 10})
-
-        state = OrderBookStateDTO(
-            buy_orders={'labor': [firm_order]},
-            sell_orders={'labor': [worker1, worker2]},
-            market_id='labor'
-        )
-
+        firm_order = self.create_order(agent_id='FirmA', side='BUY',
+            price_pennies=2000, quantity=1.0)
+        worker1 = self.create_order(agent_id='Worker1', side='SELL',
+            price_pennies=1000, quantity=1.0, brand_info={'labor_skill':
+            1.0, 'education_level': 0})
+        worker2 = self.create_order(agent_id='Worker2', side='SELL',
+            price_pennies=1000, quantity=1.0, brand_info={'labor_skill':
+            1.0, 'education_level': 10})
+        state = OrderBookStateDTO(buy_orders={'labor': [firm_order]},
+            sell_orders={'labor': [worker1, worker2]}, market_id='labor')
         result = self.engine.match(state, current_tick=1)
-
         assert len(result.transactions) == 1
         tx = result.transactions[0]
         assert tx.buyer_id == 'FirmA'
@@ -154,21 +132,15 @@ class TestLaborMatching:
 
         Expect: Firm A matches with Worker 1 (Targeted).
         """
-        firm_order = self.create_order(agent_id='FirmA', side='BUY', price_pennies=2000, quantity=1.0, target_agent_id='Worker1')
-
-        worker1 = self.create_order(agent_id='Worker1', side='SELL', price_pennies=2000, quantity=1.0,
-                                    brand_info={'labor_skill': 1.0})
-        worker2 = self.create_order(agent_id='Worker2', side='SELL', price_pennies=1000, quantity=1.0,
-                                    brand_info={'labor_skill': 5.0}) # Better util
-
-        state = OrderBookStateDTO(
-            buy_orders={'labor': [firm_order]},
-            sell_orders={'labor': [worker1, worker2]},
-            market_id='labor'
-        )
-
+        firm_order = self.create_order(agent_id='FirmA', side='BUY',
+            price_pennies=2000, quantity=1.0, target_agent_id='Worker1')
+        worker1 = self.create_order(agent_id='Worker1', side='SELL',
+            price_pennies=2000, quantity=1.0, brand_info={'labor_skill': 1.0})
+        worker2 = self.create_order(agent_id='Worker2', side='SELL',
+            price_pennies=1000, quantity=1.0, brand_info={'labor_skill': 5.0})
+        state = OrderBookStateDTO(buy_orders={'labor': [firm_order]},
+            sell_orders={'labor': [worker1, worker2]}, market_id='labor')
         result = self.engine.match(state, current_tick=1)
-
         assert len(result.transactions) == 1
         tx = result.transactions[0]
         assert tx.buyer_id == 'FirmA'
@@ -185,23 +157,17 @@ class TestLaborMatching:
         Expect: Buyer A matches with Seller 1 (Cheapest).
         Standard logic sorts sells by price ascending.
         """
-        buyer = self.create_order(agent_id='BuyerA', side='BUY', price_pennies=2000, quantity=1.0)
-
-        # Give Seller 2 stats that would give high utility if it were labor
-        seller1 = self.create_order(agent_id='Seller1', side='SELL', price_pennies=1000, quantity=1.0)
-        seller2 = self.create_order(agent_id='Seller2', side='SELL', price_pennies=1500, quantity=1.0,
-                                    brand_info={'labor_skill': 100.0, 'education_level': 100})
-
-        # Change item_id to 'apple' and market_id to 'goods'
-        state = OrderBookStateDTO(
-            buy_orders={'apple': [buyer]},
-            sell_orders={'apple': [seller1, seller2]},
-            market_id='goods'
-        )
-
+        buyer = self.create_order(agent_id='BuyerA', side='BUY',
+            price_pennies=2000, quantity=1.0)
+        seller1 = self.create_order(agent_id='Seller1', side='SELL',
+            price_pennies=1000, quantity=1.0)
+        seller2 = self.create_order(agent_id='Seller2', side='SELL',
+            price_pennies=1500, quantity=1.0, brand_info={'labor_skill':
+            100.0, 'education_level': 100})
+        state = OrderBookStateDTO(buy_orders={'apple': [buyer]},
+            sell_orders={'apple': [seller1, seller2]}, market_id='goods')
         result = self.engine.match(state, current_tick=1)
-
         assert len(result.transactions) == 1
         tx = result.transactions[0]
         assert tx.buyer_id == 'BuyerA'
-        assert tx.seller_id == 'Seller1' # Cheapest matched first in standard market
+        assert tx.seller_id == 'Seller1'
