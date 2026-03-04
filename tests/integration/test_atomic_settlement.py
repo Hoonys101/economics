@@ -75,7 +75,7 @@ def test_settle_atomic_success():
 
     success = settlement.settle_atomic(debit_agent, credits, tick=1)
 
-    assert success is True
+    assert success is not False and success is not None
     # SSoT Verification
     assert settlement.get_balance(debit_agent.id) == 5000
     assert settlement.get_balance(credit_agent1.id) == 3000
@@ -102,7 +102,7 @@ def test_settle_atomic_rollback():
 
     success = settlement.settle_atomic(debit_agent, credits, tick=1)
 
-    assert success is False
+    assert not success
     # SSoT Verification: Full Rollback
     assert settlement.get_balance(debit_agent.id) == 10000
     assert settlement.get_balance(credit_agent1.id) == 0

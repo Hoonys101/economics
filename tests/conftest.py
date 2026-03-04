@@ -180,6 +180,7 @@ def mock_bank():
     """Provides a mock commercial Bank."""
     bank = Mock(spec=Bank)
     bank._assets = 5000000.0
+    bank.base_rate = 0.05
     return bank
 
 @pytest.fixture
@@ -358,26 +359,19 @@ class MockRegistry:
 # AUTOMATION: Hook into unittest.mock.patch to auto-register
 import unittest.mock
 
-# Create an object proxy patch rather than fully overwriting unittest.mock.patch
-# Overwriting unittest.mock.patch completely breaks pytest-mock since it tries to access attributes on it
-class PatchWrapper:
-    def __init__(self, original_patch):
-        self._original_patch = original_patch
+_original_patch = unittest.mock.patch
 
-    def __call__(self, *args, **kwargs):
-        p = self._original_patch(*args, **kwargs)
-        _orig_start = p.start
-        def _wrapped_start(*s_args, **s_kwargs):
-            mock_obj = _orig_start(*s_args, **s_kwargs)
-            MockRegistry.register(mock_obj)
-            return mock_obj
-        p.start = _wrapped_start
-        return p
+def _wrapped_patch(*args, **kwargs):
+    p = _original_patch(*args, **kwargs)
+    _orig_start = p.start
+    def _wrapped_start(*s_args, **s_kwargs):
+        mock_obj = _orig_start(*s_args, **s_kwargs)
+        MockRegistry.register(mock_obj)
+        return mock_obj
+    p.start = _wrapped_start
+    return p
 
-    def __getattr__(self, item):
-        return getattr(self._original_patch, item)
-
-unittest.mock.patch = PatchWrapper(unittest.mock.patch)
+unittest.mock.patch = _wrapped_patch
 
 
 @pytest.hookimpl(tryfirst=True)

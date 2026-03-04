@@ -2,7 +2,7 @@ from typing import List, Any, Optional, TYPE_CHECKING
 import logging
 from simulation.models import Transaction
 from modules.government.constants import DEFAULT_INFRASTRUCTURE_INVESTMENT_COST
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, TransactionMetadataDTO
 
 if TYPE_CHECKING:
     from simulation.agents.government import Government
