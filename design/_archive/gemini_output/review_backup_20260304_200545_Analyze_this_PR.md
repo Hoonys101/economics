@@ -1,0 +1,32 @@
+이번 PR은 `tests/utils/factories.py`에서 지나치게 관대한 `MagicMock`의 사용을 지양하고 엄격한 인터페이스 스펙(`spec=IDecisionEngine`)을 적용한 `Mock`으로 교체하여 테스트 신뢰성(Mock Fidelity)을 강화했습니다. 또한, `test_system_processor.py`에서 로깅 관련 테스트 중 발생하던 `caplog` 이슈를 `logging.ERROR` 레벨 명시를 통해 해결했습니다.
+
+2. **🚨 Critical Issues**: 
+   즉시 수정이 필요한 보안 위반, 하드코딩된 시스템 경로 혹은 재화의 Magic Creation/Leak을 유발하는 Zero-Sum 로직 위반 사항은 **발견되지 않았습니다**. 변경 사항은 전적으로 테스트 파일 구조 개선에 한정되어 있습니다.
+
+3. **⚠️ Logic & Spec Gaps**: 
+   기획 의도를 훼손하거나 누락된 로직은 없습니다. 오히려 `Mock` 객체를 활용해 암묵적으로 통과되던 False-Positive 가능성을 사전에 차단함으로써, 향후 발생할 수 있는 잠재적 테스트 결함을 완벽하게 방지하는 올바른 구현입니다.
+
+4. **💡 Suggestions**: 
+   - `tests/unit/modules/governance/test_system_processor.py` 내의 여러 테스트 함수에서 `import logging` 구문이 중복으로 선언되어 있습니다. 테스트 스코프의 독립성 측면에서는 문제가 없으나, 코드 중복을 피하기 위해 모듈 최상단에서 한 번만 `import logging`을 수행하도록 리팩토링하는 것을 권장합니다.
+   - `mock_config.GOODS = {}`와 같은 명시적인 설정 주입은 긍정적이나, 추후 다른 설정 키가 추가될 경우를 대비해 팩토리 내부에 표준화된 `create_dummy_config()` 형태의 헬퍼 메서드를 두는 것도 좋은 설계 방향이 될 것입니다.
+
+5. **🧠 Implementation Insight Evaluation**:
+   - **Original Insight**: 
+     > The transition from `MagicMock` to `Mock` for core domain entities and configuration objects is a crucial step towards 'Mock Containment'. `MagicMock` automatically implements and returns values for magic methods like `__iter__`, `__len__`, `__getitem__`, and many others. This auto-generation can lead to deceptive test behavior where an object is silently treated as iterable or len-able when the real implementation is not. In this mission, applying `Mock` instead of `MagicMock` in the core factory defaults prevents configurations (which are DTOs/dictionaries) from being implicitly treated as iterables without failing fast, exposing potential logic gaps in test setups.
+     > A prime example encountered was the `Bootstrapper` failing during `Firm` creation because it attempted `firm.specialization in config.GOODS`. With a `MagicMock`, iterating or checking containment silently succeeded, masking the fact that the `config` mock in the test was not configured with the necessary list. Changing this to `Mock` caused a hard `TypeError`, forcing tests to explicitly mock the `GOODS` dictionary correctly (`Mock(GOODS={})`).
+   - **Reviewer Evaluation**: 
+     Jules(수행자)가 작성한 해당 인사이트는 원인을 정확하게 분석했으며 깊이 있는 통찰을 보여줍니다. `MagicMock`이 지원하는 암묵적인 매직 메서드(`__iter__` 등) 자동 구현 특성이 테스트 시 False-Positive를 유발할 수 있다는 함정을 완벽히 이해하고 있습니다. DTO와 같이 순수 데이터를 가지는 객체를 모킹할 때는 무분별한 `MagicMock`을 제한(Containment)하고 `Mock`을 사용하여 Fail-Fast 구조를 만들어야 한다는 점은 팀 전체가 공유해야 할 훌륭한 교훈입니다.
+
+6. **📚 Manual Update Proposal (Draft)**: 
+   - **Target File**: `design/2_operations/ledgers/TECH_DEBT_LEDGER.md`
+   - **Draft Content**:
+     ```markdown
+     ### [TEST-DEBT] Mock Fidelity 확보와 MagicMock 격리 (Mock Containment)
+     - **현상**: 기존 테스트 환경에서 `MagicMock`을 기본 엔티티 및 설정 모의 객체로 사용함에 따라, 구현되지 않은 매직 메서드 연산(`in` 등의 순회 연산)이 조용히 통과(False-Positive)하여 테스트 내재 결함을 은폐함.
+     - **원인**: `MagicMock`이 순회(iterable) 및 길이(length)를 확인하는 코어 연산에 대해 무조건 더미 값을 반환하여 오류 발생 시 즉시 실패(Fail-Fast)해야 하는 테스트 제약을 우회함.
+     - **해결**: 핵심 팩토리(`tests/utils/factories.py`)의 `MagicMock` 사용을 `Mock` 및 `Mock(spec=Protocol)` 형태로 변경하여 범위를 제한. DTO 성격의 객체 모킹 시 명시적인 경계(`mock_config.GOODS = {}`)를 할당하여 암묵적인 데이터 접근 시 `TypeError` 예외를 던지도록 강제함.
+     - **교훈**: 코어 도메인 엔티티와 DTO 객체 테스트를 작성할 때 `MagicMock`의 맹목적인 사용을 지양해야 함. 테스트의 강건성(Mock Fidelity)을 보장하기 위해서는 명시적으로 허용된 스펙을 갖춘 `Mock` 객체를 활용해야 함.
+     ```
+
+7. **✅ Verdict**:
+   **APPROVE**

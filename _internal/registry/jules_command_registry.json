@@ -17,21 +17,6 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
-    },
-    "MOCK_FIX_1_UTILS_MOCKS": {
-      "key": "MOCK_FIX_1_UTILS_MOCKS",
-      "title": "Mock Containment 1: Spec-enforce tests/utils/mocks.py",
-      "type": "jules",
-      "instruction_raw": "[FILE]: tests/utils/mocks.py\n[TASK]: Replace ALL bare `MagicMock()` calls with `MagicMock(spec=<Interface>)` to prevent recursive mock chaining.\n\nCurrent bare mocks and their correct specs:\n1. L16: `MagicMock()` for logger \u2192 `MagicMock(spec=logging.Logger)` (add `import logging` at top)\n2. L19: `MagicMock()` for currency_registry_handler \u2192 `MagicMock(spec=IAgentRegistry)` (already imported)\n3. L23: `MagicMock()` for bank \u2192 `MagicMock(spec=IBank)` (add import from `modules.finance.api`)\n4. L35: `MagicMock()` for monetary_ledger \u2192 `MagicMock(spec=IMonetaryLedger)` (add import from `modules.finance.api`)\n5. L36: `MagicMock()` for bank \u2192 `MagicMock(spec=IBank)` (reuse import)\n6. L37: `MagicMock()` for saga_orchestrator \u2192 `MagicMock(spec=ISagaOrchestrator)` (add import from `modules.finance.api`)\n\n[IMPORTANT]: If any spec interface doesn't exist or causes import errors, use `Mock()` (without Magic) instead, which prevents recursive attribute generation.\n[SCOPE]: ONE file only. ~6 lines changed + 2-3 import lines added.\n[TEST]: pytest tests/unit/ -x --tb=short -q\n[PR]: Submit immediately after passing.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
     }
   }
 }
