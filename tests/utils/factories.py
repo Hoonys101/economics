@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 from typing import Optional
 from simulation.core_agents import Household
 from simulation.firms import Firm
@@ -209,13 +209,13 @@ def create_household(
         id=id,
         name=name,
         initial_needs=initial_needs,
-        logger=MagicMock(),
+        logger=Mock(),
         memory_interface=None,
         value_orientation=value_orientation
     )
 
     if engine is None:
-        engine = MagicMock()
+        engine = Mock(spec=IDecisionEngine)
 
     talent = kwargs.pop('talent', Talent(base_learning_rate=0.5, max_potential={}))
     goods_data = kwargs.pop('goods_data', [{"id": "food", "initial_price": 10.0}])
@@ -276,7 +276,11 @@ def create_firm(
 
     # 2. Use Official FirmFactory (SSoT)
     # Note: In most tests, we don't need a real config_module, so MagicMock suffices
-    factory = FirmFactory(config_module=config_registry if config_registry is not None else MagicMock())
+
+    mock_config = Mock()
+    mock_config.GOODS = {}
+
+    factory = FirmFactory(config_module=config_registry if config_registry is not None else mock_config)
     
     firm = factory.create_firm(
         name=name,
@@ -284,7 +288,7 @@ def create_firm(
         birth_context=birth_context,
         finance_context=finance_context,
         specialization=specialization,
-        decision_engine=engine or MagicMock(),
+        decision_engine=engine or Mock(spec=IDecisionEngine),
         personality=kwargs.get("personality")
     )
 
