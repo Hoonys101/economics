@@ -32,21 +32,6 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
-    },
-    "MOCK_FIX_2_FACTORIES": {
-      "key": "MOCK_FIX_2_FACTORIES",
-      "title": "Mock Containment 2: Spec-enforce tests/utils/factories.py",
-      "type": "jules",
-      "instruction_raw": "[FILE]: tests/utils/factories.py\n[TASK]: Replace bare `MagicMock()` calls in factory functions with `Mock()` (non-Magic) to prevent recursive attribute auto-generation.\n\nSpecific changes:\n1. L212: `logger=MagicMock()` \u2192 `logger=Mock()` (loggers don't need magic methods)\n2. L218: `engine = MagicMock()` \u2192 `engine = Mock(spec=IDecisionEngine)` (already imported)\n3. L279: `MagicMock()` for config_module \u2192 `Mock()` (config should not auto-generate attributes)\n4. L287: `engine or MagicMock()` \u2192 `engine or Mock(spec=IDecisionEngine)` (already imported)\n\n[RATIONALE]: `MagicMock()` auto-generates child mocks on ANY attribute access. `Mock()` does too but without magic methods (__len__, __iter__, etc.). For config_module, using `Mock()` instead of `MagicMock()` prevents `__iter__`, `__len__` from being callable.\n[IMPORTANT]: Add `from unittest.mock import Mock` to the imports if not present.\n[SCOPE]: ONE file only. ~4 lines changed.\n[TEST]: pytest tests/unit/ -x --tb=short -q\n[PR]: Submit immediately after passing.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
     }
   }
 }
