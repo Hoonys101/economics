@@ -30,6 +30,20 @@ def government(golden_config):
     config.POLICY_ACTUATOR_STEP_SIZES = (0.01, 0.0025, 0.1)
     config.POLICY_ACTUATOR_BOUNDS = {}
     config.FISCAL_POLICY_ADJUSTMENT_SPEED = 0.1 # Ensure non-zero speed if used
+    config.TICKS_PER_YEAR = 100
+    config.ANNUAL_WEALTH_TAX_RATE = 0.0
+    config.GOV_ACTION_INTERVAL = 30
+    config.BUDGET_ALLOCATION_MIN = 0.1
+    config.NORMAL_BUDGET_MULTIPLIER_CAP = 1.0
+    config.EMERGENCY_BUDGET_MULTIPLIER_CAP = 2.0
+    config.GOV_ACTION_INTERVAL = 30
+    config.BUDGET_ALLOCATION_MIN = 0.1
+    config.NORMAL_BUDGET_MULTIPLIER_CAP = 1.0
+    config.EMERGENCY_BUDGET_MULTIPLIER_CAP = 2.0
+    config.DEBT_CEILING_HARD_LIMIT_RATIO = 1.5
+    config.tax_rate_min = 0.05
+    config.tax_rate_max = 0.60
+    config.debt_ceiling_ratio = 1.5
 
     gov = Government(id=1, config_module=config)
     gov._assets = 10000.0
@@ -179,6 +193,7 @@ def test_ai_policy_execution(government, simulation_state):
     # Mock decide_policy on the AI instance
     # Action 3 = FISCAL_EASE
     action_fiscal_ease = getattr(government.ai, "ACTION_FISCAL_EASE", 3)
+    government.ai.ACTION_FISCAL_EASE = action_fiscal_ease # explicitly set to ensure policy if check passes
 
     # Provide Sensory Data required for SmartLeviathanPolicy
     from simulation.dtos import GovernmentSensoryDTO
@@ -190,9 +205,9 @@ def test_ai_policy_execution(government, simulation_state):
     # Mock FiscalEngine to prevent it from resetting rates (Logic Conflict)
     # We want to verify AI policy application, so we isolate it from Rule-Based Engine.
     from modules.government.engines.api import FiscalDecisionDTO
+    # Note: If FiscalEngine returns None for taxes, the Government class will NOT overwrite the taxes modified by AI.
     with patch.object(government.ai, 'decide_policy', return_value=action_fiscal_ease):
         with patch.object(government.fiscal_engine, 'decide') as mock_fiscal:
-            # Fiscal engine returns "No Change" to preserve AI edits
             mock_fiscal.return_value = FiscalDecisionDTO(
                 new_income_tax_rate=None,
                 new_corporate_tax_rate=None,
@@ -205,4 +220,4 @@ def test_ai_policy_execution(government, simulation_state):
     # For Blue party, this usually means cutting corp tax
     # Note: Assertion disabled due to complex Mock/Config interaction in test environment.
     # We verify orchestration flow via mock calls.
-    # assert government.corporate_tax_rate < 0.2
+    assert government.corporate_tax_rate < 0.2

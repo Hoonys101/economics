@@ -11,72 +11,67 @@ from modules.household.dtos import HouseholdStateDTO
 from simulation.models import Share
 from simulation.systems.settlement_system import SettlementSystem
 
+
+class DummyEconState:
+    def __init__(self):
+        self.assets = 1000.0
+        self.inventory = {}
+        self.is_employed = False
+        self.perceived_avg_prices = {"item1": 10.0}
+        self.expected_inflation = {"item1": 0.0}
+
+class DummyBioState:
+    def __init__(self):
+        self.is_active = True
+        self.needs = {}
+
+class DummySocialState:
+    def __init__(self):
+        self.conformity = 0.5
+        self.social_rank = 0.5
+        self.approval_rating = 1.0
+        self.optimism = 0.5
+        self.ambition = 0.5
+
+class DummyHousehold:
+    def __init__(self, id):
+        self.id = id
+        self._econ_state = DummyEconState()
+        self._bio_state = DummyBioState()
+        self._social_state = DummySocialState()
+        self.wallet = MagicMock()
+        self.consume = MagicMock()
+        self.get_quantity = MagicMock(return_value=0.0)
+        self.remove_quantity = MagicMock()
+        self.apply_leisure_effect = MagicMock()
+
 class TestPhase28StressScenarios:
 
     @pytest.fixture
     def mock_households(self):
-        h1 = MagicMock(spec=Household)
-        h1.id = 1
-
-        # Setup nested states
-        h1._econ_state = MagicMock()
+        h1 = DummyHousehold(1)
         h1._econ_state.assets = 1000.0
-        h1._econ_state.inventory = {}
-        h1._econ_state.is_employed = False
-        h1._econ_state.perceived_avg_prices = {"item1": 10.0}
-        h1._econ_state.expected_inflation = {"item1": 0.0}
-
-        h1._bio_state = MagicMock()
-        h1._bio_state.is_active = True
-        h1._bio_state.needs = {}
-
-        h1._social_state = MagicMock()
-        # Set primitive values for serialization safety
-        h1._social_state.conformity = 0.5
-        h1._social_state.social_rank = 0.5
-        h1._social_state.approval_rating = 1.0
-        h1._social_state.optimism = 0.5
-        h1._social_state.ambition = 0.5
-
-        # Sync top-level properties (Legacy/Convenience)
-        h1.assets = 1000.0
-        h1.wallet = MagicMock()
         h1.wallet.get_balance.return_value = 1000.0
+        h1.assets = 1000.0
         h1.inventory = {}
         h1.is_active = True
         h1.is_employed = False
-        # Personality.NORMAL is invalid, use CONSERVATIVE or another valid member
         h1.personality = Personality.CONSERVATIVE
         h1.adaptation_rate = 0.1
         h1.price_history = {"item1": []}
         h1.expected_inflation = {"item1": 0.0}
-        # Wire consume to use consumption manager or simple mock
-        h1.consume = MagicMock()
 
-        h2 = MagicMock(spec=Household)
-        h2.id = 2
-
-        h2._econ_state = MagicMock()
+        h2 = DummyHousehold(2)
         h2._econ_state.assets = 5000.0
-        h2._econ_state.inventory = {}
-
-        h2._bio_state = MagicMock()
-        h2._bio_state.is_active = True
-        h2._bio_state.needs = {}
-
-        h2._social_state = MagicMock()
-        # Set primitive values for serialization safety
-        h2._social_state.conformity = 0.5
-        h2._social_state.social_rank = 0.5
-        h2._social_state.approval_rating = 1.0
-        h2._social_state.optimism = 0.5
-        h2._social_state.ambition = 0.5
-
-        h2.assets = 5000.0 # Wealthy
-        h2.wallet = MagicMock()
         h2.wallet.get_balance.return_value = 5000.0
+        h2.assets = 5000.0
+        h2.inventory = {}
         h2.is_active = True
-        h2.consume = MagicMock()
+        h2.is_employed = False
+        h2.personality = Personality.CONSERVATIVE
+        h2.adaptation_rate = 0.1
+        h2.price_history = {"item1": []}
+        h2.expected_inflation = {"item1": 0.0}
 
         return [h1, h2]
 
@@ -187,9 +182,9 @@ class TestPhase28StressScenarios:
         }
 
         # Household 1: Unemployed -> Should be reduced
-        mock_households[0].is_employed = False
+        mock_households[0]._econ_state.is_employed = False
         # Household 2: Employed -> Should NOT be reduced (mock doesn't have employed set, default False?)
-        mock_households[1].is_employed = True
+        mock_households[1]._econ_state.is_employed = True
 
         context: CommerceContext = {
             "households": mock_households,
