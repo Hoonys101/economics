@@ -3,11 +3,26 @@
     "version": "1.0"
   },
   "missions": {
-    "LEAK_FIX_1_QUEUE_CLEANUP": {
-      "key": "LEAK_FIX_1_QUEUE_CLEANUP",
-      "title": "Memory Fix 1: Queue Cleanup in TickOrchestrator",
+    "LEAK_FIX_3_ENGINE_FINALIZE": {
+      "key": "LEAK_FIX_3_ENGINE_FINALIZE",
+      "title": "Memory Fix 3: Engine Finalization Cycle Break",
       "type": "jules",
-      "instruction_raw": "[FILE]: simulation/orchestration/tick_orchestrator.py\n[TASK]: In `_finalize_tick()`, add `.clear()` calls for leaked queues.\n\nCurrently only `state.transactions.clear()` exists. Add:\n1. `state.effects_queue.clear()` \u2014 confirmed leaking ~50MB/2000 ticks\n2. `state.system_commands.clear()` \u2014 confirmed leaking\n3. If `state.event_system`: `state.event_system.god_commands.clear()`\n\n[SCOPE]: ~5 lines in ONE method. Do NOT modify any other file.\n[TEST]: pytest tests/integration/scenarios/ -x --tb=short\n[PR]: Submit immediately after passing.",
+      "instruction_raw": "[FILE]: simulation/engine.py\n[TASK]: Update `finalize_simulation()` to break object cycles after IO cleanup.\n\nAdd these lines at the END of `finalize_simulation()`, after existing cleanup:\n```python\n# Break cyclic references (Memory Leak Fix)\nself.world_state.teardown()\nself.tick_orchestrator = None\nself.action_processor = None\n```\n\n[DEPENDENCY]: Requires `WorldState.teardown()` to exist (LEAK_FIX_2).\n[SCOPE]: ~3 lines in ONE method in ONE file.\n[TEST]: pytest tests/initialization/ -x --tb=short\n[PR]: Submit immediately after passing.",
+      "command": "create",
+      "file_path": null,
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MOCK_FIX_1_UTILS_MOCKS": {
+      "key": "MOCK_FIX_1_UTILS_MOCKS",
+      "title": "Mock Containment 1: Spec-enforce tests/utils/mocks.py",
+      "type": "jules",
+      "instruction_raw": "[FILE]: tests/utils/mocks.py\n[TASK]: Replace ALL bare `MagicMock()` calls with `MagicMock(spec=<Interface>)` to prevent recursive mock chaining.\n\nCurrent bare mocks and their correct specs:\n1. L16: `MagicMock()` for logger \u2192 `MagicMock(spec=logging.Logger)` (add `import logging` at top)\n2. L19: `MagicMock()` for currency_registry_handler \u2192 `MagicMock(spec=IAgentRegistry)` (already imported)\n3. L23: `MagicMock()` for bank \u2192 `MagicMock(spec=IBank)` (add import from `modules.finance.api`)\n4. L35: `MagicMock()` for monetary_ledger \u2192 `MagicMock(spec=IMonetaryLedger)` (add import from `modules.finance.api`)\n5. L36: `MagicMock()` for bank \u2192 `MagicMock(spec=IBank)` (reuse import)\n6. L37: `MagicMock()` for saga_orchestrator \u2192 `MagicMock(spec=ISagaOrchestrator)` (add import from `modules.finance.api`)\n\n[IMPORTANT]: If any spec interface doesn't exist or causes import errors, use `Mock()` (without Magic) instead, which prevents recursive attribute generation.\n[SCOPE]: ONE file only. ~6 lines changed + 2-3 import lines added.\n[TEST]: pytest tests/unit/ -x --tb=short -q\n[PR]: Submit immediately after passing.",
       "command": "create",
       "file_path": null,
       "wait": false,
@@ -18,14 +33,29 @@
       "model": null,
       "audit_requirements": null
     },
-    "LEAK_FIX_3_ENGINE_FINALIZE": {
-      "key": "LEAK_FIX_3_ENGINE_FINALIZE",
-      "title": "Memory Fix 3: Engine Finalization Cycle Break",
+    "MOCK_FIX_2_FACTORIES": {
+      "key": "MOCK_FIX_2_FACTORIES",
+      "title": "Mock Containment 2: Spec-enforce tests/utils/factories.py",
       "type": "jules",
-      "instruction_raw": "[FILE]: simulation/engine.py\n[TASK]: Update `finalize_simulation()` to break object cycles after IO cleanup.\n\nAdd these lines at the END of `finalize_simulation()`, after existing cleanup:\n```python\n# Break cyclic references (Memory Leak Fix)\nself.world_state.teardown()\nself.tick_orchestrator = None\nself.action_processor = None\n```\n\n[DEPENDENCY]: Requires `WorldState.teardown()` to exist (LEAK_FIX_2).\n[SCOPE]: ~3 lines in ONE method in ONE file.\n[TEST]: pytest tests/initialization/ -x --tb=short\n[PR]: Submit immediately after passing.",
+      "instruction_raw": "[FILE]: tests/utils/factories.py\n[TASK]: Replace bare `MagicMock()` calls in factory functions with `Mock()` (non-Magic) to prevent recursive attribute auto-generation.\n\nSpecific changes:\n1. L212: `logger=MagicMock()` \u2192 `logger=Mock()` (loggers don't need magic methods)\n2. L218: `engine = MagicMock()` \u2192 `engine = Mock(spec=IDecisionEngine)` (already imported)\n3. L279: `MagicMock()` for config_module \u2192 `Mock()` (config should not auto-generate attributes)\n4. L287: `engine or MagicMock()` \u2192 `engine or Mock(spec=IDecisionEngine)` (already imported)\n\n[RATIONALE]: `MagicMock()` auto-generates child mocks on ANY attribute access. `Mock()` does too but without magic methods (__len__, __iter__, etc.). For config_module, using `Mock()` instead of `MagicMock()` prevents `__iter__`, `__len__` from being callable.\n[IMPORTANT]: Add `from unittest.mock import Mock` to the imports if not present.\n[SCOPE]: ONE file only. ~4 lines changed.\n[TEST]: pytest tests/unit/ -x --tb=short -q\n[PR]: Submit immediately after passing.",
       "command": "create",
       "file_path": null,
-      "wait": true,
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MOCK_FIX_3_SHALLOW_MODULE": {
+      "key": "MOCK_FIX_3_SHALLOW_MODULE",
+      "title": "Mock Containment 3: Fix ShallowModuleMock identity leak",
+      "type": "jules",
+      "instruction_raw": "[FILE]: tests/conftest.py\n[TASK]: Fix the `ShallowModuleMock.__getattr__` method (around L44-51) to cache child mocks instead of creating new ones on every access.\n\nCurrent BUGGY code:\n```python\nclass ShallowModuleMock(MagicMock):\n    def __getattr__(self, name):\n        if name.startswith(\"_\"):\n            return super().__getattr__(name)\n        mock_obj = MagicMock(return_value=None)\n        setattr(self, name, mock_obj)\n        return mock_obj\n```\n\nThe problem: `__getattr__` is only called when normal attribute lookup fails. BUT `MagicMock.__getattr__` creates a new child mock, then `setattr` stores it \u2014 this means each `getattr` creates TWO mocks (one from super, one explicit). Fix:\n\n```python\nclass ShallowModuleMock(MagicMock):\n    def __getattr__(self, name):\n        if name.startswith(\"_\"):\n            return super().__getattr__(name)\n        # Create a TERMINAL mock that does NOT chain further\n        mock_obj = Mock(return_value=None)  # Mock, not MagicMock\n        object.__setattr__(self, name, mock_obj)\n        return mock_obj\n```\n\nKey change: Use `Mock()` (terminal, no chaining) instead of `MagicMock()` (recursive chaining). Use `object.__setattr__` to bypass MagicMock's own setattr behavior.\n\n[SCOPE]: ~3 lines changed in ONE class in ONE file. Also add `Mock` to the existing import on L2.\n[TEST]: pytest tests/ -x --tb=short -q --co (collection-only test to ensure imports work)\n[PR]: Submit immediately after passing.",
+      "command": "create",
+      "file_path": null,
+      "wait": false,
       "session_id": null,
       "worker": null,
       "context_files": [],
