@@ -405,3 +405,25 @@ def pytest_runtest_teardown(item, nextitem):
     # Take post-test snapshot and report delta
     observer.take_snapshot(f"POST_{item.name}")
     observer.report_delta(f"PRE_{item.name}", f"POST_{item.name}")
+
+@pytest.fixture
+def mock_world_state():
+    """Provides a global mocked WorldState with IWorldStateMetricsProvider methods pre-configured."""
+    from modules.system.api import IWorldStateMetricsProvider
+    from modules.simulation.dtos.api import MoneySupplyDTO
+    from modules.simulation.api import EconomicIndicatorsDTO
+    mock = MagicMock(spec=IWorldStateMetricsProvider)
+
+    mock.calculate_total_money.return_value = MoneySupplyDTO(
+        total_m2_pennies=1000000,
+        system_debt_pennies=0,
+        currency="USD"
+    )
+    mock.get_economic_indicators.return_value = EconomicIndicatorsDTO(
+        gdp=100.0,
+        cpi=1.0,
+        unemployment_rate=5.0
+    )
+    mock.get_market_panic_index.return_value = 0.0
+
+    return mock
