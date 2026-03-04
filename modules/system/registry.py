@@ -82,6 +82,26 @@ class AgentRegistry(IAgentRegistry, ISystemAgentRegistry):
             return False
         return getattr(agent, "is_active", False)
 
+    def purge_inactive(self) -> int:
+        """Move inactive agents to inactive_agents dict. Returns purge count."""
+        purged = 0
+        inactive_ids = [aid for aid, agent in self.agents.items()
+                       if hasattr(agent, 'is_active') and not agent.is_active]
+        for aid in inactive_ids:
+            self.inactive_agents[aid] = self.agents.pop(aid)
+            purged += 1
+        # Also remove from typed lists
+        self.households = [h for h in self.households if getattr(h, 'is_active', True)]
+        self.firms = [f for f in self.firms if getattr(f, 'is_active', True)]
+        return purged
+
+    def clear(self):
+        """Full teardown for simulation finalization."""
+        self.agents.clear()
+        self.inactive_agents.clear()
+        self.households.clear()
+        self.firms.clear()
+
 
 class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
     """
