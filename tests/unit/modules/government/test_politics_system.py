@@ -41,11 +41,21 @@ def test_process_tick_election_trigger():
     state.tracker.get_latest_indicators.return_value = {}
     state.market_data = {}
 
+    from modules.government.api import IGovernment
+    from modules.governance.api import IFiscalPolicyHolder
     # Mock Government
-    gov = Mock()
+    gov = Mock(spec=IGovernment)
+    gov.id = 1
     gov.ruling_party = PoliticalParty.BLUE
     gov.income_tax_rate = 0.1
     gov.corporate_tax_rate = 0.2
+
+    # Mock Fiscal Policy for SystemCommandProcessor
+    fiscal_policy = Mock(spec=IFiscalPolicyHolder)
+    fiscal_policy.income_tax_rate = 0.1
+    fiscal_policy.corporate_tax_rate = 0.2
+    gov.fiscal_policy = fiscal_policy
+
     state.primary_government = gov
     state.central_bank = Mock() # Required for make_policy_decision
 

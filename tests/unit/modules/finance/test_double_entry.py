@@ -145,15 +145,13 @@ class TestDoubleEntry(unittest.TestCase):
         self.mock_gov = MockGovernment(initial_assets=10000)
         self.mock_cb = MockCentralBank(initial_cash=5000)
         self.mock_bank = MockBank(initial_assets=20000)
-        self.mock_firm = MockFirm(id=1, initial_cash_reserve=100)
+        self.mock_firm = MockFirm(id=99, initial_cash_reserve=100)
 
         self.mock_settlement = MockSettlementSystem()
-        self.mock_settlement.setup_balance(self.mock_gov.id, 10000)
         self.mock_settlement.setup_balance(self.mock_cb.id, 5000)
         self.mock_settlement.setup_balance(self.mock_bank.id, 20000)
-        # Note: MockFirm ID is 1, Bank ID is 1. Conflict?
-        # MockBank ID is 1 in definition. MockFirm ID is passed as 1.
-        # This might cause issue in get_balance if IDs clash.
+        self.mock_settlement.setup_balance(self.mock_gov.id, 10000)
+        self.mock_settlement.setup_balance(self.mock_firm.id, 100)
         # I'll update MockFirm ID to 101 to avoid clash.
         self.mock_firm = MockFirm(id=101, initial_cash_reserve=100)
         self.mock_settlement.setup_balance(self.mock_firm.id, 100)

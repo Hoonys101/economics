@@ -10,6 +10,7 @@ from modules.government.dtos import (
 )
 from modules.finance.api import BondDTO
 from modules.system.api import DEFAULT_CURRENCY
+from modules.system.constants import ID_SYSTEM
 
 logger = logging.getLogger(__name__)
 
@@ -115,9 +116,9 @@ class FiscalBondService(IFiscalBondService):
         )
 
         # 4. Create Payment Request
-        # If buyer_agent is None, payer is None. Caller must handle.
+        # If buyer_agent is None, payer is ID_SYSTEM. Caller must handle.
         payment_request = PaymentRequestDTO(
-            payer=buyer_agent if buyer_agent else "UNKNOWN_BUYER",
+            payer=buyer_agent if buyer_agent else ID_SYSTEM,
             payee="GOVERNMENT",
             amount=request.amount_pennies,
             currency=DEFAULT_CURRENCY,
