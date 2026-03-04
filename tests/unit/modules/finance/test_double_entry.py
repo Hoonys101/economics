@@ -13,11 +13,11 @@ class MockGovernment:
     def __init__(self, initial_assets):
         self.id = 0
         self._assets = initial_assets
-        self.sensory_data = MagicMock()
+        self.sensory_data = MagicMock(spec=['current_gdp'])
         self.sensory_data.current_gdp = 100.0
         self._total_debt = 0
         # Mock wallet for FinanceSystem init sync
-        self.wallet = MagicMock()
+        self.wallet = MagicMock(spec=['get_balance'])
         self.wallet.get_balance.return_value = initial_assets
 
     @property
@@ -69,7 +69,7 @@ class MockBank:
         self.id = id
         self._assets = initial_assets
         # Mock wallet for FinanceSystem init sync
-        self.wallet = MagicMock()
+        self.wallet = MagicMock(spec=['get_balance'])
         self.wallet.get_balance.return_value = initial_assets
         self.base_rate = 0.03
 
@@ -93,7 +93,7 @@ class MockFirm:
         self.id = id
         self.cash_reserve = initial_cash_reserve
         # Mock the finance component of the firm
-        self.finance = MagicMock()
+        self.finance = MagicMock(spec=[])
         self.has_bailout_loan = False
         self.age = 100
     @property
@@ -167,7 +167,7 @@ class TestDoubleEntry(unittest.TestCase):
         )
 
         # Mock FiscalMonitor to redirect to Gov mock method
-        self.finance_system.fiscal_monitor = MagicMock()
+        self.finance_system.fiscal_monitor = MagicMock(spec=['get_debt_to_gdp_ratio'])
         self.finance_system.fiscal_monitor.get_debt_to_gdp_ratio.side_effect = lambda gov, dto: gov.get_debt_to_gdp_ratio()
 
     def test_bailout_loan_generates_command(self):
@@ -199,7 +199,7 @@ class TestDoubleEntry(unittest.TestCase):
         """
         # Force high yield to trigger QE
         self.mock_gov.total_debt = 160
-        self.mock_gov.sensory_data = MagicMock()
+        self.mock_gov.sensory_data = MagicMock(spec=['current_gdp'])
         self.mock_gov.sensory_data.current_gdp = 100.0
 
         initial_gov_assets = self.mock_gov.assets
