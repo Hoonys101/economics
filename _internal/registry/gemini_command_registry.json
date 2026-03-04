@@ -49,7 +49,7 @@
       "file_path": null,
       "wait": false,
       "session_id": null,
-      "worker": "spec",
+      "worker": "reporter",
       "context_files": [
         "gemini-output/analysis/REPORT_SCENARIO_CATEGORIZATION.md",
         "gemini-output/analysis/REPORT_SCENARIO_CRITERIA.md",
