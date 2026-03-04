@@ -47,21 +47,6 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
-    },
-    "MOCK_FIX_3_SHALLOW_MODULE": {
-      "key": "MOCK_FIX_3_SHALLOW_MODULE",
-      "title": "Mock Containment 3: Fix ShallowModuleMock identity leak",
-      "type": "jules",
-      "instruction_raw": "[FILE]: tests/conftest.py\n[TASK]: Fix the `ShallowModuleMock.__getattr__` method (around L44-51) to cache child mocks instead of creating new ones on every access.\n\nCurrent BUGGY code:\n```python\nclass ShallowModuleMock(MagicMock):\n    def __getattr__(self, name):\n        if name.startswith(\"_\"):\n            return super().__getattr__(name)\n        mock_obj = MagicMock(return_value=None)\n        setattr(self, name, mock_obj)\n        return mock_obj\n```\n\nThe problem: `__getattr__` is only called when normal attribute lookup fails. BUT `MagicMock.__getattr__` creates a new child mock, then `setattr` stores it \u2014 this means each `getattr` creates TWO mocks (one from super, one explicit). Fix:\n\n```python\nclass ShallowModuleMock(MagicMock):\n    def __getattr__(self, name):\n        if name.startswith(\"_\"):\n            return super().__getattr__(name)\n        # Create a TERMINAL mock that does NOT chain further\n        mock_obj = Mock(return_value=None)  # Mock, not MagicMock\n        object.__setattr__(self, name, mock_obj)\n        return mock_obj\n```\n\nKey change: Use `Mock()` (terminal, no chaining) instead of `MagicMock()` (recursive chaining). Use `object.__setattr__` to bypass MagicMock's own setattr behavior.\n\n[SCOPE]: ~3 lines changed in ONE class in ONE file. Also add `Mock` to the existing import on L2.\n[TEST]: pytest tests/ -x --tb=short -q --co (collection-only test to ensure imports work)\n[PR]: Submit immediately after passing.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
     }
   }
 }
