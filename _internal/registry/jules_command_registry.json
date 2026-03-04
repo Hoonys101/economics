@@ -107,21 +107,6 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
-    },
-    "test_analysis_firm": {
-      "key": "test_analysis_firm",
-      "title": "Resolve Firm Test Mock Leaks & Integration Failures",
-      "type": "jules",
-      "instruction_raw": "Fix the GC Mock Leak hang in `test_labor_config_migration.py` and resolve the integration failure in `test_growth_scenario_with_golden_firm`.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_TEST_ANALYSIS_FIRM_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
     }
   }
 }
