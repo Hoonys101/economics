@@ -18,21 +18,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "LEAK_FIX_2_WORLDSTATE_TEARDOWN": {
-      "key": "LEAK_FIX_2_WORLDSTATE_TEARDOWN",
-      "title": "Memory Fix 2: WorldState Teardown Method",
-      "type": "jules",
-      "instruction_raw": "[FILE]: simulation/world_state.py\n[TASK]: Add a `teardown()` method to break cyclic reference chains.\n\nImplementation:\n```python\ndef teardown(self):\n    # Break subsystem references\n    subsystems = [\n        'tracker', 'inequality_tracker', 'stock_tracker', 'personality_tracker',\n        'ai_training_manager', 'ma_manager', 'demographic_manager', 'immigration_manager',\n        'inheritance_manager', 'housing_system', 'persistence_manager', 'analytics_system',\n        'firm_system', 'technology_manager', 'generational_wealth_audit', 'breeding_planner',\n        'transaction_processor', 'lifecycle_manager', 'finance_system', 'ai_trainer',\n        'social_system', 'event_system', 'sensory_system', 'settlement_system',\n        'saga_orchestrator', 'monetary_ledger', 'shareholder_registry', 'taxation_system',\n        'commerce_system', 'labor_market_analyzer', 'crisis_monitor', 'public_manager',\n        'politics_system', 'index_circuit_breaker', 'estate_registry', 'scenario_verifier',\n        'telemetry_collector', 'dashboard_service', 'command_queue', 'telemetry_exchange'\n    ]\n    for attr in subsystems:\n        if hasattr(self, attr):\n            setattr(self, attr, None)\n    # Clear collections\n    self.goods_data.clear()\n    self.real_estate_units.clear()\n    self.currency_holders.clear()\n    self._currency_holders_set.clear()\n    self.household_time_allocation.clear()\n    self._governments.clear()\n    self.markets.clear()\n```\n\n[SCOPE]: ONE new method in ONE file. Do NOT modify any other file.\n[TEST]: pytest tests/unit/simulation/ -x --tb=short\n[PR]: Submit immediately after passing.",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "LEAK_FIX_3_ENGINE_FINALIZE": {
       "key": "LEAK_FIX_3_ENGINE_FINALIZE",
       "title": "Memory Fix 3: Engine Finalization Cycle Break",
