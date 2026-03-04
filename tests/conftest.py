@@ -335,6 +335,21 @@ def golden_config():
 # ============================================================================
 import gc
 
+
+@pytest.fixture(autouse=True)
+def gc_collect_harder():
+    """Fixture to force GC and clear MagicMock histories globally to prevent leaks."""
+    yield
+    import gc
+    from unittest.mock import Mock
+    for obj in gc.get_objects():
+        if isinstance(obj, Mock):
+            try:
+                obj.reset_mock()
+            except Exception:
+                pass
+    gc.collect(2)
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_teardown(item, nextitem):
     """

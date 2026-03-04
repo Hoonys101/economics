@@ -166,7 +166,6 @@ class TestScenarioRunner:
         return households, firms
 
     @pytest.mark.parametrize("scenario_file", SCENARIO_FILES)
-    @pytest.mark.xfail(reason="TD-ARCH-MOCK-POLLUTION: VectorizedHouseholdPlanner uses numpy ops which fail with MagicMocks from tests.")
     def test_run_scenario(self, scenario_file, scenario_loader, judge_factory):
         logger.info(f"--- Running Scenario: {os.path.basename(scenario_file)} ---")
 
@@ -237,16 +236,7 @@ class TestScenarioRunner:
 
         sim = initializer.build_simulation()
 
-        import gc
-        from unittest.mock import Mock
-
-        def gc_collect_harder():
-            # 1단계: 메모리 상의 모든 Mock 객체를 찾아 이력(history)을 강제 초기화하여 순환 참조 고리 파괴
-            for obj in gc.get_objects():
-                if isinstance(obj, Mock):
-                    obj.reset_mock()
-            # 2단계: GC 강제 실행
-            gc.collect()
+        pass
 
         try:
             # 5. Create Judges
@@ -298,4 +288,4 @@ class TestScenarioRunner:
             except Exception as fe:
                 logger.error(f"Error finalizing simulation: {fe}")
             finally:
-                gc_collect_harder()
+                pass
