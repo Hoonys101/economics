@@ -355,3 +355,33 @@ class WorldState:
 
     def get_all_households(self) -> Sequence[Any]:
         return self.households
+
+    def teardown(self):
+        # Break subsystem references
+        subsystems = [
+            'tracker', 'inequality_tracker', 'stock_tracker', 'personality_tracker',
+            'ai_training_manager', 'ma_manager', 'demographic_manager', 'immigration_manager',
+            'inheritance_manager', 'housing_system', 'persistence_manager', 'analytics_system',
+            'firm_system', 'technology_manager', 'generational_wealth_audit', 'breeding_planner',
+            'transaction_processor', 'lifecycle_manager', 'finance_system', 'ai_trainer',
+            'social_system', 'event_system', 'sensory_system', 'settlement_system',
+            'saga_orchestrator', 'monetary_ledger', 'shareholder_registry', 'taxation_system',
+            'commerce_system', 'labor_market_analyzer', 'crisis_monitor', 'public_manager',
+            'politics_system', 'index_circuit_breaker', 'estate_registry', 'scenario_verifier',
+            'telemetry_collector', 'dashboard_service', 'command_queue', 'telemetry_exchange'
+        ]
+        for attr in subsystems:
+            if hasattr(self, attr):
+                setattr(self, attr, None)
+        # Clear collections
+        self.goods_data.clear()
+        self.real_estate_units.clear()
+        self.currency_holders.clear()
+        self._currency_holders_set.clear()
+        self.household_time_allocation.clear()
+        self._governments.clear()
+        self.markets.clear()
+        self.system_commands.clear()
+        self.god_commands.clear()
+        self.agent_registry = None
+        self.global_registry = None
