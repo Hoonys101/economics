@@ -39,6 +39,26 @@
       "output_path": "gemini-output/analysis/REPORT_WEAKREF_ERROR.md",
       "model": null,
       "audit_requirements": null
+    },
+    "SCENARIO_4_PIPELINE_BLUEPRINT": {
+      "key": "SCENARIO_4_PIPELINE_BLUEPRINT",
+      "title": "Scenario Blueprint: Automated Reporting Pipeline",
+      "type": "gemini",
+      "instruction_raw": "1~3단계의 결과물을 종합하여, pytest 실행 시 WorldState 메트릭이 수집되어 자동으로 Scenario Verdict 리포트로 변환되는 엔드투엔드 파이프라인 설계도를 작성하세요.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "gemini-output/analysis/REPORT_SCENARIO_CATEGORIZATION.md",
+        "gemini-output/analysis/REPORT_SCENARIO_CRITERIA.md",
+        "gemini-output/spec/TEMPLATE_SCENARIO_VERDICT.md",
+        "modules/system/api.py"
+      ],
+      "output_path": "gemini-output/analysis/BLUEPRINT_SCENARIO_PIPELINE.md",
+      "model": null,
+      "audit_requirements": null
     }
   }
 }

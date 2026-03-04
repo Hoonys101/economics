@@ -3,6 +3,21 @@
     "version": "1.0"
   },
   "missions": {
+    "STABILIZATION_PHASE_2": {
+      "key": "STABILIZATION_PHASE_2",
+      "title": "Stabilization Phase 2: Component Hardening",
+      "type": "jules",
+      "instruction_raw": "Implement component-level hardening from MISSION_STABILIZATION_FINAL_SPEC.md. 1. Refactor ConfigWrapper to be 'Strict' in test_scenario_runner.py. 2. Fix tests broken by strict config. 3. Final cleanup of redundant gc.collect() calls.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_STABILIZATION_FINAL_SPEC.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
     "STABILIZATION_PHASE_1": {
       "key": "STABILIZATION_PHASE_1",
       "title": "Stabilization Phase 1: Core Infrastructure",
@@ -18,13 +33,13 @@
       "model": null,
       "audit_requirements": null
     },
-    "STABILIZATION_PHASE_2": {
-      "key": "STABILIZATION_PHASE_2",
-      "title": "Stabilization Phase 2: Component Hardening",
+    "SCENARIO_REPORTER_IMPL": {
+      "key": "SCENARIO_REPORTER_IMPL",
+      "title": "Implementation: Scenario Reporter Orchestrator",
       "type": "jules",
-      "instruction_raw": "Implement component-level hardening from MISSION_STABILIZATION_FINAL_SPEC.md. 1. Refactor ConfigWrapper to be 'Strict' in test_scenario_runner.py. 2. Fix tests broken by strict config. 3. Final cleanup of redundant gc.collect() calls.",
+      "instruction_raw": "Implement the missing ScenarioReporter orchestrator based on MISSION_REBIRTH_SCENARIO_REPORTER_SPEC.md. 1. Create ScenarioReporter class in modules/scenarios/reporter.py. 2. Implement aggregate_reports() and write_markdown_report() methods. 3. Ensure it harvests metrics from WorldState via IWorldStateMetricsProvider.",
       "command": "create",
-      "file_path": "gemini-output/spec/MISSION_STABILIZATION_FINAL_SPEC.md",
+      "file_path": "gemini-output/spec/MISSION_REBIRTH_SCENARIO_REPORTER_SPEC.md",
       "wait": true,
       "session_id": null,
       "worker": null,
