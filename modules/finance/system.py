@@ -42,7 +42,7 @@ class FinanceSystem(IFinanceSystem):
 
     def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None, bank_registry: Optional[IBankRegistry] = None, monetary_authority: Optional[Any] = None, monetary_ledger: Optional[IMonetaryLedger] = None):
         import weakref
-        self.government = weakref.proxy(government)
+        self._government_ref = weakref.ref(government)
         self.central_bank = central_bank
         self.bank = bank
         self.config_module = config_module
@@ -89,6 +89,13 @@ class FinanceSystem(IFinanceSystem):
 
         # Sync Initial State (Optimistic) - REMOVED
         # We rely on SSoT (SettlementSystem) and sync on demand.
+
+    @property
+    def government(self) -> IGovernmentFinance:
+        gov = self._government_ref()
+        if gov is None:
+            raise ReferenceError("Government object has been garbage collected")
+        return gov
 
     def _sync_ledger_balances(self) -> None:
         """Syncs ledger reserves and treasury balance from SettlementSystem (SSoT)."""

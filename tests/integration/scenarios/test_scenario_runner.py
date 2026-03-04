@@ -67,7 +67,7 @@ class MockRepository:
     def close(self): pass
     def migrate(self): pass
 
-class ConfigWrapper:
+class StrictConfigWrapper:
     def __init__(self, base_config):
         self._base = base_config
         self._overrides = {}
@@ -78,10 +78,10 @@ class ConfigWrapper:
         try:
             val = getattr(self._base, name)
             if hasattr(val, '_mock_name'): # Check if it's a mock
-                 logger.warning(f"ConfigWrapper: getattr({name}) returned Mock from base!")
+                 raise TypeError(f"StrictConfigWrapper: getattr({name}) returned Mock from base!")
             return val
         except AttributeError:
-            raise AttributeError(f"ConfigWrapper has no attribute '{name}'")
+            raise AttributeError(f"StrictConfigWrapper has no attribute '{name}'")
 
     def set_override(self, name, value):
         self._overrides[name] = value
@@ -175,7 +175,7 @@ class TestScenarioRunner:
         logger.info(f"Loaded Strategy: {strategy.id}, Category: {strategy.category}")
 
         # 2. Configure Simulation
-        mock_config_module = ConfigWrapper(GlobalConfig)
+        mock_config_module = StrictConfigWrapper(GlobalConfig)
 
         # Apply overrides from strategy to mock_config_module (Legacy)
         for key, value in strategy.config_params.items():
@@ -198,6 +198,11 @@ class TestScenarioRunner:
         mock_config_module.set_override('BIOLOGICAL_FERTILITY_RATE', 0.15)
         mock_config_module.set_override('FOOD_CONSUMPTION_QUANTITY', 1.0)
         mock_config_module.set_override('FOOD_PURCHASE_MAX_PER_TICK', 5.0)
+
+        # Add required test overrides missing from global config module during tests to prevent TypeError from StrictConfigWrapper
+        mock_config_module.set_override('INITIAL_HOUSEHOLD_ASSETS', 1000)
+        mock_config_module.set_override('NUM_HOUSEHOLDS', 10)
+        mock_config_module.set_override('NUM_FIRMS', 2)
 
         # Create ConfigManager (required by Initializer)
         config_manager = ConfigManager(Path("config"), legacy_config=mock_config_module)

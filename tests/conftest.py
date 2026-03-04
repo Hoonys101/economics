@@ -187,10 +187,10 @@ def finance_system(mock_central_bank, mock_bank, mock_config):
     """Provides a mocked FinanceSystem attached to a mock government."""
     # We create a mock government shell first for the FinanceSystem constructor
     mock_gov_shell = Mock()
-    # FinanceSystem uses weakref.proxy internally for government.
-    # We must keep a strong reference to mock_gov_shell alive so the proxy doesn't die.
+    # FinanceSystem uses weakref internally for government.
+    # We must keep a strong reference to mock_gov_shell alive so the weakref doesn't die.
     system = FinanceSystem(mock_gov_shell, mock_central_bank, mock_bank, mock_config)
-    system._mock_gov_shell = mock_gov_shell  # Prevent garbage collection of the shell
+    system._gov_strong_ref = mock_gov_shell  # Prevent garbage collection of the shell
 
     # Spy on the real methods so we can assert calls if needed
     system.issue_treasury_bonds = MagicMock(wraps=system.issue_treasury_bonds)
@@ -214,7 +214,7 @@ def government(mock_config, mock_tracker, finance_system):
     gov.finance_system = finance_system
     # The FinanceSystem was created with a shell, now we link it to the real government instance
     import weakref
-    gov.finance_system.government = weakref.proxy(gov)
+    gov.finance_system._government_ref = weakref.ref(gov)
 
     # Inject Mock SettlementSystem (Strict)
     # Uses ISettlementSystem to ensure Government only accesses standard methods
@@ -334,21 +334,51 @@ def golden_config():
 # 🗑️ Global Teardown Hook (Memory Leak Fix)
 # ============================================================================
 import gc
+import weakref
 
+class MockRegistry:
+    """Tracks instantiated mocks to prevent GC scanning overhead."""
+    _active_mocks = weakref.WeakSet()
 
-@pytest.fixture(autouse=True)
-def gc_collect_harder():
-    """Fixture to force GC and clear MagicMock histories globally to prevent leaks."""
-    yield
-    import gc
-    from unittest.mock import Mock
-    for obj in gc.get_objects():
-        if isinstance(obj, Mock):
+    @classmethod
+    def register(cls, mock_obj):
+        if isinstance(mock_obj, (Mock, MagicMock)):
+            cls._active_mocks.add(mock_obj)
+        return mock_obj
+
+    @classmethod
+    def reset_all(cls):
+        for m in list(cls._active_mocks):
             try:
-                obj.reset_mock()
+                m.reset_mock()
             except Exception:
                 pass
-    gc.collect(2)
+        cls._active_mocks.clear()
+
+# AUTOMATION: Hook into unittest.mock.patch to auto-register
+import unittest.mock
+
+# Create an object proxy patch rather than fully overwriting unittest.mock.patch
+# Overwriting unittest.mock.patch completely breaks pytest-mock since it tries to access attributes on it
+class PatchWrapper:
+    def __init__(self, original_patch):
+        self._original_patch = original_patch
+
+    def __call__(self, *args, **kwargs):
+        p = self._original_patch(*args, **kwargs)
+        _orig_start = p.start
+        def _wrapped_start(*s_args, **s_kwargs):
+            mock_obj = _orig_start(*s_args, **s_kwargs)
+            MockRegistry.register(mock_obj)
+            return mock_obj
+        p.start = _wrapped_start
+        return p
+
+    def __getattr__(self, item):
+        return getattr(self._original_patch, item)
+
+unittest.mock.patch = PatchWrapper(unittest.mock.patch)
+
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_teardown(item, nextitem):
@@ -356,8 +386,10 @@ def pytest_runtest_teardown(item, nextitem):
     Defensively clear global singleton registries and force garbage collection
     to prevent state leaks across test executions.
     """
+    MockRegistry.reset_all()
+
     # Force garbage collection to remove cyclic references
-    gc.collect(2) # Exhaustive collection
+    gc.collect(1)
 
     # Try to clear global singleton registries
     try:
