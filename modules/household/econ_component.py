@@ -83,7 +83,7 @@ class EconComponent(IEconComponent):
         adaptive_rate = new_state.adaptation_rate
         if stress_scenario_config and stress_scenario_config.is_active:
             if stress_scenario_config.scenario_name == 'hyperinflation':
-                if hasattr(stress_scenario_config, "inflation_expectation_multiplier"):
+                if getattr(stress_scenario_config, "inflation_expectation_multiplier", None) is not None:
                      adaptive_rate *= stress_scenario_config.inflation_expectation_multiplier
 
         for item_id, good in goods_info_map.items():

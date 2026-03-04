@@ -56,7 +56,7 @@ class HouseholdStateAccessMixin:
         ticks_per_year = getattr(self.config, 'ticks_per_year', 360)
 
         bank_service = None
-        if loan_market and hasattr(loan_market, 'bank'):
+        if loan_market and getattr(loan_market, 'bank', None) is not None:
             bank_service = loan_market.bank
 
         return calculate_total_monthly_debt_payments(bank_service, self.id, ticks_per_year)
