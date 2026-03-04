@@ -104,5 +104,6 @@ class TestFiscalBondService:
 
         result = service.issue_bonds(request, context, buyer_pool)
 
-        # Should return UNKNOWN_BUYER or similar
-        assert result.payment_request.payer == "UNKNOWN_BUYER"
+        from modules.system.constants import ID_SYSTEM
+        # Should return ID_SYSTEM or similar
+        assert result.payment_request.payer == ID_SYSTEM

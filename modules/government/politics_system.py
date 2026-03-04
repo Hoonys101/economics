@@ -1,11 +1,14 @@
 from __future__ import annotations
 import dataclasses
 import logging
+import random
 from typing import Any, List, Optional, TYPE_CHECKING
 from modules.common.config.api import IConfigManager, GovernmentConfigDTO
 from simulation.ai.enums import PoliticalParty
 from modules.government.political.orchestrator import PoliticalOrchestrator
 from modules.government.political.api import IVoter, ILobbyist
+from modules.governance.processor import SystemCommandProcessor
+from modules.governance.api import SetTaxRateCommand, SystemCommandType
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
@@ -68,10 +71,11 @@ class PoliticsSystem:
     def _collect_signals(self, state: SimulationState) -> None:
         """
         Iterates over agents to collect votes and lobbying efforts.
-        Acts as the 'Batch Scanner' adapter.
+        Acts as the 'Batch Scanner' adapter, using random sampling for performance.
         """
-        # Collect Votes
-        for h in state.households:
+        # Collect Votes (sample up to 100 households)
+        sampled_households = random.sample(state.households, min(len(state.households), 100)) if state.households else []
+        for h in sampled_households:
             # Check if implements IVoter
             if isinstance(h, IVoter):
                  try:
@@ -80,8 +84,9 @@ class PoliticsSystem:
                  except Exception as e:
                      logger.warning(f"Failed to cast vote for household {h.id}: {e}")
 
-        # Collect Lobbying
-        for f in state.firms:
+        # Collect Lobbying (sample up to 20 firms)
+        sampled_firms = random.sample(state.firms, min(len(state.firms), 20)) if state.firms else []
+        for f in sampled_firms:
             if isinstance(f, ILobbyist):
                 try:
                     result = f.formulate_lobbying_effort(state.time, state.primary_government)
@@ -141,22 +146,22 @@ class PoliticsSystem:
                 extra={"tick": state.time, "agent_id": state.primary_government.id, "tags": ["election", "regime_change"]}
             )
             # Trigger Policy Mandate
-            self._apply_policy_mandate(state.primary_government, winner)
+            self._apply_policy_mandate(state, winner)
         else:
             logger.info(
                 f"ELECTION_RESULTS | INCUMBENT VICTORY ({winner.name}). Approval: {climate.overall_approval_rating:.2f}",
                 extra={"tick": state.time, "agent_id": state.primary_government.id, "tags": ["election"]}
             )
 
-    def _apply_policy_mandate(self, government: Any, party: PoliticalParty) -> None:
+    def _apply_policy_mandate(self, state: SimulationState, party: PoliticalParty) -> None:
         """
         Applies the winning party's platform to the government configuration.
         """
         # Blue: Low Corp Tax, Low Income Tax (Supply Side)
         # Red: High Corp Tax, Progressive Income Tax (Demand Side / Welfare)
 
-        # We update the Government object directly for immediate effect,
-        # AND update the Config via ConfigManager for persistence/consistency.
+        # Update the Config via ConfigManager for persistence/consistency,
+        # and use SystemCommandProcessor to update Government object properly.
 
         new_income_tax = 0.1
         new_corp_tax = 0.2
@@ -168,9 +173,24 @@ class PoliticsSystem:
             new_income_tax = 0.25 # High
             new_corp_tax = 0.30   # High
 
-        # Update Government Agent State
-        government.income_tax_rate = new_income_tax
-        government.corporate_tax_rate = new_corp_tax
+        # Update Government Agent State via SystemCommandProcessor
+        processor = SystemCommandProcessor()
+        processor.execute(
+            SetTaxRateCommand(
+                command_type=SystemCommandType.SET_TAX_RATE,
+                tax_type="income",
+                new_rate=new_income_tax
+            ),
+            state
+        )
+        processor.execute(
+            SetTaxRateCommand(
+                command_type=SystemCommandType.SET_TAX_RATE,
+                tax_type="corporate",
+                new_rate=new_corp_tax
+            ),
+            state
+        )
 
         # Update Config
         try:

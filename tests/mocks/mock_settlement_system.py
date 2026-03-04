@@ -41,16 +41,17 @@ class MockSettlementSystem(ISettlementSystem):
             self.setup_balance(receiver.id, receiver_bal + amount_pennies, currency)
 
             # Also update agents using _deposit/_withdraw if available, to emulate real system side effects
-            if isinstance(sender, IFinancialAgent) or hasattr(sender, '_withdraw'):
-                try:
+            try:
+                if hasattr(sender, '_withdraw'):
                     sender._withdraw(amount_pennies, currency)
-                except Exception:
-                    pass # Ignore if mock agent doesn't support it
-            if isinstance(receiver, IFinancialAgent) or hasattr(receiver, '_deposit'):
-                try:
+            except Exception:
+                pass # Ignore if mock agent doesn't support it
+
+            try:
+                if hasattr(receiver, '_deposit'):
                     receiver._deposit(amount_pennies, currency)
-                except Exception:
-                    pass
+            except Exception:
+                pass
 
             return Transaction(
                 buyer_id=sender.id,
