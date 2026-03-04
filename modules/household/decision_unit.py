@@ -3,6 +3,8 @@ from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 import logging
 from modules.household.api import IDecisionUnit, OrchestrationContextDTO
 from modules.household.dtos import EconStateDTO
+from modules.household.connectors.housing_connector import IHousingSystem
+
 from simulation.dtos import StressScenarioConfig
 from simulation.models import Order
 from modules.market.housing_planner import HousingPlanner
@@ -40,7 +42,7 @@ class DecisionUnit(IDecisionUnit):
             request = HousingDecisionRequestDTO(household_state=household_state, housing_market_snapshot=market_snapshot.housing, outstanding_debt_payments=0.0)
             decision = self.housing_planner.evaluate_housing_options(request)
             if decision['decision_type'] == 'INITIATE_PURCHASE':
-                if housing_system and hasattr(housing_system, 'initiate_purchase'):
+                if housing_system and isinstance(housing_system, IHousingSystem):
                     housing_system.initiate_purchase(decision, buyer_id=state.portfolio.owner_id)
                     new_state.housing_target_mode = 'BUY'
                 else:
@@ -73,6 +75,7 @@ class DecisionUnit(IDecisionUnit):
             # Original code: new_state.assets < threshold. new_state.assets returns Dict[Currency, int].
             # This comparison < int is invalid.
             # Fix: Use wallet balance.
+            # assets_val and threshold are both evaluated in integer pennies.
             assets_val = new_state.wallet.get_balance('USD') # Default currency
             if assets_val < threshold:
                 for firm_id, share in new_state.portfolio.holdings.items():
@@ -84,7 +87,7 @@ class DecisionUnit(IDecisionUnit):
             multiplier = stress_scenario_config.demand_shock_multiplier
             if multiplier is not None:
                 for order in refined_orders:
-                    if order.side == 'BUY' and hasattr(order, 'item_id') and (order.item_id not in ['labor', 'loan']):
+                    if order.side == 'BUY' and getattr(order, 'item_id', None) is not None and (order.item_id not in ['labor', 'loan']):
                         if not order.item_id.startswith('stock_'):
                             order.quantity *= multiplier
 

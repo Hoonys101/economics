@@ -33,6 +33,7 @@ class ConsumptionEngine(IConsumptionEngine):
         orders: List[Order] = []
         if stress_scenario_config and stress_scenario_config.is_active and (stress_scenario_config.scenario_name == 'deflation'):
             threshold = config.panic_selling_asset_threshold
+            # assets_val and threshold are both evaluated in integer pennies.
             assets_val = new_econ_state.wallet.get_balance(DEFAULT_CURRENCY)
             if assets_val < threshold:
                 for firm_id, share in new_econ_state.portfolio.holdings.items():
@@ -53,7 +54,7 @@ class ConsumptionEngine(IConsumptionEngine):
             multiplier = stress_scenario_config.demand_shock_multiplier
             if multiplier is not None:
                 for order in orders:
-                    if order.side == 'BUY' and hasattr(order, 'item_id') and (order.item_id not in ['labor', 'loan']):
+                    if order.side == 'BUY' and getattr(order, 'item_id', None) is not None and (order.item_id not in ['labor', 'loan']):
                         if not order.item_id.startswith('stock_'):
                             order.quantity *= multiplier
         new_durable_assets = []

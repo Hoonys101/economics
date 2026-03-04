@@ -49,7 +49,7 @@ class BudgetEngine(IBudgetEngine):
         return BudgetOutputDTO(econ_state=new_econ_state, budget_plan=budget_plan, housing_action=housing_action)
 
     def _update_shadow_wage(self, state: EconStateDTO, market_snapshot: Any, config: Any, current_tick: int):
-        avg_market_wage_float = market_snapshot.labor.avg_wage if hasattr(market_snapshot, 'labor') else 0.0
+        avg_market_wage_float = market_snapshot.labor.avg_wage if getattr(market_snapshot, 'labor', None) is not None else 0.0
         avg_market_wage = int(avg_market_wage_float * 100)
 
         if avg_market_wage > 0:
@@ -75,7 +75,7 @@ class BudgetEngine(IBudgetEngine):
             state.shadow_reservation_wage_pennies = int(state.shadow_reservation_wage_pennies * decay_factor)
 
             # Floor at 1 penny, regardless of min_wage config if desperate
-            min_wage = config.household_min_wage_demand if hasattr(config, 'household_min_wage_demand') else 0
+            min_wage = getattr(config, 'household_min_wage_demand', 0)
 
             if unemployment_duration > DESPERATION_THRESHOLD_TICKS:
                  # Desperation overrides min wage config, floor is 1 penny
@@ -93,7 +93,7 @@ class BudgetEngine(IBudgetEngine):
                     self.econ_state = e_state
 
             wrapper = StateWrapper(state)
-            housing_snap = market_snapshot.housing if hasattr(market_snapshot, 'housing') else None
+            housing_snap = getattr(market_snapshot, 'housing', None)
 
             if housing_snap:
                 request = HousingDecisionRequestDTO(household_state=wrapper, housing_market_snapshot=housing_snap, outstanding_debt_payments=0.0)

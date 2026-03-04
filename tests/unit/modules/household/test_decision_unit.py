@@ -107,7 +107,8 @@ class TestDecisionUnit:
         )
 
         # Mock housing system
-        mock_housing_system = MagicMock()
+        from modules.household.connectors.housing_connector import IHousingSystem
+        mock_housing_system = MagicMock(spec=IHousingSystem)
         context = OrchestrationContextDTO(
             market_snapshot=market_snapshot,
             current_time=30,

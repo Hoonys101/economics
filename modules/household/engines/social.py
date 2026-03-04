@@ -72,7 +72,7 @@ class SocialEngine(ISocialEngine):
                             except KeyError:
                                 # Fallback or specific mapping
                                 pass
-                elif hasattr(gov_data, "party"):
+                elif getattr(gov_data, "party", None) is not None:
                      gov_party = gov_data.party
 
             if gov_party:
