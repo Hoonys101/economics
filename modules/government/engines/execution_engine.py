@@ -122,7 +122,8 @@ class PolicyExecutionEngine(IPolicyExecutionEngine):
             return
 
         # Check solvency via FinanceSystem (context)
-        is_solvent = context.finance_system.evaluate_solvency(firm, state.tick)
+        solvency_report = context.finance_system.evaluate_solvency(firm.to_financial_snapshot(), state.tick)
+        is_solvent = solvency_report.is_solvent
 
         bailout_res = context.welfare_manager.provide_firm_bailout(firm, amount, state.tick, is_solvent)
         if bailout_res:

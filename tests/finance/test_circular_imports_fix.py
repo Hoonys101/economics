@@ -179,12 +179,33 @@ def test_evaluate_solvency_protocol_usage():
     # balance = 20000
     # 20000 < 60000 -> False
 
-    solvent = fs.evaluate_solvency(firm, 10)
-    assert solvent is False
+    from modules.finance.api import FirmFinancialSnapshotDTO
+    settlement.get_balance.return_value = 20000
+
+    snapshot = FirmFinancialSnapshotDTO(
+        firm_id=firm.id,
+        age=10,
+        monthly_wage_bill_pennies=20000,
+        inventory_value_pennies=10000,
+        capital_stock_units=100.0,
+        retained_earnings_pennies=50000,
+        average_profit_pennies=10000,
+        total_debt_pennies=50000
+    )
+
+    report = fs.evaluate_solvency(snapshot, 10)
+    assert report.is_solvent is False
 
     # Test established firm
-    firm.age = 30
-    # Z-Score calc...
-    # Just verify it runs without AttributeError
-    solvent = fs.evaluate_solvency(firm, 30)
-    assert isinstance(solvent, bool)
+    snapshot_30 = FirmFinancialSnapshotDTO(
+        firm_id=firm.id,
+        age=30,
+        monthly_wage_bill_pennies=20000,
+        inventory_value_pennies=10000,
+        capital_stock_units=100.0,
+        retained_earnings_pennies=0,
+        average_profit_pennies=0,
+        total_debt_pennies=50000
+    )
+    report_30 = fs.evaluate_solvency(snapshot_30, 30)
+    assert hasattr(report_30, 'is_solvent')

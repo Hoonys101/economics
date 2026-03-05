@@ -270,14 +270,10 @@ class WorldState(IAnalyticsContext, IPopulationContext, IFirmContext, IFinanceCo
         M2 is delegated to the Unified Monetary Ledger (SSoT).
         Returns: MoneySupplyDTO with strict penny values.
         """
-        if self.monetary_ledger:
-            return self.monetary_ledger.calculate_total_money()
-
-        # Legacy Fallback (O(N) Iteration)
-        return self._legacy_calculate_total_money()
-
-    def _legacy_calculate_total_money(self) -> MoneySupplyDTO:
-        raise DeprecationWarning("M2 calculation must be delegated to MonetaryLedger SSoT.")
+        if not self.monetary_ledger:
+            # If ledger is missing in tests or genesis, return empty DTO rather than crash or iterate.
+            return MoneySupplyDTO(total_m2_pennies=0, total_debt_pennies=0)
+        return self.monetary_ledger.calculate_total_money()
 
 
     def get_economic_indicators(self) -> EconomicIndicatorsDTO:

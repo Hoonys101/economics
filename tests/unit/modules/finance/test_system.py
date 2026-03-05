@@ -215,23 +215,75 @@ def mock_firm():
     return StubFirm()
 
 def test_evaluate_solvency_startup_pass(finance_system, mock_firm):
-    mock_firm.age = 10
+    from modules.finance.api import FirmFinancialSnapshotDTO
+    finance_system.settlement_system = MagicMock()
     # Required runway = 3 * 100000 = 300000 pennies
-    mock_firm.cash_reserve = 1200000
-    assert finance_system.evaluate_solvency(mock_firm, 100) is True
+    finance_system.settlement_system.get_balance.return_value = 1200000
+
+    snapshot = FirmFinancialSnapshotDTO(
+        firm_id=mock_firm.id,
+        age=10,
+        monthly_wage_bill_pennies=100000,
+        inventory_value_pennies=0,
+        capital_stock_units=0.0,
+        retained_earnings_pennies=0,
+        average_profit_pennies=0,
+        total_debt_pennies=0
+    )
+
+    assert finance_system.evaluate_solvency(snapshot, 100).is_solvent is True
 
 def test_evaluate_solvency_startup_fail(finance_system, mock_firm):
-    mock_firm.age = 10
-    mock_firm.cash_reserve = 100000
-    assert finance_system.evaluate_solvency(mock_firm, 100) is False
+    from modules.finance.api import FirmFinancialSnapshotDTO
+    finance_system.settlement_system = MagicMock()
+    finance_system.settlement_system.get_balance.return_value = 100000
+
+    snapshot = FirmFinancialSnapshotDTO(
+        firm_id=mock_firm.id,
+        age=10,
+        monthly_wage_bill_pennies=100000,
+        inventory_value_pennies=0,
+        capital_stock_units=0.0,
+        retained_earnings_pennies=0,
+        average_profit_pennies=0,
+        total_debt_pennies=0
+    )
+
+    assert finance_system.evaluate_solvency(snapshot, 100).is_solvent is False
 
 def test_evaluate_solvency_established_pass(finance_system, mock_firm):
-    assert finance_system.evaluate_solvency(mock_firm, 100) is True
+    from modules.finance.api import FirmFinancialSnapshotDTO
+    finance_system.settlement_system = MagicMock()
+    finance_system.settlement_system.get_balance.return_value = 1000000
+
+    snapshot = FirmFinancialSnapshotDTO(
+        firm_id=mock_firm.id,
+        age=100,
+        monthly_wage_bill_pennies=100000,
+        inventory_value_pennies=50000,
+        capital_stock_units=100.0,
+        retained_earnings_pennies=500000,
+        average_profit_pennies=100000,
+        total_debt_pennies=0
+    )
+    assert finance_system.evaluate_solvency(snapshot, 100).is_solvent is True
 
 def test_evaluate_solvency_established_fail(finance_system, mock_firm):
-    mock_firm.finance_state.retained_earnings_pennies = 0
-    mock_firm.finance_state.profit_history = []
-    assert finance_system.evaluate_solvency(mock_firm, 100) is False
+    from modules.finance.api import FirmFinancialSnapshotDTO
+    finance_system.settlement_system = MagicMock()
+    finance_system.settlement_system.get_balance.return_value = 100
+
+    snapshot = FirmFinancialSnapshotDTO(
+        firm_id=mock_firm.id,
+        age=100,
+        monthly_wage_bill_pennies=100000,
+        inventory_value_pennies=0,
+        capital_stock_units=0.0,
+        retained_earnings_pennies=0,
+        average_profit_pennies=0,
+        total_debt_pennies=1000000
+    )
+    assert finance_system.evaluate_solvency(snapshot, 100).is_solvent is False
 
 def test_issue_treasury_bonds_market(finance_system, mock_government, mock_bank):
     amount = 100000 # 1000.00

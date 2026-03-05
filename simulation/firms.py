@@ -67,7 +67,7 @@ from modules.agent_framework.components.inventory_component import InventoryComp
 from modules.agent_framework.components.financial_component import FinancialComponent
 
 from modules.common.utils.shadow_logger import log_shadow
-from modules.finance.api import InsufficientFundsError, IFinancialFirm, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake, IBank, ISalesTracker
+from modules.finance.api import InsufficientFundsError, IFinancialFirm, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake, IBank, ISalesTracker, FirmFinancialSnapshotDTO
 from modules.common.financial.api import IFinancialAgent
 from modules.common.interfaces import IPropertyOwner
 from modules.common.financial.dtos import Claim, MoneyDTO
@@ -775,6 +775,20 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             EquityStake(shareholder_id=sh['agent_id'], ratio=sh['quantity'] / outstanding_shares)
             for sh in shareholders
         ]
+
+    # --- Finance DTO Conversion ---
+    def to_financial_snapshot(self) -> FirmFinancialSnapshotDTO:
+        """Converts internal firm state to an immutable financial snapshot DTO."""
+        return FirmFinancialSnapshotDTO(
+            firm_id=self.id,
+            age=self.age,
+            monthly_wage_bill_pennies=self.monthly_wage_bill_pennies,
+            inventory_value_pennies=self.inventory_value_pennies,
+            capital_stock_units=float(self.capital_stock_units),
+            retained_earnings_pennies=self.retained_earnings_pennies,
+            average_profit_pennies=self.average_profit_pennies,
+            total_debt_pennies=self.total_debt_pennies
+        )
 
     def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, int]:
         """Liquidate assets using Protocol Purity and AssetManagementEngine."""

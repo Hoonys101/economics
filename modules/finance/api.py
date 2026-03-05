@@ -603,7 +603,7 @@ class IMonetaryAuthority(ISettlementSystem, Protocol):
 class IFinanceSystem(Protocol):
     """Interface for the sovereign debt and corporate bailout system."""
 
-    def evaluate_solvency(self, firm: 'Firm', current_tick: int) -> bool:
+    def evaluate_solvency(self, snapshot: FirmFinancialSnapshotDTO, current_tick: int) -> SolvencyReportDTO:
         """Evaluates a firm's solvency to determine bailout eligibility."""
         ...
 
@@ -943,6 +943,25 @@ class IDepositManager(Protocol):
 # ==============================================================================
 
 # --- Data Transfer Objects (DTOs) ---
+
+@dataclass(frozen=True)
+class SolvencyReportDTO:
+    is_solvent: bool
+    z_score: float
+    total_assets_pennies: int
+    working_capital_pennies: int
+
+@dataclass(frozen=True)
+class FirmFinancialSnapshotDTO:
+    """Pure DTO decoupling the finance engine from the Firm Agent instance."""
+    firm_id: AgentID
+    age: int
+    monthly_wage_bill_pennies: int
+    inventory_value_pennies: int
+    capital_stock_units: float
+    retained_earnings_pennies: int
+    average_profit_pennies: int
+    total_debt_pennies: int
 
 @dataclass(frozen=True)
 class SolvencyCheckInputDTO:
