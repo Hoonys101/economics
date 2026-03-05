@@ -19,22 +19,6 @@
       "audit_requirements": null,
       "no_inject": false
     },
-    "WO-IMPL-DTO-SUCCESSION": {
-      "key": "WO-IMPL-DTO-SUCCESSION",
-      "title": "Decouple Succession (Death/Inheritance)",
-      "type": "jules",
-      "instruction_raw": "",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_WO-SPEC-DTO-SUCCESSION_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null,
-      "no_inject": false
-    },
     "WO-IMPL-DTO-ANALYTICS": {
       "key": "WO-IMPL-DTO-ANALYTICS",
       "title": "Decouple Analytics System",
