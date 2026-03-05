@@ -15,7 +15,7 @@
 
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **TD-PERF-GETATTR-LOOP** | Performance | **getattr Bottleneck**: Tight loops (100k+) using `getattr` for config lookups. | **High**: Runtime. | **RESOLVED** |
+| **TD-PERF-GETATTR-LOOP** | Performance | **getattr Bottleneck**: Proxy lookup overhead in tight loops (100k+) for `sim.bank`, `sim.agents`. | **High**: Runtime. | **RESOLVED (2026-03-05)** |
 | **TD-FIN-MAGIC-BASE-RATE** | Finance | `FinanceSystem.issue_treasury_bonds` uses hardcoded `0.03`. | **Low**: Config. | Identified |
 | **TD-ARCH-SSOT-BYPASS** | Architecture | **Protocol Evasion**: Direct mutation bypassing `SettlementSystem`. Linked to `AUDIT-S3-2A-SSOT-BYPASS`. | **CRITICAL**: SSoT. | **ACTIVE (SPEC)** |
 | **TD-SYS-TRANSFER-HANDLER-GAP**| Finance | **Invisible P2P**: Generic `transfer` lacks handler. Linked to `AUDIT-S3-2B-TRANSFER-GAP`. | **CRITICAL**: Integrity. | **ACTIVE (SPEC)** |
@@ -235,12 +235,23 @@
 
 ---
 
+---
+
 ### ID: TD-PERF-GETATTR-LOOP
-- **Title**: getattr Bottleneck in Tight Loops
-- **Symptom**: Significant performance degradation in `TaxService.collect_wealth_tax` when processing 100k+ agents.
-- **Risk**: Simulation runtime becomes unsustainable as population scales.
-- **Solution**: Cache config values as local instance variables during `__init__` to avoid `getattr` overhead in loops.
-- **Status**: **RESOLVED** (Merged in `fix/tax-service-config-caching`)
+- **Title**: God Class Proxy Lookup Overhead in Deep Loops
+- **Symptom**: Significant performance degradation in `TaxService` and `SimulationInitializer` during 10k+ agent registration.
+- **Risk**: Simulation runtime becomes unsustainable; initialization hang.
+- **Resolution**: Implemented **Local Reference Caching** pattern. Dependencies like `sim.agents`, `sim.bank`, and `sim.settlement_system` are cached as local variables before entering loops.
+- **Lesson**: Interface proxies (God Class `__getattr__`) have high overhead in Python; always cache references for deep loops.
+- **Status**: **RESOLVED** (Phase A - 2026-03-05)
+
+### ID: TD-FIN-REGISTRY-CONCURRENCY
+- **Title**: AccountRegistry Thread-Safety Risks
+- **Symptom**: Potential silent state corruption or dictionary iteration errors in `AccountRegistry` during multi-threaded initialization.
+- **Cause**: Non-atomic mutations of `defaultdict(set)` across threads.
+- **Resolution**: Introduced `threading.RLock()` to protect all state mutations and retrievals. Used `RLock` to safely handle re-entrant calls between methods.
+- **Lesson**: Shared registries must be thread-safe from inception.
+- **Status**: **RESOLVED** (Phase B - 2026-03-05)
 
 ---
 

@@ -1,0 +1,47 @@
+# 🐙 Code Review Report
+
+## 1. 🔍 Summary
+`SimulationInitializer` 내 대규모 Agent(`households`, `firms`) 등록 과정에서 반복적으로 발생하는 `Simulation.__getattr__` 프록시 해상도 오버헤드를 제거하기 위해, 루프 진입 전 `sim.*` 속성들을 로컬 변수에 할당하는 캐싱 최적화(Proxy Cache Optimization)를 수행했습니다.
+
+## 2. 🚨 Critical Issues
+- 발견되지 않았습니다. (보안 위반, 하드코딩, Zero-Sum 위반 요소 없음)
+
+## 3. ⚠️ Logic & Spec Gaps
+- **Eager Evaluation of `sim.bank.id` (잠재적 로직 오류)**: 
+  수정된 코드의 520라인 근처에서 `bank_id_local = sim.bank.id`가 무조건 평가되고 있습니다. 이전 코드에서는 `sim.households`나 `sim.firms` 루프 내부에서만 참조되었기 때문에, 에이전트 목록이 비어있을 경우 `sim.bank`가 초기화되어 있지 않아도(`None`) 문제가 발생하지 않았습니다. 그러나 변경된 구현에서는 루프 이전에 즉시 접근하므로, Mock 테스트나 특수 시나리오에서 `sim.bank`가 없을 경우 `AttributeError`를 유발할 수 있는 로직 결함이 있습니다.
+- **Silent Fallback 처리 변경**: 
+  이전 코드에서는 `sim.demographic_manager.sync_stats(...)`가 필수적으로 실행(없으면 에러)되는 구조였으나, 새 코드는 `if demographic_manager_local:` 분기를 타면서 `None`일 경우 조용히 무시(Bypass)되도록 변경되었습니다. 이것이 기획에 따른 의도된 스펙 완화인지 확인이 필요합니다.
+
+## 4. 💡 Suggestions
+- `sim.bank`의 존재 유무를 안전하게 확인한 뒤 식별자를 추출하도록 리팩토링할 것을 제안합니다.
+  ```python
+  bank_id_local = sim.bank.id if getattr(sim, 'bank', None) else None
+  ```
+- 에이전트 반복문 내부에서 `bank_id_local`이 `None`일 경우에 대한 예외 처리를 명확히 하여 무효한 Settlement Account가 등록되는 것을 방지하십시오.
+
+## 5. 🧠 Implementation Insight Evaluation
+- **Original Insight**:
+  > # Insight Report: WO-IMPL-HANG-FIX-PROXY-CACHE
+  > ## 1. Architectural Insights
+  > - **God Class `__getattr__` Overhead**: During initialization, the `_init_phase4_population` method processes large numbers of agents (Households and Firms). Inside the loop, repeated access to attributes like `sim.bank`, `sim.settlement_system`, and `sim.agents` triggered heavy `__getattr__` proxy resolution mappings to the underlying `WorldState` via the `Simulation` God class.
+  > - **Proxy Cache Optimization**: By explicitly resolving these properties prior to iterating through the population registration loops (`households` and `firms`), we bypass the expensive and redundant proxy lookup overhead (10,000+ unnecessary calls), vastly improving the bootstrap time for simulations with a large number of agents.
+- **Reviewer Evaluation**:
+  God Class(Simulation)의 `__getattr__` 프록시 탐색이 유발하는 성능 병목을 정확히 진단하고, 로컬 캐시를 통해 시간 복잡도를 혁신적으로 줄인 기술적 통찰은 매우 우수합니다. 
+  **다만, 시스템 룰에서 요구하는 "현상/원인/해결/교훈"의 구조화된 템플릿을 전혀 준수하지 않고 자의적인 목차(Architectural Insights, Regression Analysis 등)로 작성되었습니다.** 지식 매뉴얼화 프로토콜을 통과하기 위해 포맷 수정이 필요합니다.
+
+## 6. 📚 Manual Update Proposal (Draft)
+- **Target File**: `design/2_operations/ledgers/TECH_DEBT_LEDGER.md`
+- **Draft Content**:
+  ```markdown
+  ### [PERFORMANCE] God Class Proxy Lookup Overhead in Deep Loops
+
+  - **현상**: 시뮬레이션 초기화 중 대량의 에이전트(Households, Firms)를 순회하며 등록할 때 심각한 부트스트랩 지연(Hang) 현상이 발생.
+  - **원인**: `Simulation` God Class의 `__getattr__`가 `WorldState`로의 프록시 맵핑을 담당하는데, 루프 내부에서 `sim.bank`, `sim.agents` 등을 반복 호출하여 10,000회 이상의 불필요한 프록시 오버헤드를 유발함.
+  - **해결**: 반복문 진입 전에 필요한 의존성 객체들을 식별하고, 로컬 변수(Local Reference)로 캐싱(`agents_local = sim.agents` 등)하여 프록시 조회를 1회로 제한함.
+  - **교훈**: 대규모 루프 연산이 발생하는 영역에서는 God Class 및 Proxy 인스턴스의 직접적인 속성 조회를 피하고, 반드시 로컬 참조 캐싱 패턴을 강제해야 한다.
+  ```
+
+## 7. ✅ Verdict
+**REQUEST CHANGES (Hard-Fail)**
+- **사유**: `sim.bank.id` 무조건적 선행 평가에 따른 `AttributeError` 가능성 (Logic Error 잠재).
+- **사유**: `communications/insights/WO-IMPL-HANG-FIX-PROXY-CACHE.md`가 제출되었으나, **현상/원인/해결/교훈**의 필수 템플릿 형식을 준수하지 않음 (지식 및 매뉴얼화 위반).
