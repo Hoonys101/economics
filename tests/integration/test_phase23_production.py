@@ -42,7 +42,7 @@ class TestPhase23Production:
                 productivity_factor=1.0,
                 config_dto=config,
                 initial_inventory={},
-                loan_market=None,
+                loan_market_state=None,
                 sector="FOOD_PROD"
             )
             # Setup State

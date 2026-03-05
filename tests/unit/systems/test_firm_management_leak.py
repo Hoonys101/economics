@@ -69,7 +69,7 @@ class TestFirmManagementLeak(unittest.TestCase):
             mock_firm_instance._add_assets = MagicMock()
 
             # 3. Run spawn_firm
-            self.firm_system.spawn_firm(self.mock_simulation, household)
+            self.firm_system.spawn_firm(self.mock_simulation, household, markets_state={})
 
             # 4. Check Settlement System Usage
             # Expected Cost: 1000 * 1.5 = 1500.0

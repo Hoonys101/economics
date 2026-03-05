@@ -22,7 +22,7 @@ def mock_context(mock_config):
         core_config_module=mock_config,
         household_config_dto=household_config,
         goods_data=[],
-        loan_market=MagicMock(),
+        loan_market_state=None,
         ai_training_manager=MagicMock(),
         settlement_system=MagicMock(),
         markets=MagicMock(),
