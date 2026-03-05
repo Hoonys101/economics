@@ -31,7 +31,7 @@ class Wallet(IWallet):
         for k, v in initial_balances.items():
             self._balances[k] = int(v)
 
-        self._audit_log = audit_log if audit_log is not None else GLOBAL_WALLET_LOG
+        self._audit_log = audit_log if audit_log is not None else []
         self.allow_negative_balance = allow_negative_balance
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:

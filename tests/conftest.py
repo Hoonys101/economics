@@ -108,6 +108,13 @@ from modules.finance.api import ISettlementSystem, IMonetaryAuthority, ILiquidit
 #         print(f"DEBUG: [pytest] Collecting: {file_path}")
 
 @pytest.fixture(autouse=True)
+def clear_global_wallet_log():
+    from modules.finance.wallet.audit import GLOBAL_WALLET_LOG
+    GLOBAL_WALLET_LOG.clear()
+    yield
+    GLOBAL_WALLET_LOG.clear()
+
+@pytest.fixture(autouse=True)
 def mock_platform_lock_manager(request):
     """Mocks PlatformLockManager methods globally to prevent file locking during tests."""
     # Allow tests to opt-out of this mock (e.g., unit tests for the lock manager itself)
