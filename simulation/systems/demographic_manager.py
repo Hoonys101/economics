@@ -34,12 +34,9 @@ class DemographicManager(IDemographicManager):
         config_module: Any = None,
         strategy: Optional["ScenarioStrategy"] = None,
         household_factory: Optional[IHouseholdFactory] = None,
-        context: Optional["IPopulationContext"] = None
+        agent_registry: Optional[Any] = None
     ):
         if hasattr(self, "initialized") and self.initialized:
-            # Re-injection check
-            if context:
-                self.world_state = context
             return
 
         self.config_module = config_module
@@ -47,7 +44,7 @@ class DemographicManager(IDemographicManager):
         self.logger = logging.getLogger("simulation.systems.demographic_manager")
         self.settlement_system: Optional[Any] = None 
         self.household_factory = household_factory
-        self.world_state = context
+        self.agent_registry = agent_registry
         
         # O(1) Stats Cache
         self._stats_cache = {
@@ -57,9 +54,6 @@ class DemographicManager(IDemographicManager):
 
         self.initialized = True
         self.logger.info("DemographicManager initialized with O(1) cache.")
-
-    def set_world_state(self, world_state: "WorldState") -> None:
-        self.world_state = world_state
 
     def get_gender_stats(self) -> DemographicStatsDTO:
         """
@@ -145,15 +139,15 @@ class DemographicManager(IDemographicManager):
             # This call triggers LifecycleEngine -> death check -> register_death
             agent.update_needs(current_tick, market_data)
 
-    def process_births(self, simulation: Any, birth_requests: List[Household]) -> List[Household]:
+    def process_births(self, context: Any, birth_requests: List[Household]) -> List[Household]:
         new_children = []
 
         for parent in birth_requests:
             if not (self.config_module.REPRODUCTION_AGE_START <= parent.age <= self.config_module.REPRODUCTION_AGE_END):
                 continue
 
-            child_id = simulation.next_agent_id
-            simulation.next_agent_id += 1
+            child_id = context.next_agent_id
+            context.next_agent_id += 1
 
             parent_assets = 0
             if hasattr(parent, 'wallet'):
@@ -165,28 +159,28 @@ class DemographicManager(IDemographicManager):
 
             try:
                 if not self.household_factory:
-                    config_module = getattr(simulation, 'config', self.config_module)
-                    context = HouseholdFactoryContext(
+                    config_module = getattr(context, 'config', self.config_module)
+                    factory_context = HouseholdFactoryContext(
                         core_config_module=config_module,
                         household_config_dto=create_config_dto(config_module),
-                        goods_data=getattr(simulation, 'goods_data', []),
-                        loan_market=getattr(simulation, 'loan_market', None),
-                        ai_training_manager=getattr(simulation, 'ai_trainer', None),
-                        settlement_system=getattr(simulation, 'settlement_system', None),
-                        markets=getattr(simulation, 'markets', {}),
-                        memory_system=getattr(simulation, 'memory_system', None),
-                        central_bank=getattr(simulation, 'central_bank', None),
+                        goods_data=getattr(context, 'goods_data', []),
+                        loan_market=getattr(context, 'loan_market', None),
+                        ai_training_manager=getattr(context, 'ai_trainer', None),
+                        settlement_system=getattr(context, 'settlement_system', None),
+                        markets=getattr(context, 'markets', {}),
+                        memory_system=getattr(context, 'memory_system', None),
+                        central_bank=getattr(context, 'central_bank', None),
                         demographic_manager=self
                     )
-                    self.household_factory = HouseholdFactory(context)
+                    self.household_factory = HouseholdFactory(factory_context)
 
                 # Pass explicit keyword arguments to match factory signature
                 child = self.household_factory.create_newborn(
                     parent=parent,
                     new_id=child_id,
                     initial_assets=initial_gift_pennies,
-                    current_tick=getattr(simulation, 'time', 0),
-                    simulation=simulation
+                    current_tick=getattr(context, 'time', 0),
+                    simulation=context
                 )
                 
                 # Update parent linkage

@@ -450,6 +450,8 @@ class IBirthContext(ILifecycleContext, Protocol):
     tracker: Any # Needed for ImmigrationManager
     bank: Any # Needed for FirmFactory bootstrap check (AttributeError fix)
     agent_registry: IAgentRegistry # Needed for atomic Firm registration
+    markets: Dict[str, Any]
+    government: Any
 
 @runtime_checkable
 class IAgingContext(ILifecycleContext, Protocol):

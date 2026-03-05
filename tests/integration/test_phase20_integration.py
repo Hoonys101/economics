@@ -73,8 +73,16 @@ class TestPhase20Integration:
         labor_market.get_total_demand.return_value = 10
         engine.markets = {"labor": labor_market}
 
+        from modules.demographics.api import VitalStatsObservationDTO
+        observation = VitalStatsObservationDTO(
+            unemployment_rate=0.01,
+            job_vacancies=10,
+            total_population=50,
+            current_time=100
+        )
+
         # Execute
-        new_immigrants = manager.process_immigration(engine)
+        new_immigrants = manager.process_immigration(observation, engine)
 
         # Assert
         assert len(new_immigrants) == 5
@@ -90,21 +98,35 @@ class TestPhase20Integration:
         labor_market = MagicMock()
         engine.markets = {"labor": labor_market}
 
+        from modules.demographics.api import VitalStatsObservationDTO
+
         # Case 1: High Unemployment
-        engine.tracker.get_latest_indicators.return_value = {"unemployment_rate": 0.10}
-        labor_market.get_total_demand.return_value = 10
-        engine._prepare_market_data.return_value = {"job_vacancies": 10}
-        assert len(manager.process_immigration(engine)) == 0
+        observation = VitalStatsObservationDTO(
+            unemployment_rate=0.10,
+            job_vacancies=10,
+            total_population=50,
+            current_time=100
+        )
+        assert len(manager.process_immigration(observation, engine)) == 0
 
         # Case 2: No Vacancies
-        engine.tracker.get_latest_indicators.return_value = {"unemployment_rate": 0.01}
-        labor_market.get_total_demand.return_value = 0
-        engine._prepare_market_data.return_value = {"job_vacancies": 0}
-        assert len(manager.process_immigration(engine)) == 0
+        observation = VitalStatsObservationDTO(
+            unemployment_rate=0.01,
+            job_vacancies=0,
+            total_population=50,
+            current_time=100
+        )
+        assert len(manager.process_immigration(observation, engine)) == 0
 
         # Case 3: Overpopulation
         mock_config.POPULATION_IMMIGRATION_THRESHOLD = 40
-        assert len(manager.process_immigration(engine)) == 0
+        observation = VitalStatsObservationDTO(
+            unemployment_rate=0.01,
+            job_vacancies=10,
+            total_population=50,
+            current_time=100
+        )
+        assert len(manager.process_immigration(observation, engine)) == 0
 
     def test_system2_housing_cost_renter(self, mock_config):
         """Test System2Planner deducting rent for non-owners."""

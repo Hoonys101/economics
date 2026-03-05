@@ -11,6 +11,7 @@ from simulation.systems.firm_management import FirmSystem
 from modules.household.api import IHouseholdFactory
 from simulation.finance.api import ISettlementSystem
 from modules.system.api import ICurrencyHolder, DEFAULT_CURRENCY, IAgentRegistry
+from modules.demographics.api import VitalStatsObservationDTO
 
 class BirthSystem(IBirthSystem):
     """
@@ -55,9 +56,25 @@ class BirthSystem(IBirthSystem):
         all_transactions.extend(birth_txs)
 
         # 4. Immigration
-        # ImmigrationManager expects 'engine' (Simulation-like object)
-        # Context adapter provides necessary attributes (tracker, government, etc.)
-        new_immigrants = self.immigration_manager.process_immigration(context)
+        # Build VitalStatsObservationDTO for ImmigrationManager
+        indicators = context.tracker.get_latest_indicators()
+        unemployment_rate = indicators.get("unemployment_rate", 1.0)
+
+        job_vacancies = 0
+        if "labor" in context.markets:
+            job_vacancies = context.markets["labor"].get_total_demand()
+
+        # Refactored: directly check the _bio_state for backwards compatibility with Simulation households
+        total_population = len([h for h in context.households if h._bio_state.is_active])
+
+        observation = VitalStatsObservationDTO(
+            unemployment_rate=unemployment_rate,
+            job_vacancies=job_vacancies,
+            total_population=total_population,
+            current_time=context.time
+        )
+
+        new_immigrants = self.immigration_manager.process_immigration(observation, context)
         self._register_new_agents(context, new_immigrants)
 
         # 5. Entrepreneurship

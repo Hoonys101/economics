@@ -147,6 +147,9 @@ def test_newborn_receives_initial_needs_from_config(mock_config, mock_simulation
 
     birth_requests = [parent_agent]
 
+    # Mock context since DemographicManager now uses a context
+    mock_simulation.config = mock_config
+
     # ACT
     # This now uses a completely mocked ecosystem
     # Patch create_config_dto to avoid AttributeError due to incomplete mock_config
