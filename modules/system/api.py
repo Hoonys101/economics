@@ -1,8 +1,9 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Protocol, Union, runtime_checkable, TYPE_CHECKING, TypedDict
+from typing import Any, Dict, List, Optional, Protocol, Union, runtime_checkable, TYPE_CHECKING, TypedDict, Iterator
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
+import contextlib
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
@@ -297,6 +298,13 @@ class IGlobalRegistry(Protocol):
         ...
 
     def snapshot(self) -> Dict[str, RegistryValueDTO]:
+        ...
+
+    @contextlib.contextmanager
+    def batch_mode(self) -> Iterator[None]:
+        """
+        Context manager to defer and batch notifications until the end of the block.
+        """
         ...
 
     def get_metadata(self, key: str) -> Any:

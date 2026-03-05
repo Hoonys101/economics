@@ -4,6 +4,7 @@ from modules.system.api import IAgentRegistry, IGlobalRegistry, IConfigurationRe
 from modules.system.services.schema_loader import SchemaLoader
 from simulation.dtos.registry_dtos import ParameterSchemaDTO
 import threading
+from contextlib import contextmanager
 
 if TYPE_CHECKING:
     from simulation.agents import Agent
@@ -119,6 +120,8 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
         self._metadata_map: Dict[str, ParameterSchemaDTO] = {}
         self._metadata_loaded = False # Flag for lazy loading
         self._metadata_lock = threading.Lock() # Lock for thread-safe lazy loading
+        self._batch_depth = 0
+        self._batched_notifications: Dict[str, tuple[Any, OriginType]] = {}
 
         if initial_data:
             self.migrate_from_dict(initial_data)
@@ -158,6 +161,23 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
         # Return entry with highest origin priority
         max_origin = max(layers.keys(), key=lambda o: o.value)
         return layers[max_origin]
+
+    @contextmanager
+    def batch_mode(self):
+        """Defers notifications until the context block exits. Supports nesting."""
+        if getattr(self, '_batch_depth', None) is None:
+            self._batch_depth = 0
+            self._batched_notifications = {}
+        self._batch_depth += 1
+        try:
+            yield
+        finally:
+            self._batch_depth -= 1
+            if self._batch_depth == 0:
+                batched = self._batched_notifications
+                self._batched_notifications = {}
+                for key, (value, origin) in batched.items():
+                    self._notify_immediate(key, value, origin)
 
     def get(self, key: str, default: Any = None) -> Any:
         # We don't necessarily need metadata to get a value, but consistent behavior is good.
@@ -263,6 +283,12 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
                 self._key_observers[key].append(observer)
 
     def _notify(self, key: str, value: Any, origin: OriginType) -> None:
+        if getattr(self, '_batch_depth', 0) > 0:
+            self._batched_notifications[key] = (value, origin)
+            return
+        self._notify_immediate(key, value, origin)
+
+    def _notify_immediate(self, key: str, value: Any, origin: OriginType) -> None:
         # Notify global observers
         for observer in self._observers:
             observer.on_registry_update(key, value, origin)

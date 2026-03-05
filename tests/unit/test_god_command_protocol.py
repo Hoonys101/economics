@@ -32,6 +32,11 @@ class MockRegistry(IRestorableRegistry):
         self.data[key] = entry.value
         return True
 
+    import contextlib
+    @contextlib.contextmanager
+    def batch_mode(self):
+        yield
+
     # Implement other IGlobalRegistry methods to satisfy protocol/abstract checks if needed
     def lock(self, key): pass
     def unlock(self, key): pass
