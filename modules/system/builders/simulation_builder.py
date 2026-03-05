@@ -68,8 +68,6 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         "needs_and_growth",
         "needs_and_social_status",
     ]
-    for vo in all_value_orientations:
-        ai_trainer.get_engine(vo)
 
     num_households = config.NUM_HOUSEHOLDS
     num_firms = config.NUM_FIRMS
