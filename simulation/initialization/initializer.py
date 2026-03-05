@@ -521,28 +521,30 @@ class SimulationInitializer(SimulationInitializerInterface):
         bank_id_local = sim.bank.id if getattr(sim, 'bank', None) else None
         demographic_manager_local = getattr(sim, 'demographic_manager', None)
 
-        # 1. Household Atomic Registration
-        for hh in sim.households:
-            agents_local[hh.id] = hh
-            agent_registry_local.register(hh)
+        # Wrap in batch_mode to prevent UI/event freezing during mass registration
+        with sim.world_state.global_registry.batch_mode():
+            # 1. Household Atomic Registration
+            for hh in sim.households:
+                agents_local[hh.id] = hh
+                agent_registry_local.register(hh)
 
-            # Guarantee Settlement Account Existence
-            if bank_id_local is not None:
-                settlement_system_local.register_account(bank_id_local, hh.id)
-            hh.settlement_system = settlement_system_local
+                # Guarantee Settlement Account Existence
+                if bank_id_local is not None:
+                    settlement_system_local.register_account(bank_id_local, hh.id)
+                hh.settlement_system = settlement_system_local
 
-            if demographic_manager_local and hasattr(hh, 'demographic_manager'):
-                hh.demographic_manager = demographic_manager_local
+                if demographic_manager_local and hasattr(hh, 'demographic_manager'):
+                    hh.demographic_manager = demographic_manager_local
 
-        # 2. Firm Atomic Registration
-        for firm in sim.firms:
-            agents_local[firm.id] = firm
-            agent_registry_local.register(firm)
+            # 2. Firm Atomic Registration
+            for firm in sim.firms:
+                agents_local[firm.id] = firm
+                agent_registry_local.register(firm)
 
-            # Guarantee Settlement Account Existence BEFORE Bootstrapper
-            if bank_id_local is not None:
-                settlement_system_local.register_account(bank_id_local, firm.id)
-            firm.settlement_system = settlement_system_local
+                # Guarantee Settlement Account Existence BEFORE Bootstrapper
+                if bank_id_local is not None:
+                    settlement_system_local.register_account(bank_id_local, firm.id)
+                firm.settlement_system = settlement_system_local
 
         # Determine next available ID (assuming user agents start > 100)
         # TD-INIT-MOCK-LEAK: Filter for integer keys to avoid TypeError during Mock testing.

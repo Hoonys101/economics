@@ -144,3 +144,57 @@ class TestGlobalRegistry:
         # Test invalid command (wrong type)
         with pytest.raises(ValueError):
              CockpitCommand.model_validate({"type": "INVALID", "payload": {}})
+
+    def test_global_registry_batch_mode_deferral(self):
+        registry = GlobalRegistry()
+        observer = MagicMock()
+        registry.subscribe(observer)
+
+        with registry.batch_mode():
+            registry.set("batch.test1", 1)
+            registry.set("batch.test2", 2)
+            # Observer should NOT be called inside the block
+            observer.on_registry_update.assert_not_called()
+
+        # Observer should be called AFTER the block exits
+        assert observer.on_registry_update.call_count == 2
+        # Verify the actual calls (order is arbitrary due to dict iteration)
+        calls = observer.on_registry_update.call_args_list
+        called_keys = set(call.args[0] for call in calls)
+        assert called_keys == {"batch.test1", "batch.test2"}
+
+    def test_global_registry_batch_mode_deduplication(self):
+        registry = GlobalRegistry()
+        observer = MagicMock()
+        registry.subscribe(observer, ["dedup.key"])
+
+        with registry.batch_mode():
+            for i in range(5):
+                registry.set("dedup.key", i)
+            observer.on_registry_update.assert_not_called()
+
+        # Observer should be called exactly once for the key, with the final value
+        observer.on_registry_update.assert_called_once_with("dedup.key", 4, OriginType.CONFIG)
+
+    def test_global_registry_batch_mode_nested(self):
+        registry = GlobalRegistry()
+        observer = MagicMock()
+        registry.subscribe(observer)
+
+        with registry.batch_mode():
+            registry.set("nested.key1", 1)
+
+            with registry.batch_mode():
+                registry.set("nested.key2", 2)
+                observer.on_registry_update.assert_not_called()
+
+            # Still inside outer context, should not notify yet
+            observer.on_registry_update.assert_not_called()
+            registry.set("nested.key1", 10)
+
+        # Now outer context exits
+        assert observer.on_registry_update.call_count == 2
+        # Nested key1 should have final value 10
+        calls = observer.on_registry_update.call_args_list
+        key1_call = [c for c in calls if c.args[0] == "nested.key1"][0]
+        assert key1_call.args[1] == 10
