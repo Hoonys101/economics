@@ -3,13 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-MEM-SINGLETON-HOUSEHOLD": {
-      "key": "WO-IMPL-MEM-SINGLETON-HOUSEHOLD",
-      "title": "IMPL: Household 8 Engines \u2192 \ud074\ub798\uc2a4 \ubcc0\uc218 \uc2f1\uae00\ud1a4 \uc804\ud658",
+    "WO-JULES-DIAGNOSTIC-RUN": {
+      "key": "WO-JULES-DIAGNOSTIC-RUN",
+      "title": "Diagnostic Run & Bug Forensics",
       "type": "jules",
-      "instruction_raw": "## \ud575\uc2ec \ubcc0\uacbd (ANTIGRAVITY REVIEW Section 6 \ucc38\uc870)\n\n### \ubcc0\uacbd 1: \uc5d4\uc9c4\uc744 \ud074\ub798\uc2a4 \ubcc0\uc218\ub85c \uc774\ub3d9\n\ud30c\uc77c: simulation/core_agents.py\nL118-125\uc758 8\uc904\uc744 __init__ \ubc16, \ud074\ub798\uc2a4 body\ub85c \uc774\ub3d9\ud569\ub2c8\ub2e4:\n```python\nclass Household(...):\n    # Class-level Stateless Engines\n    lifecycle_engine = LifecycleEngine()\n    needs_engine = NeedsEngine()\n    social_engine = SocialEngine()\n    budget_engine = BudgetEngine()\n    consumption_engine = ConsumptionEngine()\n    belief_engine = BeliefEngine()\n    crisis_engine = CrisisEngine()\n    housing_connector = HousingConnector()\n```\n\ubcc0\uc218\uba85\uc5d0 \uc5b8\ub354\uc2a4\ucf54\uc5b4 \uc811\ub450\uc0ac\ub97c \ubd99\uc774\uc9c0 \ub9c8\uc138\uc694 (\uae30\uc874 \ud638\ucd9c\ubd80 \ud638\ud658 \uc720\uc9c0).\nimport\ub294 \uc774\ubbf8 \ud30c\uc77c \uc0c1\ub2e8\uc5d0 \uc874\uc7ac\ud569\ub2c8\ub2e4 (\ucd94\uac00 import \ubd88\ud544\uc694).\n\n### \ubcc0\uacbd 2: goods_info_map \uacf5\uc720 \ucc38\uc870\n\ud30c\uc77c: modules/system/builders/simulation_builder.py\n- Household \uc0dd\uc131 \ub8e8\ud504 \uc804\uc5d0 `shared_goods_info_map = {g['id']: g for g in goods_data}` 1\ud68c \uc0dd\uc131\n- Household \uc0dd\uc131\uc790\uc5d0 `shared_goods_info_map=shared_goods_info_map` \uc804\ub2ec\n\n\ud30c\uc77c: simulation/core_agents.py\n- __init__ \uc2dc\uadf8\ub2c8\ucc98\uc5d0 `shared_goods_info_map: Optional[Dict[str, Any]] = None` \ucd94\uac00\n- `self.goods_info_map = shared_goods_info_map if shared_goods_info_map is not None else {g['id']: g for g in goods_data}`\n\n### \uac80\uc99d\n- pytest tests/ -x --timeout=60",
+      "instruction_raw": "1. Run `pytest tests/` to check current test stability.\n2. Execute `python scripts/operation_forensics.py --ticks 60 --no-stress --output logs/diagnostic_raw.csv`.\n3. Identify and debug any crashes, OOM errors, or hangs during the run. DO NOT get stuck in infinite loops. If you fix something, run the test again.\n4. Write a detailed diagnostic report in `communications/insights/DIAGNOSTIC_RUN_REPORT.md` analyzing the root causes of any failures and providing potential fixes if not immediately resovable.",
       "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_MEM_SINGLETON_HOUSEHOLD.md",
+      "file_path": null,
       "wait": false,
       "session_id": null,
       "worker": null,

@@ -52,6 +52,10 @@
 | **TD-ECON-SIGNALING-DRIFT** | AI/Economy | **Signaling→HumanCapital Drift**: Education modeled as direct productivity enhancement instead of labor market signal. `HRDepartment` missing Halo Effect logic. | **Medium**: Economy. | **NEW (ROADMAP)** |
 | **TD-TEST-GC-MOCK-EXPLOSION** | Testing | **GC Hang due to Mocks**: Massive `MagicMock` graphs during initialization cause memory spikes and tens of seconds of GC pause in tests. | **CRITICAL**: Developer Velocity. | **RESOLVED (2026-03-05)** |
 | **TD-TEST-MOCK-BYPASS** | Testing | **Transaction Metadata Duct-tape**: Government tests bypass `TransactionMetadataDTO` using `getattr(metadata, "original_metadata")`. | **Low**: Stability. | **NEW** |
+| **TD-MEM-GLOBAL-WALLET-LEAK** | Memory | **Global Wallet Leak**: `GLOBAL_WALLET_LOG` unbounded growth over simulation ticks. | **CRITICAL**: Reliability. | **RESOLVED (2026-03-05)** |
+| **TD-MEM-AGENT-ENGINE-BLOAT** | Memory | **O(N) Engine Allocation**: Stateless engines created per household agent. | **High**: Scaling. | **RESOLVED (Household)** |
+| **TD-MEM-AI-EAGER-LOAD** | Memory | **AI Eager Loading**: Loading all VO models during builder phase. | **High**: Startup. | **RESOLVED (2026-03-05)** |
+| **TD-MEM-FIRM-SINGLETON-DEBT** | Memory | **Firm Engine Singletoning**: Firm `CorporateManager` still uses per-instance config, blocking singleton pattern. | **Medium**: Scaling. | **NEW (TD-20260305)** |
 | **TD-ARCH-HEAVY-FINANCE-API** | Architecture | **Heavy Finance API**: `modules.finance.api` (1200+ lines) causes Gemini OOM by pulling Gov/HR. | **High**: Rigidity. | **NEW (2026-03-05)** |
 
 ---

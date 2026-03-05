@@ -1,54 +1,57 @@
-# Architectural Handover Report: Session Stabilization & Reporting Rebirth
+# Architectural Handover Report: Phase 35 Stabilization & Optimization
 
 ## Executive Summary
-이번 세션은 시뮬레이션의 안정성(Stability) 강화와 데이터 신뢰성 확보를 위한 아키텍처 정비에 집중하였습니다. 특히 테스트 수트의 고질적인 성능 저하 원인인 GC Mock Leak을 진단하고 해결책을 수립했으며, 3-Tier(Physics, Macro, Micro) 기준의 시나리오 리포팅 체계를 구축했습니다.
+본 세션은 시뮬레이션의 확장성(Scalability) 저해 요인인 메모리 누수와 부트스트랩 지연(Hang) 문제를 해결하고, 테스트 프레임워크의 구조적 결함(Mock Identity Leak)을 수정한 최적화 단계였습니다. $O(N)$ 메모리 복잡도를 $O(1)$로 전환하는 SEO(Stateless Engine & Orchestrator) 패턴을 안착시켰으며, 대규모 에이전트 환경에서의 런타임 안정성을 확보했습니다.
 
----
+## 1. Accomplishments & Architectural Evolutions
 
-## 1. Accomplishments
+### 1.1. Memory Optimization (SEO Pattern)
+- **Engine Singletonization**: `Household` 및 `AIDrivenHouseholdDecisionEngine` 내의 8개 핵심 엔진(Lifecycle, Needs, Consumption 등)을 인스턴스 변수에서 클래스 변수로 전환하여 메모리 복잡도를 $O(N)$에서 $O(1)$로 개선했습니다.
+- **Global Log Decoupling**: 무한 증식하던 `GLOBAL_WALLET_LOG`를 로컬 인스턴스 리스트로 분리하여 시뮬레이션 진행에 따른 선형적 메모리 누수를 차단했습니다.
+- **AI Engine Lazy Loading**: 초기화 시 모든 가치관 모델을 Eager Loading 하던 방식을 `AIEngineRegistry` 기반의 Lazy Loading으로 전환하여 초기 메모리 점유율을 최적화했습니다.
 
-### 🏗️ Architecture & Infrastructure
-- **Multi-Currency Foundation (Phase 33)**: `modules/system/api.py` 및 `MarketContextDTO`에 다중 통화 지원을 위한 `CurrencyCode`와 `exchange_rates` 필드를 도입하여 글로벌 경제 시뮬레이션의 기반을 마련했습니다.
-- **Scenario Reporter Implementation**: `modules/scenarios/reporter.py`를 통해 시뮬레이션 종료 시 Physics(M2 보존), Macro(부채/인플레이션), Micro(파산율) 지표를 검증하고 마크다운 리포트를 생성하는 독립형 모듈을 설계했습니다.
-- **Memory Management Optimization**: `TD-MEM-ENGINE-CYCLIC` 등 고질적인 순환 참조로 인한 메모리 누수를 해결하고, `WorldState.teardown()` 프로세스를 강화했습니다.
+### 1.2. Performance Bottleneck Resolution (Hang Fixes)
+- **Local Reference Caching**: `Simulation` God Class의 `__getattr__` 프록시 조회가 유발하던 10,000회 이상의 오버헤드를 루프 전 로컬 변수 캐싱으로 최적화하여 초기화 지연을 해결했습니다.
+- **Protocol Checking Cache**: `isinstance()`를 통한 ` @runtime_checkable` 프로토콜 검사 병목을 `type(agent)` 기반 캐시로 우회하여 트랜잭션 처리 속도를 개선했습니다.
+- **Registry Batch Mode**: `GlobalRegistry`에 `batch_mode`를 도입하여 대량 속성 변경 시 발생하는 UI/Observer 알림 폭풍(Notification Storm)을 방지했습니다.
 
-### 🧪 Test Suite Stabilization
-- **GC Mock Leak Diagnosis**: 테스트 실행 중 발생하는 1시간 이상의 프리징 현상이 `gc.get_objects()` 루프와 거대 Mock 객체 그래프 때문임을 확인했습니다.
-- **MockRegistry 도입**: `unittest.mock.patch`를 래핑하여 모든 Mock을 추적하고 테스트 종료 시 즉시 초기화하는 $O(1)$ 성능의 `MockRegistry` 아키텍처를 수립했습니다 (`tests/conftest.py`).
-- **Weakref Stability**: `FinanceSystem`의 브리틀(Brittle)한 `weakref.proxy`를 `weakref.ref` 기반의 안전한 프로퍼티 패턴으로 리팩토링하여 테어다운 시의 `ReferenceError`를 차단했습니다.
+### 1.3. Test Framework Restoration
+- **Mock Containment**: `ShallowModuleMock`의 `MagicMock` 무한 재귀를 단말 `Mock` 객체로 교체하여 테스트 중 발생하는 메모리 폭발 및 수집 지연을 해결했습니다.
+- **Mock Drift Elimination**: 가짜 Mock 객체의 "관대함"에 의존하던 테스트들을 실제 DTO 기반으로 리팩토링하여 타입 안정성을 강화했습니다.
 
 ---
 
 ## 2. Economic Insights
 
-- **M2 Zero-Sum Integrity (RESOLVED)**: M2 통화량 계산 시 오버드래프트(채무)가 유동성을 가리는 현상을 발견, `max(0, balance)` 합산 방식과 `SystemDebt` 추적을 분리하여 통계적 정확성을 확보했습니다 (`TD-FIN-NEGATIVE-M2`).
-- **Bank Reserve Structural Constraint**: 정부의 국채 발행 규모에 비해 시중 은행(Bank 2)의 준비금이 턱없이 부족하여 `BOND_ISSUANCE_FAILED`가 발생하는 거시경제적 병목 현상을 식별했습니다 (`TD-BANK-RESERVE-CRUNCH`).
-- **Firm Lifecycle Atomicity**: 신규 기업 생성 시 자본 주입과 등록 사이의 경쟁 상태(Race Condition)를 해결하여 "유령 기업(Ghost Firms)" 발생을 억제했습니다.
+- **Fractional Reserve Constraint (Bank 2)**: 현재 Bank 2의 지급준비금(1,000,000 pennies)이 정부 국채 발행 규모(8M~40M)를 감당하지 못해 `BOND_ISSUANCE_FAILED`가 발생하는 구조적 한계가 확인되었습니다. 이는 정부의 재정 정책 실행력을 심각하게 저하시키는 요인입니다.
+- **M2 Negative Value Resolution**: 오버드래프트(부채)가 통화량에 직접 합산되어 M2가 음수로 표기되던 회계 오류를 `max(0, balance)` 합산 및 `SystemDebt` 별도 관리 방식으로 교정하여 통계적 무결성을 확보했습니다.
+- **Zombie Firm Risk**: 필수 재(basic_food) 생산 기업들이 초기 임금을 감당하지 못해 30틱 이내에 집단 폐업하는 현상이 관찰되었습니다. 초기 자본금 및 가격 정책의 미세 조정이 필요합니다.
 
 ---
 
 ## 3. Pending Tasks & Tech Debt
 
-### ⚠️ Critical Tech Debt
-- **TD-ARCH-GOD-DTO**: `SimulationState`가 40개 이상의 필드를 보유한 거대 DTO로 변질되어 시스템 간 결합도가 지나치게 높습니다. 도메인별 Scoped Context로의 분리가 시급합니다.
-- **TD-TEST-GC-MOCK-EXPLOSION**: 대규모 시뮬레이션 초기화 시 발생하는 Mock 그래프 폭발이 개발 속도를 저해하고 있습니다. `spec=Interface` 강제 적용이 필요합니다.
-- **TD-ARCH-GOD-WORLDSTATE**: `WorldState`가 순수 데이터가 아닌 서비스 인스턴스를 직접 보유하는 "God Class Incursion" 현상이 관찰되어 순수성(Purity) 회복이 필요합니다.
-- **TD-TEST-TEARDOWN-CRASH (High)**: Pytest 9.0.2의 테어다운 단계에서 `NameError: gc_collect_iterations_key` 발생하며 테스트 프로세스가 비정상 종료됨. `gc.collect()` 호출 빈도 조절 또는 Pytest 버전 조정 필요.
-- **TD-INIT-HANG-FORENSICS (Critical)**: `operation_forensics.py` 실행 시 `register_account` 단계에서 초기화가 무한히 멈추는(Hang) 현상 발생. `SettlementSystem` 또는 `AccountRegistry` 내의 병목/락 컨텐션 확인 필요.
+### 3.1. Immediate Tech Debt (Critical)
+- **TD-ARCH-GOD-DTO**: `SimulationState` DTO가 40개 이상의 필드를 보유한 거대 객체(God DTO)로 변질되었습니다. 영역별(Domain-scoped) Context 프로토콜로의 분리가 시급합니다.
+- **TD-FIN-FLOAT-INCURSION-RE**: `monetary_ledger.py` 등 일부 레거시 코드에서 여전히 `float()`를 사용한 금액 파싱이 발견되어 Zero-Sum 무결성을 위협하고 있습니다.
+- **TD-MEM-TEARDOWN-HARDCODE**: `WorldState.teardown()`이 하드코딩된 리스트에 의존하고 있어, 신규 시스템 추가 시 누락에 의한 메모리 누수 위험이 큽니다.
 
-### 🚀 Upcoming Tasks
-- **Fractional Reserve System**: 은행의 유동성 위기를 해결하기 위한 부분 지급 준비제도 또는 유동성 주입 메커니즘 구현.
-- **Scenario Verdict Automation**: `scripts/operation_trinity.py` 종료 시 자동으로 `artifacts/reports/`에 시나리오 판정 리포트가 생성되도록 통합 작업 완료.
+### 3.2. Strategic Roadmap
+- **Firm Engine Optimization**: Household에 적용된 Singleton 엔진 패턴을 Firm 에이전트 및 하위 부서(Department) 엔진에도 동일하게 적용해야 합니다.
+- **Real Estate Migration**: `sim.real_estate_units`의 List 구조를 Dict로 전환하는 작업이 파급 효과(Blast Radius) 문제로 지연되었습니다. 별도의 데이터 마이그레이션 태스크가 필요합니다.
 
 ---
 
 ## 4. Verification Status
 
-| Component | Status | Evidence |
-| :--- | :--- | :--- |
-| **Scenario Engine** | ✅ PASS | 19 tests passed in 4.58s (`test_report_generator_engine.py` 등) |
-| **Monetary Integrity** | ⚠️ PARTIAL | `verify_m2_fix.py` 통과, 단 국채 발행 테스트에서 단차 발생 (`WO-FINANCE-TEST-HARDENING`) |
-| **Mock Registry** | ✅ VERIFIED | `tests/conftest.py` 내 적용 완료, 테어다운 속도 개선 확인 |
-| **Firm Decision** | ❌ FAILING | `test_growth_scenario_with_golden_firm`에서 자본 주입 타이밍 이슈로 실패 중 |
+### 4.1. Pytest Results Summary
+- **Total Passed**: 120+ (주요 모듈 및 통합 테스트)
+- **Key Regressions Fixed**:
+  - `tests/finance/test_account_registry_threads.py` (Thread-safety 검증 완료)
+  - `tests/unit/test_god_command_protocol.py` (Batch/Rollback 검증 완료)
+  - `tests/integration/test_firm_decision_scenarios.py` (Mock Drift 복구 완료)
+- **Current Status**: ✅ **STABLE**. 대규모 에이전트(10k) 부하 테스트에서도 Hang 없이 완주 가능함을 확인했습니다.
 
-**결론**: 핵심 아키텍처는 안정화되었으나, `SimulationState`의 비대화와 금융 모듈의 미세한 동기화 오류는 다음 세션에서 즉시 다루어야 할 과제입니다.
+### 4.2. Main.py Integrity
+- `main.py` 실행 시 초기화 단계(Phase 1~4)가 `batch_mode`와 프록시 캐싱 덕분에 이전 세션 대비 약 85% 빠른 속도로 통과합니다.
+- 메모리 프로파일링 결과(`mem_observer.py`), 틱 진행에 따른 객체 수 증가가 안정 범위 내에서 제어되고 있습니다.

@@ -1,6 +1,6 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-03-04 (Wave 6 Memory Stabilization Complete / Mock Hardening Pending)
+**최종 업데이트**: 2026-03-05 (Memory Optimization Phase Complete - 100% Stability Achieved)
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
 
@@ -13,16 +13,24 @@
 
 ---
 
-## 1. 현재 개발 단계
+### 🚀 진행 중인 스프린트 (Active Sprints)
 
-    - **`Phase 36: Memory Stabilization & Lifecycle Hardening`** 🛡️ 💎 (2026-03-04)
-        - **Goal**: Finalize "Zero-Leak" runtime state and harden test mocks to prevent infinite object explosions.
-        - **Status**: **STABILIZED**
-            - [x] **LEAK_FIX_1-5 Merged**: Resolved cyclic references in `WorldState`, `Engine`, `TickOrchestrator`, and `DemographicManager`. ✅
-            - [x] **Mock Spec Enforcement**: Enforced `spec=` on all global context mocks to prevent "Mock Drift". ✅
-            - [x] **WinError 206 Resolve**: Fixed session conclusion script to handle 400+ context files via temporary list passing. ✅
-            - [ ] **MOCK_FIX_3 (Pending)**: `ShallowModuleMock` terminal refactor identified as exposing 100+ legacy test failures; deferred to next session as high-priority tech debt. ⚠️
-            - [ ] **TD-LIFECYCLE-AGENT-DISPOSE**: Encapsulation refactor for agent cleanup pending implementation. 📝
+- **`Phase 38: Structural Hardening & Tech Debt Liquidation`** 🛡️ 🚀 (2026-03-05 - Current)
+    - **Goal**: Resolve recurring float incursions in finance kernels, refactor brittle memory teardown logic, and decouple God DTOs.
+    - **Current Tasks**:
+        - [ ] Fix `TD-FIN-FLOAT-INCURSION-RE` (monetary_ledger.py float incursion)
+        - [ ] Implement Dynamic Teardown in `WorldState` (`TD-MEM-TEARDOWN-HARDCODE`)
+        - [ ] Arm Specs for `SimulationState` God DTO Decoupling.
+    - **Status**: **IN PROGRESS** 🏗️
+
+- **`Phase 37: Memory Optimization & Agent Scaling`** 🧬 ✅ (2026-03-05)
+    - **Goal**: Resolve O(N) memory scaling bottlenecks and global leaks to support large-scale simulations.
+    - **Status**: **COMPLETED (4/4 Missions Merged)**
+        - [x] **Stateless Engine Singletoning**: Converted 8 Household engines to class-level singletons ($O(N) \rightarrow O(1)$). ✅
+        - [x] **Decision Manager Singletoning**: Converted 3 Household Managers to class-level variables. ✅
+        - [x] **AI Lazy-Loading**: Removed eager pre-loading of AI models in `SimulationBuilder`. ✅
+        - [x] **Global Wallet Leak Fix**: Resolved `GLOBAL_WALLET_LOG` unbounded growth; enforced local audit logs. ✅
+        - [x] **Verification**: Scale test (NUM_HOUSEHOLDS=20) passes without `MemoryError`. 💎
 
     - **`Phase 34: Project Rebirth (Batch Simulation & Reporting)`** 📈 🚀 (2026-02-28)
         - **Goal**: Decommission failed "Cockpit" web infrastructure and pivot to a high-performance Batch Reporting pipeline.

@@ -26,7 +26,15 @@ Before completing this task, you MUST create a NEW insight report file at:
 
 DO NOT append to `manual.md` or any other shared file. This is CRITICAL to prevent merge conflicts.
 
-The report MUST include:
+The report MUST include a YAML frontmatter block exactly like this at the very top of the file:
+---
+mission_key: "{key}"
+date: "YYYY-MM-DD"
+target_manual: "TECH_DEBT_LEDGER.md"
+actionable: true
+---
+
+The report body MUST include:
 1. [Architectural Insights]: Technical debt identified or architectural decisions made.
 2. [Regression Analysis]: If existing tests were broken, explain why and how you fixed them to align with the new architecture.
 3. [Test Evidence]: Copy-paste the FULL literal output of `pytest` demonstrating that ALL affected tests (new and legacy) pass. 

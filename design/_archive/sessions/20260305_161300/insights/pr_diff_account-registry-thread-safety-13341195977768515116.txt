@@ -1,0 +1,185 @@
+diff --git a/communications/insights/WO-IMPL-HANG-FIX-REGISTRY-LOCK.md b/communications/insights/WO-IMPL-HANG-FIX-REGISTRY-LOCK.md
+new file mode 100644
+index 00000000..a790f210
+--- /dev/null
++++ b/communications/insights/WO-IMPL-HANG-FIX-REGISTRY-LOCK.md
+@@ -0,0 +1,17 @@
++# Mission Report: Phase B - AccountRegistry Thread Safety
++**Mission Key**: WO-SPEC-HANG-FIX-REGISTRY-LOCK
++
++## 1. [Architectural Insights]
++The `AccountRegistry` manages mappings between `BankID` and `AgentID` using collections like `defaultdict(set)`. In a concurrent simulation environment, allowing multiple threads to independently perform non-atomic dictionary and set insertions simultaneously poses a severe thread-safety risk. Potential silent state corruption or iteration errors can occur. We resolved this by explicitly introducing an `RLock` component around all state-mutation and retrieval methods of the dictionary states (`register_account`, `deregister_account`, `remove_agent_from_all_accounts`, `get_account_holders`, `get_agent_banks`), guaranteeing strict atomic modification boundaries.
++
++## 2. [Regression Analysis]
++No existing tests were broken. The previous single-threaded usages of the class naturally remain functionally unaffected, as the underlying business logic did not change. All calls within a single thread proceed as usual, simply acquiring and releasing the `RLock`. Only structural integrity checks regarding race conditions were affected, all of which are managed correctly with the lock.
++
++## 3. [Test Evidence]
++
++```
++tests/finance/test_account_registry.py::test_account_registry_integration PASSED [ 33%]
++tests/finance/test_account_registry.py::test_settlement_default_registry PASSED [ 66%]
++tests/finance/test_account_registry_threads.py::test_account_registry_thread_safety PASSED [100%]
++============================== 3 passed in 2.88s ===============================
++```
+diff --git a/modules/finance/registry/account_registry.py b/modules/finance/registry/account_registry.py
+index e5f512a3..e3744fb6 100644
+--- a/modules/finance/registry/account_registry.py
++++ b/modules/finance/registry/account_registry.py
+@@ -1,4 +1,5 @@
+-from typing import Dict, List, Set
++import threading
++from typing import Dict, List, Set, Any
+ from collections import defaultdict
+ from modules.simulation.api import AgentID
+ from modules.finance.api import IAccountRegistry
+@@ -10,6 +11,7 @@ class AccountRegistry(IAccountRegistry):
+     """
+ 
+     def __init__(self) -> None:
++        self._lock = threading.RLock()
+         # BankID -> Set[AgentID]
+         self._bank_depositors: Dict[AgentID, Set[AgentID]] = defaultdict(set)
+         # AgentID -> Set[BankID]
+@@ -17,37 +19,42 @@ class AccountRegistry(IAccountRegistry):
+ 
+     def register_account(self, bank_id: AgentID, agent_id: AgentID) -> None:
+         """Registers an account link between a bank and an agent."""
+-        self._bank_depositors[bank_id].add(agent_id)
+-        self._agent_banks[agent_id].add(bank_id)
++        with self._lock:
++            self._bank_depositors[bank_id].add(agent_id)
++            self._agent_banks[agent_id].add(bank_id)
+ 
+     def deregister_account(self, bank_id: AgentID, agent_id: AgentID) -> None:
+         """Removes an account link between a bank and an agent."""
+-        if bank_id in self._bank_depositors:
+-            self._bank_depositors[bank_id].discard(agent_id)
+-            if not self._bank_depositors[bank_id]:
+-                del self._bank_depositors[bank_id]
++        with self._lock:
++            if bank_id in self._bank_depositors:
++                self._bank_depositors[bank_id].discard(agent_id)
++                if not self._bank_depositors[bank_id]:
++                    del self._bank_depositors[bank_id]
+ 
+-        if agent_id in self._agent_banks:
+-            self._agent_banks[agent_id].discard(bank_id)
+-            if not self._agent_banks[agent_id]:
+-                del self._agent_banks[agent_id]
++            if agent_id in self._agent_banks:
++                self._agent_banks[agent_id].discard(bank_id)
++                if not self._agent_banks[agent_id]:
++                    del self._agent_banks[agent_id]
+ 
+     def get_account_holders(self, bank_id: AgentID) -> List[AgentID]:
+         """Returns a list of all agents holding accounts at the specified bank."""
+-        if bank_id in self._bank_depositors:
+-            return list(self._bank_depositors[bank_id])
+-        return []
++        with self._lock:
++            if bank_id in self._bank_depositors:
++                return list(self._bank_depositors[bank_id])
++            return []
+ 
+     def get_agent_banks(self, agent_id: AgentID) -> List[AgentID]:
+         """Returns a list of banks where the agent holds an account."""
+-        if agent_id in self._agent_banks:
+-            return list(self._agent_banks[agent_id])
+-        return []
++        with self._lock:
++            if agent_id in self._agent_banks:
++                return list(self._agent_banks[agent_id])
++            return []
+ 
+     def remove_agent_from_all_accounts(self, agent_id: AgentID) -> None:
+         """Removes an agent from all bank account indices."""
+-        if agent_id in self._agent_banks:
+-            # Copy to avoid modification during iteration
+-            banks = list(self._agent_banks[agent_id])
+-            for bank_id in banks:
+-                self.deregister_account(bank_id, agent_id)
++        with self._lock:
++            if agent_id in self._agent_banks:
++                # Copy to avoid modification during iteration
++                banks = list(self._agent_banks[agent_id])
++                for bank_id in banks:
++                    self.deregister_account(bank_id, agent_id)
+diff --git a/tests/finance/test_account_registry_threads.py b/tests/finance/test_account_registry_threads.py
+new file mode 100644
+index 00000000..49286020
+--- /dev/null
++++ b/tests/finance/test_account_registry_threads.py
+@@ -0,0 +1,73 @@
++import threading
++import pytest
++from typing import List
++
++from modules.finance.registry.account_registry import AccountRegistry
++from modules.simulation.api import AgentID
++
++
++def test_account_registry_thread_safety():
++    """
++    Test thread safety of AccountRegistry under heavy concurrent load.
++    10 threads, each performing 1000 register/deregister operations.
++    """
++    registry = AccountRegistry()
++    num_threads = 10
++    num_ops = 1000
++
++    # We'll have threads create accounts across 5 distinct banks
++    bank_ids = [AgentID(100 + i) for i in range(5)]
++
++    def worker(thread_id: int):
++        # Each thread uses a distinct set of agent IDs to avoid logical interference,
++        # but they all hit the same banks to trigger concurrent dict/set access
++        for op in range(num_ops):
++            agent_id = AgentID(thread_id * 10000 + op)
++            bank_id = bank_ids[op % len(bank_ids)]
++
++            # Register
++            registry.register_account(bank_id, agent_id)
++
++            # Some operations get deregistered, others don't
++            if op % 2 == 0:
++                registry.deregister_account(bank_id, agent_id)
++
++            # Randomly fetch holders
++            if op % 10 == 0:
++                registry.get_account_holders(bank_id)
++                registry.get_agent_banks(agent_id)
++
++    threads: List[threading.Thread] = []
++    for i in range(num_threads):
++        t = threading.Thread(target=worker, args=(i,))
++        threads.append(t)
++        t.start()
++
++    for t in threads:
++        t.join()
++
++    # Verification (Zero-Sum Integrity Check)
++    # Total accounts registered: num_threads * num_ops
++    # Total accounts deregistered: num_threads * (num_ops // 2)
++    # Expected remaining: num_threads * (num_ops - num_ops // 2)
++
++    expected_remaining_per_thread = num_ops - (num_ops // 2 + num_ops % 2) if num_ops % 2 != 0 else num_ops // 2
++    total_expected_remaining = num_threads * expected_remaining_per_thread
++
++    actual_remaining = 0
++    for bank_id in bank_ids:
++        actual_remaining += len(registry.get_account_holders(bank_id))
++
++    assert actual_remaining == total_expected_remaining, f"Expected {total_expected_remaining} remaining accounts, got {actual_remaining}"
++
++    # Verify reverse mapping is also consistent
++    for i in range(num_threads):
++        for op in range(num_ops):
++            agent_id = AgentID(i * 10000 + op)
++            banks = registry.get_agent_banks(agent_id)
++            if op % 2 == 0:
++                # Deregistered
++                assert len(banks) == 0
++            else:
++                # Registered
++                assert len(banks) == 1
