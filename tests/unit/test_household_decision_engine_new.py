@@ -168,6 +168,15 @@ def decision_engine(mock_ai_engine, mock_config):
 
 
 class TestAIDrivenHouseholdDecisionEngine:
+    def test_decision_engine_manager_singleton(self, mock_ai_engine, mock_config):
+        """3개 매니저가 클래스 변수로 공유되는지 확인."""
+        engine1 = AIDrivenHouseholdDecisionEngine(mock_ai_engine, mock_config)
+        engine2 = AIDrivenHouseholdDecisionEngine(mock_ai_engine, mock_config)
+
+        assert engine1.consumption_manager is engine2.consumption_manager
+        assert engine1.labor_manager is engine2.labor_manager
+        assert engine1.asset_manager is engine2.asset_manager
+
     def test_make_decisions_calls_ai(
         self, decision_engine, mock_household_dto, mock_ai_engine, mock_config
     ):
