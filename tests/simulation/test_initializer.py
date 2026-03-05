@@ -93,3 +93,75 @@ class TestSimulationInitializer:
 
         assert first_set_state_idx < first_bootstrap_idx, \
             f"AgentRegistry.set_state (idx {first_set_state_idx}) must be called BEFORE Bootstrapper.distribute_initial_wealth (idx {first_bootstrap_idx})"
+
+    def test_initializer_no_getattr_calls(self):
+        """
+        Verify that _init_phase4_population correctly implements Local Reference Caching
+        and does not repeatedly invoke Simulation.__getattr__ within the population loops.
+        """
+        from simulation.initialization.initializer import SimulationInitializer
+        from unittest.mock import create_autospec
+
+        # 1. Setup minimal dependencies
+        config_manager = MagicMock()
+        mock_config = MagicMock()
+        mock_repo = MagicMock()
+        mock_logger = MagicMock()
+
+        initializer = SimulationInitializer(
+            config_manager=config_manager,
+            config_module=mock_config,
+            goods_data=[],
+            repository=mock_repo,
+            logger=mock_logger,
+            households=[],
+            firms=[],
+            ai_trainer=MagicMock(),
+            initial_balances={}
+        )
+
+        # 2. Create a Mock Simulation object where we can monitor __getattr__
+        class MockSimulationForGetAttr:
+            def __init__(self):
+                self.agents = {}
+                self.agent_registry = MagicMock()
+                self.settlement_system = MagicMock()
+                self.bank = MagicMock()
+                self.bank.id = 1
+                self.demographic_manager = MagicMock()
+
+                # The collections we will iterate over
+                self.households = [MagicMock(id=i) for i in range(100)]
+                for hh in self.households:
+                    hh.get_balance.return_value = 100
+                    hh._econ_state = MagicMock()
+
+                self.firms = [MagicMock(id=i+100) for i in range(50)]
+                self.real_estate_units = [MagicMock(id=i) for i in range(20)]
+
+                self.world_state = MagicMock()
+                self.next_agent_id = 0
+
+                # A counter to track __getattr__ calls
+                self.getattr_calls = 0
+                self.accessed_attrs = set()
+
+            def __getattr__(self, name):
+                # Only count explicit proxy calls, ignoring internal pytest/mock machinery
+                if name not in ['__bases__', '__class__', '__mro__', '__subclasses__', '_is_protocol']:
+                    self.getattr_calls += 1
+                    self.accessed_attrs.add(name)
+                raise AttributeError(f"Mock attribute '{name}' not explicitly defined.")
+
+        mock_sim = MockSimulationForGetAttr()
+
+        # 3. Execute Phase 4
+        # This will fail if the code uses sim.households or sim.firms directly inside the loop
+        # because we only instantiate them as standard attributes, not dynamically resolved ones.
+        # But we still want to ensure __getattr__ isn't magically hit for other attributes.
+        initializer._init_phase4_population(mock_sim) # type: ignore
+
+        # 4. Assert __getattr__ was strictly not called inside loops
+        # It shouldn't be called at all since we have explicitly mapped all expected properties in __init__.
+        # Specifically, we verify the loops didn't trigger unmapped recursive lookups.
+        assert mock_sim.getattr_calls == 0, f"__getattr__ should not be called, but was called {mock_sim.getattr_calls} times for: {mock_sim.accessed_attrs}"

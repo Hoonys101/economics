@@ -11,6 +11,7 @@ class AccountRegistry(IAccountRegistry):
     """
 
     def __init__(self) -> None:
+        # TD-SPEC-INIT-HANG: Ensure thread safety for multi-threaded setups
         self._lock = threading.RLock()
         # BankID -> Set[AgentID]
         self._bank_depositors: Dict[AgentID, Set[AgentID]] = defaultdict(set)

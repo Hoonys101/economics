@@ -546,10 +546,15 @@ class SimulationInitializer(SimulationInitializerInterface):
         bank_id_local = sim.bank.id if getattr(sim, 'bank', None) else None
         demographic_manager_local = getattr(sim, 'demographic_manager', None)
 
+        # Localize loops to bypass Simulation proxy
+        local_households = sim.households
+        local_firms = sim.firms
+        local_real_estate = sim.real_estate_units
+
         # Wrap in batch_mode to prevent UI/event freezing during mass registration
         with sim.world_state.global_registry.batch_mode():
             # 1. Household Atomic Registration
-            for hh in sim.households:
+            for hh in local_households:
                 agents_local[hh.id] = hh
                 agent_registry_local.register(hh)
 
@@ -562,7 +567,7 @@ class SimulationInitializer(SimulationInitializerInterface):
                     hh.demographic_manager = demographic_manager_local
 
             # 2. Firm Atomic Registration
-            for firm in sim.firms:
+            for firm in local_firms:
                 agents_local[firm.id] = firm
                 agent_registry_local.register(firm)
 
@@ -581,22 +586,22 @@ class SimulationInitializer(SimulationInitializerInterface):
         # In previous logic, sim.demographic_manager was required. Maintain required semantics.
         # Fallback to direct attribute lookup to throw normal AttributeError if missing when expected
         dm_to_use = demographic_manager_local if demographic_manager_local else sim.demographic_manager
-        dm_to_use.sync_stats(sim.households)
+        dm_to_use.sync_stats(local_households)
         # sim.demographic_manager.set_world_state(sim.world_state)  # REMOVED: Injected via constructor
 
         # Distribute Real Estate
-        top_20_count = len(sim.households) // 5
-        top_households = sorted(sim.households, key=lambda h: h.get_balance(DEFAULT_CURRENCY), reverse=True)[:top_20_count]
+        top_20_count = len(local_households) // 5
+        top_households = sorted(local_households, key=lambda h: h.get_balance(DEFAULT_CURRENCY), reverse=True)[:top_20_count]
         for i, hh in enumerate(top_households):
-            if i < len(sim.real_estate_units):
-                unit = sim.real_estate_units[i]
+            if i < len(local_real_estate):
+                unit = local_real_estate[i]
                 unit.owner_id = hh.id
                 hh._econ_state.owned_properties.append(unit.id)
                 unit.occupant_id = hh.id
                 hh._econ_state.residing_property_id = unit.id
                 hh._econ_state.is_homeless = False
 
-        self.logger.info(f"Phase 4 Complete: Registered {len(sim.households)} Households and {len(sim.firms)} Firms atomically.")
+        self.logger.info(f"Phase 4 Complete: Registered {len(local_households)} Households and {len(local_firms)} Firms atomically.")
 
     def _init_phase5_genesis(self, sim: Simulation) -> None:
         """

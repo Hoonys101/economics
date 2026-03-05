@@ -17,7 +17,8 @@ class FinancialEntityAdapter:
         self.entity.deposit(amount, currency)
 
     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "") -> None:
-        logger.debug(f"ADAPTER_DEBUG | Entity {self.entity.id} Withdraw {amount}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"ADAPTER_DEBUG | Entity {self.entity.id} Withdraw {amount}")
         self.entity.withdraw(amount, currency)
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
@@ -42,7 +43,8 @@ class FinancialAgentAdapter:
         self.agent._deposit(amount, currency)
 
     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "") -> None:
-        logger.debug(f"ADAPTER_DEBUG | Agent {self.agent.id} Withdraw {amount}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"ADAPTER_DEBUG | Agent {self.agent.id} Withdraw {amount}")
         self.agent._withdraw(amount, currency)
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
@@ -120,6 +122,7 @@ class DictionaryAccountAccessor(IAccountAccessor):
     """
     def __init__(self, agents_map: Dict[AgentID, Any]):
         self.agents_map = agents_map
+        self._protocol_cache: Dict[type, str] = {}
 
     def get_participant(self, account_id: AgentID) -> ITransactionParticipant:
         agent = self.agents_map.get(account_id)
@@ -127,12 +130,40 @@ class DictionaryAccountAccessor(IAccountAccessor):
         if agent is None:
             raise InvalidAccountError(f"Account (Agent) not found in local map: {account_id}")
 
-        if isinstance(agent, IFinancialAgent):
-            return FinancialAgentAdapter(agent)
-        if isinstance(agent, IFinancialEntity):
-            return FinancialEntityAdapter(agent)
+        agent_class = type(agent)
+        if agent_class in self._protocol_cache:
+            ptype = self._protocol_cache[agent_class]
+            if ptype == 'agent': return FinancialAgentAdapter(agent)
+            if ptype == 'entity': return FinancialEntityAdapter(agent)
+        else:
+            if isinstance(agent, IFinancialAgent):
+                self._protocol_cache[agent_class] = 'agent'
+                return FinancialAgentAdapter(agent)
+            if isinstance(agent, IFinancialEntity):
+                self._protocol_cache[agent_class] = 'entity'
+                return FinancialEntityAdapter(agent)
+            self._protocol_cache[agent_class] = 'none'
 
         raise InvalidAccountError(f"Agent {account_id} does not implement protocols.")
 
     def exists(self, account_id: AgentID) -> bool:
-        return account_id in self.agents_map
+        if account_id not in self.agents_map:
+            return False
+
+        agent = self.agents_map.get(account_id)
+        if agent is None:
+            return False
+
+        agent_class = type(agent)
+        if agent_class in self._protocol_cache:
+            return self._protocol_cache[agent_class] in ('agent', 'entity')
+
+        if isinstance(agent, IFinancialAgent):
+            self._protocol_cache[agent_class] = 'agent'
+            return True
+        if isinstance(agent, IFinancialEntity):
+            self._protocol_cache[agent_class] = 'entity'
+            return True
+
+        self._protocol_cache[agent_class] = 'none'
+        return False
