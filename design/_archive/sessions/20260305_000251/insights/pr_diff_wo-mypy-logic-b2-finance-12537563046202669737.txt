@@ -1,0 +1,357 @@
+diff --git a/communications/insights/WO-MYPY-LOGIC-B2-FINANCE.md b/communications/insights/WO-MYPY-LOGIC-B2-FINANCE.md
+new file mode 100644
+index 00000000..a71926c5
+--- /dev/null
++++ b/communications/insights/WO-MYPY-LOGIC-B2-FINANCE.md
+@@ -0,0 +1,78 @@
++# Mypy Logic Hardening (Finance) Report
++
++**Date**: 2026-02-24
++**Mission**: WO-MYPY-LOGIC-B2-FINANCE
++
++## 1. Architectural Insights
++
++### Circular Dependency in System API
++The `modules/system/api.py` file (Foundation Layer) was importing `IAgent` from `modules/simulation/api.py` (Simulation Layer), which in turn imported `ISettlementSystem` from `simulation/finance/api.py`, which imported `modules/system/api.py` for `CurrencyCode`. This created a dependency cycle that caused "IAgent not defined" errors during static analysis.
++**Decision**: Moved `IAgent` protocol definition to `modules/system/api.py`. This correctly positions the base Agent protocol in the Foundation layer, breaking the cycle and adhering to the layered architecture.
++
++### Finance Protocol Drift
++The `IBank` and `IBankService` protocols in `modules/finance/api.py` had drifted from the actual implementation in `simulation/bank.py` and usage in `HousingTransactionHandler`. Specifically, `grant_loan` was missing the `borrower_profile` argument.
++**Decision**: Updated `IBankService` to include `borrower_profile` and optional `due_tick`, restoring Liskov Substitution Principle compliance.
++
++### Penny Standard Enforcement
++Several key financial components were using `float` for monetary values or performing float arithmetic on prices without explicit integer casting.
++**Decisions**:
++- `Portfolio.add`: Now accepts `price: int` (pennies) and performs integer division for acquisition price calculation.
++- `TransactionProcessor`: Explicitly initializes `amount_settled` as `int` and casts settlement amounts.
++- `CentralBank`: Added runtime type guards to `deposit`, `withdraw`, and `mint` to strictly enforce `int` inputs, catching float incursions early.
++
++## 2. Regression Analysis
++
++### Type Safety Improvements
++- **Initializer Hardening**: `SimulationInitializer` now strictly casts `ID_BANK` to `AgentID` and includes type guards when distributing initial balances, preventing "MagicMock > int" comparison errors in tests.
++- **Testing Utils**: Annotated `SimulationStateBuilder` helper sets to prevent "unannotated helper" errors.
++
++### Test Impact
++- No existing tests were modified, ensuring strict regression testing.
++- `tests/modules/finance` and `tests/simulation/agents` suites passed 100%, confirming that the protocol updates and penny standard enforcement did not break existing logic.
++- `tests/unit/test_transaction_handlers.py` passed, confirming core transaction logic remains intact.
++
++## 3. Test Evidence
++
++```
++tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_neutral PASSED [  2%]
++tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_high_inflation PASSED [  4%]
++tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_recession PASSED [  7%]
++tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_strategy_override PASSED [  9%]
++tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_rate_multiplier PASSED [ 12%]
++tests/modules/finance/monetary/test_strategies.py::test_taylor_rule PASSED [ 14%]
++tests/modules/finance/monetary/test_strategies.py::test_taylor_rule_no_explicit_output_gap PASSED [ 17%]
++tests/modules/finance/monetary/test_strategies.py::test_friedman_rule PASSED [ 19%]
++tests/modules/finance/monetary/test_strategies.py::test_mccallum_rule PASSED [ 21%]
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_initialization_empty PASSED [ 24%]
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_initialization_with_data PASSED [ 26%]
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_register_bank PASSED [ 29%]
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_get_deposit PASSED [ 31%]
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_get_loan PASSED [ 34%]
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_shared_reference PASSED [ 36%]
++tests/modules/finance/test_exchange_engine.py::TestCurrencyExchangeEngine::test_convert PASSED [ 39%]
++tests/modules/finance/test_exchange_engine.py::TestCurrencyExchangeEngine::test_load_parity PASSED [ 41%]
++tests/modules/finance/test_exchange_engine.py::TestCurrencyExchangeEngine::test_missing_config PASSED [ 43%]
++tests/modules/finance/transaction/test_engine.py::test_validator_success PASSED [ 46%]
++tests/modules/finance/transaction/test_engine.py::test_validator_negative_amount PASSED [ 48%]
++tests/modules/finance/transaction/test_engine.py::test_validator_invalid_type PASSED [ 51%]
++tests/modules/finance/transaction/test_engine.py::test_validator_account_not_exists PASSED [ 53%]
++tests/modules/finance/transaction/test_engine.py::test_validator_insufficient_funds PASSED [ 56%]
++tests/modules/finance/transaction/test_engine.py::test_executor_success PASSED [ 58%]
++tests/modules/finance/transaction/test_engine.py::test_executor_rollback_success PASSED [ 60%]
++tests/modules/finance/transaction/test_engine.py::test_executor_critical_rollback_failure PASSED [ 63%]
++tests/modules/finance/transaction/test_engine.py::test_process_transaction_success PASSED [ 65%]
++tests/modules/finance/transaction/test_engine.py::test_process_transaction_validation_fail PASSED [ 68%]
++tests/modules/finance/transaction/test_engine.py::test_process_batch_atomicity PASSED [ 70%]
++tests/modules/finance/transaction/test_engine.py::test_process_batch_rollback_failure PASSED [ 73%]
++tests/modules/finance/transaction/test_processor.py::test_processor_dispatch_success PASSED [ 75%]
++tests/modules/finance/transaction/test_processor.py::test_processor_dispatch_legacy_price PASSED [ 78%]
++tests/modules/finance/transaction/test_processor.py::test_processor_handler_failure PASSED [ 80%]
++tests/modules/finance/transaction/test_processor.py::test_processor_handler_exception PASSED [ 82%]
++tests/modules/finance/transaction/test_processor.py::test_processor_public_manager PASSED [ 85%]
++tests/modules/finance/transaction/test_processor.py::test_processor_public_manager_fail_missing_buyer PASSED [ 87%]
++tests/modules/finance/transaction/test_processor.py::test_processor_public_manager_exception PASSED [ 90%]
++tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_initialization PASSED [ 92%]
++tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_step_delegates_to_strategy PASSED [ 95%]
++tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_omo_execution PASSED [ 97%]
++tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_snapshot_construction PASSED [100%]
++```
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 772a54d2..b146d85e 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -300,7 +300,7 @@ class IBankService(Protocol):
+     """
+     def get_interest_rate(self) -> float: ...
+ 
+-    def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int) -> Optional[Tuple[LoanDTO, Any]]: ...
++    def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanDTO, Any]]: ...
+ 
+     def stage_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: Optional[int], borrower_profile: Optional[BorrowerProfileDTO]) -> Optional[LoanDTO]: ...
+ 
+diff --git a/modules/simulation/api.py b/modules/simulation/api.py
+index 5f3837a7..488fc8d7 100644
+--- a/modules/simulation/api.py
++++ b/modules/simulation/api.py
+@@ -36,9 +36,10 @@ if TYPE_CHECKING:
+     from simulation.interfaces.market_interface import IMarket
+     from modules.housing.api import IHousingService
+     from modules.memory.api import MemoryV2Interface
+-    from modules.system.api import CurrencyCode
+     from modules.finance.kernel.api import IMonetaryLedger
+ 
++from modules.system.api import CurrencyCode, IAgent
++
+ # --- DTOs ---
+ 
+ @dataclass
+@@ -168,11 +169,6 @@ class IDecisionEngine(Protocol):
+     """Interface for the 'brain' of an agent."""
+     def make_decision(self, state: AgentStateDTO, world_context: Any) -> DecisionDTO | Any: ...
+ 
+-@runtime_checkable
+-class IAgent(Protocol):
+-    id: AgentID
+-    is_active: bool
+-
+ @runtime_checkable
+ class IOrchestratorAgent(IAgent, Protocol):
+     """Public interface for an agent 'Orchestrator' supporting 2-stage initialization."""
+diff --git a/modules/system/api.py b/modules/system/api.py
+index c484c161..213dbad7 100644
+--- a/modules/system/api.py
++++ b/modules/system/api.py
+@@ -10,8 +10,10 @@ CurrencyCode = str
+ DEFAULT_CURRENCY: CurrencyCode = "USD"
+ AgentID = int
+ 
+-# Import IAgent from simulation api
+-from modules.simulation.api import IAgent
++@runtime_checkable
++class IAgent(Protocol):
++    id: AgentID
++    is_active: bool
+ 
+ @runtime_checkable
+ class IWorldState(Protocol):
+diff --git a/modules/testing/utils.py b/modules/testing/utils.py
+index aa368eac..e4ea38fa 100644
+--- a/modules/testing/utils.py
++++ b/modules/testing/utils.py
+@@ -97,10 +97,9 @@ class SimulationStateBuilder:
+             return SimulationState(**self._state_data)
+         except TypeError as e:
+             # Check for missing arguments
+-            missing_args = []
+-            sim_fields = {f.name for f in fields(SimulationState)}
+-            provided_fields = set(self._state_data.keys())
+-            missing_fields = sim_fields - provided_fields
++            sim_fields: set[str] = {f.name for f in fields(SimulationState)}
++            provided_fields: set[str] = set(self._state_data.keys())
++            missing_fields: set[str] = sim_fields - provided_fields
+             if missing_fields:
+                 raise ValueError(f"SimulationStateBuilder is missing required fields: {missing_fields}") from e
+             raise e
+diff --git a/simulation/agents/central_bank.py b/simulation/agents/central_bank.py
+index 201d914a..c044477c 100644
+--- a/simulation/agents/central_bank.py
++++ b/simulation/agents/central_bank.py
+@@ -281,6 +281,8 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
+ 
+     def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         """Deposits a given amount into the central bank's cash reserves."""
++        if isinstance(amount, float):
++            raise TypeError(f"CentralBank.deposit requires integer amount (pennies). Got float: {amount}")
+         if amount > 0:
+             self.wallet.add(amount, currency, memo="Deposit")
+ 
+@@ -289,6 +291,8 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
+         Mints new currency (adds to cash reserves).
+         Alias for deposit but semantically distinct for Genesis Protocol.
+         """
++        if isinstance(amount, float):
++            raise TypeError(f"CentralBank.mint requires integer amount (pennies). Got float: {amount}")
+         self.deposit(amount, currency)
+ 
+     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+@@ -296,6 +300,8 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
+         Withdraws a given amount from the central bank's cash reserves.
+         As a Fiat Currency Issuer, the Central Bank can have a negative balance (creating money).
+         """
++        if isinstance(amount, float):
++            raise TypeError(f"CentralBank.withdraw requires integer amount (pennies). Got float: {amount}")
+         if amount > 0:
+             self.wallet.subtract(amount, currency, memo="Withdraw")
+ 
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index ab1ae78e..5df2745c 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -11,6 +11,7 @@ from modules.platform.infrastructure.lock_manager import PlatformLockManager, Lo
+ from modules.common.config_manager.api import ConfigManager
+ from simulation.initialization.api import SimulationInitializerInterface
+ from simulation.models import Order, RealEstateUnit
++from modules.simulation.api import AgentID
+ from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder, OriginType
+ from modules.system.constants import ID_CENTRAL_BANK, ID_GOVERNMENT, ID_BANK, ID_ESCROW, ID_PUBLIC_MANAGER
+ from simulation.core_agents import Household
+@@ -172,7 +173,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.households = self.households
+         sim.firms = self.firms
+         sim.goods_data = self.goods_data
+-        sim.agents: Dict[int, Any] = {h.id: h for h in self.households}
++        sim.agents = {h.id: h for h in self.households}
+         sim.agents.update({f.id: f for f in self.firms})
+ 
+         # Determine next available ID (assuming user agents start > 100)
+@@ -184,11 +185,11 @@ class SimulationInitializer(SimulationInitializerInterface):
+         for agent in sim.agents.values():
+             agent.settlement_system = sim.settlement_system
+         sim.ai_trainer = self.ai_trainer
+-        sim.time: int = 0
++        sim.time = 0
+         credit_scoring_service = CreditScoringService(config_module=self.config)
+ 
+         # Initialize System Agents with Fixed IDs
+-        sim.bank = Bank(id=ID_BANK, initial_assets=0, config_manager=self.config_manager, settlement_system=sim.settlement_system, credit_scoring_service=credit_scoring_service, event_bus=sim.event_bus)
++        sim.bank = Bank(id=AgentID(ID_BANK), initial_assets=0, config_manager=self.config_manager, settlement_system=sim.settlement_system, credit_scoring_service=credit_scoring_service, event_bus=sim.event_bus)
+         sim.settlement_system.bank = sim.bank
+         # TD-BANK-RESERVE-CRUNCH: Use tunable initial assets from config
+         initial_bank_assets = self.config_manager.get("economy_params.bank.initial_bank_assets", self.config.INITIAL_BANK_ASSETS)
+@@ -239,7 +240,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system, monetary_authority=sim.central_bank_system)
+         sim.government.finance_system = sim.finance_system
+         sim.bank.set_finance_system(sim.finance_system)
+-        sim.real_estate_units: List[RealEstateUnit] = [RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE, rent_price=self.config.INITIAL_RENT_PRICE) for i in range(self.config.NUM_HOUSING_UNITS)]
++        sim.real_estate_units = [RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE, rent_price=self.config.INITIAL_RENT_PRICE) for i in range(self.config.NUM_HOUSING_UNITS)]
+         top_20_count = len(sim.households) // 5
+         top_households = sorted(sim.households, key=lambda h: h.get_balance(DEFAULT_CURRENCY), reverse=True)[:top_20_count]
+         for i, hh in enumerate(top_households):
+@@ -250,7 +251,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+                 unit.occupant_id = hh.id
+                 hh._econ_state.residing_property_id = unit.id
+                 hh._econ_state.is_homeless = False
+-        sim.markets: Dict[str, Market] = {good_name: OrderBookMarket(market_id=good_name, config_module=self.config) for good_name in self.config.GOODS}
++        sim.markets = {good_name: OrderBookMarket(market_id=good_name, config_module=self.config) for good_name in self.config.GOODS}
+         sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
+         sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config)
+         if sim.central_bank:
+@@ -284,7 +285,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         self.logger.info('GENESIS | Starting initial wealth distribution...')
+         distributed_count = 0
+         for agent_id, amount in self.initial_balances.items():
+-            if agent_id in sim.agents and amount > 0:
++            if agent_id in sim.agents and isinstance(amount, (int, float)) and amount > 0:
+                 Bootstrapper.distribute_initial_wealth(central_bank=sim.central_bank, target_agent=sim.agents[agent_id], amount=int(amount), settlement_system=sim.settlement_system)
+                 distributed_count += 1
+         self.logger.info(f'GENESIS | Distributed wealth to {distributed_count} agents.')
+@@ -382,7 +383,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.commerce_system = CommerceSystem(self.config)
+         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
+         sim.crisis_monitor = CrisisMonitor(logger=self.logger, run_id=sim.run_id)
+-        sim.household_time_allocation: Dict[int, float] = {}
++        sim.household_time_allocation = {}
+         if isinstance(sim.central_bank, ICurrencyHolder):
+             sim.world_state.register_currency_holder(sim.central_bank)
+         for agent in sim.agents.values():
+diff --git a/simulation/portfolio.py b/simulation/portfolio.py
+index 058ec3ca..1c722a89 100644
+--- a/simulation/portfolio.py
++++ b/simulation/portfolio.py
+@@ -11,20 +11,22 @@ class Portfolio:
+         self.owner_id = owner_id
+         self.holdings: Dict[int, Share] = {}  # firm_id -> Share
+ 
+-    def add(self, firm_id: int, quantity: float, price: float):
++    def add(self, firm_id: int, quantity: float, price: int):
+         """
+         Adds shares to the portfolio, updating Weighted Average Cost (WAC).
++        Price is in pennies.
+         """
+         if quantity <= 0:
+             return
+ 
+         if firm_id in self.holdings:
+             share = self.holdings[firm_id]
++            # Use integer math as much as possible, but quantity is float
+             total_cost = (share.quantity * share.acquisition_price) + (quantity * price)
+             total_qty = share.quantity + quantity
+ 
+             share.quantity = total_qty
+-            share.acquisition_price = total_cost / total_qty
++            share.acquisition_price = int(total_cost / total_qty)
+         else:
+             self.holdings[firm_id] = Share(
+                 firm_id=firm_id,
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index fcbdc52f..5db19104 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -65,7 +65,7 @@ class TransactionProcessor(SystemInterface):
+                         tx, buyer, None, context
+                     )
+ 
+-                    amount = 0.0
++                    amount = 0
+                     if success:
+                         if getattr(tx, 'total_pennies', 0) > 0:
+                             amount = tx.total_pennies
+@@ -82,7 +82,7 @@ class TransactionProcessor(SystemInterface):
+                     return SettlementResultDTO(
+                         original_transaction=tx,
+                         success=False,
+-                        amount_settled=0.0
++                        amount_settled=0
+                     )
+         return None
+ 
+@@ -209,7 +209,7 @@ class TransactionProcessor(SystemInterface):
+                 )
+                 results.append(
+                     SettlementResultDTO(
+-                        original_transaction=tx, success=False, amount_settled=0.0
++                        original_transaction=tx, success=False, amount_settled=0
+                     )
+                 )
+                 continue
+@@ -222,7 +222,7 @@ class TransactionProcessor(SystemInterface):
+                 )
+                 results.append(
+                     SettlementResultDTO(
+-                        original_transaction=tx, success=False, amount_settled=0.0
++                        original_transaction=tx, success=False, amount_settled=0
+                     )
+                 )
+                 continue
+@@ -232,13 +232,13 @@ class TransactionProcessor(SystemInterface):
+                 success = handler.handle(tx, buyer, seller, context)
+ 
+                 # Record Result
+-                amount = 0.0
++                amount = 0
+                 if success:
+                     # TD-MKT-FLOAT-MATCH: total_pennies is the SSoT for settlement
+                     if getattr(tx, 'total_pennies', 0) > 0:
+-                        amount = float(tx.total_pennies)
++                        amount = int(tx.total_pennies)
+                     else:
+-                        amount = float(round_to_pennies(tx.quantity * tx.price * 100))
++                        amount = int(round_to_pennies(tx.quantity * tx.price * 100))
+ 
+                 results.append(
+                     SettlementResultDTO(
+@@ -255,7 +255,7 @@ class TransactionProcessor(SystemInterface):
+                 state.logger.error(f"Transaction Handler Failed for {tx.transaction_type} (ID: {getattr(tx, 'id', 'unknown')}): {e}", exc_info=True)
+                 results.append(
+                     SettlementResultDTO(
+-                        original_transaction=tx, success=False, amount_settled=0.0
++                        original_transaction=tx, success=False, amount_settled=0
+                     )
+                 )
+ 

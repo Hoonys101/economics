@@ -1,0 +1,1177 @@
+diff --git a/communications/insights/phase41_wave3_domain_refactor.md b/communications/insights/phase41_wave3_domain_refactor.md
+new file mode 100644
+index 00000000..6c431c29
+--- /dev/null
++++ b/communications/insights/phase41_wave3_domain_refactor.md
+@@ -0,0 +1,78 @@
++# Insight Report: Wave 3.1 Industry Domain Mapping
++
++**Mission Key**: `phase41_wave3_domain_refactor`
++**Date**: 2026-06-12 (Simulated)
++**Author**: Jules (AI Agent)
++
++---
++
++## 1. Architectural Insights
++
++### IndustryDomain Enum Unification
++The primary architectural shift in this wave was the unification of disparate string literals used for "Sectors" and "Majors" into a single, authoritative `IndustryDomain` Enum (`modules/common/enums.py`).
++
++*   **Before**:
++    *   Sectors: "FOOD", "GOODS", "SERVICE", "MATERIAL", "LUXURY" (Strings in `config/defaults.py`)
++    *   Majors: "AGRICULTURE", "MANUFACTURING", "SERVICES", "TECHNOLOGY" (Strings in Labor Config)
++    *   Mapping logic was fragile and distributed across tests and migration scripts.
++
++*   **After**:
++    *   `IndustryDomain` Enum serves as the Single Source of Truth (SSoT).
++    *   **Mapping Strategy**:
++        *   `FOOD` -> `FOOD_PROD`
++        *   `GOODS` -> `MANUFACTURING`
++        *   `SERVICE` -> `SERVICES`
++        *   `MATERIAL` -> `RAW_MATERIALS`
++        *   `LUXURY` -> `LUXURY_GOODS`
++        *   `TECH` -> `TECHNOLOGY`
++    *   `LaborMarket` logic now strictly uses `IndustryDomain` for matching, bucketing, and comparisons.
++
++### DTO Purity & Type Safety
++*   Updated `Firm` DTOs (`ProductionStateDTO`, `HRContextDTO`) to use `IndustryDomain` for `major`.
++*   Retained `specialization` as `str` (Item ID) in `ProductionStateDTO` and `ProductionContextDTO` after identifying that it refers to specific output goods (e.g., "basic_food", "consumer_goods") rather than the domain itself. This distinction prevented a potential regression where item lookups would fail against domain Enums.
++*   Enforced `IndustryDomain` usage in `JobOfferDTO` and `JobSeekerDTO` within the Labor Market API.
++
++### Technology Manager Alignment
++*   Identified and fixed hardcoded sector strings ("FOOD") in `TechnologyManager` and its associated tests.
++*   Ensured `TechnologyManager` initialization aligns with the new `IndustryDomain` values (e.g., "FOOD_PROD").
++
++---
++
++## 2. Regression Analysis
++
++### Initial Failures
++*   **`test_diffusion_over_time`**: Failed initially because `TechnologyManager` was initializing tech nodes with the legacy "FOOD" sector, while the test setup used "FOOD_PROD". This caused a mismatch in the diffusion logic (`tech.sector != firm['sector']`), preventing adoption.
++    *   **Fix**: Updated `TechnologyManager._initialize_tech_tree` to use `FOOD_PROD`.
++*   **`modules/labor/constants.py`**: Failed during collection because it referenced `IndustryDomain.FOOD`, which was renamed to `FOOD_PROD`.
++    *   **Fix**: Updated constants to match the new Enum definition.
++
++### Test Updates
++*   **Golden Files**: Updated all `tests/goldens/*.json` and `tests/integration/goldens/*.json` to reflect the new sector names. This ensures regression tests pass against the new domain model.
++*   **Unit Tests**: Updated `tests/unit/test_firms.py`, `tests/unit/test_labor_market_system.py`, and others to use `IndustryDomain` or updated string literals.
++*   **Factories**: Updated `tests/utils/factories.py` to default to `FOOD_PROD`.
++
++---
++
++## 3. Test Evidence
++
++The following output demonstrates that the entire test suite (unit, system, integration) passes with the new architecture.
++
++```text
++================= 982 passed, 11 skipped, 2 warnings in 10.30s =================
++```
++
++(See `pytest_full_run_2.txt` for detailed logs if preserved, but the summary confirms full pass).
++
++**Relevant Test Subset Verification**:
++```text
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_match_market_perfect_match PASSED
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_match_market_mismatch_major PASSED
++tests/unit/systems/test_technology_manager.py::TestTechnologyManager::test_diffusion_over_time PASSED
++tests/system/test_labor_config_migration.py::TestLaborConfigMigration::test_firm_majors_mapped PASSED
++```
++
++---
++
++## 4. Conclusion
++
++The "Industry Domain Mapping" mission is complete. The system now operates on a unified `IndustryDomain` Enum, reducing ambiguity and improving type safety across the Firm-Labor boundary. Legacy string dependencies have been eradicated from core logic and configuration.
+diff --git a/config/defaults.py b/config/defaults.py
+index b29faeb4..0064eb69 100644
+--- a/config/defaults.py
++++ b/config/defaults.py
+@@ -126,21 +126,21 @@ GOODS = {
+         "initial_price": 500, # MIGRATION: Int pennies
+         "utility_effects": {"survival": 10},
+         "is_luxury": False,
+-        "sector": "FOOD",
++        "sector": "FOOD_PROD",
+     },
+     "clothing": {
+         "production_cost": 500, # MIGRATION: Int pennies
+         "initial_price": 1500, # MIGRATION: Int pennies
+         "utility_effects": {"survival": 2, "social": 8},
+         "is_luxury": True,
+-        "sector": "GOODS",
++        "sector": "MANUFACTURING",
+     },
+     "luxury_food": {
+         "production_cost": 1000, # MIGRATION: Int pennies
+         "initial_price": 3000, # MIGRATION: Int pennies
+         "utility_effects": {"survival": 12, "social": 5},
+         "is_luxury": True,
+-        "sector": "FOOD",
++        "sector": "FOOD_PROD",
+     },
+     "education_service": {
+         "production_cost": 2000, # MIGRATION: Int pennies
+@@ -148,7 +148,7 @@ GOODS = {
+         "utility_effects": {"improvement": 15},
+         "is_service": True,
+         "is_luxury": False,
+-        "sector": "SERVICE",
++        "sector": "SERVICES",
+     },
+     # WO-030: Iron (Raw Material)
+     "iron": {
+@@ -156,7 +156,7 @@ GOODS = {
+         "initial_price": 800, # MIGRATION: Int pennies
+         "utility_effects": {},
+         "is_luxury": False,
+-        "sector": "MATERIAL",
++        "sector": "RAW_MATERIALS",
+     },
+     # WO-023: Consumer Goods (Industrial Product)
+     "consumer_goods": {
+@@ -164,7 +164,7 @@ GOODS = {
+         "initial_price": 1500, # MIGRATION: Int pennies
+         "utility_effects": {"quality": 10},
+         "is_luxury": True, # Treated as luxury/higher tier need
+-        "sector": "GOODS",
++        "sector": "MANUFACTURING",
+         "is_durable": True,
+         "base_lifespan": 50,  # Ticks
+         "quality_sensitivity": 0.5,
+@@ -176,7 +176,7 @@ GOODS = {
+         "utility_effects": {"social": 50},
+         "is_luxury": True,
+         "is_veblen": True,  # 가격↑ → 수요↑
+-        "sector": "LUXURY",
++        "sector": "LUXURY_GOODS",
+     },
+ }
+ 
+diff --git a/modules/common/enums.py b/modules/common/enums.py
+index 28fe595c..137238fa 100644
+--- a/modules/common/enums.py
++++ b/modules/common/enums.py
+@@ -5,13 +5,15 @@ class IndustryDomain(str, Enum):
+     Wave 3: Standardized Industry Domains.
+     Replaces string literals in 'major' fields.
+     """
+-    FOOD = "FOOD"
+-    MANUFACTURING = "MANUFACTURING"
+-    TECH = "TECH"
++    FOOD_PROD = "FOOD_PROD"       # Was FOOD / AGRICULTURE
++    MANUFACTURING = "MANUFACTURING" # Was GOODS / MANUFACTURING
++    TECHNOLOGY = "TECHNOLOGY"     # Was TECH
+     FINANCE = "FINANCE"
+     REAL_ESTATE = "REAL_ESTATE"
+-    SERVICE = "SERVICE"
++    SERVICES = "SERVICES"         # Was SERVICE
+     EDUCATION = "EDUCATION"
+     HEALTH = "HEALTH"
+     GOVERNMENT = "GOVERNMENT"
+-    GENERAL = "GENERAL"  # Fallback / Unskilled
++    RAW_MATERIALS = "RAW_MATERIALS" # Was MATERIAL (sector)
++    LUXURY_GOODS = "LUXURY_GOODS"   # Was LUXURY (sector)
++    GENERAL = "GENERAL"           # Fallback / Unskilled
+diff --git a/modules/firm/api.py b/modules/firm/api.py
+index 438ca4ba..743f951e 100644
+--- a/modules/firm/api.py
++++ b/modules/firm/api.py
+@@ -6,6 +6,7 @@ from enum import Enum
+ from modules.simulation.dtos.api import FirmConfigDTO, FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
+ from modules.system.api import MarketSnapshotDTO, MarketContextDTO
+ from modules.simulation.api import IInventoryHandler, AgentID
++from modules.common.enums import IndustryDomain
+ from modules.finance.api import IFinancialAgent
+ from simulation.models import Order, Transaction
+ 
+@@ -170,7 +171,7 @@ class HRContextDTO(BaseDepartmentContextDTO):
+     max_employees: int
+     severance_pay_weeks: int
+     specialization: str # Added for Major-Matching
+-    major: str # Added for Major-Matching (Phase 4.1)
++    major: IndustryDomain # Added for Major-Matching (Phase 4.1)
+ 
+ @dataclass(frozen=True)
+ class HRIntentDTO:
+diff --git a/modules/labor/api.py b/modules/labor/api.py
+index e8f84193..434a348e 100644
+--- a/modules/labor/api.py
++++ b/modules/labor/api.py
+@@ -20,15 +20,15 @@ class LaborMatchDTO:
+     """
+     Standardized payload for Labor Market Order Metadata.
+     """
+-    major: str = "GENERAL"
++    major: IndustryDomain = IndustryDomain.GENERAL
+     education_level: int = 0
+-    secondary_majors: List[str] = field(default_factory=list)
++    secondary_majors: List[IndustryDomain] = field(default_factory=list)
+     years_experience: float = 0.0
+     min_match_score: float = 0.0
+ 
+     def to_metadata(self) -> Dict[str, Any]:
+         return {
+-            "major": self.major,
++            "major": self.major.value if hasattr(self.major, "value") else self.major,
+             "education_level": self.education_level,
+             "secondary_majors": self.secondary_majors,
+             "years_experience": self.years_experience,
+@@ -42,8 +42,14 @@ class LaborMatchDTO:
+         if edu_level is None:
+             edu_level = metadata.get("required_education", 0)
+ 
++        major_str = metadata.get("major", "GENERAL")
++        try:
++            major = IndustryDomain(major_str)
++        except ValueError:
++            major = IndustryDomain.GENERAL
++
+         return cls(
+-            major=metadata.get("major", "GENERAL"),
++            major=major,
+             education_level=int(edu_level),
+             secondary_majors=metadata.get("secondary_majors", []),
+             years_experience=float(metadata.get("years_experience", 0.0)),
+diff --git a/modules/labor/constants.py b/modules/labor/constants.py
+index 178cf1f0..e619c37f 100644
+--- a/modules/labor/constants.py
++++ b/modules/labor/constants.py
+@@ -5,14 +5,16 @@ Constants for the Labor Market.
+ from modules.common.enums import IndustryDomain
+ 
+ MAJORS = [
+-    IndustryDomain.FOOD,
++    IndustryDomain.FOOD_PROD,
+     IndustryDomain.MANUFACTURING,
+-    IndustryDomain.TECH,
++    IndustryDomain.TECHNOLOGY,
+     IndustryDomain.FINANCE,
+     IndustryDomain.REAL_ESTATE,
+-    IndustryDomain.SERVICE,
++    IndustryDomain.SERVICES,
+     IndustryDomain.EDUCATION,
+     IndustryDomain.HEALTH,
+     IndustryDomain.GOVERNMENT,
++    IndustryDomain.RAW_MATERIALS,
++    IndustryDomain.LUXURY_GOODS,
+     IndustryDomain.GENERAL
+ ]
+diff --git a/modules/labor/system.py b/modules/labor/system.py
+index 3920a3a8..6ac47eb6 100644
+--- a/modules/labor/system.py
++++ b/modules/labor/system.py
+@@ -6,6 +6,7 @@ from modules.market.api import CanonicalOrderDTO, OrderTelemetrySchema
+ from simulation.models import Transaction
+ from simulation.interfaces.market_interface import IMarket
+ from modules.simulation.api import AgentID
++from modules.common.enums import IndustryDomain
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -37,7 +38,7 @@ class LaborMarket(ILaborMarket, IMarket):
+         sorted_offers = sorted(self._job_offers, key=lambda x: x.offer_wage, reverse=True)
+ 
+         # Bucket seekers by Major for Performance Optimization (O(N*M) -> O(N*K) where K is subset)
+-        seekers_by_major: Dict[str, List[JobSeekerDTO]] = {}
++        seekers_by_major: Dict[IndustryDomain, List[JobSeekerDTO]] = {}
+         for seeker in self._job_seekers:
+             major = seeker.major
+             if major not in seekers_by_major:
+@@ -54,8 +55,8 @@ class LaborMarket(ILaborMarket, IMarket):
+             # Priority 3: All others (if desperate/allowed, but for perf we limit)
+ 
+             search_buckets = [offer.major]
+-            if "GENERAL" not in search_buckets:
+-                search_buckets.append("GENERAL")
++            if IndustryDomain.GENERAL not in search_buckets:
++                search_buckets.append(IndustryDomain.GENERAL)
+ 
+             # Add all other buckets for broader search if needed, but penalize?
+             # For strict perf, we might only check primary buckets.
+@@ -112,7 +113,7 @@ class LaborMarket(ILaborMarket, IMarket):
+                     elif seeker.secondary_majors and offer.major in seeker.secondary_majors:
+                         major_multiplier = mult_partial # Using Partial for secondary match
+                         compatibility = "PARTIAL"
+-                    elif offer.major == "GENERAL" or seeker.major == "GENERAL":
++                    elif offer.major == IndustryDomain.GENERAL or seeker.major == IndustryDomain.GENERAL:
+                         major_multiplier = mult_general
+                         compatibility = "PARTIAL"
+                     else:
+@@ -206,12 +207,18 @@ class LaborMarket(ILaborMarket, IMarket):
+ 
+             # Convert to JobOffer
+             metadata = order_dto.metadata or {}
++            major_str = metadata.get("major", "GENERAL")
++            try:
++                major_enum = IndustryDomain(major_str)
++            except ValueError:
++                major_enum = IndustryDomain.GENERAL
++
+             offer = JobOfferDTO(
+                 firm_id=AgentID(int(order_dto.agent_id)),
+                 offer_wage=order_dto.price_pennies / 100.0,
+                 required_education=metadata.get("required_education", 0),
+                 quantity=order_dto.quantity,
+-                major=metadata.get("major", "GENERAL")
++                major=major_enum
+             )
+             self.post_job_offer(offer)
+ 
+@@ -221,12 +228,18 @@ class LaborMarket(ILaborMarket, IMarket):
+ 
+             # Convert to JobSeeker
+             metadata = order_dto.brand_info or {} # Household uses brand_info for metadata
++            major_str = metadata.get("major", "GENERAL")
++            try:
++                major_enum = IndustryDomain(major_str)
++            except ValueError:
++                major_enum = IndustryDomain.GENERAL
++
+             seeker = JobSeekerDTO(
+                 household_id=AgentID(int(order_dto.agent_id)),
+                 reservation_wage=order_dto.price_pennies / 100.0,
+                 education_level=metadata.get("education_level", 0),
+                 quantity=order_dto.quantity,
+-                major=metadata.get("major", "GENERAL")
++                major=major_enum
+             )
+             self.post_job_seeker(seeker)
+ 
+diff --git a/modules/simulation/dtos/api.py b/modules/simulation/dtos/api.py
+index b892c58b..f060084f 100644
+--- a/modules/simulation/dtos/api.py
++++ b/modules/simulation/dtos/api.py
+@@ -6,6 +6,7 @@ from __future__ import annotations
+ from dataclasses import dataclass, field
+ from typing import Dict, Any, List, Tuple, Protocol, runtime_checkable, Optional
+ from modules.system.api import DEFAULT_CURRENCY
++from modules.common.enums import IndustryDomain
+ 
+ # --- PROTOCOLS ---
+ 
+@@ -51,7 +52,7 @@ class ProductionStateDTO:
+     inventory: Dict[str, Any]
+     input_inventory: Dict[str, Any]
+     inventory_quality: Dict[str, float]
+-    major: str = "GENERAL" # Added for Major-Matching (Phase 4.1)
++    major: IndustryDomain = IndustryDomain.GENERAL # Added for Major-Matching (Phase 4.1)
+ 
+ @dataclass(frozen=True)
+ class SalesStateDTO:
+diff --git a/simulation/systems/technology_manager.py b/simulation/systems/technology_manager.py
+index 3d7ad057..4637b105 100644
+--- a/simulation/systems/technology_manager.py
++++ b/simulation/systems/technology_manager.py
+@@ -66,7 +66,7 @@ class TechnologyManager:
+         fertilizer = TechNode(
+             id="TECH_AGRI_CHEM_01",
+             name="Chemical Fertilizer (Haber-Bosch)",
+-            sector="FOOD",
++            sector="FOOD_PROD",
+             multiplier=tfp_mult,
+             cost_threshold=cost_threshold,
+             diffusion_rate=diff_rate
+diff --git a/tests/finance/test_solvency_logic.py b/tests/finance/test_solvency_logic.py
+index ed399062..ae216a62 100644
+--- a/tests/finance/test_solvency_logic.py
++++ b/tests/finance/test_solvency_logic.py
+@@ -92,7 +92,7 @@ class TestSolvencyLogic:
+         firm = Firm(
+             core_config=core_config,
+             engine=Mock(),
+-            specialization="FOOD",
++            specialization="FOOD_PROD",
+             productivity_factor=1.0,
+             config_dto=config_dto
+         )
+diff --git a/tests/goldens/early_economy.json b/tests/goldens/early_economy.json
+index b1def233..3841b842 100644
+--- a/tests/goldens/early_economy.json
++++ b/tests/goldens/early_economy.json
+@@ -404,7 +404,7 @@
+           "survival": 10
+         },
+         "is_luxury": false,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "clothing": {
+         "production_cost": 5,
+@@ -414,7 +414,7 @@
+           "social": 8
+         },
+         "is_luxury": true,
+-        "sector": "GOODS"
++        "sector": "MANUFACTURING"
+       },
+       "luxury_food": {
+         "production_cost": 10,
+@@ -424,7 +424,7 @@
+           "social": 5
+         },
+         "is_luxury": true,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "education_service": {
+         "production_cost": 20,
+@@ -434,14 +434,14 @@
+         },
+         "is_service": true,
+         "is_luxury": false,
+-        "sector": "SERVICE"
++        "sector": "SERVICES"
+       },
+       "iron": {
+         "production_cost": 2.0,
+         "initial_price": 8.0,
+         "utility_effects": {},
+         "is_luxury": false,
+-        "sector": "MATERIAL"
++        "sector": "RAW_MATERIALS"
+       },
+       "consumer_goods": {
+         "production_cost": 5.0,
+@@ -450,7 +450,7 @@
+           "quality": 10
+         },
+         "is_luxury": true,
+-        "sector": "GOODS",
++        "sector": "MANUFACTURING",
+         "is_durable": true,
+         "base_lifespan": 50,
+         "quality_sensitivity": 0.5,
+@@ -466,7 +466,7 @@
+         },
+         "is_luxury": true,
+         "is_veblen": true,
+-        "sector": "LUXURY"
++        "sector": "LUXURY_GOODS"
+       }
+     },
+     "GOODS_INITIAL_PRICE": {
+diff --git a/tests/goldens/initial_state.json b/tests/goldens/initial_state.json
+index 9e65ddba..38720486 100644
+--- a/tests/goldens/initial_state.json
++++ b/tests/goldens/initial_state.json
+@@ -784,7 +784,7 @@
+           "survival": 10
+         },
+         "is_luxury": false,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "clothing": {
+         "production_cost": 5,
+@@ -794,7 +794,7 @@
+           "social": 8
+         },
+         "is_luxury": true,
+-        "sector": "GOODS"
++        "sector": "MANUFACTURING"
+       },
+       "luxury_food": {
+         "production_cost": 10,
+@@ -804,7 +804,7 @@
+           "social": 5
+         },
+         "is_luxury": true,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "education_service": {
+         "production_cost": 20,
+@@ -814,14 +814,14 @@
+         },
+         "is_service": true,
+         "is_luxury": false,
+-        "sector": "SERVICE"
++        "sector": "SERVICES"
+       },
+       "iron": {
+         "production_cost": 2.0,
+         "initial_price": 8.0,
+         "utility_effects": {},
+         "is_luxury": false,
+-        "sector": "MATERIAL"
++        "sector": "RAW_MATERIALS"
+       },
+       "consumer_goods": {
+         "production_cost": 5.0,
+@@ -830,7 +830,7 @@
+           "quality": 10
+         },
+         "is_luxury": true,
+-        "sector": "GOODS",
++        "sector": "MANUFACTURING",
+         "is_durable": true,
+         "base_lifespan": 50,
+         "quality_sensitivity": 0.5,
+@@ -846,7 +846,7 @@
+         },
+         "is_luxury": true,
+         "is_veblen": true,
+-        "sector": "LUXURY"
++        "sector": "LUXURY_GOODS"
+       }
+     },
+     "GOODS_INITIAL_PRICE": {
+diff --git a/tests/goldens/stable_economy.json b/tests/goldens/stable_economy.json
+index 9fd25b6c..943ffbd4 100644
+--- a/tests/goldens/stable_economy.json
++++ b/tests/goldens/stable_economy.json
+@@ -397,7 +397,7 @@
+           "survival": 10
+         },
+         "is_luxury": false,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "clothing": {
+         "production_cost": 5,
+@@ -407,7 +407,7 @@
+           "social": 8
+         },
+         "is_luxury": true,
+-        "sector": "GOODS"
++        "sector": "MANUFACTURING"
+       },
+       "luxury_food": {
+         "production_cost": 10,
+@@ -417,7 +417,7 @@
+           "social": 5
+         },
+         "is_luxury": true,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "education_service": {
+         "production_cost": 20,
+@@ -427,14 +427,14 @@
+         },
+         "is_service": true,
+         "is_luxury": false,
+-        "sector": "SERVICE"
++        "sector": "SERVICES"
+       },
+       "iron": {
+         "production_cost": 2.0,
+         "initial_price": 8.0,
+         "utility_effects": {},
+         "is_luxury": false,
+-        "sector": "MATERIAL"
++        "sector": "RAW_MATERIALS"
+       },
+       "consumer_goods": {
+         "production_cost": 5.0,
+@@ -443,7 +443,7 @@
+           "quality": 10
+         },
+         "is_luxury": true,
+-        "sector": "GOODS",
++        "sector": "MANUFACTURING",
+         "is_durable": true,
+         "base_lifespan": 50,
+         "quality_sensitivity": 0.5,
+@@ -459,7 +459,7 @@
+         },
+         "is_luxury": true,
+         "is_veblen": true,
+-        "sector": "LUXURY"
++        "sector": "LUXURY_GOODS"
+       }
+     },
+     "GOODS_INITIAL_PRICE": {
+diff --git a/tests/integration/goldens/early_economy.json b/tests/integration/goldens/early_economy.json
+index 1d43f407..29122e6a 100644
+--- a/tests/integration/goldens/early_economy.json
++++ b/tests/integration/goldens/early_economy.json
+@@ -372,7 +372,7 @@
+           "survival": 10
+         },
+         "is_luxury": false,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "clothing": {
+         "production_cost": 5,
+@@ -382,7 +382,7 @@
+           "social": 8
+         },
+         "is_luxury": true,
+-        "sector": "GOODS"
++        "sector": "MANUFACTURING"
+       },
+       "luxury_food": {
+         "production_cost": 10,
+@@ -392,7 +392,7 @@
+           "social": 5
+         },
+         "is_luxury": true,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "education_service": {
+         "production_cost": 20,
+@@ -402,14 +402,14 @@
+         },
+         "is_service": true,
+         "is_luxury": false,
+-        "sector": "SERVICE"
++        "sector": "SERVICES"
+       },
+       "iron": {
+         "production_cost": 2.0,
+         "initial_price": 8.0,
+         "utility_effects": {},
+         "is_luxury": false,
+-        "sector": "MATERIAL"
++        "sector": "RAW_MATERIALS"
+       },
+       "consumer_goods": {
+         "production_cost": 5.0,
+@@ -418,7 +418,7 @@
+           "quality": 10
+         },
+         "is_luxury": true,
+-        "sector": "GOODS",
++        "sector": "MANUFACTURING",
+         "is_durable": true,
+         "base_lifespan": 50,
+         "quality_sensitivity": 0.5,
+@@ -434,7 +434,7 @@
+         },
+         "is_luxury": true,
+         "is_veblen": true,
+-        "sector": "LUXURY"
++        "sector": "LUXURY_GOODS"
+       }
+     },
+     "GOODS_INITIAL_PRICE": {
+diff --git a/tests/integration/goldens/initial_state.json b/tests/integration/goldens/initial_state.json
+index d892c7e6..3608aba5 100644
+--- a/tests/integration/goldens/initial_state.json
++++ b/tests/integration/goldens/initial_state.json
+@@ -736,7 +736,7 @@
+           "survival": 10
+         },
+         "is_luxury": false,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "clothing": {
+         "production_cost": 5,
+@@ -746,7 +746,7 @@
+           "social": 8
+         },
+         "is_luxury": true,
+-        "sector": "GOODS"
++        "sector": "MANUFACTURING"
+       },
+       "luxury_food": {
+         "production_cost": 10,
+@@ -756,7 +756,7 @@
+           "social": 5
+         },
+         "is_luxury": true,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "education_service": {
+         "production_cost": 20,
+@@ -766,14 +766,14 @@
+         },
+         "is_service": true,
+         "is_luxury": false,
+-        "sector": "SERVICE"
++        "sector": "SERVICES"
+       },
+       "iron": {
+         "production_cost": 2.0,
+         "initial_price": 8.0,
+         "utility_effects": {},
+         "is_luxury": false,
+-        "sector": "MATERIAL"
++        "sector": "RAW_MATERIALS"
+       },
+       "consumer_goods": {
+         "production_cost": 5.0,
+@@ -782,7 +782,7 @@
+           "quality": 10
+         },
+         "is_luxury": true,
+-        "sector": "GOODS",
++        "sector": "MANUFACTURING",
+         "is_durable": true,
+         "base_lifespan": 50,
+         "quality_sensitivity": 0.5,
+@@ -798,7 +798,7 @@
+         },
+         "is_luxury": true,
+         "is_veblen": true,
+-        "sector": "LUXURY"
++        "sector": "LUXURY_GOODS"
+       }
+     },
+     "GOODS_INITIAL_PRICE": {
+diff --git a/tests/integration/goldens/stable_economy.json b/tests/integration/goldens/stable_economy.json
+index e7d62d22..f191c0e4 100644
+--- a/tests/integration/goldens/stable_economy.json
++++ b/tests/integration/goldens/stable_economy.json
+@@ -337,7 +337,7 @@
+           "survival": 10
+         },
+         "is_luxury": false,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "clothing": {
+         "production_cost": 5,
+@@ -347,7 +347,7 @@
+           "social": 8
+         },
+         "is_luxury": true,
+-        "sector": "GOODS"
++        "sector": "MANUFACTURING"
+       },
+       "luxury_food": {
+         "production_cost": 10,
+@@ -357,7 +357,7 @@
+           "social": 5
+         },
+         "is_luxury": true,
+-        "sector": "FOOD"
++        "sector": "FOOD_PROD"
+       },
+       "education_service": {
+         "production_cost": 20,
+@@ -367,14 +367,14 @@
+         },
+         "is_service": true,
+         "is_luxury": false,
+-        "sector": "SERVICE"
++        "sector": "SERVICES"
+       },
+       "iron": {
+         "production_cost": 2.0,
+         "initial_price": 8.0,
+         "utility_effects": {},
+         "is_luxury": false,
+-        "sector": "MATERIAL"
++        "sector": "RAW_MATERIALS"
+       },
+       "consumer_goods": {
+         "production_cost": 5.0,
+@@ -383,7 +383,7 @@
+           "quality": 10
+         },
+         "is_luxury": true,
+-        "sector": "GOODS",
++        "sector": "MANUFACTURING",
+         "is_durable": true,
+         "base_lifespan": 50,
+         "quality_sensitivity": 0.5,
+@@ -399,7 +399,7 @@
+         },
+         "is_luxury": true,
+         "is_veblen": true,
+-        "sector": "LUXURY"
++        "sector": "LUXURY_GOODS"
+       }
+     },
+     "GOODS_INITIAL_PRICE": {
+diff --git a/tests/integration/scenarios/verify_industrial_revolution.py b/tests/integration/scenarios/verify_industrial_revolution.py
+index 32b8ebc5..e1200ce4 100644
+--- a/tests/integration/scenarios/verify_industrial_revolution.py
++++ b/tests/integration/scenarios/verify_industrial_revolution.py
+@@ -48,7 +48,7 @@ def verify_industrial_revolution():
+     from simulation.decisions.standalone_rule_based_firm_engine import StandaloneRuleBasedFirmDecisionEngine
+     import random
+     
+-    dummy_goods = [{"id": "basic_food", "sector": "FOOD"}]
++    dummy_goods = [{"id": "basic_food", "sector": "FOOD_PROD"}]
+     initial_needs = {"survival": 50, "social": 10, "growth": 10, "survival_need": 50, "imitation_need": 0, "recognition_need": 0, "wealth_need": 0}
+     
+     households = [
+@@ -75,7 +75,7 @@ def verify_industrial_revolution():
+             decision_engine=StandaloneRuleBasedFirmDecisionEngine(Config, logger), 
+             value_orientation="PROFIT", 
+             config_module=Config, 
+-            sector="FOOD", 
++            sector="FOOD_PROD",
+             personality=Personality.BALANCED
+         )
+         for i in range(Config.NUM_FIRMS)
+@@ -130,7 +130,7 @@ def verify_industrial_revolution():
+          
+     # C. Productivity Boost
+     # Firm 0's actual output or effective TFP should be 3x base
+-    mult = sim.technology_manager.get_productivity_multiplier(firms[0].id, "FOOD")
++    mult = sim.technology_manager.get_productivity_multiplier(firms[0].id, "FOOD_PROD")
+     if mult == 3.0:
+         logger.info(f"✅ Productivity Multiplier Verified: {mult}")
+     else:
+diff --git a/tests/integration/test_phase23_production.py b/tests/integration/test_phase23_production.py
+index 3d23d114..c9529cd0 100644
+--- a/tests/integration/test_phase23_production.py
++++ b/tests/integration/test_phase23_production.py
+@@ -12,7 +12,7 @@ class TestPhase23Production:
+         mock_config.labor_elasticity_min = 0.1
+         mock_config.automation_labor_reduction = 0.0
+         mock_config.capital_depreciation_rate = 0.0
+-        mock_config.goods = {"food": {"sector": "FOOD"}}
++        mock_config.goods = {"food": {"sector": "FOOD_PROD"}}
+         # Tech manager params
+         mock_config.TECH_FERTILIZER_UNLOCK_TICK = 0
+         mock_config.TECH_DIFFUSION_RATE = 0.0
+@@ -42,7 +42,7 @@ class TestPhase23Production:
+                 config_dto=config,
+                 initial_inventory={},
+                 loan_market=None,
+-                sector="FOOD"
++                sector="FOOD_PROD"
+             )
+             # Setup State
+             firm.production_state.capital_stock = 100.0
+diff --git a/tests/simulation/components/engines/test_firm_decoupling.py b/tests/simulation/components/engines/test_firm_decoupling.py
+index 1936a19f..4d992930 100644
+--- a/tests/simulation/components/engines/test_firm_decoupling.py
++++ b/tests/simulation/components/engines/test_firm_decoupling.py
+@@ -8,6 +8,7 @@ from simulation.components.engines.hr_engine import HREngine
+ from simulation.components.engines.sales_engine import SalesEngine
+ from modules.simulation.api import AgentID
+ from modules.system.api import MarketSnapshotDTO
++from modules.common.enums import IndustryDomain
+ 
+ def test_production_engine_decoupled():
+     engine = ProductionEngine()
+@@ -35,7 +36,7 @@ def test_hr_engine_decoupled():
+         firm_id=AgentID(1), tick=10, budget_pennies=100000, market_snapshot=MarketSnapshotDTO(10, {}, {}), available_cash_pennies=100000, is_solvent=True,
+         current_employees=[AgentID(1)], current_headcount=1, employee_wages={AgentID(1): 1000}, employee_skills={AgentID(1): 1.0},
+         target_workforce_count=5, labor_market_avg_wage=1000, marginal_labor_productivity=1.0, happiness_avg=1.0,
+-        profit_history=[1000], min_employees=1, max_employees=100, severance_pay_weeks=2, specialization="TECH", major="TECHNOLOGY"
++        profit_history=[1000], min_employees=1, max_employees=100, severance_pay_weeks=2, specialization='TECH_PRODUCT', major=IndustryDomain.TECHNOLOGY
+     )
+ 
+     intent = engine.decide_workforce(context)
+diff --git a/tests/simulation/components/engines/test_production_engine.py b/tests/simulation/components/engines/test_production_engine.py
+index 3b7811d3..1402edd7 100644
+--- a/tests/simulation/components/engines/test_production_engine.py
++++ b/tests/simulation/components/engines/test_production_engine.py
+@@ -4,6 +4,7 @@ from simulation.components.engines.production_engine import ProductionEngine
+ from modules.firm.api import ProductionInputDTO, FirmSnapshotDTO
+ from modules.simulation.dtos.api import ProductionStateDTO, HRStateDTO
+ from modules.simulation.dtos.api import FirmConfigDTO
++from modules.common.enums import IndustryDomain
+ 
+ @pytest.fixture
+ def production_engine():
+@@ -21,7 +22,7 @@ def firm_snapshot():
+     config.labor_elasticity_min = 0.1
+     config.capital_depreciation_rate = 0.1
+     config.goods = {
+-        "FOOD": {
++        "FOOD_PROD": {
+             "quality_sensitivity": 0.5,
+             "inputs": {"RAW_MAT": 2.0}
+         }
+@@ -35,7 +36,7 @@ def firm_snapshot():
+     prod.production_target = 100.0
+     prod.productivity_factor = 1.0
+     prod.base_quality = 1.0
+-    prod.specialization = "FOOD"
++    prod.specialization = "FOOD_PROD"
+     prod.input_inventory = {"RAW_MAT": 1000.0}
+     prod.inventory = {} # Finished goods inventory
+     snapshot.production = prod
+diff --git a/tests/system/test_labor_config_migration.py b/tests/system/test_labor_config_migration.py
+index 0edd8abf..ea97cfeb 100644
+--- a/tests/system/test_labor_config_migration.py
++++ b/tests/system/test_labor_config_migration.py
+@@ -9,8 +9,9 @@ class TestLaborConfigMigration:
+     @pytest.fixture(autouse=True)
+     def setup_config(self):
+         if not hasattr(config, "LABOR_MARKET"):
++            from modules.common.enums import IndustryDomain
+             config.LABOR_MARKET = {
+-                "majors": ["GENERAL", "AGRICULTURE", "MANUFACTURING", "SERVICES", "TECHNOLOGY"],
++                "majors": [d.value for d in IndustryDomain],
+                 "compatibility": {
+                     "PERFECT": 1.2,
+                     "PARTIAL": 1.0,
+@@ -18,12 +19,12 @@ class TestLaborConfigMigration:
+                     "GENERAL_PENALTY": 1.0
+                 },
+                 "sector_map": {
+-                    "FOOD": "AGRICULTURE",
+-                    "GOODS": "MANUFACTURING",
+-                    "SERVICE": "SERVICES",
+-                    "MATERIAL": "MANUFACTURING",
+-                    "LUXURY": "SERVICES",
+-                    "TECH": "TECHNOLOGY"
++                    "FOOD_PROD": "FOOD_PROD",
++                    "MANUFACTURING": "MANUFACTURING",
++                    "SERVICES": "SERVICES",
++                    "RAW_MATERIALS": "RAW_MATERIALS",
++                    "LUXURY_GOODS": "LUXURY_GOODS",
++                    "TECHNOLOGY": "TECHNOLOGY"
+                 }
+             }
+ 
+@@ -37,7 +38,9 @@ class TestLaborConfigMigration:
+         for agent in sim.agents.values():
+             if isinstance(agent, Household):
+                 assert agent._econ_state.major is not None
+-                assert agent._econ_state.major in valid_majors
++                # Check value if enum, or direct if string
++                val = agent._econ_state.major.value if hasattr(agent._econ_state.major, "value") else agent._econ_state.major
++                assert val in valid_majors
+ 
+     def test_firm_majors_mapped(self):
+         """Verify that firms have a major assigned based on their sector/specialization."""
+@@ -52,8 +55,14 @@ class TestLaborConfigMigration:
+                 assert agent.major is not None
+ 
+                 # Verify mapping
+-                expected_major = sector_map.get(agent.sector, "GENERAL")
+-                assert agent.major == expected_major
++                # agent.major is Enum, agent.sector is String (from defaults)
++                # sector_map keys are strings, values are strings (majors)
++
++                expected_major_str = sector_map.get(agent.sector, "GENERAL")
++
++                # Compare Enum value to string
++                val = agent.major.value if hasattr(agent.major, "value") else agent.major
++                assert val == expected_major_str
+ 
+     def test_labor_market_config_loaded(self):
+         """Verify that LaborMarket has the configuration loaded."""
+diff --git a/tests/unit/modules/watchtower/test_agent_service.py b/tests/unit/modules/watchtower/test_agent_service.py
+index 535592f7..003878c3 100644
+--- a/tests/unit/modules/watchtower/test_agent_service.py
++++ b/tests/unit/modules/watchtower/test_agent_service.py
+@@ -43,7 +43,7 @@ class MockFirm(Firm):
+         self.finance_state.expenses_this_tick = {"USD": 300}
+         self.hr_state = MagicMock()
+         self.hr_state.employees = [MagicMock(), MagicMock()]
+-        self.sector = "FOOD"
++        self.sector = "FOOD_PROD"
+         self.current_production = 50.0
+ 
+ def create_mock_household(id):
+@@ -131,7 +131,7 @@ def test_get_agent_detail_firm(agent_service, mock_simulation):
+     result = agent_service.get_agent_detail(201)
+     assert result is not None
+     # assert result.id == 201 # Mocking artifact with AgentDetailDTO
+-    assert result.sector == "FOOD"
++    assert result.sector == "FOOD_PROD"
+     assert result.employees_count == 2
+     assert result.production == 50.0
+ 
+diff --git a/tests/unit/systems/test_technology_manager.py b/tests/unit/systems/test_technology_manager.py
+index a6a4bfe6..3d74b7db 100644
+--- a/tests/unit/systems/test_technology_manager.py
++++ b/tests/unit/systems/test_technology_manager.py
+@@ -157,12 +157,12 @@ class TestTechnologyManager:
+         tech_id = "TECH_AGRI_CHEM_01"
+         tech = manager.tech_tree[tech_id]
+         tech.cost_threshold = 100.0
+-        tech.sector = "FOOD"
++        tech.sector = "FOOD_PROD"
+ 
+         # Setup Firms DTO
+         firms = [
+-            FirmTechInfoDTO(id=1, sector="FOOD", current_rd_investment=60.0),
+-            FirmTechInfoDTO(id=2, sector="FOOD", current_rd_investment=60.0), # Total 120 > 100
++            FirmTechInfoDTO(id=1, sector="FOOD_PROD", current_rd_investment=60.0),
++            FirmTechInfoDTO(id=2, sector="FOOD_PROD", current_rd_investment=60.0), # Total 120 > 100
+             FirmTechInfoDTO(id=3, sector="MANUFACTURING", current_rd_investment=0.0),
+         ]
+ 
+@@ -181,7 +181,7 @@ class TestTechnologyManager:
+         tech.is_unlocked = True   # Force unlock
+ 
+         firms = [
+-            FirmTechInfoDTO(id=1, sector="FOOD", current_rd_investment=0.0),
++            FirmTechInfoDTO(id=1, sector="FOOD_PROD", current_rd_investment=0.0),
+         ]
+ 
+         manager.active_techs.append(tech_id) # Manually activate
+diff --git a/tests/unit/test_firm_profit.py b/tests/unit/test_firm_profit.py
+index 2fba565c..d91a5d1d 100644
+--- a/tests/unit/test_firm_profit.py
++++ b/tests/unit/test_firm_profit.py
+@@ -33,7 +33,7 @@ def mock_firm():
+         config_dto=config_dto,
+         initial_inventory=None,
+         loan_market=None,
+-        sector="FOOD",
++        sector="FOOD_PROD",
+         personality=None
+     )
+ 
+diff --git a/tests/unit/test_firms.py b/tests/unit/test_firms.py
+index 718626cf..9c970f74 100644
+--- a/tests/unit/test_firms.py
++++ b/tests/unit/test_firms.py
+@@ -34,7 +34,7 @@ class TestFirmBookValue:
+             specialization="test",
+             productivity_factor=1.0,
+             config_dto=mock_config,
+-            sector="FOOD",
++            sector="FOOD_PROD",
+             assets=0
+         )
+ 
+@@ -107,7 +107,7 @@ class TestFirmProduction:
+             specialization="test",
+             productivity_factor=1.0,
+             config_dto=mock_config,
+-            sector="FOOD",
++            sector="FOOD_PROD",
+             assets=0
+         )
+         # Setup Production State
+@@ -169,7 +169,7 @@ class TestFirmSales:
+             productivity_factor=1.0,
+             config_dto=mock_config,
+             initial_inventory={"test": 100.0},
+-            sector="FOOD",
++            sector="FOOD_PROD",
+             assets=0
+         )
+         firm.sales_state.brand_awareness = 0.5
+diff --git a/tests/unit/test_labor_market_system.py b/tests/unit/test_labor_market_system.py
+index b11ffccd..a7d1afed 100644
+--- a/tests/unit/test_labor_market_system.py
++++ b/tests/unit/test_labor_market_system.py
+@@ -4,6 +4,7 @@ from modules.labor.system import LaborMarket
+ from modules.labor.api import JobOfferDTO, JobSeekerDTO
+ from modules.market.api import CanonicalOrderDTO
+ from modules.simulation.api import AgentID
++from modules.common.enums import IndustryDomain
+ 
+ class TestLaborMarketSystem:
+     @pytest.fixture
+@@ -16,7 +17,7 @@ class TestLaborMarketSystem:
+             offer_wage=15.0,
+             required_education=2,
+             quantity=1.0,
+-            major="TECH"
++            major=IndustryDomain.TECHNOLOGY
+         )
+         market.post_job_offer(offer)
+         assert len(market._job_offers) == 1
+@@ -28,7 +29,7 @@ class TestLaborMarketSystem:
+             reservation_wage=12.0,
+             education_level=3,
+             quantity=1.0,
+-            major="TECH"
++            major=IndustryDomain.TECHNOLOGY
+         )
+         market.post_job_seeker(seeker)
+         assert len(market._job_seekers) == 1
+@@ -39,13 +40,13 @@ class TestLaborMarketSystem:
+             firm_id=AgentID(101),
+             offer_wage=20.0,
+             required_education=2,
+-            major="TECH"
++            major=IndustryDomain.TECHNOLOGY
+         )
+         seeker = JobSeekerDTO(
+             household_id=AgentID(201),
+             reservation_wage=15.0,
+             education_level=2,
+-            major="TECH"
++            major=IndustryDomain.TECHNOLOGY
+         )
+         market.post_job_offer(offer)
+         market.post_job_seeker(seeker)
+@@ -68,13 +69,13 @@ class TestLaborMarketSystem:
+             firm_id=AgentID(101),
+             offer_wage=20.0,
+             required_education=2,
+-            major="TECH"
++            major=IndustryDomain.TECHNOLOGY
+         )
+         seeker = JobSeekerDTO(
+             household_id=AgentID(201),
+             reservation_wage=15.0,
+             education_level=2,
+-            major="FOOD"
++            major=IndustryDomain.FOOD_PROD
+         )
+         market.post_job_offer(offer)
+         market.post_job_seeker(seeker)
+@@ -92,13 +93,13 @@ class TestLaborMarketSystem:
+             firm_id=AgentID(101),
+             offer_wage=10.0,
+             required_education=2,
+-            major="TECH"
++            major=IndustryDomain.TECHNOLOGY
+         )
+         seeker = JobSeekerDTO(
+             household_id=AgentID(201),
+             reservation_wage=15.0,
+             education_level=2,
+-            major="TECH"
++            major=IndustryDomain.TECHNOLOGY
+         )
+         market.post_job_offer(offer)
+         market.post_job_seeker(seeker)
+@@ -115,7 +116,7 @@ class TestLaborMarketSystem:
+             quantity=1.0,
+             price_pennies=2000,
+             market_id="labor",
+-            metadata={"major": "TECH", "required_education": 2}
++            metadata={"major": "TECHNOLOGY", "required_education": 2}
+         )
+         sell_order = CanonicalOrderDTO(
+             agent_id=201,
+@@ -124,7 +125,7 @@ class TestLaborMarketSystem:
+             quantity=1.0,
+             price_pennies=1500,
+             market_id="labor",
+-            brand_info={"major": "TECH", "education_level": 2} # brand_info used by Household
++            brand_info={"major": "TECHNOLOGY", "education_level": 2} # brand_info used by Household
+         )
+ 
+         market.place_order(buy_order, 1)
+@@ -168,9 +169,9 @@ class TestLaborMarketSystem:
+         assert len(market._job_seekers) == 1
+ 
+         # Verify defaults
+-        assert market._job_offers[0].major == "GENERAL"
++        assert market._job_offers[0].major == IndustryDomain.GENERAL
+         assert market._job_offers[0].required_education == 0
+-        assert market._job_seekers[0].major == "GENERAL"
++        assert market._job_seekers[0].major == IndustryDomain.GENERAL
+         assert market._job_seekers[0].education_level == 0
+ 
+         txs = market.match_orders(1)
+diff --git a/tests/unit/test_tax_incidence.py b/tests/unit/test_tax_incidence.py
+index 8744de8b..5926f6a7 100644
+--- a/tests/unit/test_tax_incidence.py
++++ b/tests/unit/test_tax_incidence.py
+@@ -88,7 +88,7 @@ class TestTaxIncidence(unittest.TestCase):
+             specialization="basic_food",
+             productivity_factor=1.0,
+             config_dto=create_firm_config_dto(),
+-            sector="FOOD",
++            sector="FOOD_PROD",
+             personality=Personality.BALANCED
+         )
+         if assets > 0:
+diff --git a/tests/utils/factories.py b/tests/utils/factories.py
+index ce28991c..13568e85 100644
+--- a/tests/utils/factories.py
++++ b/tests/utils/factories.py
+@@ -273,7 +273,7 @@ def create_firm(
+         config_dto=config_dto,
+         initial_inventory=kwargs.get("initial_inventory"),
+         loan_market=kwargs.get("loan_market"),
+-        sector=kwargs.get("sector", "FOOD"),
++        sector=kwargs.get("sector", "FOOD_PROD"),
+         personality=kwargs.get("personality")
+     )
+ 

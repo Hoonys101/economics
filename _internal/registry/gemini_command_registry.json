@@ -2,5 +2,40 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {}
+  "missions": {
+    "WO-SPEC-HANG-FIX-REGISTRY-LOCK": {
+      "key": "WO-SPEC-HANG-FIX-REGISTRY-LOCK",
+      "title": "SPEC: Phase B - AccountRegistry Thread Safety",
+      "type": "gemini",
+      "instruction_raw": "Write a MISSION_SPEC for Jules. Goal: Add `threading.RLock` to `AccountRegistry` in `account_registry.py`. Wrap `register_account` and `deregister_account` with the lock. Ensure the lock does NOT wrap logging calls (to prevent logging RLock deadlock). Include exact code diffs and test updates.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "modules/finance/registry/account_registry.py"
+      ],
+      "output_path": "design/3_work_artifacts/specs/MISSION_SPEC_HANG_FIX_REGISTRY_LOCK.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-SPEC-HANG-FIX-ADAPTER-OPT": {
+      "key": "WO-SPEC-HANG-FIX-ADAPTER-OPT",
+      "title": "SPEC: Phase D+E - Adapter Protocol & Logging Guard",
+      "type": "gemini",
+      "instruction_raw": "Write a MISSION_SPEC for Jules. Two goals: (1) In `adapter.py`, cache the result of `isinstance(agent, IFinancialAgent)` checks or use an explicit type marker to avoid repeated `@runtime_checkable` protocol resolution in 10k loops. (2) Change `logger.info` calls inside `FinancialEntityAdapter.withdraw` to `logger.debug` to prevent Python logging RLock contention with AI background threads during initialization. Include exact code diffs.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "modules/finance/transaction/adapter.py"
+      ],
+      "output_path": "design/3_work_artifacts/specs/MISSION_SPEC_HANG_FIX_ADAPTER_OPT.md",
+      "model": null,
+      "audit_requirements": null
+    }
+  }
 }

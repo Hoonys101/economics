@@ -1,0 +1,380 @@
+diff --git a/communications/insights/WO-IMPL-ESTATE-REGISTRY.md b/communications/insights/WO-IMPL-ESTATE-REGISTRY.md
+new file mode 100644
+index 00000000..e5fbb15a
+--- /dev/null
++++ b/communications/insights/WO-IMPL-ESTATE-REGISTRY.md
+@@ -0,0 +1,66 @@
++# Insight: Estate Registry Pattern (Graveyard)
++# MISSION_ID: WO-IMPL-ESTATE-REGISTRY
++# DATE: 2026-02-25
++# AUTHOR: Jules
++
++## 1. Architectural Insights
++
++### The "Limbo" Problem in Double-Entry Accounting
++In a strict zero-sum simulation, an entity cannot simply "cease to exist" if it holds assets or liabilities. Previously, `DeathSystem` deleted agents from the registry immediately upon liquidation. However, asynchronous processes (like `EscheatmentHandler` transferring remaining assets to the government) would fail because the agent no longer existed in the registry, leading to `KeyError` or requiring fragile "Resurrection Hacks" (temporarily re-injecting the agent).
++
++### The Solution: Estate Registry
++We introduced `simulation/registries/estate_registry.py` and the `IEstateRegistry` protocol. This creates a formal "Graveyard" state.
++- **Before:** Active -> Deleted (Instant)
++- **After:** Active -> Estate (Graveyard) -> Deleted (Eventually/Never)
++
++The `EstateRegistry` holds references to agents that have been removed from the active simulation but still require financial settlement.
++
++### Transparent Fallback in AgentRegistry
++Instead of modifying every call site (e.g., `SettlementSystem`), we modified `AgentRegistry.get_agent(id)` to transparently check the `EstateRegistry` if the agent is not found in the active state. This effectively implements the **Null Object Pattern** or **Fallback Pattern** for deceased agents, allowing financial systems to interact with them as if they were still active for settlement purposes.
++
++## 2. Regression Analysis
++
++### Pennies vs Dollars in M2 Integrity
++During verification, `tests/integration/test_m2_integrity.py` failed because it asserted `delta == 1000.0` (Dollars) when the system returned `100000` (Pennies).
++- **Cause:** The codebase has been migrating to a strict "Penny Standard" (Integer Math), but this specific test file was legacy code using floats.
++- **Fix:** Updated the test assertions to expect integer pennies (`100000`), aligning the test with the current system architecture.
++
++### M2 Calculation Scope
++`WorldState.calculate_total_money` was updated to iterate over BOTH `self.agents.values()` (active) and `self.estate_registry.get_all_estate_agents()` (dead). This ensures that money held by dead agents (before escheatment) is not "leaked" from the M2 Money Supply audit.
++
++## 3. Test Evidence
++
++### `pytest tests/integration/test_liquidation_waterfall.py tests/integration/test_m2_integrity.py`
++
++```text
++tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_asset_rich_cash_poor_liquidation
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.liquidation_handlers:liquidation_handlers.py:85 LIQUIDATION_ASSET_SALE | Agent 1 sold inventory to PublicManager for 80000.
++INFO     simulation.systems.liquidation_manager:liquidation_manager.py:81 LIQUIDATION_START | Agent 1 starting liquidation. Assets: 80000.0, Total Claims: 500
++INFO     simulation.systems.liquidation_manager:liquidation_manager.py:126 LIQUIDATION_WATERFALL | Tier 1 fully paid. Remaining cash: 79500.0
++PASSED                                                                   [ 16%]
++tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_severance_priority_over_shareholders
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.liquidation_manager:liquidation_manager.py:81 LIQUIDATION_START | Agent 1 starting liquidation. Assets: 5000.0, Total Claims: 5614
++INFO     simulation.systems.liquidation_manager:liquidation_manager.py:134 LIQUIDATION_WATERFALL | Tier 1 partially paid (Factor: 0.89). Cash exhausted.
++PASSED                                                                   [ 33%]
++tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_waterfall_tiers
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.liquidation_manager:liquidation_manager.py:81 LIQUIDATION_START | Agent 1 starting liquidation. Assets: 10000.0, Total Claims: 7003
++INFO     simulation.systems.liquidation_manager:liquidation_manager.py:126 LIQUIDATION_WATERFALL | Tier 1 fully paid. Remaining cash: 7997.0
++INFO     simulation.systems.liquidation_manager:liquidation_manager.py:126 LIQUIDATION_WATERFALL | Tier 2 fully paid. Remaining cash: 2997.0
++INFO     simulation.systems.liquidation_manager:liquidation_manager.py:180 LIQUIDATION_WATERFALL | Tier 5 (Equity) distributed 1498.50 USD and foreign assets: {} to shareholders.
++PASSED                                                                   [ 50%]
++tests/integration/test_m2_integrity.py::TestM2Integrity::test_credit_creation_expansion PASSED [ 66%]
++tests/integration/test_m2_integrity.py::TestM2Integrity::test_credit_destruction_contraction PASSED [ 83%]
++tests/integration/test_m2_integrity.py::TestM2Integrity::test_internal_transfers_are_neutral PASSED [100%]
++
++=============================== warnings summary ===============================
++../home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_mode
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
++========================= 6 passed, 1 warning in 0.70s =========================
++```
+diff --git a/modules/simulation/api.py b/modules/simulation/api.py
+index a98a0beb..a47e14d8 100644
+--- a/modules/simulation/api.py
++++ b/modules/simulation/api.py
+@@ -177,6 +177,13 @@ class IAgent(Protocol):
+     is_active: bool
+     name: str # Added for logging/telemetry
+ 
++@runtime_checkable
++class IEstateRegistry(Protocol):
++    """Protocol for the Estate Registry managing dead/liquidated agents."""
++    def add_to_estate(self, agent: IAgent) -> None: ...
++    def get_agent(self, agent_id: Any) -> Optional[IAgent]: ...
++    def get_all_estate_agents(self) -> List[IAgent]: ...
++
+ @runtime_checkable
+ class IOrchestratorAgent(IAgent, Protocol):
+     """Public interface for an agent 'Orchestrator' supporting 2-stage initialization."""
+@@ -282,6 +289,7 @@ class ISimulationState(Protocol):
+     bank: "IBankService"
+     markets: Dict[str, "IMarket"]
+     monetary_ledger: Optional["IMonetaryLedger"]
++    estate_registry: Optional["IEstateRegistry"]
+ 
+     def get_economic_indicators(self) -> EconomicIndicatorsDTO:
+         """
+diff --git a/modules/system/registry.py b/modules/system/registry.py
+index cbc2cfbd..0f386479 100644
+--- a/modules/system/registry.py
++++ b/modules/system/registry.py
+@@ -26,7 +26,15 @@ class AgentRegistry(IAgentRegistry):
+     def get_agent(self, agent_id: Any) -> Optional[Agent]:
+         if self._state is None:
+             return None
+-        return self._state.agents.get(agent_id)
++        agent = self._state.agents.get(agent_id)
++        if agent:
++             return agent
++
++        # Check Estate Registry
++        if hasattr(self._state, 'estate_registry') and self._state.estate_registry:
++             return self._state.estate_registry.get_agent(agent_id)
++
++        return None
+ 
+     def get_all_financial_agents(self) -> List[Any]:
+         if self._state is None:
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 44b01ab8..7150d7f4 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -80,6 +80,7 @@ from modules.finance.shareholder_registry import ShareholderRegistry
+ from modules.system.event_bus.event_bus import EventBus
+ from modules.governance.judicial.system import JudicialSystem
+ from modules.system.registry import AgentRegistry, GlobalRegistry
++from simulation.registries.estate_registry import EstateRegistry
+ from modules.household.api import HouseholdFactoryContext
+ from simulation.factories.household_factory import HouseholdFactory
+ from simulation.utils.config_factory import create_config_dto
+@@ -138,6 +139,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+ 
+         global_registry = GlobalRegistry()
+         agent_registry = AgentRegistry()
++        estate_registry = EstateRegistry()
+         settlement_system = SettlementSystem(logger=self.logger, agent_registry=agent_registry)
+         from modules.system.services.command_service import CommandService
+         command_service = CommandService(registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry)
+@@ -162,6 +164,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.world_state.saga_orchestrator = sim.saga_orchestrator
+         sim.shareholder_registry = ShareholderRegistry()
+         sim.world_state.shareholder_registry = sim.shareholder_registry
++        sim.world_state.estate_registry = estate_registry
+ 
+         # TD-INIT-RACE: Registry must be linked EARLY (Phase 1)
+         # Guarantees AgentRegistry.register() works during Population Phase
+@@ -358,7 +361,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.transaction_processor.register_handler('education_spending', spending_handler)
+         sim.transaction_processor.register_handler('emergency_buy', EmergencyTransactionHandler())
+         sim.transaction_processor.register_public_manager_handler(PublicManagerTransactionHandler())
+-        sim.lifecycle_manager = AgentLifecycleManager(config_module=self.config, demographic_manager=sim.demographic_manager, inheritance_manager=sim.inheritance_manager, firm_system=sim.firm_system, settlement_system=sim.settlement_system, public_manager=sim.public_manager, logger=self.logger, shareholder_registry=sim.shareholder_registry, household_factory=household_factory)
++        sim.lifecycle_manager = AgentLifecycleManager(config_module=self.config, demographic_manager=sim.demographic_manager, inheritance_manager=sim.inheritance_manager, firm_system=sim.firm_system, settlement_system=sim.settlement_system, public_manager=sim.public_manager, logger=self.logger, shareholder_registry=sim.shareholder_registry, household_factory=household_factory, estate_registry=sim.world_state.estate_registry)
+         sim.social_system = SocialSystem(self.config)
+         sim.event_system = EventSystem(self.config, settlement_system=sim.settlement_system)
+         sim.sensory_system = SensorySystem(self.config)
+diff --git a/simulation/registries/estate_registry.py b/simulation/registries/estate_registry.py
+new file mode 100644
+index 00000000..cfa8f87d
+--- /dev/null
++++ b/simulation/registries/estate_registry.py
+@@ -0,0 +1,32 @@
++from typing import Dict, List, Optional, Any
++from modules.simulation.api import AgentID, IAgent
++
++class EstateRegistry:
++    """
++    Registry for managing agents that have been liquidated or are deceased (The Estate).
++    Maintains a record of agents removed from the active AgentRegistry to allow
++    final financial settlements (escheatment, tax, dividends) to complete.
++    """
++    def __init__(self) -> None:
++        self._estate: Dict[AgentID, IAgent] = {}
++
++    def add_to_estate(self, agent: IAgent) -> None:
++        """Moves an agent to the estate registry."""
++        if agent and hasattr(agent, 'id'):
++             self._estate[agent.id] = agent
++
++    def get_agent(self, agent_id: Any) -> Optional[IAgent]:
++        """Retrieves an agent from the estate."""
++        # Handle int/str conversion if necessary, similar to AgentRegistry
++        if agent_id in self._estate:
++            return self._estate[agent_id]
++
++        # Try casting to int if string
++        if isinstance(agent_id, str) and agent_id.isdigit():
++             return self._estate.get(int(agent_id))
++
++        return None
++
++    def get_all_estate_agents(self) -> List[IAgent]:
++        """Returns all agents currently in the estate."""
++        return list(self._estate.values())
+diff --git a/simulation/systems/handlers/escheatment_handler.py b/simulation/systems/handlers/escheatment_handler.py
+index 7291fea4..53fb4513 100644
+--- a/simulation/systems/handlers/escheatment_handler.py
++++ b/simulation/systems/handlers/escheatment_handler.py
+@@ -51,18 +51,8 @@ class EscheatmentHandler(ITransactionHandler):
+ 
+         credits = [(gov, balance, "escheatment")]
+ 
+-        # Resurrection Hack: Ensure buyer is in context agents so SettlementSystem can find it
+-        # even if it was removed from registry.
+-        original_buyer_ref = context.agents.get(buyer.id)
+-        if not original_buyer_ref:
+-            context.agents[buyer.id] = buyer
+-
+-        try:
+-            success = context.settlement_system.settle_atomic(buyer, credits, context.time)
+-        finally:
+-            # Clean up if we injected it
+-            if not original_buyer_ref and buyer.id in context.agents:
+-                del context.agents[buyer.id]
++        # Rely on SettlementSystem -> AgentRegistry -> EstateRegistry to find the dead agent
++        success = context.settlement_system.settle_atomic(buyer, credits, context.time)
+ 
+         if success:
+             gov.record_revenue(TaxCollectionResult(
+diff --git a/simulation/systems/lifecycle/death_system.py b/simulation/systems/lifecycle/death_system.py
+index a83358d1..5e9837ab 100644
+--- a/simulation/systems/lifecycle/death_system.py
++++ b/simulation/systems/lifecycle/death_system.py
+@@ -10,6 +10,7 @@ from simulation.finance.api import ISettlementSystem
+ from modules.finance.api import ILiquidatable, IShareholderRegistry, IFinancialEntity
+ from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, DEFAULT_CURRENCY, AssetBuyoutRequestDTO
+ from simulation.interfaces.market_interface import IMarket
++from modules.simulation.api import IEstateRegistry
+ 
+ class DeathSystem(IDeathSystem):
+     """
+@@ -21,13 +22,15 @@ class DeathSystem(IDeathSystem):
+                  liquidation_manager: LiquidationManager,
+                  settlement_system: ISettlementSystem,
+                  public_manager: IAssetRecoverySystem,
+-                 logger: logging.Logger):
++                 logger: logging.Logger,
++                 estate_registry: Optional[IEstateRegistry] = None):
+         self.config = config_module
+         self.inheritance_manager = inheritance_manager
+         self.liquidation_manager = liquidation_manager
+         self.settlement_system = settlement_system
+         self.public_manager = public_manager
+         self.logger = logger
++        self.estate_registry = estate_registry
+ 
+     def execute(self, state: SimulationState) -> List[Transaction]:
+         """
+@@ -111,10 +114,14 @@ class DeathSystem(IDeathSystem):
+         # O(1) Dictionary Cleanup - TD-SYS-PERF-DEATH
+         for firm in inactive_firms:
+             if firm.id in state.agents:
++                if self.estate_registry:
++                    self.estate_registry.add_to_estate(firm)
+                 del state.agents[firm.id]
+ 
+         for household in inactive_households:
+              if household.id in state.agents:
++                if self.estate_registry:
++                    self.estate_registry.add_to_estate(household)
+                 del state.agents[household.id]
+ 
+         # Modify lists in place to reflect removals
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index be1b9126..a0d966c7 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -22,6 +22,7 @@ from modules.system.registry import AgentRegistry
+ from modules.hr.service import HRService
+ from modules.finance.service import TaxService
+ from modules.finance.api import IShareholderRegistry
++from modules.simulation.api import IEstateRegistry
+ 
+ # New Imports
+ from simulation.systems.lifecycle.aging_system import AgingSystem
+@@ -43,7 +44,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                  household_factory: Optional[IHouseholdFactory] = None,
+                  hr_service: Optional[IHRService] = None,
+                  tax_service: Optional[ITaxService] = None,
+-                 agent_registry: Optional[IAgentRegistry] = None):
++                 agent_registry: Optional[IAgentRegistry] = None,
++                 estate_registry: Optional[IEstateRegistry] = None):
+ 
+         self.config = config_module
+         self.logger = logger
+@@ -86,7 +88,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+             self.liquidation_manager,
+             settlement_system,
+             public_manager,
+-            logger
++            logger,
++            estate_registry=estate_registry
+         )
+ 
+         self.marriage_system = MarriageSystem(settlement_system, logger)
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index a96bb316..edc7a88c 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -47,7 +47,7 @@ from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCo
+ from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM
+ from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
+ from modules.finance.api import IShareholderRegistry
+-from modules.simulation.api import AgentID
++from modules.simulation.api import AgentID, IEstateRegistry
+ from modules.governance.api import SystemCommand
+ from simulation.dtos.commands import GodCommandDTO
+ from modules.simulation.dtos.api import MoneySupplyDTO
+@@ -138,6 +138,7 @@ class WorldState:
+         self.politics_system: Optional[PoliticsSystem] = None # Phase 4.4: Political Orchestrator
+         self.currency_holders: List[ICurrencyHolder] = [] # Added for Phase 33
+         self._currency_holders_set: set = set()
++        self.estate_registry: Optional[IEstateRegistry] = None
+         # FOUND-03: Global Registry - Initialized via Dependency Injection (simulation.lock via initializer)
+         self.global_registry: Optional[IGlobalRegistry] = None
+         self.telemetry_collector: Optional[Any] = None
+@@ -192,16 +193,12 @@ class WorldState:
+         total_m2_pennies = 0
+         system_debt_pennies = 0
+ 
+-        # Use self.agents as the primary source of truth to avoid missing agents
+-        # that were not registered in currency_holders (Fix for Current: 0.00 bug)
+-        for agent in self.agents.values():
+-            # Dead Agent Guard (Strict)
+-            if hasattr(agent, 'is_active') and not agent.is_active:
+-                continue
+-
++        # Helper to process an agent
++        def process_agent(agent):
++            nonlocal total_m2_pennies, system_debt_pennies
+             # Check if agent holds currency
+             if not hasattr(agent, 'get_assets_by_currency'):
+-                continue
++                return
+ 
+             # Retrieve assets safely (strictly in pennies)
+             assets_dict = agent.get_assets_by_currency()
+@@ -212,6 +209,20 @@ class WorldState:
+             else:
+                 system_debt_pennies += abs(val)
+ 
++        # 1. Active Agents in Registry
++        # Use self.agents as the primary source of truth to avoid missing agents
++        # that were not registered in currency_holders (Fix for Current: 0.00 bug)
++        for agent in self.agents.values():
++            # Dead Agent Guard (Strict)
++            if hasattr(agent, 'is_active') and not agent.is_active:
++                continue
++            process_agent(agent)
++
++        # 2. Estate Agents (Always Inactive, but holding funds)
++        if self.estate_registry:
++            for agent in self.estate_registry.get_all_estate_agents():
++                process_agent(agent)
++
+         return MoneySupplyDTO(
+             total_m2_pennies=total_m2_pennies,
+             system_debt_pennies=system_debt_pennies,
+diff --git a/tests/integration/test_m2_integrity.py b/tests/integration/test_m2_integrity.py
+index 559f3bb1..c00c3948 100644
+--- a/tests/integration/test_m2_integrity.py
++++ b/tests/integration/test_m2_integrity.py
+@@ -53,7 +53,7 @@ class TestM2Integrity(unittest.TestCase):
+         self.ledger.process_transactions([tx_create])
+ 
+         delta = self.ledger.get_monetary_delta()
+-        self.assertEqual(delta, 1000.0, "Credit Creation should be Expansion")
++        self.assertEqual(delta, 100000, "Credit Creation should be Expansion (Pennies)")
+ 
+     def test_credit_destruction_contraction(self):
+         """Verify credit destruction is still contraction."""
+@@ -64,7 +64,7 @@ class TestM2Integrity(unittest.TestCase):
+         self.ledger.process_transactions([tx_destroy])
+ 
+         delta = self.ledger.get_monetary_delta()
+-        self.assertEqual(delta, -500.0, "Credit Destruction should be Contraction")
++        self.assertEqual(delta, -50000, "Credit Destruction should be Contraction (Pennies)")
+ 
+ if __name__ == '__main__':
+     unittest.main()

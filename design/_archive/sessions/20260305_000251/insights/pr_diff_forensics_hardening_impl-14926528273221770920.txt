@@ -1,0 +1,410 @@
+diff --git a/communications/insights/forensics_hardening_impl.md b/communications/insights/forensics_hardening_impl.md
+new file mode 100644
+index 00000000..66d2b15e
+--- /dev/null
++++ b/communications/insights/forensics_hardening_impl.md
+@@ -0,0 +1,71 @@
++# Forensics & Core Integrity Hardening (Phase Impl)
++
++**Date**: 2026-02-23
++**Author**: Jules
++**Mission**: `forensics_hardening_impl`
++
++---
++
++## 1. Architectural Insights
++
++### 🛡️ Core Integrity & Hardening
++The "Core Integrity Hardening" mission focused on enforcing architectural guardrails that were identified as drift points in recent audits. Specifically, we addressed:
++
++1.  **Stateless Engine Purity**: The `SalesEngine` was found to be accepting mutable `SalesState` objects, violating the "Stateless Engine" pattern which mandates DTOs (`SalesStateDTO`) for inputs. We successfully refactored `SalesEngine` and its consumer `Firm` to strictly pass DTOs, ensuring that engine logic remains pure and side-effect free (returning intents/results rather than mutating state).
++2.  **Penny Arithmetic Safety**: The `MatchingEngine` (both Order Book and Stock) utilized `int()` casting for total penny calculations. While functionally "working", simple truncation can lead to cumulative drift or "penny shaving" anomalies. We replaced these with `int(round(...))` to ensure correct rounding behavior for floating-point quantities (e.g. `2.5` qty * `100` price -> `250` pennies, not `249` due to float precision).
++3.  **DTO Completeness**: We identified that `Firm.get_snapshot_dto()` was failing to populate `marketing_budget_rate`, causing discrepancies in tests and potential runtime behavior where the DTO default (0.05) overrode the actual state. This highlights the need for strict mapping audits between State Models and their DTO snapshots.
++
++### 🔍 Forensics & Test Robustness
++Several forensic tests (`tests/forensics/`) were failing due to regression or incomplete mocking. Fixes included:
++-   **Validation Enforcement**: `SagaOrchestrator.submit_saga` lacked validation for missing critical IDs (Buyer/Seller), which `test_saga_integrity.py` correctly flagged. We implemented strict checks to reject malformed Sagas.
++-   **Null Safety**: `EscheatmentHandler` crashed when `metadata` was None. We added defensive checks.
++-   **Mock Fidelity**: Tests like `test_bond_liquidity.py` and `test_ghost_account.py` failed because Mocks did not accurately reflect the expected behavior of the system (e.g., `dict.get` side effects, registry lookups). We hardened the tests to use stricter specs and side effects.
++
++---
++
++## 2. Regression Analysis
++
++### 🛠️ Fixes Implemented
++
++| Area | Issue | Fix | Impact |
++| :--- | :--- | :--- | :--- |
++| **SalesEngine** | `SalesState` mutation & protocol violation | Refactored to accept `SalesStateDTO` only. | Enforced "Stateless Engine" pattern. |
++| **Firm** | `get_snapshot_dto` missing fields | Populated `marketing_budget_rate`. | Correct state propagation to engines. |
++| **MatchingEngine** | Unsafe `int()` truncation | Replaced with `int(round(...))`. | Accurate penny arithmetic. |
++| **SagaOrchestrator** | Missing ID validation | Added checks for `household_id` and `seller_context.id`. | Prevents invalid Sagas from starting. |
++| **EscheatmentHandler** | Crash on None metadata | Added `if tx.metadata:` check. | Improved runtime robustness. |
++| **Test Suite** | Mock Drift & Logic Gaps | Updated mocks in `test_bond_liquidity` and `test_ghost_account`. | Restored test suite trust (100% Pass). |
++
++### 🚨 Broken Tests & Remediation
++
++1.  **`TestSalesEngine` & `TestFirmSales`**: Failed because the refactor changed signatures to expect DTOs, but tests passed mutable State objects or assumed outdated behavior.
++    *   *Fix*: Updated tests to construct and pass `SalesStateDTO`.
++2.  **`test_saga_orchestrator_rejects_incomplete_dto`**: Failed because the Orchestrator accepted invalid input.
++    *   *Fix*: Implemented validation logic in the Orchestrator.
++3.  **`test_bond_issuance_checks_liquidity`**: Failed due to `MagicMock` vs `int` comparison.
++    *   *Fix*: Configured `bank_state.reserves.get` side effect to return integers.
++4.  **`test_settlement_to_unregistered_agent_handling`**: Failed because `SettlementSystem` couldn't resolve agents correctly with simple Mocks.
++    *   *Fix*: Updated `registry.get_agent` side effect to return distinct mocks for different IDs.
++
++---
++
++## 3. Test Evidence
++
++### ✅ Full Test Suite Run
++**Result**: 100% PASS (1004 passed, 11 skipped)
++
++```bash
++=========================== short test summary info ============================
++SKIPPED [1] tests/integration/test_server_integration.py:16: websockets is mocked
++SKIPPED [1] tests/security/test_god_mode_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_websocket_auth.py:13: websockets is mocked
++SKIPPED [1] tests/system/test_server_auth.py:11: websockets is mocked, skipping server auth tests
++SKIPPED [1] tests/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/test_ws.py:11: fastapi is mocked
++SKIPPED [1] tests/market/test_dto_purity.py:26: Pydantic is mocked
++SKIPPED [1] tests/market/test_dto_purity.py:54: Pydantic is mocked
++SKIPPED [1] tests/modules/system/test_global_registry.py:101: Pydantic is mocked
++SKIPPED [1] tests/modules/system/test_global_registry.py:132: Pydantic is mocked
++================= 1004 passed, 11 skipped, 2 warnings in 7.97s =================
++```
+diff --git a/modules/finance/sagas/orchestrator.py b/modules/finance/sagas/orchestrator.py
+index f25c010a..28d08fb8 100644
+--- a/modules/finance/sagas/orchestrator.py
++++ b/modules/finance/sagas/orchestrator.py
+@@ -45,6 +45,15 @@ class SagaOrchestrator(ISagaOrchestrator):
+         if not saga_id:
+             return False
+ 
++        # Validate Critical IDs
++        if not saga.buyer_context.household_id:
++            logger.error(f"SAGA_SUBMIT_FAIL | Saga {saga_id} missing buyer ID.")
++            return False
++
++        if saga.seller_context.id is None:
++            logger.error(f"SAGA_SUBMIT_FAIL | Saga {saga_id} missing seller ID.")
++            return False
++
+         self.active_sagas[saga_id] = saga
+         logger.info(
+             f"SAGA_SUBMITTED | Saga {saga_id} submitted.",
+diff --git a/simulation/components/engines/sales_engine.py b/simulation/components/engines/sales_engine.py
+index 6ebceb1b..f29beb91 100644
+--- a/simulation/components/engines/sales_engine.py
++++ b/simulation/components/engines/sales_engine.py
+@@ -5,9 +5,10 @@ import math
+ from dataclasses import replace
+ 
+ from simulation.models import Order, Transaction
+-from simulation.components.state.firm_state_models import SalesState
++# Removed SalesState import as we use DTO
+ from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO, MarketingAdjustmentResultDTO
+ from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
++from modules.simulation.dtos.api import SalesStateDTO # Explicit import for type hinting
+ from modules.firm.api import (
+     ISalesEngine, ISalesDepartment, DynamicPricingResultDTO,
+     SalesContextDTO, SalesIntentDTO, AgentID
+@@ -129,7 +130,7 @@ class SalesEngine(ISalesEngine, ISalesDepartment):
+             new_marketing_budget_rate=new_rate
+         )
+ 
+-    def post_ask(self, state: SalesState, context: SalesPostAskContextDTO) -> Order:
++    def post_ask(self, state: SalesStateDTO, context: SalesPostAskContextDTO) -> Order:
+         """
+         Posts an ask order to the market.
+         Validates quantity against inventory.
+@@ -138,7 +139,7 @@ class SalesEngine(ISalesEngine, ISalesDepartment):
+         # Mutation removed for statelessness. Orchestrator must update last_prices.
+         return Order(agent_id=context.firm_id, side='SELL', item_id=context.item_id, quantity=actual_quantity, price_pennies=context.price_pennies, price_limit=context.price_pennies / 100.0, market_id=context.market_id, brand_info=context.brand_snapshot, currency=DEFAULT_CURRENCY)
+ 
+-    def adjust_marketing_budget(self, state: SalesState, market_context: MarketContextDTO, revenue_this_turn: int, last_revenue: int=0, last_marketing_spend: int=0) -> MarketingAdjustmentResultDTO:
++    def adjust_marketing_budget(self, state: SalesStateDTO, market_context: MarketContextDTO, revenue_this_turn: int, last_revenue: int=0, last_marketing_spend: int=0) -> MarketingAdjustmentResultDTO:
+         """
+         Adjusts marketing budget based on ROI or simple heuristic.
+         Returns the calculated new budget in a DTO (pennies).
+@@ -152,20 +153,22 @@ class SalesEngine(ISalesEngine, ISalesDepartment):
+             elif roi < 0.8:
+                 new_rate *= 0.9
+         target_budget = revenue_this_turn * new_rate
+-        current_budget = float(state.marketing_budget_pennies)
++        # Use DTO field `marketing_budget` (int pennies)
++        current_budget = float(state.marketing_budget)
+         new_budget = current_budget * 0.8 + target_budget * 0.2
+         return MarketingAdjustmentResultDTO(new_budget=int(new_budget), new_marketing_rate=new_rate)
+ 
+-    def generate_marketing_transaction(self, state: SalesState, context: SalesMarketingContextDTO) -> Optional[Transaction]:
++    def generate_marketing_transaction(self, state: SalesStateDTO, context: SalesMarketingContextDTO) -> Optional[Transaction]:
+         """
+         Generates marketing spend transaction.
+         """
+-        budget = state.marketing_budget_pennies
++        # Use DTO field `marketing_budget` (int pennies)
++        budget = state.marketing_budget
+         if budget > 0 and context.wallet_balance >= budget and context.government_id:
+             return Transaction(buyer_id=context.firm_id, seller_id=context.government_id, item_id='marketing', quantity=1.0, price=budget / 100.0, market_id='system', transaction_type='marketing', time=context.current_time, currency=DEFAULT_CURRENCY, total_pennies=budget)
+         return None
+ 
+-    def check_and_apply_dynamic_pricing(self, state: SalesState, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> DynamicPricingResultDTO:
++    def check_and_apply_dynamic_pricing(self, state: SalesStateDTO, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> DynamicPricingResultDTO:
+         """
+         Overrides prices in orders if dynamic pricing logic dictates.
+         WO-157: Applies dynamic pricing discounts to stale inventory.
+@@ -188,6 +191,7 @@ class SalesEngine(ISalesEngine, ISalesDepartment):
+             side = getattr(order, 'side', getattr(order, 'order_type', None))
+             if side == 'SELL':
+                 item_id = order.item_id
++                # Use DTO field `inventory_last_sale_tick`
+                 last_sale = state.inventory_last_sale_tick.get(item_id, 0)
+                 if current_time - last_sale > sale_timeout:
+                     # Original price is float price_limit or price
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 59504000..81297eea 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -836,7 +836,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+ 
+         context = self._build_sales_post_ask_context(item_id, price_pennies, quantity, market.id, current_tick)
+         order = self.sales_engine.post_ask(
+-            self.sales_state, context
++            self.get_snapshot_dto().sales, context
+         )
+         # Apply side-effects (Stateless Engine Orchestration)
+         self.sales_state.last_prices[item_id] = price_pennies
+@@ -861,7 +861,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+              total_revenue += float(amount) * rate
+ 
+         result = self.sales_engine.adjust_marketing_budget(
+-            self.sales_state,
++            self.get_snapshot_dto().sales,
+             market_context,
+             total_revenue,
+             last_revenue=float(self.finance_state.last_revenue_pennies),
+@@ -938,6 +938,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+             brand_awareness=self.sales_state.brand_awareness,
+             perceived_quality=self.sales_state.perceived_quality,
+             marketing_budget=self.sales_state.marketing_budget_pennies, # MIGRATION: int pennies
++            marketing_budget_rate=self.sales_state.marketing_budget_rate,
+             adstock=self.sales_state.adstock # Added for stateless BrandEngine
+         )
+         
+@@ -1693,7 +1694,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         # Then generate transaction using the updated state
+         marketing_context = self._build_sales_marketing_context(current_time, government)
+         tx_marketing = self.sales_engine.generate_marketing_transaction(
+-            self.sales_state, marketing_context
++            self.get_snapshot_dto().sales, marketing_context
+         )
+         if tx_marketing:
+             transactions.append(tx_marketing)
+diff --git a/simulation/markets/matching_engine.py b/simulation/markets/matching_engine.py
+index 8bd17cab..bce2d55b 100644
+--- a/simulation/markets/matching_engine.py
++++ b/simulation/markets/matching_engine.py
+@@ -110,7 +110,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
+                     if b_wrapper.dto.price_pennies >= s_wrapper.dto.price_pennies:
+                         trade_price_pennies = s_wrapper.dto.price_pennies
+                         trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
+-                        trade_total_pennies = int(trade_price_pennies * trade_qty)
++                        trade_total_pennies = int(round(trade_price_pennies * trade_qty))
+                         effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
+ 
+                         quality_val = 1.0
+@@ -161,7 +161,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
+                     trade_price_pennies = b_wrapper.dto.price_pennies # Labor uses Bid Price usually (Firm Offer)
+ 
+                     trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
+-                    trade_total_pennies = int(trade_price_pennies * trade_qty)
++                    trade_total_pennies = int(round(trade_price_pennies * trade_qty))
+                     effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
+ 
+                     quality_val = 1.0
+@@ -244,7 +244,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
+                     if b_wrapper.dto.price_pennies >= s_wrapper.dto.price_pennies:
+                         trade_price_pennies = s_wrapper.dto.price_pennies
+                         trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
+-                        trade_total_pennies = int(trade_price_pennies * trade_qty)
++                        trade_total_pennies = int(round(trade_price_pennies * trade_qty))
+                         effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
+                         tx = Transaction(item_id=item_id, quantity=trade_qty, price=effective_price_dollars, total_pennies=trade_total_pennies, buyer_id=b_wrapper.dto.agent_id, seller_id=s_wrapper.dto.agent_id, market_id=market_id, transaction_type='labor' if 'labor' in market_id else 'housing' if 'housing' in market_id else 'goods', time=current_tick, quality=s_wrapper.dto.brand_info.get('quality', 1.0) if s_wrapper.dto.brand_info else 1.0)
+                         transactions.append(tx)
+@@ -276,7 +276,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
+                 else:
+                     trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
+                 trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
+-                trade_total_pennies = int(trade_price_pennies * trade_qty)
++                trade_total_pennies = int(round(trade_price_pennies * trade_qty))
+                 effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
+                 tx = Transaction(item_id=item_id, quantity=trade_qty, price=effective_price_dollars, total_pennies=trade_total_pennies, buyer_id=b_wrapper.dto.agent_id, seller_id=s_wrapper.dto.agent_id, market_id=market_id, transaction_type='labor' if 'labor' in market_id else 'housing' if 'housing' in market_id else 'goods', time=current_tick, quality=s_wrapper.dto.brand_info.get('quality', 1.0) if s_wrapper.dto.brand_info else 1.0)
+                 transactions.append(tx)
+@@ -356,7 +356,7 @@ class StockMatchingEngine(IMatchingEngine):
+             if b_order.dto.price_pennies >= s_order.dto.price_pennies:
+                 trade_price_pennies = (b_order.dto.price_pennies + s_order.dto.price_pennies) // 2
+                 trade_qty = min(b_order.remaining_qty, s_order.remaining_qty)
+-                trade_total_pennies = int(trade_price_pennies * trade_qty)
++                trade_total_pennies = int(round(trade_price_pennies * trade_qty))
+                 effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
+                 if b_order.dto.agent_id is None or s_order.dto.agent_id is None:
+                     if b_order.dto.agent_id is None:
+diff --git a/simulation/systems/handlers/escheatment_handler.py b/simulation/systems/handlers/escheatment_handler.py
+index 0137127c..1fbe4c69 100644
+--- a/simulation/systems/handlers/escheatment_handler.py
++++ b/simulation/systems/handlers/escheatment_handler.py
+@@ -14,7 +14,9 @@ class EscheatmentHandler(ITransactionHandler):
+     """
+ 
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+-        subtype = tx.metadata.get('subtype')
++        subtype = None
++        if tx.metadata:
++            subtype = tx.metadata.get('subtype')
+ 
+         if subtype == 'ASSET_BUYOUT':
+             # Phase A: PublicManager (Buyer) buys assets from Bankrupt Agent (Seller)
+diff --git a/tests/forensics/test_bond_liquidity.py b/tests/forensics/test_bond_liquidity.py
+index 86a3a254..8248e004 100644
+--- a/tests/forensics/test_bond_liquidity.py
++++ b/tests/forensics/test_bond_liquidity.py
+@@ -37,7 +37,11 @@ def test_bond_issuance_checks_liquidity():
+     
+     # 2. Setup Poor Bank in Registry
+     bank_state = finance_system.bank_registry.get_bank(bank.id)
+-    bank_state.reserves[DEFAULT_CURRENCY] = 1000 # Only 1000 pennies
++    # Ensure reserves is a Mock that behaves like a dict for .get()
++    bank_state.reserves = MagicMock()
++    bank_state.reserves.get.side_effect = lambda k, d=0: 1000 if k == DEFAULT_CURRENCY else d
++    # Also support direct access for other potential checks
++    bank_state.reserves.__getitem__.side_effect = lambda k: 1000 if k == DEFAULT_CURRENCY else 0
+     
+     # 3. Attempt Large Issuance (50M) via Commercial Bank (Buyer)
+     # The default behavior in system.py:350 sets buyer_agent = self.bank if QE not triggered
+diff --git a/tests/forensics/test_ghost_account.py b/tests/forensics/test_ghost_account.py
+index 0313a530..b2f12724 100644
+--- a/tests/forensics/test_ghost_account.py
++++ b/tests/forensics/test_ghost_account.py
+@@ -1,6 +1,7 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from simulation.systems.settlement_system import SettlementSystem
++from modules.finance.api import IFinancialEntity
+ 
+ def test_settlement_to_unregistered_agent_handling():
+     """
+@@ -10,14 +11,25 @@ def test_settlement_to_unregistered_agent_handling():
+     # 1. Setup
+     registry = MagicMock()
+     # Agent 999 exists in registry
+-    mock_agent = MagicMock(id=999, balance_pennies=0)
+-    registry.get_agent.return_value = mock_agent
+-    
+-    system = SettlementSystem(agent_registry=registry, logger=MagicMock())
++    mock_agent = MagicMock(spec=IFinancialEntity)
++    mock_agent.id = 999
++    mock_agent.balance_pennies = 0
+     
+     # Mock source agent
+-    source_agent = MagicMock(id=1)
++    source_agent = MagicMock(spec=IFinancialEntity)
++    source_agent.id = 1
+     source_agent.balance_pennies = 1000
++
++    def get_agent_side_effect(agent_id):
++        if agent_id == 999:
++            return mock_agent
++        if agent_id == 1:
++            return source_agent
++        return None
++
++    registry.get_agent.side_effect = get_agent_side_effect
++
++    system = SettlementSystem(agent_registry=registry, logger=MagicMock())
+     
+     # 2. Execute Transfer to 999
+     # This forces the system to look up 999 in registry before engine failure
+diff --git a/tests/unit/components/test_engines.py b/tests/unit/components/test_engines.py
+index 2696c94e..8a73b2fe 100644
+--- a/tests/unit/components/test_engines.py
++++ b/tests/unit/components/test_engines.py
+@@ -89,7 +89,13 @@ class TestHREngine:
+ class TestSalesEngine:
+     def test_post_ask(self):
+         engine = SalesEngine()
+-        state = SalesState()
++        state = SalesStateDTO(
++            inventory_last_sale_tick={},
++            price_history={},
++            brand_awareness=0.0,
++            perceived_quality=0.0,
++            marketing_budget=0
++        )
+ 
+         # Update to use price_pennies
+         context = SalesPostAskContextDTO(
+@@ -115,8 +121,13 @@ class TestSalesEngine:
+ 
+     def test_generate_marketing_transaction(self):
+         engine = SalesEngine()
+-        state = SalesState()
+-        state.marketing_budget_pennies = 5000 # 5000 pennies = $50.00
++        state = SalesStateDTO(
++            inventory_last_sale_tick={},
++            price_history={},
++            brand_awareness=0.0,
++            perceived_quality=0.0,
++            marketing_budget=5000 # 5000 pennies = $50.00
++        )
+ 
+         # Sufficient funds
+         context = SalesMarketingContextDTO(
+diff --git a/tests/unit/test_sales_engine_refactor.py b/tests/unit/test_sales_engine_refactor.py
+index 8ac34851..3db6713f 100644
+--- a/tests/unit/test_sales_engine_refactor.py
++++ b/tests/unit/test_sales_engine_refactor.py
+@@ -2,6 +2,7 @@ import pytest
+ from unittest.mock import MagicMock
+ from simulation.components.engines.sales_engine import SalesEngine
+ from simulation.components.state.firm_state_models import SalesState
++from modules.simulation.dtos.api import SalesStateDTO
+ from simulation.dtos.sales_dtos import MarketingAdjustmentResultDTO
+ from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
+ 
+@@ -11,10 +12,14 @@ def sales_engine():
+ 
+ @pytest.fixture
+ def sales_state():
+-    state = SalesState()
+-    state.marketing_budget_pennies = 100 # Int Pennies
+-    state.marketing_budget_rate = 0.1
+-    return state
++    return SalesStateDTO(
++        inventory_last_sale_tick={},
++        price_history={},
++        brand_awareness=0.0,
++        perceived_quality=0.0,
++        marketing_budget=100, # Int Pennies
++        marketing_budget_rate=0.1
++    )
+ 
+ @pytest.fixture
+ def market_context():
+@@ -39,7 +44,7 @@ def test_adjust_marketing_budget(sales_engine, sales_state, market_context):
+     assert result.new_budget == 120
+ 
+     # Verify NO side effects on state
+-    assert sales_state.marketing_budget_pennies == 100 # Should remain unchanged, Orchestrator updates it
++    assert sales_state.marketing_budget == 100 # Should remain unchanged, Orchestrator updates it
+ 
+ def test_adjust_marketing_budget_zero_revenue(sales_engine, sales_state, market_context):
+     """Test budget adjustment with zero revenue."""
+@@ -51,4 +56,4 @@ def test_adjust_marketing_budget_zero_revenue(sales_engine, sales_state, market_
+     result = sales_engine.adjust_marketing_budget(sales_state, market_context, revenue_this_turn)
+ 
+     assert result.new_budget == 80
+-    assert sales_state.marketing_budget_pennies == 100
++    assert sales_state.marketing_budget == 100

@@ -1,0 +1,1551 @@
+diff --git a/communications/insights/MARKET_INDEX_BREAKER_IMPL.md b/communications/insights/MARKET_INDEX_BREAKER_IMPL.md
+new file mode 100644
+index 00000000..0ca44835
+--- /dev/null
++++ b/communications/insights/MARKET_INDEX_BREAKER_IMPL.md
+@@ -0,0 +1,30 @@
++# Market Index Circuit Breaker Implementation Insight
++
++## 1. Architectural Insights
++- **Goal**: Implement `IndexCircuitBreaker` to halt trading when market index drops significantly.
++- **Design Pattern**: Dependency Injection. The circuit breaker is injected into Markets (`OrderBookMarket`, `StockMarket`) and `TickOrchestrator`.
++- **State Management**: The circuit breaker maintains its own state (`is_active`, `halt_until_tick`).
++- **Fail-Open**: If `market_index` is missing, the breaker defaults to "Healthy" (True) to prevent disruption.
++- **Centralized Orchestration**: `TickOrchestrator` is responsible for calculating the unified macro index (Stock Market Cap) and updating the circuit breaker state *once per tick*. Markets only *read* the state via `is_active()`.
++- **Mocking**: Strict mocking with `spec=IIndexCircuitBreaker` is enforced for tests.
++
++## 2. Regression Analysis
++- **Broken Tests**: Tests instantiating `OrderBookMarket` and `StockMarket` failed because `__init__` signature changed.
++- **Fix**: All test instantiations were updated to include a mock `IIndexCircuitBreaker`.
++- **Logic Change**: `match_orders` now has a pre-check `is_active()`. If halted, it returns empty transactions.
++- **Initialization Bug Fix**: Previous iteration calculated index inside `OrderBookMarket` which caused 100% drop on tick 0. Moved calculation to Orchestrator using Stock Market data corrects this.
++
++## 3. Implementation Plan
++1.  Define `IndexCircuitBreakerConfigDTO` and `IIndexCircuitBreaker` in `modules/market/api.py`.
++2.  Implement `IndexCircuitBreaker` logic in `simulation/markets/market_circuit_breaker.py`.
++3.  Update `TickOrchestrator` to calculate index and update breaker.
++4.  Update `OrderBookMarket` and `StockMarket` to read breaker state.
++5.  Update configuration `config/economy_params.yaml`.
++6.  Create new tests for the breaker and halt logic.
++7.  Update existing tests to pass the new dependency.
++
++## 4. Test Evidence
++- `tests/unit/markets/test_index_circuit_breaker.py`: Passed (8 tests).
++- `tests/unit/markets/test_market_halt.py`: Passed (3 tests).
++- `tests/unit/markets/test_order_book_market.py`: Passed.
++- `tests/integration/scenarios/diagnosis/test_market_mechanics.py`: Passed.
+diff --git a/config/economy_params.yaml b/config/economy_params.yaml
+index 301e48ce..5375bf4d 100644
+--- a/config/economy_params.yaml
++++ b/config/economy_params.yaml
+@@ -147,3 +147,13 @@ labor_market:
+     MATERIAL: "MANUFACTURING"
+     LUXURY: "SERVICES"
+     TECH: "TECHNOLOGY"
++
++# ----------------------------------------------------------------------
++# Market Circuit Breaker Configuration (WO-IMPL-INDEX-BREAKER)
++# ----------------------------------------------------------------------
++market_circuit_breaker:
++  threshold_level_1: 0.08
++  threshold_level_2: 0.15
++  threshold_level_3: 0.20
++  halt_duration_level_1: 15
++  halt_duration_level_2: 15
+diff --git a/modules/market/api.py b/modules/market/api.py
+index 89e84c5c..f360984c 100644
+--- a/modules/market/api.py
++++ b/modules/market/api.py
+@@ -422,15 +422,29 @@ class IPriceLimitEnforcer(Protocol):
+         """
+         ...
+ 
++@dataclass(frozen=True)
++class IndexCircuitBreakerConfigDTO:
++    """
++    Configuration DTO for Index Circuit Breaker thresholds.
++    Satisfies [Config DTO Purity] principle.
++    """
++    threshold_level_1: float = 0.08  # 8% drop
++    threshold_level_2: float = 0.15  # 15% drop
++    threshold_level_3: float = 0.20  # 20% drop
++    halt_duration_level_1: int = 15  # Ticks to halt
++    halt_duration_level_2: int = 15  # Ticks to halt
++    # Level 3 halts indefinitely (until manual reset or end of session)
++
+ @runtime_checkable
+ class IIndexCircuitBreaker(Protocol):
+     """
+     Market-wide circuit breaker to monitor macroeconomic health and halt trading.
+     """
+-    def check_market_health(self, market_stats: Dict[str, Any]) -> bool:
++    def check_market_health(self, market_stats: Dict[str, Any], current_tick: int) -> bool:
+         """
+         Evaluates overall market health statistics to determine if a halt is required.
+-        Returns True if healthy, False if a halt is triggered.
++        Updates internal halt state safely.
++        Returns True if healthy (trading continues), False if a halt is triggered.
+         """
+         ...
+ 
+@@ -440,6 +454,12 @@ class IIndexCircuitBreaker(Protocol):
+         """
+         ...
+ 
++    def set_reference_index(self, index_value: float) -> None:
++        """
++        Sets the baseline index value used to calculate the drop percentage.
++        """
++        ...
++
+ @runtime_checkable
+ class ICircuitBreaker(IPriceLimitEnforcer, Protocol):
+     """
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 519c062a..e2ac5382 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -23,6 +23,8 @@ from simulation.agents.central_bank import CentralBank
+ from simulation.loan_market import LoanMarket
+ from simulation.markets.order_book_market import OrderBookMarket
+ from simulation.markets.circuit_breaker import DynamicCircuitBreaker
++from simulation.markets.market_circuit_breaker import IndexCircuitBreaker
++from modules.market.api import IndexCircuitBreakerConfigDTO
+ from simulation.markets.stock_market import StockMarket
+ from simulation.metrics.economic_tracker import EconomicIndicatorTracker
+ from simulation.metrics.inequality_tracker import InequalityTracker
+@@ -281,24 +283,34 @@ class SimulationInitializer(SimulationInitializerInterface):
+         """
+         Phase 3: Instantiates OrderBookMarkets, LoanMarket, LaborMarket, TaxationSystem, JudicialSystem, etc.
+         """
++        # WO-IMPL-INDEX-BREAKER: Initialize Circuit Breaker
++        ib_config = IndexCircuitBreakerConfigDTO(
++            threshold_level_1=self.config_manager.get('market_circuit_breaker.threshold_level_1', 0.08),
++            threshold_level_2=self.config_manager.get('market_circuit_breaker.threshold_level_2', 0.15),
++            threshold_level_3=self.config_manager.get('market_circuit_breaker.threshold_level_3', 0.20),
++            halt_duration_level_1=self.config_manager.get('market_circuit_breaker.halt_duration_level_1', 15),
++            halt_duration_level_2=self.config_manager.get('market_circuit_breaker.halt_duration_level_2', 15)
++        )
++        sim.world_state.index_circuit_breaker = IndexCircuitBreaker(config=ib_config, logger=self.logger)
++
+         sim.real_estate_units = [RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE, rent_price=self.config.INITIAL_RENT_PRICE) for i in range(self.config.NUM_HOUSING_UNITS)]
+ 
+         sim.markets = {}
+         for good_name in self.config.GOODS:
+              cb = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
+-             sim.markets[good_name] = OrderBookMarket(market_id=good_name, config_module=self.config, circuit_breaker=cb)
++             sim.markets[good_name] = OrderBookMarket(market_id=good_name, config_module=self.config, circuit_breaker=cb, index_circuit_breaker=sim.world_state.index_circuit_breaker)
+ 
+         sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
+ 
+         cb_sec = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
+-        sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config, circuit_breaker=cb_sec)
++        sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config, circuit_breaker=cb_sec, index_circuit_breaker=sim.world_state.index_circuit_breaker)
+ 
+         if sim.central_bank:
+              sim.central_bank.set_bond_market(sim.markets['security_market'])
+         sim.markets['loan_market'] = LoanMarket(market_id='loan_market', bank=sim.bank, config_module=self.config)
+         sim.markets['loan_market'].agents_ref = sim.agents
+         if getattr(self.config, 'STOCK_MARKET_ENABLED', False):
+-            sim.stock_market = StockMarket(config_module=self.config, shareholder_registry=sim.shareholder_registry, logger=self.logger)
++            sim.stock_market = StockMarket(config_module=self.config, shareholder_registry=sim.shareholder_registry, logger=self.logger, index_circuit_breaker=sim.world_state.index_circuit_breaker)
+             sim.stock_tracker = StockMarketTracker(config_module=self.config)
+             sim.markets['stock_market'] = sim.stock_market
+             for firm in sim.firms:
+diff --git a/simulation/markets/market_circuit_breaker.py b/simulation/markets/market_circuit_breaker.py
+new file mode 100644
+index 00000000..22f71932
+--- /dev/null
++++ b/simulation/markets/market_circuit_breaker.py
+@@ -0,0 +1,85 @@
++from typing import Dict, Any, Optional
++import logging
++
++from modules.market.api import IIndexCircuitBreaker, IndexCircuitBreakerConfigDTO
++
++class IndexCircuitBreaker(IIndexCircuitBreaker):
++    def __init__(self, config: IndexCircuitBreakerConfigDTO, logger: Optional[logging.Logger] = None):
++        self.config = config
++        self.logger = logger or logging.getLogger(__name__)
++        self._is_halted = False
++        self._halt_until_tick = 0
++        self._current_level = 0
++        self._reference_index = 0.0
++
++    def check_market_health(self, market_stats: Dict[str, Any], current_tick: int) -> bool:
++        """
++        Evaluates overall market health statistics to determine if a halt is required.
++        Updates internal halt state safely.
++        Returns True if healthy (trading continues), False if a halt is triggered.
++        """
++        # 1. Evaluate existing halt duration
++        if self._is_halted:
++            if self._halt_until_tick != float('inf') and current_tick >= self._halt_until_tick and self._current_level < 3:
++                self.logger.info(f"CIRCUIT_BREAKER | Halt lifted at tick {current_tick}. Level {self._current_level} cleared.")
++                self._is_halted = False
++                # Do not reset _current_level to avoid re-triggering same level in same session
++            else:
++                return False # Still halted
++
++        # 2. Extract current index value (e.g., composite price index)
++        current_index = market_stats.get('market_index')
++        if current_index is None:
++            return True # Cannot evaluate reliably, assume healthy to prevent false halts
++
++        if self._reference_index <= 0:
++            return True # Avoid division by zero
++
++        # 3. Calculate drop percentage
++        drop_pct = (self._reference_index - current_index) / self._reference_index
++
++        # 4. Step-wise threshold evaluation
++        if drop_pct >= self.config.threshold_level_3 and self._current_level < 3:
++            self._trigger_halt(3, float('inf'), current_tick, current_index)
++            return False
++        elif drop_pct >= self.config.threshold_level_2 and self._current_level < 2:
++            self._trigger_halt(2, self.config.halt_duration_level_2, current_tick, current_index)
++            return False
++        elif drop_pct >= self.config.threshold_level_1 and self._current_level < 1:
++            self._trigger_halt(1, self.config.halt_duration_level_1, current_tick, current_index)
++            return False
++
++        return True
++
++    def _trigger_halt(self, level: int, duration: float, current_tick: int, current_index: float) -> None:
++        self._is_halted = True
++        self._current_level = level
++        self._halt_until_tick = current_tick + duration if duration != float('inf') else float('inf')
++
++        drop_pct = (self._reference_index - current_index) / self._reference_index
++
++        self.logger.warning(
++            f"CIRCUIT_BREAKER | Market Halted! Level {level} triggered. Drop: {drop_pct:.2%}. Halting until {self._halt_until_tick}",
++            extra={
++                'tick': current_tick,
++                'level': level,
++                'halt_until': self._halt_until_tick,
++                'reference_index': self._reference_index,
++                'current_index': current_index,
++                'drop_pct': drop_pct
++            }
++        )
++
++    def is_active(self) -> bool:
++        return self._is_halted
++
++    def set_reference_index(self, index_value: float) -> None:
++        """
++        Sets the baseline index value used to calculate the drop percentage.
++        Resets the circuit breaker state for a new session.
++        """
++        if index_value > 0:
++            self._reference_index = index_value
++            self._is_halted = False
++            self._current_level = 0
++            self._halt_until_tick = 0
+diff --git a/simulation/markets/order_book_market.py b/simulation/markets/order_book_market.py
+index 7a395b1c..da66ebe2 100644
+--- a/simulation/markets/order_book_market.py
++++ b/simulation/markets/order_book_market.py
+@@ -6,7 +6,7 @@ from dataclasses import dataclass
+ 
+ from simulation.models import Order, Transaction
+ from simulation.core_markets import Market
+-from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, ICircuitBreaker
++from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, ICircuitBreaker, IIndexCircuitBreaker
+ from simulation.markets.matching_engine import OrderBookMatchingEngine
+ from simulation.markets.circuit_breaker import DynamicCircuitBreaker
+ 
+@@ -65,7 +65,7 @@ class OrderBookMarket(Market):
+     매수/매도 주문을 접수하고, 가격 우선 및 시간 우선 원칙에 따라 주문을 매칭하여 거래를 체결합니다.
+     """
+ 
+-    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, circuit_breaker: Optional[ICircuitBreaker] = None):
++    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, circuit_breaker: Optional[ICircuitBreaker] = None, index_circuit_breaker: Optional['IIndexCircuitBreaker'] = None):
+         """OrderBookMarket을 초기화합니다.
+ 
+         Args:
+@@ -73,6 +73,7 @@ class OrderBookMarket(Market):
+             config_module (Any, optional): 시뮬레이션 설정 모듈.
+             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
+             circuit_breaker (ICircuitBreaker, optional): 주입된 서킷 브레이커 인스턴스.
++            index_circuit_breaker (IIndexCircuitBreaker, optional): 주입된 인덱스 서킷 브레이커 인스턴스.
+         """
+         super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
+         self.id = market_id
+@@ -95,6 +96,7 @@ class OrderBookMarket(Market):
+ 
+         # WO-136: Dynamic Circuit Breakers (Modular)
+         self.circuit_breaker = circuit_breaker or DynamicCircuitBreaker(config_module, self.logger)
++        self.index_circuit_breaker = index_circuit_breaker
+ 
+         # Phase 10: Stateless Matching Engine
+         self.matching_engine = OrderBookMatchingEngine()
+@@ -227,6 +229,15 @@ class OrderBookMarket(Market):
+         현재 틱의 모든 주문을 매칭하고 거래를 실행합니다.
+         각 아이템별로 주문 매칭을 수행합니다.
+         """
++        # WO-IMPL-INDEX-BREAKER: Check Market Health
++        # We only READ the state. The orchestrator updates it centrally.
++        if self.index_circuit_breaker and self.index_circuit_breaker.is_active():
++            self.logger.warning(
++                f"MARKET_HALT | OrderBookMarket {self.id} halted by IndexCircuitBreaker",
++                extra={'tick': current_time, 'market_id': self.id}
++            )
++            return []
++
+         all_transactions: List[Transaction] = []
+ 
+         # Get all unique item_ids from both buy and sell orders
+diff --git a/simulation/markets/stock_market.py b/simulation/markets/stock_market.py
+index 007d67d5..7d5f84dc 100644
+--- a/simulation/markets/stock_market.py
++++ b/simulation/markets/stock_market.py
+@@ -10,7 +10,7 @@ from collections import defaultdict
+ from dataclasses import dataclass, replace
+ from simulation.models import Transaction, Order
+ from simulation.core_markets import Market
+-from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper, OrderTelemetrySchema
++from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper, OrderTelemetrySchema, IIndexCircuitBreaker
+ from modules.finance.api import IShareholderRegistry, IShareholderView
+ from simulation.markets.matching_engine import StockMatchingEngine
+ logger = logging.getLogger(__name__)
+@@ -31,11 +31,12 @@ class StockMarket(Market):
+     실제 거래는 호가 매칭으로 이루어집니다.
+     """
+ 
+-    def __init__(self, config_module: Any, shareholder_registry: IShareholderRegistry, logger: Optional[logging.Logger]=None):
++    def __init__(self, config_module: Any, shareholder_registry: IShareholderRegistry, logger: Optional[logging.Logger]=None, index_circuit_breaker: Optional[IIndexCircuitBreaker]=None):
+         self.id = 'stock_market'
+         self.config_module = config_module
+         self.logger = logger or logging.getLogger(__name__)
+         self.shareholder_registry = shareholder_registry
++        self.index_circuit_breaker = index_circuit_breaker
+         self.matched_transactions: List[Transaction] = []
+         self.buy_orders: Dict[int, List[ManagedOrder]] = defaultdict(list)
+         self.sell_orders: Dict[int, List[ManagedOrder]] = defaultdict(list)
+@@ -169,6 +170,14 @@ class StockMarket(Market):
+         모든 기업의 주식 주문을 매칭하여 거래를 성사시킵니다.
+         Delegates to Stateless Matching Engine.
+         """
++        # WO-IMPL-INDEX-BREAKER: Check Market Health
++        # We only READ the state. The orchestrator updates it centrally.
++        if self.index_circuit_breaker and self.index_circuit_breaker.is_active():
++            self.logger.warning(
++                f"MARKET_HALT | StockMarket halted by IndexCircuitBreaker",
++                extra={'tick': tick, 'market_id': self.id}
++            )
++            return []
+ 
+         def to_dto_with_metadata(managed: ManagedOrder) -> CanonicalOrderDTO:
+             dto = replace(managed.order, quantity=managed.remaining_quantity)
+diff --git a/simulation/orchestration/tick_orchestrator.py b/simulation/orchestration/tick_orchestrator.py
+index 33d9e62b..effbd862 100644
+--- a/simulation/orchestration/tick_orchestrator.py
++++ b/simulation/orchestration/tick_orchestrator.py
+@@ -92,6 +92,24 @@ class TickOrchestrator:
+             extra={"tick": state.time, "tags": ["tick_start"]},
+         )
+ 
++        # WO-IMPL-INDEX-BREAKER: Centralized Market Health Check
++        # Calculates unified macro index (Stock Market Cap/Price Sum) and updates circuit breaker state ONCE per tick.
++        if state.stock_market and state.index_circuit_breaker:
++            total_price_index = 0.0
++            # Use accessors if available, else direct access (StockMarket is friend)
++            # We use last_prices or reference_prices as fallback
++            known_firms = set(state.stock_market.reference_prices.keys()) | set(state.stock_market.last_prices.keys())
++            for firm_id in known_firms:
++                price = state.stock_market.last_prices.get(firm_id, state.stock_market.reference_prices.get(firm_id, 0.0))
++                total_price_index += price
++
++            # Auto-initialize reference index at start of simulation if valid
++            if state.time == 1 and total_price_index > 0:
++                state.index_circuit_breaker.set_reference_index(total_price_index)
++
++            # Execute Check (Mutates breaker state)
++            state.index_circuit_breaker.check_market_health({'market_index': total_price_index}, state.time)
++
+         # TD-177: Ensure flow counters are reset at the start of the tick
+         if state.government and hasattr(state.government, "reset_tick_flow"):
+             state.government.reset_tick_flow()
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index 4fe97b60..b2248283 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -44,6 +44,7 @@ if TYPE_CHECKING:
+     from simulation.dtos.scenario import StressScenarioConfig
+     from modules.government.politics_system import PoliticsSystem
+ from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry, DEFAULT_CURRENCY # Added for Phase 33
++from modules.market.api import IIndexCircuitBreaker
+ from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW
+ from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
+ from modules.finance.api import IShareholderRegistry, IBank
+@@ -136,6 +137,7 @@ class WorldState:
+         self.stress_scenario_config: Optional[StressScenarioConfig] = None
+         self.public_manager: Optional[IAssetRecoverySystem] = None
+         self.politics_system: Optional[PoliticsSystem] = None # Phase 4.4: Political Orchestrator
++        self.index_circuit_breaker: Optional[IIndexCircuitBreaker] = None # WO-IMPL-INDEX-BREAKER
+         self.currency_holders: List[ICurrencyHolder] = [] # Added for Phase 33
+         self._currency_holders_set: set = set()
+         self.estate_registry: Optional[IEstateRegistry] = None
+diff --git a/tests/integration/scenarios/diagnosis/conftest.py b/tests/integration/scenarios/diagnosis/conftest.py
+index b53fbc78..3b29419f 100644
+--- a/tests/integration/scenarios/diagnosis/conftest.py
++++ b/tests/integration/scenarios/diagnosis/conftest.py
+@@ -6,6 +6,7 @@ from simulation.core_agents import Household, Talent
+ from simulation.firms import Firm
+ from simulation.markets.order_book_market import OrderBookMarket
+ from simulation.core_markets import Market
++from modules.market.api import IIndexCircuitBreaker
+ from simulation.decisions.base_decision_engine import BaseDecisionEngine
+ from simulation.ai.api import Personality # Import Personality enum
+ import config
+@@ -55,4 +56,7 @@ def simple_firm(mock_config_module):
+ 
+ @pytest.fixture
+ def simple_market():
+-    return OrderBookMarket(market_id="basic_food")
++    mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
++    mock_breaker.check_market_health.return_value = True
++    mock_breaker.is_active.return_value = False
++    return OrderBookMarket(market_id="basic_food", index_circuit_breaker=mock_breaker)
+diff --git a/tests/unit/markets/test_index_circuit_breaker.py b/tests/unit/markets/test_index_circuit_breaker.py
+new file mode 100644
+index 00000000..48490a86
+--- /dev/null
++++ b/tests/unit/markets/test_index_circuit_breaker.py
+@@ -0,0 +1,97 @@
++import pytest
++from unittest.mock import MagicMock
++from modules.market.api import IndexCircuitBreakerConfigDTO
++from simulation.markets.market_circuit_breaker import IndexCircuitBreaker
++
++@pytest.fixture
++def breaker_config():
++    return IndexCircuitBreakerConfigDTO(
++        threshold_level_1=0.08,
++        threshold_level_2=0.15,
++        threshold_level_3=0.20,
++        halt_duration_level_1=10,
++        halt_duration_level_2=20
++    )
++
++@pytest.fixture
++def circuit_breaker(breaker_config):
++    return IndexCircuitBreaker(config=breaker_config)
++
++def test_initial_state(circuit_breaker):
++    assert not circuit_breaker.is_active()
++
++def test_happy_path_no_drop(circuit_breaker):
++    circuit_breaker.set_reference_index(100.0)
++    market_stats = {'market_index': 99.0} # 1% drop
++    assert circuit_breaker.check_market_health(market_stats, current_tick=10) is True
++    assert not circuit_breaker.is_active()
++
++def test_level_1_trigger(circuit_breaker):
++    circuit_breaker.set_reference_index(100.0)
++    market_stats = {'market_index': 91.0} # 9% drop > 8%
++    assert circuit_breaker.check_market_health(market_stats, current_tick=10) is False
++    assert circuit_breaker.is_active()
++    # Should halt for 10 ticks (10 + 10 = 20)
++
++    # Check during halt
++    assert circuit_breaker.check_market_health(market_stats, current_tick=15) is False
++    assert circuit_breaker.is_active()
++
++    # Check after halt duration
++    assert circuit_breaker.check_market_health(market_stats, current_tick=20) is True
++    assert not circuit_breaker.is_active()
++
++def test_level_escalation(circuit_breaker):
++    circuit_breaker.set_reference_index(100.0)
++
++    # Trigger Level 1
++    market_stats = {'market_index': 91.0} # 9% drop
++    assert circuit_breaker.check_market_health(market_stats, current_tick=10) is False
++
++    # Fast forward to resume
++    assert circuit_breaker.check_market_health(market_stats, current_tick=20) is True
++
++    # Trigger Level 2
++    market_stats = {'market_index': 84.0} # 16% drop > 15%
++    assert circuit_breaker.check_market_health(market_stats, current_tick=21) is False
++    assert circuit_breaker.is_active()
++    # Should halt for 20 ticks (21 + 20 = 41)
++
++    # Check halt duration
++    assert circuit_breaker.check_market_health(market_stats, current_tick=30) is False
++    assert circuit_breaker.check_market_health(market_stats, current_tick=41) is True
++
++def test_level_3_indefinite_halt(circuit_breaker):
++    circuit_breaker.set_reference_index(100.0)
++    market_stats = {'market_index': 75.0} # 25% drop > 20%
++    assert circuit_breaker.check_market_health(market_stats, current_tick=10) is False
++    assert circuit_breaker.is_active()
++
++    # Check much later, still halted
++    assert circuit_breaker.check_market_health(market_stats, current_tick=1000) is False
++    assert circuit_breaker.is_active()
++
++def test_reference_index_reset(circuit_breaker):
++    circuit_breaker.set_reference_index(100.0)
++    market_stats = {'market_index': 90.0} # 10% drop, triggers level 1
++    circuit_breaker.check_market_health(market_stats, current_tick=10)
++    assert circuit_breaker.is_active()
++
++    # New session reset
++    circuit_breaker.set_reference_index(200.0)
++    assert not circuit_breaker.is_active()
++    assert circuit_breaker._current_level == 0
++
++    # Check relative to new index
++    market_stats = {'market_index': 190.0} # 5% drop
++    assert circuit_breaker.check_market_health(market_stats, current_tick=11) is True
++
++def test_missing_index_fail_open(circuit_breaker):
++    circuit_breaker.set_reference_index(100.0)
++    market_stats = {} # Missing index
++    assert circuit_breaker.check_market_health(market_stats, current_tick=10) is True
++
++def test_zero_reference_index(circuit_breaker):
++    circuit_breaker.set_reference_index(0.0)
++    market_stats = {'market_index': 50.0}
++    assert circuit_breaker.check_market_health(market_stats, current_tick=10) is True
+diff --git a/tests/unit/markets/test_market_halt.py b/tests/unit/markets/test_market_halt.py
+new file mode 100644
+index 00000000..e9b59d31
+--- /dev/null
++++ b/tests/unit/markets/test_market_halt.py
+@@ -0,0 +1,49 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.markets.order_book_market import OrderBookMarket
++from simulation.markets.stock_market import StockMarket
++from modules.market.api import IIndexCircuitBreaker, CanonicalOrderDTO, MatchingResultDTO
++
++class TestMarketHalt:
++    @pytest.fixture
++    def mock_breaker(self):
++        breaker = MagicMock(spec=IIndexCircuitBreaker)
++        breaker.is_active.return_value = True
++        return breaker
++
++    def test_order_book_market_halts(self, mock_breaker):
++        market = OrderBookMarket("test_market", index_circuit_breaker=mock_breaker)
++        # Add order to verify it DOES NOT reach matching
++        order = CanonicalOrderDTO("agent1", "BUY", "item1", 1.0, 100, "test_market")
++        market.place_order(order, 100)
++
++        market.matching_engine = MagicMock()
++
++        transactions = market.match_orders(100)
++        assert transactions == []
++        mock_breaker.is_active.assert_called()
++        market.matching_engine.match.assert_not_called()
++
++    def test_stock_market_halts(self, mock_breaker):
++        registry = MagicMock()
++        config = MagicMock()
++        market = StockMarket(config_module=config, shareholder_registry=registry, index_circuit_breaker=mock_breaker)
++        transactions = market.match_orders(100)
++        assert transactions == []
++        mock_breaker.is_active.assert_called()
++
++    def test_order_book_market_resumes(self):
++        mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
++        mock_breaker.is_active.return_value = False
++        market = OrderBookMarket("test_market", index_circuit_breaker=mock_breaker)
++
++        # Place an order so we expect matching to run
++        order = CanonicalOrderDTO("agent1", "BUY", "item1", 1.0, 100, "test_market")
++        market.place_order(order, 100)
++
++        # Mock matching engine
++        market.matching_engine = MagicMock()
++        market.matching_engine.match.return_value = MatchingResultDTO([], {}, {}, {})
++
++        market.match_orders(100)
++        market.matching_engine.match.assert_called()
+diff --git a/tests/unit/markets/test_order_book_market.py b/tests/unit/markets/test_order_book_market.py
+index 043ffa1e..87baeeec 100644
+--- a/tests/unit/markets/test_order_book_market.py
++++ b/tests/unit/markets/test_order_book_market.py
+@@ -1,207 +1,249 @@
+ import pytest
+-from unittest.mock import MagicMock, patch
++from unittest.mock import MagicMock
+ from simulation.markets.order_book_market import OrderBookMarket
+ from simulation.models import Order
++from modules.common.utils.logger import Logger
++from modules.system.api import DEFAULT_CURRENCY
++from modules.market.api import IIndexCircuitBreaker
+ 
+-@pytest.fixture(autouse=True)
+-def mock_logger():
+-    with patch('simulation.markets.order_book_market.logging.getLogger') as mock_get_logger:
+-        mock_logger_instance = MagicMock()
+-        mock_get_logger.return_value = mock_logger_instance
+-        yield mock_logger_instance
+ 
+ @pytest.fixture
+-def goods_market_instance():
+-    return OrderBookMarket(market_id='goods_market')
++def market():
++    """테스트를 위한 OrderBookMarket 객체를 생성합니다."""
++    mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
++    mock_breaker.check_market_health.return_value = True
++    mock_breaker.is_active.return_value = False
++    return OrderBookMarket(
++        market_id="test_goods_market", logger=Logger(), index_circuit_breaker=mock_breaker
++    )  # 테스트 중에는 기본 로거 사용
++
++
++class TestOrderBookMarketInitialization:
++    def test_market_initialization(self, market: OrderBookMarket):
++        """시장이 올바르게 초기화되는지 테스트합니다."""
++        assert market.id == "test_goods_market"
++        assert isinstance(market.logger, Logger)
++        assert not market.buy_orders
++        assert not market.sell_orders
++
++
++# --- Phase 1: 시장 기반 구축 테스트 ---
++
++
++class TestPlaceOrderToBook:
++    def test_add_single_buy_order(self, market: OrderBookMarket):
++        """단일 매수 주문이 오더북에 올바르게 추가되는지 테스트합니다."""
++        # Order(..., pennies, limit, ...)
++        # 100 pennies = $1.00
++        order = Order(
++            1, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00
++        )
++        market.place_order(order, 1)
++
++        buy_book = market.buy_orders.get("food", [])
++        sell_book = market.sell_orders.get("food", [])
++        assert len(buy_book) == 1
++        assert len(sell_book) == 0
++        assert buy_book[0].price_pennies == 100
++
++    def test_add_buy_orders_sorted(self, market: OrderBookMarket):
++        """여러 매수 주문이 가격 내림차순으로 정렬되는지 테스트합니다."""
++        # 100 pennies ($1.00), 110 ($1.10), 105 ($1.05)
++        order1 = Order(1, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00)
++        order2 = Order(2, "BUY", "food", 5, 110, market_id="test_market", price_limit=1.10)
++        order3 = Order(3, "BUY", "food", 8, 105, market_id="test_market", price_limit=1.05)
++
++        market.place_order(order1, 1)
++        market.place_order(order2, 2)
++        market.place_order(order3, 3)
++
++        buy_book = market.buy_orders.get("food", [])
++        assert len(buy_book) == 3
++        # Check SSoT (Pennies)
++        assert [o.price_pennies for o in buy_book] == [110, 105, 100]
++
++    def test_add_sell_orders_sorted(self, market: OrderBookMarket):
++        """여러 매도 주문이 가격 오름차순으로 정렬되는지 테스트합니다."""
++        order1 = Order(1, "SELL", "food", 10, 100, market_id="test_market", price_limit=1.00)
++        order2 = Order(2, "SELL", "food", 5, 90, market_id="test_market", price_limit=0.90)
++        order3 = Order(3, "SELL", "food", 8, 95, market_id="test_market", price_limit=0.95)
++
++        market.place_order(order1, 1)
++        market.place_order(order2, 2)
++        market.place_order(order3, 3)
++
++        sell_book = market.sell_orders.get("food", [])
++        assert len(sell_book) == 3
++        assert [o.price_pennies for o in sell_book] == [90, 95, 100]
++
++    def test_add_orders_with_same_price(self, market: OrderBookMarket):
++        """가격이 같은 주문은 시간 순서(FIFO)대로 정렬되는지 테스트합니다."""
++        order1 = Order(1, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00)
++        order2 = Order(2, "BUY", "food", 5, 110, market_id="test_market", price_limit=1.10)
++        order3 = Order(3, "BUY", "food", 8, 100, market_id="test_market", price_limit=1.00)
++
++        market.place_order(order1, 1)
++        market.place_order(order2, 2)
++        market.place_order(order3, 3)
++
++        buy_book = market.buy_orders.get("food", [])
++        assert len(buy_book) == 3
++        assert [o.price_pennies for o in buy_book] == [110, 100, 100]
++        # 가격이 100인 주문들 중 먼저 들어온 order1(agent_id=1)이 앞에 위치해야 함
++        assert [o.agent_id for o in buy_book if o.price_pennies == 100] == [1, 3]
++
++
++class TestOrderMatching:
++    def test_unfilled_order_no_match(self, market: OrderBookMarket):
++        """가격이 교차하지 않아 매칭이 발생하지 않는 경우를 테스트합니다."""
++        # Sell @ 110 ($1.10), Buy @ 100 ($1.00) -> No match
++        sell_order = Order(1, "SELL", "food", 10, 110, market_id="test_market", price_limit=1.10)
++        market.place_order(sell_order, current_time=1)
++
++        buy_order = Order(2, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00)
++        market.place_order(buy_order, current_time=2)
++
++        # Act
++        transactions = market.match_orders(current_time=3)
++
++        # Assert
++        assert len(transactions) == 0
++
++        buy_book = market.buy_orders.get("food", [])
++        sell_book = market.sell_orders.get("food", [])
+ 
+-@pytest.fixture
+-def labor_market_instance(mock_logger):
+-    return OrderBookMarket(market_id='labor_market', logger=mock_logger)
++        assert len(buy_book) == 1
++        assert len(sell_book) == 1
++        assert buy_book[0].price_pennies == 100
++        assert sell_book[0].price_pennies == 110
+ 
+-@pytest.fixture
+-def order_book_market_instance():
+-    return OrderBookMarket(market_id='test_market')
++    def test_full_match_one_to_one(self, market: OrderBookMarket):
++        """매수 주문 1개와 매도 주문 1개가 완전히 체결되는 경우를 테스트합니다."""
++        # Sell @ 100 ($1.00)
++        sell_order = Order(2, "SELL", "food", 10, 100, market_id="test_market", price_limit=1.00)
++        market.place_order(sell_order, current_time=1)
+ 
+-@pytest.fixture
+-def sample_buy_order():
+-    return Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
++        # Buy @ 105 ($1.05)
++        buy_order = Order(1, "BUY", "food", 10, 105, market_id="test_market", price_limit=1.05)
++        market.place_order(buy_order, current_time=2)
++
++        transactions = market.match_orders(current_time=2)
+ 
+-@pytest.fixture
+-def sample_sell_order():
+-    return Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='test_market')
+-
+-class TestOrderBookMarket:
+-
+-    def test_initialization(self, order_book_market_instance):
+-        assert order_book_market_instance.id == 'test_market'
+-        assert order_book_market_instance.buy_orders == {}
+-        assert order_book_market_instance.sell_orders == {}
+-
+-    def test_place_buy_order_adds_and_sorts(self, order_book_market_instance):
+-        order1 = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
+-        order2 = Order(agent_id=2, side='BUY', item_id='food', quantity=5, price_pennies=int(110 * 100), price_limit=110, market_id='test_market')
+-        order_book_market_instance.place_order(order1, 1)
+-        order_book_market_instance.place_order(order2, 1)
+-        buy_book = order_book_market_instance.buy_orders.get('food', [])
+-        assert len(buy_book) == 2
+-        assert buy_book[0].price == 110
+-        assert buy_book[1].price == 100
+-
+-    def test_place_sell_order_adds_and_sorts(self, order_book_market_instance):
+-        order1 = Order(agent_id=1, side='SELL', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
+-        order2 = Order(agent_id=2, side='SELL', item_id='food', quantity=5, price_pennies=int(90 * 100), price_limit=90, market_id='test_market')
+-        order_book_market_instance.place_order(order1, 1)
+-        order_book_market_instance.place_order(order2, 1)
+-        sell_book = order_book_market_instance.sell_orders.get('food', [])
+-        assert len(sell_book) == 2
+-        assert sell_book[0].price == 90
+-        assert sell_book[1].price == 100
+-
+-    def test_place_order_unknown_type_logs_warning(self, order_book_market_instance, mock_logger):
+-        order = Order(agent_id=1, side='UNKNOWN', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
+-        order_book_market_instance.place_order(order, 1)
+-        mock_logger.warning.assert_called_with('Unknown side for _add_order: UNKNOWN', extra={'tick': 1, 'market_id': 'test_market', 'agent_id': 1, 'item_id': 'food', 'side': 'UNKNOWN', 'price': 100, 'quantity': 10})
+-        assert mock_logger.warning.call_count == 1
+-        assert order_book_market_instance.buy_orders == {}
+-        assert order_book_market_instance.sell_orders == {}
+-
+-    def test_match_orders_full_fill(self, goods_market_instance):
+-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
+-        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
+-        goods_market_instance.place_order(buy_order, 1)
+-        goods_market_instance.place_order(sell_order, 1)
+-        transactions = goods_market_instance.match_orders(1)
+         assert len(transactions) == 1
+         tx = transactions[0]
++        assert tx.quantity == 10
++        # Integer Math: (105 + 100) // 2 = 102 pennies
++        # Price (Float) = 1.02
++        assert tx.price == 1.02
++        assert tx.total_pennies == 1020
+         assert tx.buyer_id == 1
+         assert tx.seller_id == 2
+-        assert tx.item_id == 'food'
+-        assert tx.quantity == 10
+-        assert tx.price == 95.0
+-        assert tx.transaction_type == 'goods'
+-        assert tx.time == 1
+-        assert not goods_market_instance.buy_orders.get('food')
+-        assert not goods_market_instance.sell_orders.get('food')
+-
+-    def test_match_orders_partial_fill_buy_order(self, goods_market_instance):
+-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=15, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
+-        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
+-        goods_market_instance.place_order(buy_order, 1)
+-        goods_market_instance.place_order(sell_order, 1)
+-        transactions = goods_market_instance.match_orders(1)
++        assert tx.currency == DEFAULT_CURRENCY
++
++        assert not market.buy_orders.get("food", [])
++        assert not market.sell_orders.get("food", [])
++
++    def test_partial_match_then_book(self, market: OrderBookMarket):
++        """새로운 매수 주문이 부분 체결된 후 나머지가 오더북에 등록되는 경우를 테스트합니다."""
++        # Sell 5 @ 100 ($1.00)
++        sell_order = Order(2, "SELL", "food", 5, 100, market_id="test_market", price_limit=1.00)
++        market.place_order(sell_order, current_time=1)
++
++        # Buy 10 @ 105 ($1.05)
++        buy_order = Order(1, "BUY", "food", 10, 105, market_id="test_market", price_limit=1.05)
++        market.place_order(buy_order, current_time=2)
++
++        transactions = market.match_orders(current_time=2)
++
+         assert len(transactions) == 1
+         tx = transactions[0]
+-        assert tx.quantity == 10
+-        buy_book = goods_market_instance.buy_orders.get('food', [])
++        assert tx.quantity == 5
++        assert tx.price == 1.02 # 102 pennies
++
++        buy_book = market.buy_orders.get("food", [])
++        sell_book = market.sell_orders.get("food", [])
++        assert not sell_book
+         assert len(buy_book) == 1
++        assert buy_book[0].agent_id == 1
+         assert buy_book[0].quantity == 5
+-        assert not goods_market_instance.sell_orders.get('food', [])
+-
+-    def test_match_orders_partial_fill_sell_order(self, goods_market_instance):
+-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
+-        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=15, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
+-        goods_market_instance.place_order(buy_order, 1)
+-        goods_market_instance.place_order(sell_order, 1)
+-        transactions = goods_market_instance.match_orders(1)
+-        assert len(transactions) == 1
+-        tx = transactions[0]
+-        assert tx.quantity == 10
+-        sell_book = goods_market_instance.sell_orders.get('food', [])
+-        assert len(sell_book) == 1
+-        assert sell_book[0].quantity == 5
+-        assert not goods_market_instance.buy_orders.get('food', [])
+-
+-    def test_match_orders_no_match_price(self, goods_market_instance):
+-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(80 * 100), price_limit=80, market_id='goods_market')
+-        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
+-        goods_market_instance.place_order(buy_order, 1)
+-        goods_market_instance.place_order(sell_order, 1)
+-        transactions = goods_market_instance.match_orders(1)
+-        assert not transactions
+-        assert len(goods_market_instance.buy_orders.get('food', [])) == 1
+-        assert len(goods_market_instance.sell_orders.get('food', [])) == 1
+-
+-    def test_match_orders_multiple_matches(self, goods_market_instance):
+-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=20, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
+-        sell_order1 = Order(agent_id=2, side='SELL', item_id='food', quantity=5, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
+-        sell_order2 = Order(agent_id=3, side='SELL', item_id='food', quantity=8, price_pennies=int(95 * 100), price_limit=95, market_id='goods_market')
+-        goods_market_instance.place_order(buy_order, 1)
+-        goods_market_instance.place_order(sell_order1, 1)
+-        goods_market_instance.place_order(sell_order2, 1)
+-        transactions = goods_market_instance.match_orders(1)
++
++    def test_match_with_multiple_orders(self, market: OrderBookMarket):
++        """새로운 큰 주문 하나가 여러 개의 작은 주문과 체결되는 경우를 테스트합니다."""
++        # Sell 5 @ 98 ($0.98)
++        sell1 = Order(2, "SELL", "food", 5, 98, market_id="test_market", price_limit=0.98)
++        # Sell 5 @ 100 ($1.00)
++        sell2 = Order(3, "SELL", "food", 5, 100, market_id="test_market", price_limit=1.00)
++        market.place_order(sell1, current_time=1)
++        market.place_order(sell2, current_time=2)
++
++        # Buy 12 @ 105 ($1.05)
++        buy_order = Order(1, "BUY", "food", 12, 105, market_id="test_market", price_limit=1.05)
++        market.place_order(buy_order, current_time=3)
++
++        transactions = market.match_orders(current_time=3)
++
+         assert len(transactions) == 2
+         assert transactions[0].quantity == 5
+-        assert transactions[1].quantity == 8
+-        remaining_orders = goods_market_instance.buy_orders.get('food', [])
+-        assert len(remaining_orders) == 1
+-        assert remaining_orders[0].quantity == 7
+-        assert remaining_orders[0].agent_id == 1
+-        assert not goods_market_instance.sell_orders.get('food', [])
+-
+-    def test_match_orders_different_items(self, goods_market_instance):
+-        buy_order_food = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
+-        sell_order_food = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
+-        buy_order_water = Order(agent_id=3, side='BUY', item_id='water', quantity=5, price_pennies=int(50 * 100), price_limit=50, market_id='goods_market')
+-        sell_order_water = Order(agent_id=4, side='SELL', item_id='water', quantity=5, price_pennies=int(40 * 100), price_limit=40, market_id='goods_market')
+-        goods_market_instance.place_order(buy_order_food, 1)
+-        goods_market_instance.place_order(sell_order_food, 1)
+-        goods_market_instance.place_order(buy_order_water, 1)
+-        goods_market_instance.place_order(sell_order_water, 1)
+-        transactions = goods_market_instance.match_orders(1)
+-        assert len(transactions) == 2
+-        food_tx = next((tx for tx in transactions if tx.item_id == 'food'), None)
+-        water_tx = next((tx for tx in transactions if tx.item_id == 'water'), None)
+-        assert food_tx is not None
+-        assert water_tx is not None
+-
+-    def test_match_orders_empty_books(self, order_book_market_instance):
+-        transactions = order_book_market_instance.match_orders(1)
+-        assert not transactions
+-        assert not order_book_market_instance.buy_orders.get('food', [])
+-        assert not order_book_market_instance.sell_orders.get('food', [])
+-
+-    def test_match_orders_transaction_type_goods(self, goods_market_instance):
+-        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
+-        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
+-        goods_market_instance.place_order(buy_order, 1)
+-        goods_market_instance.place_order(sell_order, 1)
+-        transactions = goods_market_instance.match_orders(1)
+-        assert transactions[0].transaction_type == 'goods'
+-
+-    def test_match_orders_transaction_type_labor(self, labor_market_instance, mock_logger):
+-        buy_order = Order(agent_id=1, side='BUY', item_id='labor', quantity=1, price_pennies=int(20 * 100), price_limit=20, market_id='labor_market')
+-        sell_order = Order(agent_id=2, side='SELL', item_id='labor', quantity=1, price_pennies=int(15 * 100), price_limit=15, market_id='labor_market')
+-        labor_market_instance.place_order(buy_order, 1)
+-        labor_market_instance.place_order(sell_order, 1)
+-        transactions = labor_market_instance.match_orders(1)
+-        assert transactions[0].transaction_type == 'labor'
+-
+-    def test_get_best_ask_empty(self, order_book_market_instance):
+-        assert order_book_market_instance.get_best_ask('food') is None
+-
+-    def test_get_best_ask_non_empty(self, order_book_market_instance):
+-        order_book_market_instance.place_order(Order(1, 'SELL', 'food', 10, int(100 * 100), market_id='test_market', price_limit=100), 1)
+-        order_book_market_instance.place_order(Order(2, 'SELL', 'food', 5, int(90 * 100), market_id='test_market', price_limit=90), 1)
+-        assert order_book_market_instance.get_best_ask('food') == 90
+-
+-    def test_get_best_bid_empty(self, order_book_market_instance):
+-        assert order_book_market_instance.get_best_bid('food') is None
+-
+-    def test_get_best_bid_non_empty(self, order_book_market_instance):
+-        order_book_market_instance.place_order(Order(1, 'BUY', 'food', 10, int(100 * 100), market_id='test_market', price_limit=100), 1)
+-        order_book_market_instance.place_order(Order(2, 'BUY', 'food', 5, int(110 * 100), market_id='test_market', price_limit=110), 1)
+-        assert order_book_market_instance.get_best_bid('food') == 110
+-
+-    def test_get_order_book_status_empty(self, order_book_market_instance):
+-        status = order_book_market_instance.get_order_book_status('food')
+-        assert status['buy_orders'] == []
+-        assert status['sell_orders'] == []
+-
+-    def test_get_order_book_status_non_empty(self, order_book_market_instance):
+-        order_book_market_instance.place_order(Order(1, 'BUY', 'food', 10, int(90 * 100), market_id='test_market', price_limit=90), 1)
+-        order_book_market_instance.place_order(Order(2, 'SELL', 'food', 5, int(100 * 100), market_id='test_market', price_limit=100), 1)
+-        status = order_book_market_instance.get_order_book_status('food')
+-        assert len(status['buy_orders']) == 1
+-        assert status['buy_orders'][0]['price'] == 90
+-        assert len(status['sell_orders']) == 1
+-        assert status['sell_orders'][0]['price'] == 100
+\ No newline at end of file
++        # (105 + 98) // 2 = 101 pennies -> 1.01
++        assert transactions[0].price == 1.01
++        assert transactions[1].quantity == 5
++        # (105 + 100) // 2 = 102 pennies -> 1.02
++        assert transactions[1].price == 1.02
++
++        buy_book = market.buy_orders.get("food", [])
++        assert len(buy_book) == 1
++        assert buy_book[0].quantity == 2
++
++
++# --- Phase 2: API 구현 테스트 ---
++
++
++class TestMarketAPI:
++    def test_get_best_bid_empty(self, market: OrderBookMarket):
++        assert market.get_best_bid("food") is None
++
++    def test_get_best_bid_non_empty(self, market: OrderBookMarket):
++        # 100 pennies ($1.00), 110 pennies ($1.10)
++        market.place_order(Order(1, "BUY", "food", 10, 100, market_id="test", price_limit=1.00), 1)
++        market.place_order(Order(2, "BUY", "food", 5, 110, market_id="test", price_limit=1.10), 2)
++        assert market.get_best_bid("food") == 1.10 # Returns Dollars (Float)
++
++    def test_get_best_ask_empty(self, market: OrderBookMarket):
++        assert market.get_best_ask("food") is None
++
++    def test_get_best_ask_non_empty(self, market: OrderBookMarket):
++        # 100 pennies, 90 pennies
++        market.place_order(Order(1, "SELL", "food", 10, 100, market_id="test", price_limit=1.00), 1)
++        market.place_order(Order(2, "SELL", "food", 5, 90, market_id="test", price_limit=0.90), 2)
++        assert market.get_best_ask("food") == 0.90 # Returns Dollars (Float)
++
++    def test_get_last_traded_price(self, market: OrderBookMarket):
++        market.place_order(Order(1, 'SELL', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
++        market.place_order(Order(2, 'BUY', 'food', 10, 105, market_id='test', price_limit=1.05), 2)
++        market.match_orders(2)
++        # 102 pennies -> 1.02 Dollars
++        assert market.get_last_traded_price('food') == 1.02
++
++    def test_get_spread(self, market: OrderBookMarket):
++        market.place_order(Order(1, 'BUY', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
++        market.place_order(Order(2, 'SELL', 'food', 10, 105, market_id='test', price_limit=1.05), 2)
++        # 1.05 - 1.00 = 0.05
++        assert market.get_spread('food') == pytest.approx(0.05)
++
++    def test_get_spread_no_bid_or_ask(self, market: OrderBookMarket):
++        market.place_order(Order(1, 'BUY', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
++        assert market.get_spread('food') is None
++
++        mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
++        mock_breaker.check_market_health.return_value = True
++        mock_breaker.is_active.return_value = False
++        market = OrderBookMarket(market_id="test_goods_market", logger=Logger(), index_circuit_breaker=mock_breaker)
++
++        market.place_order(Order(2, 'SELL', 'food', 10, 105, market_id='test', price_limit=1.05), 2)
++        assert market.get_spread('food') is None
++
++    def test_get_market_depth(self, market: OrderBookMarket):
++        market.place_order(Order(1, 'BUY', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
++        market.place_order(Order(2, 'BUY', 'food', 5, 90, market_id='test', price_limit=0.90), 2)
++        market.place_order(Order(3, 'SELL', 'food', 10, 105, market_id='test', price_limit=1.05), 3)
++        assert market.get_market_depth('food') == {'buy_orders': 2, 'sell_orders': 1}
+diff --git a/tests/unit/markets/test_order_book_market_cancellation.py b/tests/unit/markets/test_order_book_market_cancellation.py
+index 84441aa3..fbb23228 100644
+--- a/tests/unit/markets/test_order_book_market_cancellation.py
++++ b/tests/unit/markets/test_order_book_market_cancellation.py
+@@ -1,13 +1,16 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from simulation.markets.order_book_market import OrderBookMarket
+-from modules.market.api import CanonicalOrderDTO
++from modules.market.api import CanonicalOrderDTO, IIndexCircuitBreaker
+ 
+ class TestOrderBookMarketCancellation:
+ 
+     @pytest.fixture
+     def market(self):
+-        return OrderBookMarket(market_id="test_market", logger=MagicMock())
++        mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
++        mock_breaker.check_market_health.return_value = True
++        mock_breaker.is_active.return_value = False
++        return OrderBookMarket(market_id="test_market", logger=MagicMock(), index_circuit_breaker=mock_breaker)
+ 
+     def test_cancel_orders_removes_agent_orders(self, market):
+         # Setup orders
+diff --git a/tests/unit/markets/test_stock_market_cancellation.py b/tests/unit/markets/test_stock_market_cancellation.py
+index 43d2609c..2f18ff37 100644
+--- a/tests/unit/markets/test_stock_market_cancellation.py
++++ b/tests/unit/markets/test_stock_market_cancellation.py
+@@ -1,7 +1,7 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from simulation.markets.stock_market import StockMarket
+-from modules.market.api import CanonicalOrderDTO
++from modules.market.api import CanonicalOrderDTO, IIndexCircuitBreaker
+ 
+ class TestStockMarketCancellation:
+ 
+@@ -11,7 +11,10 @@ class TestStockMarketCancellation:
+         config = MagicMock()
+         config.STOCK_PRICE_LIMIT_RATE = 0.1
+         config.STOCK_BOOK_VALUE_MULTIPLIER = 1.0
+-        return StockMarket(config_module=config, shareholder_registry=shareholder_registry, logger=MagicMock())
++        mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
++        mock_breaker.check_market_health.return_value = True
++        mock_breaker.is_active.return_value = False
++        return StockMarket(config_module=config, shareholder_registry=shareholder_registry, logger=MagicMock(), index_circuit_breaker=mock_breaker)
+ 
+     def test_cancel_orders_removes_agent_orders(self, market):
+         # Setup orders
+diff --git a/tests/unit/test_market_relaxation.py b/tests/unit/test_market_relaxation.py
+index 3a537f72..c18bb579 100644
+--- a/tests/unit/test_market_relaxation.py
++++ b/tests/unit/test_market_relaxation.py
+@@ -3,7 +3,7 @@ from unittest.mock import Mock, MagicMock
+ from pytest import approx
+ from simulation.markets.circuit_breaker import DynamicCircuitBreaker
+ from simulation.markets.order_book_market import OrderBookMarket
+-from modules.market.api import CanonicalOrderDTO
++from modules.market.api import CanonicalOrderDTO, IIndexCircuitBreaker
+ 
+ class TestDynamicCircuitBreaker:
+     @pytest.fixture
+@@ -65,7 +65,10 @@ class TestOrderBookMarketIntegration:
+         return config
+ 
+     def test_place_order_delegates_to_circuit_breaker(self, config):
+-        market = OrderBookMarket("test_market", config_module=config)
++        mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
++        mock_breaker.check_market_health.return_value = True
++        mock_breaker.is_active.return_value = False
++        market = OrderBookMarket("test_market", config_module=config, index_circuit_breaker=mock_breaker)
+         # Note: OrderBookMarket creates its own DynamicCircuitBreaker if not provided
+ 
+         # Manually populate history in the internal circuit breaker
+diff --git a/tests/unit/test_markets_v2.py b/tests/unit/test_markets_v2.py
+index af2df8c8..a71654f2 100644
+--- a/tests/unit/test_markets_v2.py
++++ b/tests/unit/test_markets_v2.py
+@@ -1,239 +1,217 @@
+ import pytest
++from unittest.mock import MagicMock, patch
+ from simulation.markets.order_book_market import OrderBookMarket
+ from simulation.models import Order
+-from modules.common.utils.logger import Logger
+-from modules.system.api import DEFAULT_CURRENCY
++from modules.market.api import IIndexCircuitBreaker
+ 
++@pytest.fixture(autouse=True)
++def mock_logger():
++    with patch('simulation.markets.order_book_market.logging.getLogger') as mock_get_logger:
++        mock_logger_instance = MagicMock()
++        mock_get_logger.return_value = mock_logger_instance
++        yield mock_logger_instance
+ 
+ @pytest.fixture
+-def market():
+-    """테스트를 위한 OrderBookMarket 객체를 생성합니다."""
+-    return OrderBookMarket(
+-        market_id="test_goods_market", logger=Logger()
+-    )  # 테스트 중에는 기본 로거 사용
++def goods_market_instance():
++    mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
++    mock_breaker.check_market_health.return_value = True
++    mock_breaker.is_active.return_value = False
++    return OrderBookMarket(market_id='goods_market', index_circuit_breaker=mock_breaker)
+ 
++@pytest.fixture
++def labor_market_instance(mock_logger):
++    mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
++    mock_breaker.check_market_health.return_value = True
++    mock_breaker.is_active.return_value = False
++    return OrderBookMarket(market_id='labor_market', logger=mock_logger, index_circuit_breaker=mock_breaker)
+ 
+-class TestOrderBookMarketInitialization:
+-    def test_market_initialization(self, market: OrderBookMarket):
+-        """시장이 올바르게 초기화되는지 테스트합니다."""
+-        assert market.id == "test_goods_market"
+-        assert isinstance(market.logger, Logger)
+-        assert not market.buy_orders
+-        assert not market.sell_orders
+-
+-
+-# --- Phase 1: 시장 기반 구축 테스트 ---
+-
+-
+-class TestPlaceOrderToBook:
+-    def test_add_single_buy_order(self, market: OrderBookMarket):
+-        """단일 매수 주문이 오더북에 올바르게 추가되는지 테스트합니다."""
+-        # Order(..., pennies, limit, ...)
+-        # 100 pennies = $1.00
+-        order = Order(
+-            1, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00
+-        )
+-        market.place_order(order, 1)
+-
+-        buy_book = market.buy_orders.get("food", [])
+-        sell_book = market.sell_orders.get("food", [])
+-        assert len(buy_book) == 1
+-        assert len(sell_book) == 0
+-        assert buy_book[0].price_pennies == 100
+-
+-    def test_add_buy_orders_sorted(self, market: OrderBookMarket):
+-        """여러 매수 주문이 가격 내림차순으로 정렬되는지 테스트합니다."""
+-        # 100 pennies ($1.00), 110 ($1.10), 105 ($1.05)
+-        order1 = Order(1, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00)
+-        order2 = Order(2, "BUY", "food", 5, 110, market_id="test_market", price_limit=1.10)
+-        order3 = Order(3, "BUY", "food", 8, 105, market_id="test_market", price_limit=1.05)
+-
+-        market.place_order(order1, 1)
+-        market.place_order(order2, 2)
+-        market.place_order(order3, 3)
+-
+-        buy_book = market.buy_orders.get("food", [])
+-        assert len(buy_book) == 3
+-        # Check SSoT (Pennies)
+-        assert [o.price_pennies for o in buy_book] == [110, 105, 100]
+-
+-    def test_add_sell_orders_sorted(self, market: OrderBookMarket):
+-        """여러 매도 주문이 가격 오름차순으로 정렬되는지 테스트합니다."""
+-        order1 = Order(1, "SELL", "food", 10, 100, market_id="test_market", price_limit=1.00)
+-        order2 = Order(2, "SELL", "food", 5, 90, market_id="test_market", price_limit=0.90)
+-        order3 = Order(3, "SELL", "food", 8, 95, market_id="test_market", price_limit=0.95)
+-
+-        market.place_order(order1, 1)
+-        market.place_order(order2, 2)
+-        market.place_order(order3, 3)
+-
+-        sell_book = market.sell_orders.get("food", [])
+-        assert len(sell_book) == 3
+-        assert [o.price_pennies for o in sell_book] == [90, 95, 100]
+-
+-    def test_add_orders_with_same_price(self, market: OrderBookMarket):
+-        """가격이 같은 주문은 시간 순서(FIFO)대로 정렬되는지 테스트합니다."""
+-        order1 = Order(1, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00)
+-        order2 = Order(2, "BUY", "food", 5, 110, market_id="test_market", price_limit=1.10)
+-        order3 = Order(3, "BUY", "food", 8, 100, market_id="test_market", price_limit=1.00)
+-
+-        market.place_order(order1, 1)
+-        market.place_order(order2, 2)
+-        market.place_order(order3, 3)
+-
+-        buy_book = market.buy_orders.get("food", [])
+-        assert len(buy_book) == 3
+-        assert [o.price_pennies for o in buy_book] == [110, 100, 100]
+-        # 가격이 100인 주문들 중 먼저 들어온 order1(agent_id=1)이 앞에 위치해야 함
+-        assert [o.agent_id for o in buy_book if o.price_pennies == 100] == [1, 3]
+-
+-
+-class TestOrderMatching:
+-    def test_unfilled_order_no_match(self, market: OrderBookMarket):
+-        """가격이 교차하지 않아 매칭이 발생하지 않는 경우를 테스트합니다."""
+-        # Sell @ 110 ($1.10), Buy @ 100 ($1.00) -> No match
+-        sell_order = Order(1, "SELL", "food", 10, 110, market_id="test_market", price_limit=1.10)
+-        market.place_order(sell_order, current_time=1)
+-
+-        buy_order = Order(2, "BUY", "food", 10, 100, market_id="test_market", price_limit=1.00)
+-        market.place_order(buy_order, current_time=2)
+-
+-        # Act
+-        transactions = market.match_orders(current_time=3)
+-
+-        # Assert
+-        assert len(transactions) == 0
+-
+-        buy_book = market.buy_orders.get("food", [])
+-        sell_book = market.sell_orders.get("food", [])
+-
+-        assert len(buy_book) == 1
+-        assert len(sell_book) == 1
+-        assert buy_book[0].price_pennies == 100
+-        assert sell_book[0].price_pennies == 110
+-
+-    def test_full_match_one_to_one(self, market: OrderBookMarket):
+-        """매수 주문 1개와 매도 주문 1개가 완전히 체결되는 경우를 테스트합니다."""
+-        # Sell @ 100 ($1.00)
+-        sell_order = Order(2, "SELL", "food", 10, 100, market_id="test_market", price_limit=1.00)
+-        market.place_order(sell_order, current_time=1)
+-
+-        # Buy @ 105 ($1.05)
+-        buy_order = Order(1, "BUY", "food", 10, 105, market_id="test_market", price_limit=1.05)
+-        market.place_order(buy_order, current_time=2)
++@pytest.fixture
++def order_book_market_instance():
++    mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
++    mock_breaker.check_market_health.return_value = True
++    mock_breaker.is_active.return_value = False
++    return OrderBookMarket(market_id='test_market', index_circuit_breaker=mock_breaker)
+ 
+-        transactions = market.match_orders(current_time=2)
++@pytest.fixture
++def sample_buy_order():
++    return Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
+ 
++@pytest.fixture
++def sample_sell_order():
++    return Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='test_market')
++
++class TestOrderBookMarket:
++
++    def test_initialization(self, order_book_market_instance):
++        assert order_book_market_instance.id == 'test_market'
++        assert order_book_market_instance.buy_orders == {}
++        assert order_book_market_instance.sell_orders == {}
++
++    def test_place_buy_order_adds_and_sorts(self, order_book_market_instance):
++        order1 = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
++        order2 = Order(agent_id=2, side='BUY', item_id='food', quantity=5, price_pennies=int(110 * 100), price_limit=110, market_id='test_market')
++        order_book_market_instance.place_order(order1, 1)
++        order_book_market_instance.place_order(order2, 1)
++        buy_book = order_book_market_instance.buy_orders.get('food', [])
++        assert len(buy_book) == 2
++        assert buy_book[0].price == 110
++        assert buy_book[1].price == 100
++
++    def test_place_sell_order_adds_and_sorts(self, order_book_market_instance):
++        order1 = Order(agent_id=1, side='SELL', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
++        order2 = Order(agent_id=2, side='SELL', item_id='food', quantity=5, price_pennies=int(90 * 100), price_limit=90, market_id='test_market')
++        order_book_market_instance.place_order(order1, 1)
++        order_book_market_instance.place_order(order2, 1)
++        sell_book = order_book_market_instance.sell_orders.get('food', [])
++        assert len(sell_book) == 2
++        assert sell_book[0].price == 90
++        assert sell_book[1].price == 100
++
++    def test_place_order_unknown_type_logs_warning(self, order_book_market_instance, mock_logger):
++        order = Order(agent_id=1, side='UNKNOWN', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='test_market')
++        order_book_market_instance.place_order(order, 1)
++        mock_logger.warning.assert_called_with('Unknown side for _add_order: UNKNOWN', extra={'tick': 1, 'market_id': 'test_market', 'agent_id': 1, 'item_id': 'food', 'side': 'UNKNOWN', 'price': 100, 'quantity': 10})
++        assert mock_logger.warning.call_count == 1
++        assert order_book_market_instance.buy_orders == {}
++        assert order_book_market_instance.sell_orders == {}
++
++    def test_match_orders_full_fill(self, goods_market_instance):
++        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
++        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
++        goods_market_instance.place_order(buy_order, 1)
++        goods_market_instance.place_order(sell_order, 1)
++        transactions = goods_market_instance.match_orders(1)
+         assert len(transactions) == 1
+         tx = transactions[0]
+-        assert tx.quantity == 10
+-        # Integer Math: (105 + 100) // 2 = 102 pennies
+-        # Price (Float) = 1.02
+-        assert tx.price == 1.02
+-        assert tx.total_pennies == 1020
+         assert tx.buyer_id == 1
+         assert tx.seller_id == 2
+-        assert tx.currency == DEFAULT_CURRENCY
+-
+-        assert not market.buy_orders.get("food", [])
+-        assert not market.sell_orders.get("food", [])
+-
+-    def test_partial_match_then_book(self, market: OrderBookMarket):
+-        """새로운 매수 주문이 부분 체결된 후 나머지가 오더북에 등록되는 경우를 테스트합니다."""
+-        # Sell 5 @ 100 ($1.00)
+-        sell_order = Order(2, "SELL", "food", 5, 100, market_id="test_market", price_limit=1.00)
+-        market.place_order(sell_order, current_time=1)
+-
+-        # Buy 10 @ 105 ($1.05)
+-        buy_order = Order(1, "BUY", "food", 10, 105, market_id="test_market", price_limit=1.05)
+-        market.place_order(buy_order, current_time=2)
+-
+-        transactions = market.match_orders(current_time=2)
+-
++        assert tx.item_id == 'food'
++        assert tx.quantity == 10
++        assert tx.price == 95.0
++        assert tx.transaction_type == 'goods'
++        assert tx.time == 1
++        assert not goods_market_instance.buy_orders.get('food')
++        assert not goods_market_instance.sell_orders.get('food')
++
++    def test_match_orders_partial_fill_buy_order(self, goods_market_instance):
++        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=15, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
++        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
++        goods_market_instance.place_order(buy_order, 1)
++        goods_market_instance.place_order(sell_order, 1)
++        transactions = goods_market_instance.match_orders(1)
+         assert len(transactions) == 1
+         tx = transactions[0]
+-        assert tx.quantity == 5
+-        assert tx.price == 1.02 # 102 pennies
+-
+-        buy_book = market.buy_orders.get("food", [])
+-        sell_book = market.sell_orders.get("food", [])
+-        assert not sell_book
++        assert tx.quantity == 10
++        buy_book = goods_market_instance.buy_orders.get('food', [])
+         assert len(buy_book) == 1
+-        assert buy_book[0].agent_id == 1
+         assert buy_book[0].quantity == 5
+-
+-    def test_match_with_multiple_orders(self, market: OrderBookMarket):
+-        """새로운 큰 주문 하나가 여러 개의 작은 주문과 체결되는 경우를 테스트합니다."""
+-        # Sell 5 @ 98 ($0.98)
+-        sell1 = Order(2, "SELL", "food", 5, 98, market_id="test_market", price_limit=0.98)
+-        # Sell 5 @ 100 ($1.00)
+-        sell2 = Order(3, "SELL", "food", 5, 100, market_id="test_market", price_limit=1.00)
+-        market.place_order(sell1, current_time=1)
+-        market.place_order(sell2, current_time=2)
+-
+-        # Buy 12 @ 105 ($1.05)
+-        buy_order = Order(1, "BUY", "food", 12, 105, market_id="test_market", price_limit=1.05)
+-        market.place_order(buy_order, current_time=3)
+-
+-        transactions = market.match_orders(current_time=3)
+-
++        assert not goods_market_instance.sell_orders.get('food', [])
++
++    def test_match_orders_partial_fill_sell_order(self, goods_market_instance):
++        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
++        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=15, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
++        goods_market_instance.place_order(buy_order, 1)
++        goods_market_instance.place_order(sell_order, 1)
++        transactions = goods_market_instance.match_orders(1)
++        assert len(transactions) == 1
++        tx = transactions[0]
++        assert tx.quantity == 10
++        sell_book = goods_market_instance.sell_orders.get('food', [])
++        assert len(sell_book) == 1
++        assert sell_book[0].quantity == 5
++        assert not goods_market_instance.buy_orders.get('food', [])
++
++    def test_match_orders_no_match_price(self, goods_market_instance):
++        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(80 * 100), price_limit=80, market_id='goods_market')
++        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
++        goods_market_instance.place_order(buy_order, 1)
++        goods_market_instance.place_order(sell_order, 1)
++        transactions = goods_market_instance.match_orders(1)
++        assert not transactions
++        assert len(goods_market_instance.buy_orders.get('food', [])) == 1
++        assert len(goods_market_instance.sell_orders.get('food', [])) == 1
++
++    def test_match_orders_multiple_matches(self, goods_market_instance):
++        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=20, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
++        sell_order1 = Order(agent_id=2, side='SELL', item_id='food', quantity=5, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
++        sell_order2 = Order(agent_id=3, side='SELL', item_id='food', quantity=8, price_pennies=int(95 * 100), price_limit=95, market_id='goods_market')
++        goods_market_instance.place_order(buy_order, 1)
++        goods_market_instance.place_order(sell_order1, 1)
++        goods_market_instance.place_order(sell_order2, 1)
++        transactions = goods_market_instance.match_orders(1)
+         assert len(transactions) == 2
+         assert transactions[0].quantity == 5
+-        # (105 + 98) // 2 = 101 pennies -> 1.01
+-        assert transactions[0].price == 1.01
+-        assert transactions[1].quantity == 5
+-        # (105 + 100) // 2 = 102 pennies -> 1.02
+-        assert transactions[1].price == 1.02
+-
+-        buy_book = market.buy_orders.get("food", [])
+-        assert len(buy_book) == 1
+-        assert buy_book[0].quantity == 2
+-
+-
+-# --- Phase 2: API 구현 테스트 ---
+-
+-
+-class TestMarketAPI:
+-    def test_get_best_bid_empty(self, market: OrderBookMarket):
+-        assert market.get_best_bid("food") is None
+-
+-    def test_get_best_bid_non_empty(self, market: OrderBookMarket):
+-        # 100 pennies ($1.00), 110 pennies ($1.10)
+-        market.place_order(Order(1, "BUY", "food", 10, 100, market_id="test", price_limit=1.00), 1)
+-        market.place_order(Order(2, "BUY", "food", 5, 110, market_id="test", price_limit=1.10), 2)
+-        assert market.get_best_bid("food") == 1.10 # Returns Dollars (Float)
+-
+-    def test_get_best_ask_empty(self, market: OrderBookMarket):
+-        assert market.get_best_ask("food") is None
+-
+-    def test_get_best_ask_non_empty(self, market: OrderBookMarket):
+-        # 100 pennies, 90 pennies
+-        market.place_order(Order(1, "SELL", "food", 10, 100, market_id="test", price_limit=1.00), 1)
+-        market.place_order(Order(2, "SELL", "food", 5, 90, market_id="test", price_limit=0.90), 2)
+-        assert market.get_best_ask("food") == 0.90 # Returns Dollars (Float)
+-
+-    def test_get_last_traded_price(self, market: OrderBookMarket):
+-        market.place_order(Order(1, 'SELL', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
+-        market.place_order(Order(2, 'BUY', 'food', 10, 105, market_id='test', price_limit=1.05), 2)
+-        market.match_orders(2)
+-        # 102 pennies -> 1.02 Dollars
+-        assert market.get_last_traded_price('food') == 1.02
+-
+-    def test_get_spread(self, market: OrderBookMarket):
+-        market.place_order(Order(1, 'BUY', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
+-        market.place_order(Order(2, 'SELL', 'food', 10, 105, market_id='test', price_limit=1.05), 2)
+-        # 1.05 - 1.00 = 0.05
+-        assert market.get_spread('food') == pytest.approx(0.05)
+-
+-    def test_get_spread_no_bid_or_ask(self, market: OrderBookMarket):
+-        market.place_order(Order(1, 'BUY', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
+-        assert market.get_spread('food') is None
+-        market = OrderBookMarket(market_id="test_goods_market", logger=Logger())
+-        market.place_order(Order(2, 'SELL', 'food', 10, 105, market_id='test', price_limit=1.05), 2)
+-        assert market.get_spread('food') is None
+-
+-    def test_get_market_depth(self, market: OrderBookMarket):
+-        market.place_order(Order(1, 'BUY', 'food', 10, 100, market_id='test', price_limit=1.00), 1)
+-        market.place_order(Order(2, 'BUY', 'food', 5, 90, market_id='test', price_limit=0.90), 2)
+-        market.place_order(Order(3, 'SELL', 'food', 10, 105, market_id='test', price_limit=1.05), 3)
+-        assert market.get_market_depth('food') == {'buy_orders': 2, 'sell_orders': 1}
++        assert transactions[1].quantity == 8
++        remaining_orders = goods_market_instance.buy_orders.get('food', [])
++        assert len(remaining_orders) == 1
++        assert remaining_orders[0].quantity == 7
++        assert remaining_orders[0].agent_id == 1
++        assert not goods_market_instance.sell_orders.get('food', [])
++
++    def test_match_orders_different_items(self, goods_market_instance):
++        buy_order_food = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
++        sell_order_food = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
++        buy_order_water = Order(agent_id=3, side='BUY', item_id='water', quantity=5, price_pennies=int(50 * 100), price_limit=50, market_id='goods_market')
++        sell_order_water = Order(agent_id=4, side='SELL', item_id='water', quantity=5, price_pennies=int(40 * 100), price_limit=40, market_id='goods_market')
++        goods_market_instance.place_order(buy_order_food, 1)
++        goods_market_instance.place_order(sell_order_food, 1)
++        goods_market_instance.place_order(buy_order_water, 1)
++        goods_market_instance.place_order(sell_order_water, 1)
++        transactions = goods_market_instance.match_orders(1)
++        assert len(transactions) == 2
++        food_tx = next((tx for tx in transactions if tx.item_id == 'food'), None)
++        water_tx = next((tx for tx in transactions if tx.item_id == 'water'), None)
++        assert food_tx is not None
++        assert water_tx is not None
++
++    def test_match_orders_empty_books(self, order_book_market_instance):
++        transactions = order_book_market_instance.match_orders(1)
++        assert not transactions
++        assert not order_book_market_instance.buy_orders.get('food', [])
++        assert not order_book_market_instance.sell_orders.get('food', [])
++
++    def test_match_orders_transaction_type_goods(self, goods_market_instance):
++        buy_order = Order(agent_id=1, side='BUY', item_id='food', quantity=10, price_pennies=int(100 * 100), price_limit=100, market_id='goods_market')
++        sell_order = Order(agent_id=2, side='SELL', item_id='food', quantity=10, price_pennies=int(90 * 100), price_limit=90, market_id='goods_market')
++        goods_market_instance.place_order(buy_order, 1)
++        goods_market_instance.place_order(sell_order, 1)
++        transactions = goods_market_instance.match_orders(1)
++        assert transactions[0].transaction_type == 'goods'
++
++    def test_match_orders_transaction_type_labor(self, labor_market_instance, mock_logger):
++        buy_order = Order(agent_id=1, side='BUY', item_id='labor', quantity=1, price_pennies=int(20 * 100), price_limit=20, market_id='labor_market')
++        sell_order = Order(agent_id=2, side='SELL', item_id='labor', quantity=1, price_pennies=int(15 * 100), price_limit=15, market_id='labor_market')
++        labor_market_instance.place_order(buy_order, 1)
++        labor_market_instance.place_order(sell_order, 1)
++        transactions = labor_market_instance.match_orders(1)
++        assert transactions[0].transaction_type == 'labor'
++
++    def test_get_best_ask_empty(self, order_book_market_instance):
++        assert order_book_market_instance.get_best_ask('food') is None
++
++    def test_get_best_ask_non_empty(self, order_book_market_instance):
++        order_book_market_instance.place_order(Order(1, 'SELL', 'food', 10, int(100 * 100), market_id='test_market', price_limit=100), 1)
++        order_book_market_instance.place_order(Order(2, 'SELL', 'food', 5, int(90 * 100), market_id='test_market', price_limit=90), 1)
++        assert order_book_market_instance.get_best_ask('food') == 90
++
++    def test_get_best_bid_empty(self, order_book_market_instance):
++        assert order_book_market_instance.get_best_bid('food') is None
++
++    def test_get_best_bid_non_empty(self, order_book_market_instance):
++        order_book_market_instance.place_order(Order(1, 'BUY', 'food', 10, int(100 * 100), market_id='test_market', price_limit=100), 1)
++        order_book_market_instance.place_order(Order(2, 'BUY', 'food', 5, int(110 * 100), market_id='test_market', price_limit=110), 1)
++        assert order_book_market_instance.get_best_bid('food') == 110
++
++    def test_get_order_book_status_empty(self, order_book_market_instance):
++        status = order_book_market_instance.get_order_book_status('food')
++        assert status['buy_orders'] == []
++        assert status['sell_orders'] == []
++
++    def test_get_order_book_status_non_empty(self, order_book_market_instance):
++        order_book_market_instance.place_order(Order(1, 'BUY', 'food', 10, int(90 * 100), market_id='test_market', price_limit=90), 1)
++        order_book_market_instance.place_order(Order(2, 'SELL', 'food', 5, int(100 * 100), market_id='test_market', price_limit=100), 1)
++        status = order_book_market_instance.get_order_book_status('food')
++        assert len(status['buy_orders']) == 1
++        assert status['buy_orders'][0]['price'] == 90
++        assert len(status['sell_orders']) == 1
++        assert status['sell_orders'][0]['price'] == 100
+\ No newline at end of file
+diff --git a/tests/unit/test_stock_market.py b/tests/unit/test_stock_market.py
+index 1d4fc72a..a9ee2eb8 100644
+--- a/tests/unit/test_stock_market.py
++++ b/tests/unit/test_stock_market.py
+@@ -9,7 +9,7 @@ Testing Strategy:
+ import pytest
+ from unittest.mock import Mock, MagicMock, patch
+ from simulation.markets.stock_market import StockMarket
+-from modules.market.api import OrderDTO
++from modules.market.api import OrderDTO, IIndexCircuitBreaker
+ from simulation.models import Transaction
+ 
+ @pytest.fixture
+@@ -26,7 +26,10 @@ def mock_config(golden_config):
+ @pytest.fixture
+ def stock_market(mock_config):
+     registry = MagicMock()
+-    return StockMarket(config_module=mock_config, shareholder_registry=registry)
++    mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
++    mock_breaker.check_market_health.return_value = True
++    mock_breaker.is_active.return_value = False
++    return StockMarket(config_module=mock_config, shareholder_registry=registry, index_circuit_breaker=mock_breaker)
+ 
+ @pytest.fixture
+ def sample_buy_order_dto():

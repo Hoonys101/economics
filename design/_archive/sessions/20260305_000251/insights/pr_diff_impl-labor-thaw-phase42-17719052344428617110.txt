@@ -1,0 +1,485 @@
+diff --git a/communications/insights/WO-IMPL-LABOR-MARKET-THAW.md b/communications/insights/WO-IMPL-LABOR-MARKET-THAW.md
+new file mode 100644
+index 00000000..14c48757
+--- /dev/null
++++ b/communications/insights/WO-IMPL-LABOR-MARKET-THAW.md
+@@ -0,0 +1,35 @@
++# Insight Report: Labor Market Thaw implementation (WO-IMPL-LABOR-MARKET-THAW)
++
++## 1. Architectural Insights
++*   **Adapter Bottleneck Navigated**: To maintain `IMarket` isolation and avoid God Class dependency injection, the `talent` attribute from `Household.EconStateDTO` was successfully marshaled through `CanonicalOrderDTO.metadata` (and `brand_info` fallback) via the updated `LaborMatchDTO`. This respects the Stateless Engine & Orchestrator pattern.
++*   **SRP Enforced**: Market desperation (wage decay) and liquidity validation were intentionally kept OUT of `LaborMarket.match_market()`. `LaborMarket` remains a pure clearinghouse. Desperation logic is assigned to the `BudgetEngine` (updating `shadow_reservation_wage`), and Liquidity checks are assigned to `Firm` orchestrator (in `_generate_hr_orders`).
++*   **Protocol Compliance**: Modified `HouseholdStateDTO` and `create_state_dto` to expose `talent_score` and `shadow_reservation_wage_pennies`, ensuring `RuleBasedHouseholdDecisionEngine` can access these critical signals without violating boundaries.
++
++## 2. Regression Analysis
++*   **DTO Signature Changes**: Added `talent_score` to `JobSeekerDTO` and `is_liquidity_verified` to `JobOfferDTO`. Updated `LaborMarket.place_order` to populate these fields from `CanonicalOrderDTO` metadata.
++*   **Test Updates**:
++    *   `tests/unit/test_labor_market_system.py`: Verified existing matching logic remains intact.
++    *   `tests/unit/test_labor_thaw.py`: Created new tests for desperation decay, talent signal boosting, relaxed wage filter, and firm liquidity checks.
++    *   `tests/integration/test_decision_engine_integration.py`: Verified end-to-end integration of Household and Firm decisions in the market.
++
++## 3. Test Evidence
++```text
++tests/unit/test_labor_thaw.py::TestLaborThaw::test_desperation_wage_decay PASSED [ 25%]
++tests/unit/test_labor_thaw.py::TestLaborThaw::test_talent_signal_boosts_score PASSED [ 50%]
++tests/unit/test_labor_thaw.py::TestLaborThaw::test_relaxed_wage_filter PASSED [ 75%]
++tests/unit/test_labor_thaw.py::TestLaborThaw::test_firm_liquidity_preflight_check PASSED [100%]
++
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_post_job_offer PASSED [  7%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_post_job_seeker PASSED [ 15%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_match_market_perfect_match PASSED [ 23%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_match_market_mismatch_major PASSED [ 30%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_match_market_wage_too_low PASSED [ 38%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_place_order_adapter PASSED [ 46%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_place_order_backward_compatibility PASSED [ 53%]
++tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_firm_places_sell_order_for_food PASSED [ 61%]
++tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_household_places_buy_order_for_food PASSED [ 69%]
++tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_household_sells_labor PASSED [ 76%]
++tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_firm_buys_labor PASSED [ 84%]
++tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_goods_market_matching_integration PASSED [ 92%]
++tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_labor_market_matching_integration PASSED [100%]
++```
+diff --git a/modules/household/dtos.py b/modules/household/dtos.py
+index d90ef41b..ee464a77 100644
+--- a/modules/household/dtos.py
++++ b/modules/household/dtos.py
+@@ -285,6 +285,12 @@ class HouseholdStateDTO:
+     monthly_income_pennies: int = 0
+     monthly_debt_payments_pennies: int = 0
+ 
++    # Phase 4.2: Talent Signal
++    talent_score: float = 1.0
++
++    # Phase 4.2: Reservation Wage Tracking
++    shadow_reservation_wage_pennies: int = 0
++
+ @dataclass
+ class CloningRequestDTO:
+     """Data required to clone a household."""
+diff --git a/modules/household/engines/budget.py b/modules/household/engines/budget.py
+index 6d0db1d9..863b05d8 100644
+--- a/modules/household/engines/budget.py
++++ b/modules/household/engines/budget.py
+@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
+ SHADOW_WAGE_DECAY = 0.95
+ SHADOW_WAGE_TARGET_WEIGHT = 0.05
+ SHADOW_WAGE_UNEMPLOYED_DECAY = 0.02
++DESPERATION_THRESHOLD_TICKS = 20
++DESPERATION_WAGE_DECAY = 0.95
+ HOUSING_CHECK_FREQUENCY = 30
+ DEFAULT_FOOD_PRICE_ESTIMATE = 10.0
+ DEFAULT_SURVIVAL_BUDGET_PENNIES = 5000 # 50.00
+@@ -61,8 +63,24 @@ class BudgetEngine(IBudgetEngine):
+             new_shadow = state.shadow_reservation_wage_pennies * SHADOW_WAGE_DECAY + target * SHADOW_WAGE_TARGET_WEIGHT
+             state.shadow_reservation_wage_pennies = int(new_shadow)
+         else:
+-            state.shadow_reservation_wage_pennies = int(state.shadow_reservation_wage_pennies * (1.0 - SHADOW_WAGE_UNEMPLOYED_DECAY))
++            # Phase 4.2: Desperation Decay
++            unemployment_duration = 0
++            if state.last_fired_tick > 0:
++                 unemployment_duration = current_tick - state.last_fired_tick
++
++            decay_factor = 1.0 - SHADOW_WAGE_UNEMPLOYED_DECAY
++            if unemployment_duration > DESPERATION_THRESHOLD_TICKS:
++                 decay_factor = DESPERATION_WAGE_DECAY
++
++            state.shadow_reservation_wage_pennies = int(state.shadow_reservation_wage_pennies * decay_factor)
++
++            # Floor at 1 penny, regardless of min_wage config if desperate
+             min_wage = config.household_min_wage_demand if hasattr(config, 'household_min_wage_demand') else 0
++
++            if unemployment_duration > DESPERATION_THRESHOLD_TICKS:
++                 # Desperation overrides min wage config, floor is 1 penny
++                 min_wage = 1
++
+             if state.shadow_reservation_wage_pennies < min_wage:
+                 state.shadow_reservation_wage_pennies = min_wage
+ 
+diff --git a/modules/labor/api.py b/modules/labor/api.py
+index 40017b98..c1659e06 100644
+--- a/modules/labor/api.py
++++ b/modules/labor/api.py
+@@ -1,6 +1,7 @@
+ """
+ DTOs and Protocols for the Labor Market Domain.
+ Phase 4.1: Transition to Major-Based Matching.
++Phase 4.2: Labor Market Thaw (Desperation & Talent Signal)
+ """
+ from __future__ import annotations
+ from typing import List, Optional, Protocol, runtime_checkable, Dict, Any
+@@ -25,6 +26,7 @@ class LaborMatchDTO:
+     secondary_majors: List[IndustryDomain] = field(default_factory=list)
+     years_experience: float = 0.0
+     min_match_score: float = 0.0
++    talent_score: float = 1.0  # Phase 4.2: Talent Signal
+ 
+     def to_metadata(self) -> Dict[str, Any]:
+         return {
+@@ -33,6 +35,7 @@ class LaborMatchDTO:
+             "secondary_majors": self.secondary_majors,
+             "years_experience": self.years_experience,
+             "min_match_score": self.min_match_score,
++            "talent_score": self.talent_score,
+             "__type": "LaborMatchDTO"
+         }
+ 
+@@ -53,7 +56,8 @@ class LaborMatchDTO:
+             education_level=int(edu_level),
+             secondary_majors=metadata.get("secondary_majors", []),
+             years_experience=float(metadata.get("years_experience", 0.0)),
+-            min_match_score=float(metadata.get("min_match_score", 0.0))
++            min_match_score=float(metadata.get("min_match_score", 0.0)),
++            talent_score=float(metadata.get("talent_score", 1.0))
+         )
+ 
+ @dataclass(frozen=True)
+@@ -76,6 +80,9 @@ class JobOfferDTO:
+     # Wave 3: Hiring Preferences
+     min_experience: float = 0.0
+ 
++    # Phase 4.2: Pre-flight check flag
++    is_liquidity_verified: bool = False
++
+ @dataclass(frozen=True)
+ class JobSeekerDTO:
+     """
+@@ -94,6 +101,9 @@ class JobSeekerDTO:
+     # Wave 3: Labor Supply Signals
+     experience: float = 0.0 # Years of experience in this major
+ 
++    # Phase 4.2: Talent Signal
++    talent_score: float = 1.0
++
+ @dataclass(frozen=True)
+ class LaborMarketMatchResultDTO:
+     """
+diff --git a/modules/labor/system.py b/modules/labor/system.py
+index 9014248a..5231e9f2 100644
+--- a/modules/labor/system.py
++++ b/modules/labor/system.py
+@@ -94,8 +94,8 @@ class LaborMarket(ILaborMarket, IMarket):
+                     else:
+                         base_score = offer.offer_wage_pennies / seeker.reservation_wage_pennies
+ 
+-                    # Filter: Must meet reservation wage
+-                    if base_score < 1.0:
++                    # Filter: Must meet reservation wage (Relaxed to 0.9 for Market Thaw)
++                    if base_score < 0.9:
+                         continue
+ 
+                     # 2. Major Matching (Dynamic Config)
+@@ -136,7 +136,13 @@ class LaborMarket(ILaborMarket, IMarket):
+                         # Let's say slight bonus.
+                         edu_multiplier = 1.05
+ 
+-                    final_score = base_score * major_multiplier * edu_multiplier
++                    # 4. Talent Signal (Phase 4.2)
++                    # Talent score 1.0 is neutral. Higher is better.
++                    # Multiplier = 1.0 + (talent - 1.0) * 0.5
++                    # e.g. Talent 1.2 -> 1.0 + 0.1 = 1.1 multiplier
++                    talent_multiplier = 1.0 + (seeker.talent_score - 1.0) * 0.5
++
++                    final_score = base_score * major_multiplier * edu_multiplier * talent_multiplier
+ 
+                     if final_score > best_score:
+                         best_score = final_score
+@@ -238,7 +244,8 @@ class LaborMarket(ILaborMarket, IMarket):
+                 offer_wage_pennies=int(order_dto.price_pennies),
+                 required_education=metadata.get("required_education", 0),
+                 quantity=order_dto.quantity,
+-                major=major_enum
++                major=major_enum,
++                is_liquidity_verified=metadata.get("is_liquidity_verified", False)
+             )
+             self.post_job_offer(offer)
+ 
+@@ -247,7 +254,7 @@ class LaborMarket(ILaborMarket, IMarket):
+             self._sell_orders_cache["labor"].append(order_dto)
+ 
+             # Convert to JobSeeker
+-            metadata = order_dto.brand_info or {} # Household uses brand_info for metadata
++            metadata = order_dto.metadata or order_dto.brand_info or {} # Household uses brand_info for metadata, but metadata is also checked
+             major_str = metadata.get("major", "GENERAL")
+             try:
+                 major_enum = IndustryDomain(major_str)
+@@ -259,7 +266,8 @@ class LaborMarket(ILaborMarket, IMarket):
+                 reservation_wage_pennies=int(order_dto.price_pennies),
+                 education_level=metadata.get("education_level", 0),
+                 quantity=order_dto.quantity,
+-                major=major_enum
++                major=major_enum,
++                talent_score=float(metadata.get("talent_score", 1.0))
+             )
+             self.post_job_seeker(seeker)
+ 
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index d34dd438..8fc600f5 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -1013,7 +1013,9 @@ class Household(
+             social_rank=self._social_state.social_rank,
+             approval_rating=self._social_state.approval_rating,
+             optimism=self._social_state.optimism,
+-            ambition=self._social_state.ambition
++            ambition=self._social_state.ambition,
++            talent_score=self._econ_state.talent.base_learning_rate,
++            shadow_reservation_wage_pennies=self._econ_state.shadow_reservation_wage_pennies
+         )
+ 
+ 
+diff --git a/simulation/decisions/rule_based_household_engine.py b/simulation/decisions/rule_based_household_engine.py
+index dbbed88e..c0bf1f96 100644
+--- a/simulation/decisions/rule_based_household_engine.py
++++ b/simulation/decisions/rule_based_household_engine.py
+@@ -96,15 +96,27 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
+             if not is_panic and effective_offer < wage_floor:
+                 self.logger.info(f'RESERVATION_WAGE_PURE | Household {state.id} refused labor. Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f}', extra={'tick': current_time, 'agent_id': state.id, 'tags': ['labor_refusal']})
+             else:
++                # Phase 4.2: Reservation Wage & Talent Signal
++                price_pennies = int(desired_wage * 100)
++                price_limit = desired_wage
++
++                # Use shadow reservation wage if available (includes desperation decay)
++                if hasattr(state, 'shadow_reservation_wage_pennies') and state.shadow_reservation_wage_pennies > 0:
++                     price_pennies = state.shadow_reservation_wage_pennies
++                     price_limit = price_pennies / 100.0
++
+                 orders.append(Order(
+                     agent_id=state.id,
+                     side='SELL',
+                     item_id='labor',
+                     quantity=1.0,
+-                    price_pennies=int(desired_wage * 100),
+-                    price_limit=desired_wage,
++                    price_pennies=price_pennies,
++                    price_limit=price_limit,
+                     market_id='labor',
+-                    metadata={'major': getattr(state, 'major', 'GENERAL')}
++                    metadata={
++                        'major': getattr(state, 'major', 'GENERAL'),
++                        'talent_score': getattr(state, 'talent_score', 1.0)
++                    }
+                 ))
+-                self.logger.info(f'Household {state.id} offers labor at wage {desired_wage:.2f}', extra={'tick': current_time, 'agent_id': state.id, 'tactic': chosen_tactic.name})
++                self.logger.info(f'Household {state.id} offers labor at wage {price_limit:.2f}', extra={'tick': current_time, 'agent_id': state.id, 'tactic': chosen_tactic.name})
+         return DecisionOutputDTO(orders=orders, metadata=(chosen_tactic, chosen_aggressiveness))
+\ No newline at end of file
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 6fb14314..bc589b23 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -1587,20 +1587,31 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+             wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
+             offered_wage = int(base_wage * (1 + wage_premium))
+ 
+-            orders.append(Order(
+-                agent_id=self.id,
+-                side='BUY',
+-                item_id='labor',
+-                quantity=float(intent.hiring_target),
+-                price_pennies=offered_wage,
+-                price_limit=float(offered_wage)/100.0,
+-                market_id='labor',
+-                metadata={
+-                    'major': context.major, # Phase 4.1: Use Major instead of Specialization
+-                    'specialization': context.specialization, # Keep specialization for debugging/specific matching if needed
+-                    'required_education': 0 # Could be dynamic based on tech level
+-                }
+-            ))
++            # Phase 4.2: Liquidity Pre-flight Check
++            projected_cost = offered_wage * intent.hiring_target
++            current_cash = self.financial_component.get_balance(DEFAULT_CURRENCY)
++
++            if current_cash >= projected_cost:
++                orders.append(Order(
++                    agent_id=self.id,
++                    side='BUY',
++                    item_id='labor',
++                    quantity=float(intent.hiring_target),
++                    price_pennies=offered_wage,
++                    price_limit=float(offered_wage)/100.0,
++                    market_id='labor',
++                    metadata={
++                        'major': context.major, # Phase 4.1: Use Major instead of Specialization
++                        'specialization': context.specialization, # Keep specialization for debugging/specific matching if needed
++                        'required_education': 0, # Could be dynamic based on tech level
++                        'is_liquidity_verified': True
++                    }
++                ))
++            else:
++                self.logger.warning(
++                    f"Firm {self.id} skipped hiring due to liquidity constraint. Needed {projected_cost}, has {current_cash}.",
++                    extra={"tags": ["hr", "liquidity_block"]}
++                )
+         return orders
+ 
+     def _build_sales_context(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> SalesContextDTO:
+diff --git a/tests/unit/test_labor_thaw.py b/tests/unit/test_labor_thaw.py
+new file mode 100644
+index 00000000..3581dbd5
+--- /dev/null
++++ b/tests/unit/test_labor_thaw.py
+@@ -0,0 +1,163 @@
++import pytest
++from unittest.mock import MagicMock, PropertyMock
++from modules.labor.system import LaborMarket
++from modules.labor.api import JobOfferDTO, JobSeekerDTO
++from modules.common.enums import IndustryDomain
++from modules.household.engines.budget import BudgetEngine, DESPERATION_THRESHOLD_TICKS, DESPERATION_WAGE_DECAY, SHADOW_WAGE_UNEMPLOYED_DECAY
++from modules.household.dtos import EconStateDTO
++from simulation.firms import Firm
++from simulation.models import Order
++
++class TestLaborThaw:
++
++    # --- 1. Desperation Wage Decay Tests ---
++
++    def test_desperation_wage_decay(self):
++        engine = BudgetEngine()
++        state = MagicMock(spec=EconStateDTO)
++        state.is_employed = False
++        state.shadow_reservation_wage_pennies = 1000
++        state.last_fired_tick = 1 # Tick 1
++        state.market_wage_history = []
++        state.current_wage_pennies = 0
++        state.expected_wage_pennies = 1000
++
++        config = MagicMock()
++        config.household_min_wage_demand = 0 # Fix: Mock config value
++
++        # Case 1: Short unemployment (Normal Decay)
++        current_tick = 5
++        # unemployment_duration = 5 - 1 = 4. < 20.
++        # decay = 1.0 - 0.02 = 0.98
++        engine._update_shadow_wage(state, MagicMock(), config, current_tick)
++
++        expected_wage = int(1000 * (1.0 - SHADOW_WAGE_UNEMPLOYED_DECAY)) # 980
++        assert state.shadow_reservation_wage_pennies == expected_wage
++
++        # Case 2: Long unemployment (Desperation Decay)
++        state.shadow_reservation_wage_pennies = 1000
++        current_tick = 30
++        # unemployment_duration = 30 - 1 = 29. > 20.
++        # decay = 0.95
++        engine._update_shadow_wage(state, MagicMock(), config, current_tick)
++
++        expected_desperate_wage = int(1000 * DESPERATION_WAGE_DECAY) # 950
++        assert state.shadow_reservation_wage_pennies == expected_desperate_wage
++
++        # Verify Desperation is stronger than Normal
++        assert expected_desperate_wage < expected_wage
++
++    # --- 2. Talent Signal & Matching Tests ---
++
++    def test_talent_signal_boosts_score(self):
++        market = LaborMarket()
++
++        offer = JobOfferDTO(
++            firm_id=1,
++            offer_wage_pennies=1000,
++            major=IndustryDomain.GENERAL,
++            quantity=1
++        )
++        market.post_job_offer(offer)
++
++        # Seeker 1: Normal Talent (1.0)
++        seeker1 = JobSeekerDTO(
++            household_id=101,
++            reservation_wage_pennies=1000,
++            education_level=0, # Fix: Added required arg
++            major=IndustryDomain.GENERAL,
++            talent_score=1.0
++        )
++        market.post_job_seeker(seeker1)
++
++        # Seeker 2: High Talent (1.5)
++        seeker2 = JobSeekerDTO(
++            household_id=102,
++            reservation_wage_pennies=1000,
++            education_level=0, # Fix: Added required arg
++            major=IndustryDomain.GENERAL,
++            talent_score=1.5
++        )
++        market.post_job_seeker(seeker2)
++
++        matches = market.match_market(current_tick=1)
++
++        assert len(matches) == 1
++        # Seeker 2 should win due to higher score
++        # Seeker 1 score: 1.0 (base) * 1.0 (talent) = 1.0
++        # Seeker 2 score: 1.0 (base) * (1.0 + (1.5-1.0)*0.5) = 1.25
++        assert matches[0].employee_id == 102
++        assert matches[0].match_score > 1.0
++
++    def test_relaxed_wage_filter(self):
++        market = LaborMarket()
++
++        # Offer: 950 pennies
++        offer = JobOfferDTO(
++            firm_id=1,
++            offer_wage_pennies=950,
++            major=IndustryDomain.GENERAL,
++            quantity=1
++        )
++        market.post_job_offer(offer)
++
++        # Seeker: Reservation 1000 pennies
++        # Ratio = 0.95. Previous logic would reject (<1.0). New logic accepts (>=0.9).
++        seeker = JobSeekerDTO(
++            household_id=101,
++            reservation_wage_pennies=1000,
++            education_level=0, # Fix: Added required arg
++            major=IndustryDomain.GENERAL,
++            talent_score=1.0
++        )
++        market.post_job_seeker(seeker)
++
++        matches = market.match_market(current_tick=1)
++
++        assert len(matches) == 1
++        assert matches[0].employee_id == 101
++        # Matched wage should be offer wage (950) since surplus is negative?
++        # Logic: if surplus > 0: ... else: best_wage_pennies = offer.offer_wage_pennies
++        assert matches[0].matched_wage_pennies == 950
++
++    # --- 3. Liquidity Pre-flight Check Tests ---
++
++    def test_firm_liquidity_preflight_check(self):
++        # Fix imports
++        from modules.firm.api import HRIntentDTO, HRContextDTO
++        from modules.simulation.api import AgentID
++
++        firm = MagicMock(spec=Firm)
++        firm.id = 1
++        firm.financial_component = MagicMock()
++        firm.logger = MagicMock()
++
++        # Bind the method
++        firm._generate_hr_orders = Firm._generate_hr_orders.__get__(firm, Firm)
++
++        intent = HRIntentDTO(hiring_target=1, fire_employee_ids=[], wage_updates={})
++        context = HRContextDTO(
++            firm_id=1, tick=1, budget_pennies=10000,
++            market_snapshot=MagicMock(), available_cash_pennies=0, is_solvent=True,
++            current_employees=[], current_headcount=0, employee_wages={}, employee_skills={},
++            target_workforce_count=1, labor_market_avg_wage=1000, marginal_labor_productivity=1.0,
++            happiness_avg=0.0, profit_history=[], min_employees=1, max_employees=100, severance_pay_weeks=2,
++            specialization="FOOD", major=IndustryDomain.GENERAL,
++            hires_prev_tick=0, target_hires_prev_tick=0, wage_offer_prev_tick=0
++        )
++
++        # Case 1: Sufficient Cash
++        firm.financial_component.get_balance.return_value = 5000 # Enough for ~1000 wage
++        orders = firm._generate_hr_orders(intent, context)
++        assert len(orders) == 1
++        assert orders[0].metadata['is_liquidity_verified'] == True
++
++        # Case 2: Insufficient Cash
++        firm.financial_component.get_balance.return_value = 500 # Less than wage ~1000
++        # Wage offer calculation might vary, but ~1000 base.
++        # Logic: offered_wage = int(base_wage * (1 + wage_premium))
++        # base_wage=1000. offered_wage >= 1000.
++        # projected_cost = 1000 * 1 = 1000.
++        # 500 < 1000. Should block.
++        orders = firm._generate_hr_orders(intent, context)
++        assert len(orders) == 0

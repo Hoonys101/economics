@@ -1,0 +1,198 @@
+diff --git a/communications/insights/STABILIZATION_PHASE_1.md b/communications/insights/STABILIZATION_PHASE_1.md
+new file mode 100644
+index 00000000..9a61cc64
+--- /dev/null
++++ b/communications/insights/STABILIZATION_PHASE_1.md
+@@ -0,0 +1,17 @@
++# STABILIZATION_PHASE_1
++
++## 1. [Architectural Insights]
++- **MockRegistry Implementation**: Replaced the global `gc.get_objects()` mock sweep with a `MockRegistry` utilizing `weakref.WeakSet()`. Hooked `unittest.mock.patch` using an object proxy `PatchWrapper` to avoid `pytest-mock` breakage.
++- **Weakref Stability**: Migrated `FinanceSystem.government` from a brittle `weakref.proxy` to an explicit `weakref.ref` paired with an `@property` getter raising a `ReferenceError` when the target is collected. Updated test fixtures correctly.
++- **StrictConfigWrapper**: Updated the scenario runner to prevent mock poisoning using a `StrictConfigWrapper`, actively preventing base config leaks while explicitly setting overrides for missing global vars.
++
++## 2. [Regression Analysis]
++- The test `test_finance_system_instantiation_and_protocols` in `tests/finance/test_circular_imports_fix.py` was failing after updating `FinanceSystem.government` to an `@property`.
++- The fix required aligning the test fixtures and the proxy initialization. By providing explicit `set_override`s in `test_scenario_runner.py` for global parameters omitted in test environments (e.g. `NUM_HOUSEHOLDS`), TypeErrors were prevented, maintaining test stability.
++
++## 3. [Test Evidence]
++```
++tests/finance/test_circular_imports_fix.py::test_finance_system_instantiation_and_protocols PASSED [ 33%]
++tests/finance/test_circular_imports_fix.py::test_issue_treasury_bonds_protocol_usage PASSED [ 66%]
++tests/finance/test_circular_imports_fix.py::test_evaluate_solvency_protocol_usage PASSED [100%]
++```
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index d24620e0..bc660b9d 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -42,7 +42,7 @@ class FinanceSystem(IFinanceSystem):
+ 
+     def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None, bank_registry: Optional[IBankRegistry] = None, monetary_authority: Optional[Any] = None, monetary_ledger: Optional[IMonetaryLedger] = None):
+         import weakref
+-        self.government = weakref.proxy(government)
++        self._government_ref = weakref.ref(government)
+         self.central_bank = central_bank
+         self.bank = bank
+         self.config_module = config_module
+@@ -90,6 +90,13 @@ class FinanceSystem(IFinanceSystem):
+         # Sync Initial State (Optimistic) - REMOVED
+         # We rely on SSoT (SettlementSystem) and sync on demand.
+ 
++    @property
++    def government(self) -> IGovernmentFinance:
++        gov = self._government_ref()
++        if gov is None:
++            raise ReferenceError("Government object has been garbage collected")
++        return gov
++
+     def _sync_ledger_balances(self) -> None:
+         """Syncs ledger reserves and treasury balance from SettlementSystem (SSoT)."""
+         if not self.settlement_system:
+diff --git a/tests/conftest.py b/tests/conftest.py
+index 903c80a3..c5014260 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -187,10 +187,10 @@ def finance_system(mock_central_bank, mock_bank, mock_config):
+     """Provides a mocked FinanceSystem attached to a mock government."""
+     # We create a mock government shell first for the FinanceSystem constructor
+     mock_gov_shell = Mock()
+-    # FinanceSystem uses weakref.proxy internally for government.
+-    # We must keep a strong reference to mock_gov_shell alive so the proxy doesn't die.
++    # FinanceSystem uses weakref internally for government.
++    # We must keep a strong reference to mock_gov_shell alive so the weakref doesn't die.
+     system = FinanceSystem(mock_gov_shell, mock_central_bank, mock_bank, mock_config)
+-    system._mock_gov_shell = mock_gov_shell  # Prevent garbage collection of the shell
++    system._gov_strong_ref = mock_gov_shell  # Prevent garbage collection of the shell
+ 
+     # Spy on the real methods so we can assert calls if needed
+     system.issue_treasury_bonds = MagicMock(wraps=system.issue_treasury_bonds)
+@@ -214,7 +214,7 @@ def government(mock_config, mock_tracker, finance_system):
+     gov.finance_system = finance_system
+     # The FinanceSystem was created with a shell, now we link it to the real government instance
+     import weakref
+-    gov.finance_system.government = weakref.proxy(gov)
++    gov.finance_system._government_ref = weakref.ref(gov)
+ 
+     # Inject Mock SettlementSystem (Strict)
+     # Uses ISettlementSystem to ensure Government only accesses standard methods
+@@ -334,21 +334,51 @@ def golden_config():
+ # 🗑️ Global Teardown Hook (Memory Leak Fix)
+ # ============================================================================
+ import gc
++import weakref
+ 
++class MockRegistry:
++    """Tracks instantiated mocks to prevent GC scanning overhead."""
++    _active_mocks = weakref.WeakSet()
+ 
+-@pytest.fixture(autouse=True)
+-def gc_collect_harder():
+-    """Fixture to force GC and clear MagicMock histories globally to prevent leaks."""
+-    yield
+-    import gc
+-    from unittest.mock import Mock
+-    for obj in gc.get_objects():
+-        if isinstance(obj, Mock):
++    @classmethod
++    def register(cls, mock_obj):
++        if isinstance(mock_obj, (Mock, MagicMock)):
++            cls._active_mocks.add(mock_obj)
++        return mock_obj
++
++    @classmethod
++    def reset_all(cls):
++        for m in list(cls._active_mocks):
+             try:
+-                obj.reset_mock()
++                m.reset_mock()
+             except Exception:
+                 pass
+-    gc.collect(2)
++        cls._active_mocks.clear()
++
++# AUTOMATION: Hook into unittest.mock.patch to auto-register
++import unittest.mock
++
++# Create an object proxy patch rather than fully overwriting unittest.mock.patch
++# Overwriting unittest.mock.patch completely breaks pytest-mock since it tries to access attributes on it
++class PatchWrapper:
++    def __init__(self, original_patch):
++        self._original_patch = original_patch
++
++    def __call__(self, *args, **kwargs):
++        p = self._original_patch(*args, **kwargs)
++        _orig_start = p.start
++        def _wrapped_start(*s_args, **s_kwargs):
++            mock_obj = _orig_start(*s_args, **s_kwargs)
++            MockRegistry.register(mock_obj)
++            return mock_obj
++        p.start = _wrapped_start
++        return p
++
++    def __getattr__(self, item):
++        return getattr(self._original_patch, item)
++
++unittest.mock.patch = PatchWrapper(unittest.mock.patch)
++
+ 
+ @pytest.hookimpl(tryfirst=True)
+ def pytest_runtest_teardown(item, nextitem):
+@@ -356,8 +386,10 @@ def pytest_runtest_teardown(item, nextitem):
+     Defensively clear global singleton registries and force garbage collection
+     to prevent state leaks across test executions.
+     """
++    MockRegistry.reset_all()
++
+     # Force garbage collection to remove cyclic references
+-    gc.collect(2) # Exhaustive collection
++    gc.collect(1)
+ 
+     # Try to clear global singleton registries
+     try:
+diff --git a/tests/integration/scenarios/test_scenario_runner.py b/tests/integration/scenarios/test_scenario_runner.py
+index 1c1af34b..4de28f16 100644
+--- a/tests/integration/scenarios/test_scenario_runner.py
++++ b/tests/integration/scenarios/test_scenario_runner.py
+@@ -67,7 +67,7 @@ class MockRepository:
+     def close(self): pass
+     def migrate(self): pass
+ 
+-class ConfigWrapper:
++class StrictConfigWrapper:
+     def __init__(self, base_config):
+         self._base = base_config
+         self._overrides = {}
+@@ -78,10 +78,10 @@ class ConfigWrapper:
+         try:
+             val = getattr(self._base, name)
+             if hasattr(val, '_mock_name'): # Check if it's a mock
+-                 logger.warning(f"ConfigWrapper: getattr({name}) returned Mock from base!")
++                 raise TypeError(f"StrictConfigWrapper: getattr({name}) returned Mock from base!")
+             return val
+         except AttributeError:
+-            raise AttributeError(f"ConfigWrapper has no attribute '{name}'")
++            raise AttributeError(f"StrictConfigWrapper has no attribute '{name}'")
+ 
+     def set_override(self, name, value):
+         self._overrides[name] = value
+@@ -175,7 +175,7 @@ class TestScenarioRunner:
+         logger.info(f"Loaded Strategy: {strategy.id}, Category: {strategy.category}")
+ 
+         # 2. Configure Simulation
+-        mock_config_module = ConfigWrapper(GlobalConfig)
++        mock_config_module = StrictConfigWrapper(GlobalConfig)
+ 
+         # Apply overrides from strategy to mock_config_module (Legacy)
+         for key, value in strategy.config_params.items():
+@@ -199,6 +199,11 @@ class TestScenarioRunner:
+         mock_config_module.set_override('FOOD_CONSUMPTION_QUANTITY', 1.0)
+         mock_config_module.set_override('FOOD_PURCHASE_MAX_PER_TICK', 5.0)
+ 
++        # Add required test overrides missing from global config module during tests to prevent TypeError from StrictConfigWrapper
++        mock_config_module.set_override('INITIAL_HOUSEHOLD_ASSETS', 1000)
++        mock_config_module.set_override('NUM_HOUSEHOLDS', 10)
++        mock_config_module.set_override('NUM_FIRMS', 2)
++
+         # Create ConfigManager (required by Initializer)
+         config_manager = ConfigManager(Path("config"), legacy_config=mock_config_module)
+ 

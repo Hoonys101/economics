@@ -1,0 +1,399 @@
+diff --git a/communications/insights/WO-LIQUIDATE-MARKET.md b/communications/insights/WO-LIQUIDATE-MARKET.md
+new file mode 100644
+index 00000000..9a864698
+--- /dev/null
++++ b/communications/insights/WO-LIQUIDATE-MARKET.md
+@@ -0,0 +1,43 @@
++# Insight Report: Market DTO Realignment (WO-LIQUIDATE-MARKET)
++
++## 1. Architectural Insights
++- **DTO Decoupling**: Successfully refactored `LaborMarket` and `StockMarket` to depend on `LaborMarketConfigDTO` and `StockMarketConfigDTO` respectively, removing direct dependency on the monolithic `config_module`. This aligns with the "DTO Purity" guardrail.
++- **Strict Typing**: Enforced usage of `IndustryDomain` enum for labor market matching logic, replacing string-based matching. Call sites in `Household` and `Firm` were updated to propagate this enum via `CanonicalOrderDTO`.
++- **Legacy Compatibility**: Maintained backward compatibility in `LaborMarket.place_order` to handle cases where `major` might be missing from the DTO but present in metadata, ensuring smooth transition for legacy agents.
++- **Config Migration**: Added missing configuration fields (`book_value_multiplier`, `price_limit_rate`, `order_expiry_ticks`, `compatibility`) to the respective DTOs in `modules/market/api.py` to support full functionality of the markets without the raw config object.
++
++## 2. Regression Analysis
++- **Test Failures**: Initial verification revealed failures in `tests/unit/test_stock_market.py` because the test fixture injected a raw mock object into the `StockMarket` constructor, which now expects a `StockMarketConfigDTO`.
++- **Fix**: Updated `tests/unit/test_stock_market.py` to construct and inject a `StockMarketConfigDTO` instance, resolving the `TypeError`.
++- **Import Issues**: Encountered `NameError` for `IndustryDomain` in `modules/market/api.py`. Fixed by importing `IndustryDomain` from `modules.common.enums`.
++- **Dependency Issues**: `typing_extensions` missing in environment. Installed via pip to run tests.
++
++## 3. Test Evidence
++```
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_post_job_offer PASSED [  4%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_post_job_seeker PASSED [  8%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_match_market_perfect_match PASSED [ 12%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_match_market_mismatch_major PASSED [ 16%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_match_market_wage_too_low PASSED [ 20%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_place_order_adapter PASSED [ 25%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_place_order_backward_compatibility PASSED [ 29%]
++tests/unit/test_stock_market.py::TestStockMarketInitialization::test_initialization PASSED [ 33%]
++tests/unit/test_stock_market.py::TestStockMarketInitialization::test_update_reference_prices PASSED [ 37%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_place_buy_order PASSED [ 41%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_place_sell_order PASSED [ 45%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_price_clamping PASSED [ 50%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_order_sorting PASSED [ 54%]
++tests/unit/test_stock_market.py::TestStockOrderMatching::test_full_match PASSED [ 58%]
++tests/unit/test_stock_market.py::TestStockOrderMatching::test_partial_match PASSED [ 62%]
++tests/unit/test_stock_market.py::TestOrderExpiry::test_clear_expired_orders PASSED [ 66%]
++tests/market/test_labor_matching.py::TestLaborMatching::test_utility_priority_matching PASSED [ 70%]
++tests/market/test_labor_matching.py::TestLaborMatching::test_affordability_constraint PASSED [ 75%]
++tests/market/test_labor_matching.py::TestLaborMatching::test_highest_bidder_priority PASSED [ 79%]
++tests/market/test_labor_matching.py::TestLaborMatching::test_education_impact_on_utility PASSED [ 83%]
++tests/market/test_labor_matching.py::TestLaborMatching::test_targeted_match_priority PASSED [ 87%]
++tests/market/test_labor_matching.py::TestLaborMatching::test_non_labor_market_uses_standard_logic PASSED [ 91%]
++tests/market/test_stock_market_pennies.py::TestStockMarketPennies::test_stock_matching_fractional_shares PASSED [ 95%]
++tests/market/test_stock_market_pennies.py::TestStockMarketPennies::test_stock_matching_integer_math PASSED [100%]
++
++======================== 24 passed, 1 warning in 0.56s =========================
++```
+diff --git a/modules/labor/system.py b/modules/labor/system.py
+index 5231e9f2..ebcd3a71 100644
+--- a/modules/labor/system.py
++++ b/modules/labor/system.py
+@@ -2,7 +2,7 @@ from __future__ import annotations
+ from typing import List, Dict, Any, Optional
+ import logging
+ from modules.labor.api import ILaborMarket, JobOfferDTO, JobSeekerDTO, LaborMarketMatchResultDTO, LaborConfigDTO
+-from modules.market.api import CanonicalOrderDTO, OrderTelemetrySchema
++from modules.market.api import CanonicalOrderDTO, OrderTelemetrySchema, LaborMarketConfigDTO
+ from simulation.models import Transaction
+ from simulation.interfaces.market_interface import IMarket
+ from modules.simulation.api import AgentID
+@@ -14,12 +14,12 @@ class LaborMarket(ILaborMarket, IMarket):
+     """
+     Implementation of the Labor Market with Major-Matching logic.
+     """
+-    def __init__(self, market_id: str = "labor", config_module: Any = None):
++    def __init__(self, market_id: str = "labor", config_dto: Optional[LaborMarketConfigDTO] = None):
+         self.id = market_id
+         self._job_offers: List[JobOfferDTO] = []
+         self._job_seekers: List[JobSeekerDTO] = []
+         self._matched_transactions: List[Transaction] = []
+-        self.config = config_module
++        self.config = config_dto or LaborMarketConfigDTO()
+ 
+         # IMarket compatibility
+         self._buy_orders_cache: Dict[str, List[CanonicalOrderDTO]] = {}
+@@ -108,8 +108,8 @@ class LaborMarket(ILaborMarket, IMarket):
+                     mult_mismatch = 0.8
+                     mult_general = 1.0
+ 
+-                    if self.config and hasattr(self.config, 'LABOR_MARKET'):
+-                        compat_config = self.config.LABOR_MARKET.get('compatibility', {})
++                    if self.config:
++                        compat_config = self.config.compatibility
+                         mult_perfect = compat_config.get('PERFECT', mult_perfect)
+                         mult_partial = compat_config.get('PARTIAL', mult_partial)
+                         mult_mismatch = compat_config.get('MISMATCH', mult_mismatch)
+@@ -233,11 +233,16 @@ class LaborMarket(ILaborMarket, IMarket):
+ 
+             # Convert to JobOffer
+             metadata = order_dto.metadata or {}
+-            major_str = metadata.get("major", "GENERAL")
+-            try:
+-                major_enum = IndustryDomain(major_str)
+-            except ValueError:
+-                major_enum = IndustryDomain.GENERAL
++
++            # Use DTO major if valid, otherwise fallback to metadata
++            major_enum = order_dto.major if order_dto.major != IndustryDomain.GENERAL else None
++
++            if not major_enum:
++                major_str = metadata.get("major", "GENERAL")
++                try:
++                    major_enum = IndustryDomain(major_str)
++                except ValueError:
++                    major_enum = IndustryDomain.GENERAL
+ 
+             offer = JobOfferDTO(
+                 firm_id=AgentID(int(order_dto.agent_id)),
+@@ -255,11 +260,16 @@ class LaborMarket(ILaborMarket, IMarket):
+ 
+             # Convert to JobSeeker
+             metadata = order_dto.metadata or order_dto.brand_info or {} # Household uses brand_info for metadata, but metadata is also checked
+-            major_str = metadata.get("major", "GENERAL")
+-            try:
+-                major_enum = IndustryDomain(major_str)
+-            except ValueError:
+-                major_enum = IndustryDomain.GENERAL
++
++            # Use DTO major if valid, otherwise fallback to metadata
++            major_enum = order_dto.major if order_dto.major != IndustryDomain.GENERAL else None
++
++            if not major_enum:
++                major_str = metadata.get("major", "GENERAL")
++                try:
++                    major_enum = IndustryDomain(major_str)
++                except ValueError:
++                    major_enum = IndustryDomain.GENERAL
+ 
+             seeker = JobSeekerDTO(
+                 household_id=AgentID(int(order_dto.agent_id)),
+diff --git a/modules/market/api.py b/modules/market/api.py
+index 94129600..92301fcb 100644
+--- a/modules/market/api.py
++++ b/modules/market/api.py
+@@ -8,6 +8,7 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+ from modules.common.interfaces import IPropertyOwner
+ from modules.finance.api import IFinancialAgent
+ from modules.market.safety_dtos import PriceLimitConfigDTO, ValidationResultDTO
++from modules.common.enums import IndustryDomain
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.api import SimulationState
+@@ -221,6 +222,7 @@ class LaborMarketConfigDTO:
+     education_weight: float = 0.1
+     matching_mode: str = "BID"
+     min_reservation_wage_pennies: int = 1000
++    compatibility: Dict[str, float] = field(default_factory=dict)
+ 
+ @dataclass(frozen=True)
+ class StockMarketConfigDTO:
+@@ -228,6 +230,9 @@ class StockMarketConfigDTO:
+     trading_fee_pennies: int = 100
+     circuit_breaker_threshold: float = 0.1
+     matching_mode: str = "MIDPOINT"
++    book_value_multiplier: float = 1.0
++    price_limit_rate: float = 0.1
++    order_expiry_ticks: int = 5
+ 
+ @dataclass
+ class HousingTransactionContextDTO:
+diff --git a/simulation/decisions/household/labor_manager.py b/simulation/decisions/household/labor_manager.py
+index 13603cfe..428fe82b 100644
+--- a/simulation/decisions/household/labor_manager.py
++++ b/simulation/decisions/household/labor_manager.py
+@@ -3,6 +3,7 @@ import random
+ from simulation.models import Order
+ from simulation.decisions.household.api import LaborContext
+ from modules.system.api import DEFAULT_CURRENCY
++from modules.common.enums import IndustryDomain
+ 
+ class LaborManager:
+     """
+@@ -72,12 +73,22 @@ class LaborManager:
+                 else:
+                     agent_data = {}
+ 
++                # Convert major string to enum if needed
++                major_val = getattr(household, 'major', 'GENERAL')
++                if isinstance(major_val, str):
++                    try:
++                        major_enum = IndustryDomain(major_val)
++                    except ValueError:
++                        major_enum = IndustryDomain.GENERAL
++                else:
++                    major_enum = major_val
++
+                 brand_info = {
+                     'labor_skill': agent_data.get('labor_skill', 1.0),
+                     'education_level': agent_data.get('education_level', 0),
+                     'aptitude': agent_data.get('aptitude', 0.5),
+                     'market_insight': agent_data.get('market_insight', 0.5),
+-                    'major': getattr(household, 'major', 'GENERAL')
++                    'major': major_val
+                 }
+ 
+                 orders.append(Order(
+@@ -88,6 +99,7 @@ class LaborManager:
+                     price_pennies=int(reservation_wage * 100),
+                     price_limit=reservation_wage,
+                     market_id='labor',
++                    major=major_enum,
+                     brand_info=brand_info
+                 ))
+         return orders
+\ No newline at end of file
+diff --git a/simulation/firms.py b/simulation/firms.py
+index bc589b23..b2d9ddfe 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -60,6 +60,7 @@ from modules.firm.constants import (
+     DEFAULT_LABOR_WAGE, DEFAULT_SURVIVAL_COST, DEFAULT_CORPORATE_TAX_RATE,
+     PRODUCTIVITY_DIVIDER, DEFAULT_PRICE
+ )
++from modules.common.enums import IndustryDomain
+ 
+ from modules.agent_framework.components.inventory_component import InventoryComponent
+ from modules.agent_framework.components.financial_component import FinancialComponent
+@@ -1592,6 +1593,16 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+             current_cash = self.financial_component.get_balance(DEFAULT_CURRENCY)
+ 
+             if current_cash >= projected_cost:
++                # Convert major string to enum if needed
++                major_val = context.major
++                if isinstance(major_val, str):
++                    try:
++                        major_enum = IndustryDomain(major_val)
++                    except ValueError:
++                        major_enum = IndustryDomain.GENERAL
++                else:
++                    major_enum = major_val
++
+                 orders.append(Order(
+                     agent_id=self.id,
+                     side='BUY',
+@@ -1600,6 +1611,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+                     price_pennies=offered_wage,
+                     price_limit=float(offered_wage)/100.0,
+                     market_id='labor',
++                    major=major_enum,
+                     metadata={
+                         'major': context.major, # Phase 4.1: Use Major instead of Specialization
+                         'specialization': context.specialization, # Keep specialization for debugging/specific matching if needed
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 20a64a01..868cd2ca 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -23,7 +23,7 @@ from simulation.agents.central_bank import CentralBank
+ from simulation.loan_market import LoanMarket
+ from simulation.markets.order_book_market import OrderBookMarket
+ from simulation.markets.market_circuit_breaker import IndexCircuitBreaker
+-from modules.market.api import IndexCircuitBreakerConfigDTO, MarketConfigDTO
++from modules.market.api import IndexCircuitBreakerConfigDTO, MarketConfigDTO, LaborMarketConfigDTO, StockMarketConfigDTO
+ from simulation.markets.stock_market import StockMarket
+ from modules.market.safety.price_limit import PriceLimitEnforcer
+ from modules.market.safety_dtos import PriceLimitConfigDTO
+@@ -332,7 +332,14 @@ class SimulationInitializer(SimulationInitializerInterface):
+                  circuit_breaker=sim.world_state.index_circuit_breaker
+              )
+ 
+-        sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
++        labor_config = LaborMarketConfigDTO(
++            majors=getattr(self.config, 'MAJORS', []),
++            education_weight=getattr(self.config, 'LABOR_EDUCATION_WEIGHT', 0.1),
++            matching_mode=getattr(self.config, 'LABOR_MATCHING_MODE', "BID"),
++            min_reservation_wage_pennies=getattr(self.config, 'MIN_RESERVATION_WAGE_PENNIES', 1000),
++            compatibility=getattr(self.config, 'LABOR_MARKET', {}).get('compatibility', {})
++        )
++        sim.markets['labor'] = LaborMarket(market_id='labor', config_dto=labor_config)
+ 
+         sec_enforcer = self._create_enforcer('security_market', safety_configs)
+         safety_manager.register_enforcer('security_market', sec_enforcer)
+@@ -348,7 +355,15 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.markets['loan_market'] = LoanMarket(market_id='loan_market', bank=sim.bank, config_module=self.config)
+         sim.markets['loan_market'].agents_ref = sim.agents
+         if getattr(self.config, 'STOCK_MARKET_ENABLED', False):
+-            sim.stock_market = StockMarket(config_module=self.config, shareholder_registry=sim.shareholder_registry, logger=self.logger, index_circuit_breaker=sim.world_state.index_circuit_breaker)
++            stock_config = StockMarketConfigDTO(
++                trading_fee_pennies=getattr(self.config, 'STOCK_TRADING_FEE', 100),
++                circuit_breaker_threshold=getattr(self.config, 'STOCK_CIRCUIT_BREAKER_THRESHOLD', 0.1),
++                matching_mode=getattr(self.config, 'STOCK_MATCHING_MODE', "MIDPOINT"),
++                book_value_multiplier=getattr(self.config, 'STOCK_BOOK_VALUE_MULTIPLIER', 1.0),
++                price_limit_rate=getattr(self.config, 'STOCK_PRICE_LIMIT_RATE', 0.1),
++                order_expiry_ticks=getattr(self.config, 'STOCK_ORDER_EXPIRY_TICKS', 5)
++            )
++            sim.stock_market = StockMarket(config_dto=stock_config, shareholder_registry=sim.shareholder_registry, logger=self.logger, index_circuit_breaker=sim.world_state.index_circuit_breaker)
+             sim.stock_tracker = StockMarketTracker(config_module=self.config)
+             sim.markets['stock_market'] = sim.stock_market
+             for firm in sim.firms:
+diff --git a/simulation/markets/stock_market.py b/simulation/markets/stock_market.py
+index 7d5f84dc..c528879a 100644
+--- a/simulation/markets/stock_market.py
++++ b/simulation/markets/stock_market.py
+@@ -10,7 +10,7 @@ from collections import defaultdict
+ from dataclasses import dataclass, replace
+ from simulation.models import Transaction, Order
+ from simulation.core_markets import Market
+-from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper, OrderTelemetrySchema, IIndexCircuitBreaker
++from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper, OrderTelemetrySchema, IIndexCircuitBreaker, StockMarketConfigDTO
+ from modules.finance.api import IShareholderRegistry, IShareholderView
+ from simulation.markets.matching_engine import StockMatchingEngine
+ logger = logging.getLogger(__name__)
+@@ -31,9 +31,9 @@ class StockMarket(Market):
+     실제 거래는 호가 매칭으로 이루어집니다.
+     """
+ 
+-    def __init__(self, config_module: Any, shareholder_registry: IShareholderRegistry, logger: Optional[logging.Logger]=None, index_circuit_breaker: Optional[IIndexCircuitBreaker]=None):
++    def __init__(self, config_dto: StockMarketConfigDTO, shareholder_registry: IShareholderRegistry, logger: Optional[logging.Logger]=None, index_circuit_breaker: Optional[IIndexCircuitBreaker]=None):
+         self.id = 'stock_market'
+-        self.config_module = config_module
++        self.config_dto = config_dto
+         self.logger = logger or logging.getLogger(__name__)
+         self.shareholder_registry = shareholder_registry
+         self.index_circuit_breaker = index_circuit_breaker
+@@ -61,7 +61,7 @@ class StockMarket(Market):
+         Args:
+             firms: 기업 ID -> Firm 객체 맵
+         """
+-        multiplier = getattr(self.config_module, 'STOCK_BOOK_VALUE_MULTIPLIER', 1.0)
++        multiplier = self.config_dto.book_value_multiplier
+         for firm_id, firm in firms.items():
+             if not getattr(firm, 'is_active', True):
+                 continue
+@@ -143,7 +143,7 @@ class StockMarket(Market):
+         except ValueError:
+             self.logger.error(f"Invalid item_id format for stock order: {order.item_id}. Expected 'stock_<firm_id>'")
+             return
+-        limit_rate = getattr(self.config_module, 'STOCK_PRICE_LIMIT_RATE', 0.1)
++        limit_rate = self.config_dto.price_limit_rate
+         ref_price = self.reference_prices.get(firm_id, order.price_limit)
+         min_price = ref_price * (1 - limit_rate)
+         max_price = ref_price * (1 + limit_rate)
+@@ -226,7 +226,7 @@ class StockMarket(Market):
+         Returns:
+             제거된 주문 수
+         """
+-        expiry_ticks = getattr(self.config_module, 'STOCK_ORDER_EXPIRY_TICKS', 5)
++        expiry_ticks = self.config_dto.order_expiry_ticks
+         removed_count = 0
+         for firm_id in list(self.buy_orders.keys()):
+             original_count = len(self.buy_orders[firm_id])
+diff --git a/tests/unit/test_stock_market.py b/tests/unit/test_stock_market.py
+index a9ee2eb8..32865b93 100644
+--- a/tests/unit/test_stock_market.py
++++ b/tests/unit/test_stock_market.py
+@@ -9,19 +9,18 @@ Testing Strategy:
+ import pytest
+ from unittest.mock import Mock, MagicMock, patch
+ from simulation.markets.stock_market import StockMarket
+-from modules.market.api import OrderDTO, IIndexCircuitBreaker
++from modules.market.api import OrderDTO, IIndexCircuitBreaker, StockMarketConfigDTO
+ from simulation.models import Transaction
+ 
+ @pytest.fixture
+ def mock_config(golden_config):
+-    config = golden_config if golden_config is not None else Mock()
+-    config.STOCK_MARKET_ENABLED = True
+-    config.STOCK_PRICE_LIMIT_RATE = 0.15
+-    config.STOCK_BOOK_VALUE_MULTIPLIER = 1.0
+-    config.STOCK_MIN_ORDER_QUANTITY = 1.0
+-    config.STOCK_ORDER_EXPIRY_TICKS = 5
+-    config.STOCK_TRANSACTION_FEE_RATE = 0.001
+-    return config
++    # Construct StockMarketConfigDTO instead of raw config
++    return StockMarketConfigDTO(
++        price_limit_rate=0.15,
++        book_value_multiplier=1.0,
++        order_expiry_ticks=5,
++        trading_fee_pennies=10 # Example fee
++    )
+ 
+ @pytest.fixture
+ def stock_market(mock_config):
+@@ -29,7 +28,7 @@ def stock_market(mock_config):
+     mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+     mock_breaker.check_market_health.return_value = True
+     mock_breaker.is_active.return_value = False
+-    return StockMarket(config_module=mock_config, shareholder_registry=registry, index_circuit_breaker=mock_breaker)
++    return StockMarket(config_dto=mock_config, shareholder_registry=registry, index_circuit_breaker=mock_breaker)
+ 
+ @pytest.fixture
+ def sample_buy_order_dto():
+@@ -132,7 +131,14 @@ class TestStockOrderMatching:
+ class TestOrderExpiry:
+ 
+     def test_clear_expired_orders(self, stock_market, mock_config):
+-        mock_config.STOCK_ORDER_EXPIRY_TICKS = 3
++        # We need to recreate market with new config or modify the existing config_dto if it's mutable/mocked?
++        # StockMarketConfigDTO is frozen. We should construct a new market or mock the DTO if we want to change it.
++        # But stock_market fixture uses mock_config.
++        # Let's just create a new market with desired config for this test.
++        new_config = StockMarketConfigDTO(order_expiry_ticks=3)
++        registry = MagicMock()
++        stock_market = StockMarket(config_dto=new_config, shareholder_registry=registry)
++
+         firm_id = 100
+         stock_market.reference_prices[firm_id] = 50.0
+         o1 = OrderDTO(agent_id=1, side='BUY', item_id=f'stock_{firm_id}', quantity=5.0, price_limit=50.0, price_pennies=5000, market_id='stock')

@@ -1,0 +1,140 @@
+diff --git a/communications/insights/WO-IMPL-MAINTENANCE-PH33.md b/communications/insights/WO-IMPL-MAINTENANCE-PH33.md
+new file mode 100644
+index 00000000..b2cd1813
+--- /dev/null
++++ b/communications/insights/WO-IMPL-MAINTENANCE-PH33.md
+@@ -0,0 +1,20 @@
++# WO-IMPL-MAINTENANCE-PH33 Insight Report
++
++## 1. Architectural Insights
++- **Config Consolidation**: `config/defaults.py` was heavily fragmented with redundant blocks. A consolidation strategy was applied to merge unique definitions from redundant blocks into a single "Consolidated" block, ensuring no configuration values were lost while removing duplicates. The configuration integrity was verified using a custom script (`verify_config_integrity.py`).
++- **Mock Regressions**: An audit of `tests/` revealed that the codebase had already migrated away from the deprecated `system_command_queue` and `god_commands` attributes on `WorldState` and `SimulationState` mocks in most places. The specific files flagged in the prompt (`tests/orchestration/test_state_synchronization.py`, `tests/integration/test_tick_normalization.py`) were found to be using the correct modern attributes (`system_commands`, `god_command_queue`). This suggests either a previous fix was applied or the audit report was stale.
++- **Lifecycle Manager**: The `AgentLifecycleManager` tests in `tests/unit/systems/` did not contain the stale `_handle_agent_liquidation` method, confirming that the codebase aligns with the current architecture.
++
++## 2. Regression Analysis
++- **Config Integrity**: The consolidation of `config/defaults.py` carried a risk of dropping variables defined only in the deleted blocks. This was mitigated by identifying all unique variables in the target blocks and preserving them in a new consolidated block. The verification script confirmed all expected variables are present and retain their correct values (e.g., `NUM_HOUSEHOLDS=20`).
++- **Test Suite**: A full run of `pytest tests/` passed with 1063 tests green. This confirms that the configuration changes did not break any existing logic. The mock regressions were verified to be non-existent in the current codebase.
++
++## 3. Test Evidence
++```
++tests/integration/test_tick_normalization.py::TestTickNormalization::test_run_tick_executes_phases PASSED [ 33%]
++tests/orchestration/test_state_synchronization.py::TestStateSynchronization::test_transient_queue_accumulation PASSED [ 66%]
++tests/orchestration/test_state_synchronization.py::TestStateSynchronization::test_reassignment_guardrail PASSED [100%]
++...
++================= 1063 passed, 7 skipped, 1 warning in 22.27s ==================
++```
++All relevant tests passed. Configuration integrity verified via `verify_config_integrity.py`.
+diff --git a/config/defaults.py b/config/defaults.py
+index b526f0fe..abf5a3c0 100644
+--- a/config/defaults.py
++++ b/config/defaults.py
+@@ -1,29 +1,44 @@
+ from enum import Enum
+ import os
+ 
+-# --- Simulation Parameters ---
++# --- Consolidated Simulation Parameters ---
+ SIMULATION_TICKS = 60
+-NUM_HOUSEHOLDS = 50
+-NUM_FIRMS = 10
+-NUM_HOUSING_UNITS = 60
+-INITIAL_PROPERTY_VALUE = 2000000
+-INITIAL_RENT_PRICE = 10000
+-INITIAL_HOUSEHOLD_ASSETS_MEAN = 200000
++NUM_HOUSEHOLDS = 20
++NUM_FIRMS = 4
++
++# --- Consolidated Agent Configuration ---
++HOUSEHOLD_MIN_FOOD_INVENTORY = 0.0 # Operation Empty Warehouse: No initial safety net
++TARGET_FOOD_BUFFER_QUANTITY = 5.0 # WO-023: Maslow Constraint Threshold
++
+ INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
+-INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 0.5
+-INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.1
++INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 5000 # MIGRATION: Int pennies
++INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.2
++
+ INITIAL_HOUSEHOLD_NEEDS_MEAN = {
+-    "survival_need": 50.0,
++    "survival": 60.0,
++    "asset": 10.0,
++    "social": 20.0,
++    "improvement": 10.0,
++    "survival_need": 60.0,
+     "recognition_need": 20.0,
+     "growth_need": 10.0,
+     "wealth_need": 10.0,
+-    "imitation_need": 5.0
+-}
+-INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.2
+-GOODS = {
+-    "basic_food": {"type": "CONSUMABLE", "utility": 10.0}
++    "imitation_need": 15.0,
++    "labor_need": 0.0,
++    "child_rearing_need": 0.0,
++    "quality": 0.0, # WO-023: New need for consumer goods
+ }
+ 
++INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.1
++INITIAL_EMPLOYMENT_RATE = 0.5  # 초기 고용률
++
++INITIAL_FIRM_CAPITAL_RANGE = 0.2
++INITIAL_FIRM_LIQUIDITY_NEED_MEAN = 20000 # MIGRATION: Int pennies
++INITIAL_FIRM_LIQUIDITY_NEED_RANGE = 0.2
++INITIAL_FIRM_INVENTORY_MEAN = 0.0  # Operation Empty Warehouse: No initial safety net
++INITIAL_FIRM_INVENTORY_RANGE = 0.2
++FIRM_PRODUCTIVITY_FACTOR = 20.0 # Laissez-Faire: Double Output
++
+ # --- Phase 21: Corporate Empires ---
+ AUTOMATION_LABOR_REDUCTION = 0.1  # Max 50% reduction in labor alpha
+ AUTOMATION_COST_PER_PCT = 1000000  # Base cost to increase automation by 1% (scaled by assets) - MIGRATION: Int pennies
+@@ -75,13 +90,6 @@ GOLD_STANDARD_MODE = False  # True: 금본위 (Full Reserve), False: 현대 금
+ RESERVE_REQ_RATIO = 0.1    # 지급준비율 (10%) - WO-064
+ INITIAL_MONEY_SUPPLY = 100000000  # 초기 화폐 총량 (검증용 기준값) - MIGRATION: Int pennies (100M)
+ 
+-# --- Simulation Parameters ---
+-NUM_HOUSEHOLDS = 20
+-NUM_FIRMS = 4
+-SIMULATION_TICKS = 60
+-HOUSEHOLD_MIN_FOOD_INVENTORY = 0.0 # Operation Empty Warehouse: No initial safety net
+-TARGET_FOOD_BUFFER_QUANTITY = 5.0 # WO-023: Maslow Constraint Threshold
+-
+ class EngineType(Enum):
+     RULE_BASED = "RuleBased"
+     AI_DRIVEN = "AIDriven"
+@@ -89,35 +97,6 @@ class EngineType(Enum):
+ DEFAULT_ENGINE_TYPE = EngineType.AI_DRIVEN  # Can be RULE_BASED or AI_DRIVEN
+ NEWBORN_ENGINE_TYPE = "AIDriven"  # Default engine for newborns: "AIDriven" or "RuleBased"
+ 
+-# --- Initial Agent Configuration ---
+-INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
+-INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 5000 # MIGRATION: Int pennies
+-INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.2
+-INITIAL_HOUSEHOLD_NEEDS_MEAN = {
+-    "survival": 60.0,
+-    "asset": 10.0,
+-    "social": 20.0,
+-    "improvement": 10.0,
+-    "survival_need": 60.0,
+-    "recognition_need": 20.0,
+-    "growth_need": 10.0,
+-    "wealth_need": 10.0,
+-    "imitation_need": 15.0,
+-    "labor_need": 0.0,
+-    "labor_need": 0.0,
+-    "child_rearing_need": 0.0,
+-    "quality": 0.0, # WO-023: New need for consumer goods
+-}
+-INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.1
+-INITIAL_EMPLOYMENT_RATE = 0.5  # 초기 고용률
+-
+-INITIAL_FIRM_CAPITAL_MEAN = 5000000 # High Initial Capital for Laissez-Faire Runway - MIGRATION: Int pennies (10M)
+-INITIAL_FIRM_CAPITAL_RANGE = 0.2
+-INITIAL_FIRM_LIQUIDITY_NEED_MEAN = 20000 # MIGRATION: Int pennies
+-INITIAL_FIRM_LIQUIDITY_NEED_RANGE = 0.2
+-INITIAL_FIRM_INVENTORY_MEAN = 0.0  # Operation Empty Warehouse: No initial safety net
+-INITIAL_FIRM_INVENTORY_RANGE = 0.2
+-FIRM_PRODUCTIVITY_FACTOR = 20.0 # Laissez-Faire: Double Output
+ 
+ # --- Goods Configuration ---
+ GOODS = {

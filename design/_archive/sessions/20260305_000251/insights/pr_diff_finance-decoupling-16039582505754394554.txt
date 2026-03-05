@@ -1,0 +1,591 @@
+diff --git a/communications/insights/IMPL_FINANCE_DECOUPLING.md b/communications/insights/IMPL_FINANCE_DECOUPLING.md
+new file mode 100644
+index 00000000..065e923a
+--- /dev/null
++++ b/communications/insights/IMPL_FINANCE_DECOUPLING.md
+@@ -0,0 +1,34 @@
++# IMPL_FINANCE_DECOUPLING Insight Report
++
++## Architectural Insights
++1.  **SagaOrchestrator Decoupling**: Successfully removed `ISimulationState` dependency from `SagaOrchestrator` and `HousingTransactionSagaHandler`.
++2.  **Explicit Dependency Injection**: Implemented `set_dependencies` in `SagaOrchestrator` to inject `SettlementSystem`, `HousingService`, `LoanMarket`, `Bank`, and `Government` explicitly. This aligns with the "DTO Purity" and "Logic Separation" mandates.
++3.  **Tick Propagation**: Updated `process_sagas` to accept `current_tick` explicitly, ensuring time-awareness without god-object access.
++4.  **Agent Liveness**: Replaced ad-hoc `simulation.agents.get` lookups with `IAgentRegistry` access, ensuring robust liveness checks.
++
++## Regression Analysis
++*   **Initialization Sequence**: The `SagaOrchestrator` is initialized in Phase 1 (Infrastructure) but its dependencies (Bank, HousingService) are created in Phase 2 and 3. We resolved this by adding a `set_dependencies` call at the end of Phase 3 in `SimulationInitializer`.
++*   **Protocol Changes**: Updated `ISagaOrchestrator` protocol to include `process_sagas(current_tick: int)`. This required updating `Phase_HousingSaga` to pass the tick.
++*   **Test Updates**: Updated unit tests to mock and inject the new dependencies instead of `SimulationState` god object.
++
++## Test Evidence
++
++**1. `tests/unit/sagas/test_orchestrator.py`**
++```
++tests/unit/sagas/test_orchestrator.py::test_submit_saga PASSED
++tests/unit/sagas/test_orchestrator.py::test_process_sagas_liveness_check PASSED
++tests/unit/sagas/test_orchestrator.py::test_process_sagas_active_participants PASSED
++tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_success PASSED
++tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_no_handler PASSED
++```
++
++**2. `tests/unit/systems/test_settlement_saga_integration.py`**
++```
++tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_initiated_to_credit_check PASSED
++tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_cancellation PASSED
++```
++
++**3. `tests/forensics/test_saga_integrity.py`**
++```
++tests/forensics/test_saga_integrity.py::test_saga_orchestrator_rejects_incomplete_dto PASSED
++```
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 98411e67..d0802a93 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -12,7 +12,7 @@ from modules.finance.dtos import (
+     BorrowerProfileDTO, CreditAssessmentResultDTO, LienDTO, MortgageApplicationDTO,
+     EquityStake
+ )
+-from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY, CurrencyCode
++from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY, CurrencyCode, IAgentRegistry
+ from modules.simulation.api import AgentID, AnyAgentID
+ from modules.common.financial.api import IFinancialAgent
+ from modules.common.financial.dtos import MoneyDTO, Claim
+diff --git a/modules/finance/kernel/api.py b/modules/finance/kernel/api.py
+index 2aae3301..c59c857c 100644
+--- a/modules/finance/kernel/api.py
++++ b/modules/finance/kernel/api.py
+@@ -18,7 +18,7 @@ class ISagaOrchestrator(Protocol):
+         """Submits a new saga to be processed."""
+         ...
+ 
+-    def process_sagas(self) -> None:
++    def process_sagas(self, current_tick: int) -> None:
+         """
+         Iterates through all active sagas and executes their next step.
+         This is the main entry point called by the simulation's tick orchestrator.
+diff --git a/modules/finance/saga_handler.py b/modules/finance/saga_handler.py
+index 6ec94892..6ad39ebb 100644
+--- a/modules/finance/saga_handler.py
++++ b/modules/finance/saga_handler.py
+@@ -11,36 +11,31 @@ from modules.finance.sagas.housing_api import (
+     HousingSagaAgentContext
+ )
+ from modules.housing.api import IHousingService
+-from modules.finance.api import MortgageApplicationDTO, IFinancialAgent, IBank
+-from modules.simulation.api import ISimulationState, HouseholdSnapshotDTO
++from modules.finance.api import MortgageApplicationDTO, IFinancialAgent, IBank, IMonetaryLedger
++from modules.government.api import IGovernment
++from modules.simulation.api import HouseholdSnapshotDTO
++from modules.system.api import IAgentRegistry, DEFAULT_CURRENCY
+ from simulation.finance.api import ISettlementSystem
+-from modules.finance.kernel.api import IMonetaryLedger
+ 
+ logger = logging.getLogger(__name__)
+ 
+ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+-    def __init__(self, simulation: ISimulationState):
+-        self.simulation = simulation
+-        self.settlement_system: ISettlementSystem = simulation.settlement_system
+-        # Note: housing_service must implement IHousingService
+-        self.housing_service: IHousingService = simulation.housing_service
+-
+-        # Access Loan Market via markets dict
+-        market = simulation.markets.get("loan")
+-        # We need to ensure it supports ILoanMarket protocol methods used below.
+-        # Assuming the loan market implementation aligns with ILoanMarket protocol or similar.
+-        self.loan_market = market
+-
+-        # TD-253: Monetary Ledger Injection
+-        self.monetary_ledger: Optional[IMonetaryLedger] = simulation.monetary_ledger
++    def __init__(self, settlement_system: ISettlementSystem, housing_service: IHousingService, loan_market: ILoanMarket, bank: IBank, government: IGovernment, monetary_ledger: Optional[IMonetaryLedger], agent_registry: IAgentRegistry, current_tick: int):
++        self.settlement_system = settlement_system
++        self.housing_service = housing_service
++        self.loan_market = loan_market
++        self.bank = bank
++        self.government = government
++        self.monetary_ledger = monetary_ledger
++        self.agent_registry = agent_registry
++        self.current_tick = current_tick
+ 
+     def execute_step(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
+         status = saga.status
+         logger.debug(f"SAGA_EXECUTE | Saga {saga.saga_id} processing step: {status}")
+ 
+-        current_tick = self.simulation.time
+         # Prevent double processing in same tick
+-        if saga.last_processed_tick == current_tick and status != "INITIATED":
++        if saga.last_processed_tick == self.current_tick and status != "INITIATED":
+              return saga
+ 
+         try:
+@@ -65,7 +60,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+             saga.error_message = str(e)
+             return self.compensate_step(saga)
+         finally:
+-            saga.last_processed_tick = current_tick
++            saga.last_processed_tick = self.current_tick
+ 
+     def compensate_step(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
+         status = saga.status
+@@ -89,8 +84,8 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+                  # Void Loan
+                  loan_id = saga.mortgage_approval.loan_id
+                  # Use correct method to void/terminate existing loan
+-                 if isinstance(self.simulation.bank, IBank):
+-                    self.simulation.bank.terminate_loan(loan_id)
++                 if isinstance(self.bank, IBank):
++                    self.bank.terminate_loan(loan_id)
+                  elif hasattr(self.loan_market, 'void_staged_application'):
+                     # Fallback if approval but no bank method (unlikely)
+                     self.loan_market.void_staged_application(loan_id)
+@@ -184,7 +179,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         # 2. Add Lien via Registry
+         # Need lienholder_id (Bank ID).
+         # LoanInfo might not have it, but we know it's the Bank.
+-        bank_id = int(self.simulation.bank.id) if self.simulation.bank else -1
++        bank_id = int(self.bank.id) if self.bank else -1
+ 
+         # MIGRATION: Convert principal (dollars) to pennies (int) for Registry/Lien
+         principal_pennies = int(principal * 100)
+@@ -210,25 +205,32 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         # Bank -> Buyer (Principal)
+         # Buyer -> Seller (Offer Price)
+ 
+-        bank = self.simulation.bank
++        bank = self.bank
+ 
+         buyer_id = self._get_buyer_id(saga)
+ 
+         seller_id = saga.seller_context.id if saga.seller_context else None
+ 
+         # Determine seller agent
+-        seller = self.simulation.agents.get(seller_id)
+-
+         # Government/System Seller Logic
+         if seller_id == -1:
+-             seller = self.simulation.government
++             seller = self.government
++        else:
++             seller = self.agent_registry.get_agent(seller_id)
+ 
+-        buyer = self.simulation.agents.get(buyer_id) if buyer_id is not None else None
++        buyer = self.agent_registry.get_agent(buyer_id) if buyer_id is not None else None
+ 
+         if not buyer or not seller:
+              saga.error_message = "Agents missing for settlement"
+              return self.compensate_step(saga)
+ 
++        # Check if agents support IFinancialAgent protocol (best effort or cast)
++        # In this simulation, households and government are IFinancialEntity compliant.
++        if not isinstance(buyer, IFinancialAgent) and not hasattr(buyer, 'id'):
++             logger.error(f"SAGA_SETTLEMENT_ERROR | Buyer {buyer_id} does not comply with IFinancialEntity")
++             saga.error_message = "Buyer invalid entity"
++             return self.compensate_step(saga)
++
+         if not saga.mortgage_approval:
+              saga.error_message = "Missing mortgage approval"
+              return self.compensate_step(saga)
+@@ -245,7 +247,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+             (buyer, seller, offer_price_pennies)
+         ]
+ 
+-        success = self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
++        success = self.settlement_system.execute_multiparty_settlement(transfers, self.current_tick)
+ 
+         if success:
+              # TD-030: M2 Integrity - Record Authorized Expansion for Mortgage Disbursal
+@@ -287,16 +289,18 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         # Seller -> Buyer (Offer Price)
+         # Buyer -> Bank (Principal)
+ 
+-        bank = self.simulation.bank
++        bank = self.bank
+ 
+         buyer_id = self._get_buyer_id(saga)
+         seller_id = saga.seller_context.id if saga.seller_context else None
+ 
+-        buyer = self.simulation.agents.get(buyer_id) if buyer_id is not None else None
+-        seller = self.simulation.agents.get(seller_id)
++        buyer = self.agent_registry.get_agent(buyer_id) if buyer_id is not None else None
+ 
+         if seller_id == -1:
+-             seller = self.simulation.government
++             seller = self.government
++        else:
++             seller = self.agent_registry.get_agent(seller_id)
++
+ 
+         if not buyer:
+              logger.critical(f"CRITICAL_INTEGRITY_FAILURE | Buyer {buyer_id} missing during settlement reversal for saga {saga.saga_id}. Funds may be leaked.")
+@@ -321,7 +325,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+             (buyer, bank, principal_pennies)
+         ]
+ 
+-        self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
++        self.settlement_system.execute_multiparty_settlement(transfers, self.current_tick)
+ 
+         # TD-030: M2 Integrity - Record Destruction
+         if principal > 0 and self.monetary_ledger:
+@@ -339,5 +343,4 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         # Only for logging, avoiding manual transaction injection into world state to maintain protocol purity.
+         # Ideally, SettlementSystem should log all financial transactions.
+         # This explicit transaction logging was likely for non-financial record keeping (housing market volume).
+-        # We will skip manual injection into world_state.transactions to avoid violating ISimulationState protocol.
+         pass
+diff --git a/modules/finance/sagas/orchestrator.py b/modules/finance/sagas/orchestrator.py
+index 6d67d21a..8c07adc2 100644
+--- a/modules/finance/sagas/orchestrator.py
++++ b/modules/finance/sagas/orchestrator.py
+@@ -3,11 +3,14 @@ from uuid import UUID
+ import logging
+ 
+ from modules.finance.kernel.api import ISagaOrchestrator, IHousingTransactionSagaHandler, IMonetaryLedger
+-from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO
++from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, ILoanMarket
+ from modules.finance.saga_handler import HousingTransactionSagaHandler
+-from modules.simulation.api import ISimulationState, IAgent, HouseholdSnapshotDTO
++from modules.simulation.api import IAgent, HouseholdSnapshotDTO
+ from modules.government.api import IGovernment
+ from modules.system.api import IAgentRegistry
++from modules.housing.api import IHousingService
++from modules.finance.api import IBank
++from simulation.finance.api import ISettlementSystem
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -22,15 +25,21 @@ class SagaOrchestrator(ISagaOrchestrator):
+         self.active_sagas: Dict[UUID, HousingTransactionSagaStateDTO] = {}
+         self.monetary_ledger = monetary_ledger
+         self.agent_registry = agent_registry
+-        self._simulation_state: Optional[ISimulationState] = None
+ 
+-    @property
+-    def simulation_state(self) -> Optional[ISimulationState]:
+-        return self._simulation_state
+-
+-    @simulation_state.setter
+-    def simulation_state(self, value: ISimulationState):
+-        self._simulation_state = value
++        # Dependencies injected via setter
++        self.settlement_system: Optional[ISettlementSystem] = None
++        self.housing_service: Optional[IHousingService] = None
++        self.loan_market: Optional[ILoanMarket] = None
++        self.bank: Optional[IBank] = None
++        self.government: Optional[IGovernment] = None
++
++    def set_dependencies(self, settlement_system: ISettlementSystem, housing_service: IHousingService, loan_market: ILoanMarket, bank: IBank, government: IGovernment) -> None:
++        """Sets the system dependencies required for saga processing."""
++        self.settlement_system = settlement_system
++        self.housing_service = housing_service
++        self.loan_market = loan_market
++        self.bank = bank
++        self.government = government
+ 
+     def submit_saga(self, saga: HousingTransactionSagaStateDTO) -> bool:
+         """
+@@ -64,22 +73,30 @@ class SagaOrchestrator(ISagaOrchestrator):
+         )
+         return True
+ 
+-    def process_sagas(self) -> None:
++    def process_sagas(self, current_tick: int) -> None:
+         """
+         Processes active sagas. Implements the Housing Transaction Saga state machine.
+         Called by TickOrchestrator (via Phase_HousingSaga).
+         """
+-        if not self.active_sagas or not self.simulation_state:
++        if not self.active_sagas:
+             return
+ 
+-        sim_state = self.simulation_state
+-
+-        # Initialize Handler with the current simulation state
+-        handler = HousingTransactionSagaHandler(sim_state)
++        # Ensure dependencies are set
++        if not (self.settlement_system and self.housing_service and self.loan_market and self.bank and self.government and self.agent_registry):
++            logger.warning("SAGA_PROCESS_SKIP | Dependencies not fully injected.")
++            return
+ 
+-        # Inject MonetaryLedger
+-        if self.monetary_ledger:
+-            handler.monetary_ledger = self.monetary_ledger
++        # Initialize Handler with injected dependencies
++        handler = HousingTransactionSagaHandler(
++            settlement_system=self.settlement_system,
++            housing_service=self.housing_service,
++            loan_market=self.loan_market,
++            bank=self.bank,
++            government=self.government,
++            monetary_ledger=self.monetary_ledger,
++            agent_registry=self.agent_registry,
++            current_tick=current_tick
++        )
+ 
+         # Iterate over copy to allow modification/deletion
+         for saga_id, saga in list(self.active_sagas.items()):
+@@ -115,23 +132,8 @@ class SagaOrchestrator(ISagaOrchestrator):
+                         is_seller_inactive = False
+                     else:
+                         is_seller_inactive = not self.agent_registry.is_agent_active(seller_id)
+-                else:
+-                    # Fallback Logic (Legacy)
+-                    buyer = sim_state.agents.get(buyer_id)
+-                    seller = sim_state.agents.get(seller_id)
+-
+-                    is_buyer_inactive = not buyer or not getattr(buyer, 'is_active', False)
+-                    is_seller_inactive = not seller or not getattr(seller, 'is_active', False)
+ 
+-                    # Special handling for System/Government agents
+-                    if seller_id == -1:
+-                        is_seller_inactive = False
+-                    elif seller and isinstance(seller, IGovernment):
+-                        is_seller_inactive = False
+-
+-                    # Fallback check for Government singleton via simulation state
+-                    if not seller and sim_state.government and hasattr(sim_state.government, 'id') and sim_state.government.id == seller_id:
+-                        is_seller_inactive = False
++                # Note: Fallback logic removed as agent_registry is mandatory
+ 
+                 if is_buyer_inactive or is_seller_inactive:
+                     saga.status = "CANCELLED"
+diff --git a/pytest.ini b/pytest.ini
+index 734ce744..48b951cb 100644
+--- a/pytest.ini
++++ b/pytest.ini
+@@ -13,3 +13,5 @@ asyncio_mode = auto
+ markers =
+     asyncio: mark test as an asyncio test
+     no_lock_mock: opt-out of the global PlatformLockManager mock
++filterwarnings =
++    ignore::pytest.PytestRemovedIn9Warning
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 3e0f9afe..48a1bb6c 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -470,6 +470,16 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.labor_market_analyzer = LaborMarketAnalyzer(self.config)
+         sim.crisis_monitor = CrisisMonitor(logger=self.logger, run_id=sim.run_id)
+ 
++        # Inject dependencies into SagaOrchestrator (Phase 3 Complete)
++        if sim.saga_orchestrator:
++            sim.saga_orchestrator.set_dependencies(
++                settlement_system=sim.settlement_system,
++                housing_service=sim.housing_service,
++                loan_market=sim.markets['loan_market'],
++                bank=sim.bank,
++                government=sim.government
++            )
++
+     def _init_phase4_population(self, sim: Simulation) -> None:
+         """
+         Phase 4: Atomic Registration & Population Injection
+diff --git a/simulation/orchestration/phases/housing_saga.py b/simulation/orchestration/phases/housing_saga.py
+index 51d31813..bb1e30b2 100644
+--- a/simulation/orchestration/phases/housing_saga.py
++++ b/simulation/orchestration/phases/housing_saga.py
+@@ -27,8 +27,7 @@ class Phase_HousingSaga(IPhaseStrategy):
+         """
+         # TD-253: Logic moved to SagaOrchestrator
+         if state.saga_orchestrator:
+-            state.saga_orchestrator.simulation_state = state
+-            state.saga_orchestrator.process_sagas()
++            state.saga_orchestrator.process_sagas(state.time)
+         elif state.settlement_system and hasattr(state.settlement_system, 'process_sagas'):
+             # Fallback for compatibility during refactor
+             state.settlement_system.process_sagas(state)
+diff --git a/tests/unit/sagas/test_orchestrator.py b/tests/unit/sagas/test_orchestrator.py
+index d8a82009..2c576a48 100644
+--- a/tests/unit/sagas/test_orchestrator.py
++++ b/tests/unit/sagas/test_orchestrator.py
+@@ -45,24 +45,24 @@ def test_process_sagas_liveness_check(saga_orchestrator):
+ 
+     saga_orchestrator.submit_saga(saga)
+ 
+-    # Mock Simulation State
+-    sim_state = MagicMock()
+-    buyer = MagicMock()
+-    buyer.is_active = False # Inactive Buyer
+-    seller = MagicMock()
+-    seller.is_active = True
+-
+-    sim_state.agents = {
+-        buyer_id: buyer,
+-        seller_id: seller
+-    }
+-    # Ensure government logic doesn't crash
+-    sim_state.government = MagicMock()
+-    sim_state.government.id = 0
++    # Mock Dependencies
++    agent_registry = MagicMock()
++    agent_registry.is_agent_active.side_effect = lambda id: id == seller_id # Buyer inactive, Seller active
++
++    settlement_system = MagicMock()
++    housing_service = MagicMock()
++    loan_market = MagicMock()
++    bank = MagicMock()
++    government = MagicMock()
++
++    # Inject dependencies
++    saga_orchestrator.set_dependencies(
++        settlement_system, housing_service, loan_market, bank, government
++    )
++    saga_orchestrator.agent_registry = agent_registry
+ 
+     with patch("modules.finance.sagas.orchestrator.HousingTransactionSagaHandler") as MockHandler:
+-        saga_orchestrator.simulation_state = sim_state
+-        saga_orchestrator.process_sagas()
++        saga_orchestrator.process_sagas(current_tick=100)
+ 
+         # Should be removed from active sagas
+         assert saga_id not in saga_orchestrator.active_sagas
+@@ -91,18 +91,21 @@ def test_process_sagas_active_participants(saga_orchestrator):
+ 
+     saga_orchestrator.submit_saga(saga)
+ 
+-    sim_state = MagicMock()
+-    buyer = MagicMock()
+-    buyer.is_active = True
+-    seller = MagicMock()
+-    seller.is_active = True
++    # Mock Dependencies
++    agent_registry = MagicMock()
++    agent_registry.is_agent_active.return_value = True
++
++    settlement_system = MagicMock()
++    housing_service = MagicMock()
++    loan_market = MagicMock()
++    bank = MagicMock()
++    government = MagicMock()
+ 
+-    sim_state.agents = {
+-        buyer_id: buyer,
+-        seller_id: seller
+-    }
+-    sim_state.government = MagicMock()
+-    sim_state.government.id = 0
++    # Inject dependencies
++    saga_orchestrator.set_dependencies(
++        settlement_system, housing_service, loan_market, bank, government
++    )
++    saga_orchestrator.agent_registry = agent_registry
+ 
+     with patch("modules.finance.sagas.orchestrator.HousingTransactionSagaHandler") as MockHandler:
+         handler_instance = MockHandler.return_value
+@@ -114,8 +117,7 @@ def test_process_sagas_active_participants(saga_orchestrator):
+         )
+         handler_instance.execute_step.return_value = updated_saga
+ 
+-        saga_orchestrator.simulation_state = sim_state
+-        saga_orchestrator.process_sagas()
++        saga_orchestrator.process_sagas(current_tick=100)
+ 
+         assert saga_id in saga_orchestrator.active_sagas
+         assert saga_orchestrator.active_sagas[saga_id].status == "CREDIT_CHECK"
+diff --git a/tests/unit/systems/test_settlement_saga_integration.py b/tests/unit/systems/test_settlement_saga_integration.py
+index 81e63539..b1dfb284 100644
+--- a/tests/unit/systems/test_settlement_saga_integration.py
++++ b/tests/unit/systems/test_settlement_saga_integration.py
+@@ -15,12 +15,13 @@ class TestSettlementSagaIntegration:
+         # Mock Simulation Dependencies
+         sim.settlement_system = MagicMock()
+         sim.housing_service = MagicMock()
+-        sim.markets = {"loan": MagicMock()}
++        sim.markets = {"loan_market": MagicMock()}
+         sim.agents = {}
+         sim.time = 100
+         sim.config_module = MagicMock()
+         sim.config_module.TICKS_PER_YEAR = 100
+         sim.bank = MagicMock()
++        sim.government = MagicMock()
+         return sim
+ 
+     def test_process_sagas_integration_initiated_to_credit_check(self, mock_simulation_state):
+@@ -95,14 +96,34 @@ class TestSettlementSagaIntegration:
+         mock_simulation_state.housing_service.set_under_contract.return_value = True
+ 
+         # Mock Loan Market
+-        mock_simulation_state.markets["loan"].stage_mortgage_application.return_value = "loan_staged_1"
++        mock_simulation_state.markets["loan_market"].stage_mortgage_application.return_value = "loan_staged_1"
+ 
+         # Mock Bank (for debt calculation)
+         mock_simulation_state.bank.get_debt_status.return_value = {'loans': []}
+ 
++        # Inject Dependencies
++        orchestrator.set_dependencies(
++            settlement_system=mock_simulation_state.settlement_system,
++            housing_service=mock_simulation_state.housing_service,
++            loan_market=mock_simulation_state.markets["loan_market"],
++            bank=mock_simulation_state.bank,
++            government=mock_simulation_state.government
++        )
++
++        # Mock Agent Registry
++        agent_registry = MagicMock()
++        def get_agent(id):
++            return mock_simulation_state.agents.get(id)
++        def is_active(id):
++            agent = mock_simulation_state.agents.get(id)
++            return agent.is_active if agent else False
++
++        agent_registry.get_agent.side_effect = get_agent
++        agent_registry.is_agent_active.side_effect = is_active
++        orchestrator.agent_registry = agent_registry
++
+         # 4. Run
+-        orchestrator.simulation_state = mock_simulation_state
+-        orchestrator.process_sagas()
++        orchestrator.process_sagas(current_tick=100)
+ 
+         # 5. Verify Saga Transition
+         assert saga_id in orchestrator.active_sagas
+@@ -115,7 +136,7 @@ class TestSettlementSagaIntegration:
+ 
+         # Verify side effects
+         mock_simulation_state.housing_service.set_under_contract.assert_called_with(101, saga_id)
+-        mock_simulation_state.markets["loan"].stage_mortgage_application.assert_called_once()
++        mock_simulation_state.markets["loan_market"].stage_mortgage_application.assert_called_once()
+ 
+     def test_process_sagas_integration_cancellation(self, mock_simulation_state):
+         """
+@@ -171,16 +192,36 @@ class TestSettlementSagaIntegration:
+         mock_simulation_state.agents = {1: buyer, 2: seller}
+ 
+         # Mock Loan Market for voiding
+-        mock_simulation_state.markets["loan"].void_staged_application.return_value = True
++        mock_simulation_state.markets["loan_market"].void_staged_application.return_value = True
++
++        # Inject Dependencies
++        orchestrator.set_dependencies(
++            settlement_system=mock_simulation_state.settlement_system,
++            housing_service=mock_simulation_state.housing_service,
++            loan_market=mock_simulation_state.markets["loan_market"],
++            bank=mock_simulation_state.bank,
++            government=mock_simulation_state.government
++        )
++
++        # Mock Agent Registry
++        agent_registry = MagicMock()
++        def get_agent(id):
++            return mock_simulation_state.agents.get(id)
++        def is_active(id):
++            agent = mock_simulation_state.agents.get(id)
++            return agent.is_active if agent else False
++
++        agent_registry.get_agent.side_effect = get_agent
++        agent_registry.is_agent_active.side_effect = is_active
++        orchestrator.agent_registry = agent_registry
+ 
+         # 4. Run
+-        orchestrator.simulation_state = mock_simulation_state
+-        orchestrator.process_sagas()
++        orchestrator.process_sagas(current_tick=100)
+ 
+         # 5. Verify Cancellation
+         # Saga should be removed from active_sagas
+         assert saga_id not in orchestrator.active_sagas
+ 
+         # Check logs/mock calls to verify compensation was attempted
+-        mock_simulation_state.markets["loan"].void_staged_application.assert_called_with("loan_staged_x")
++        mock_simulation_state.markets["loan_market"].void_staged_application.assert_called_with("loan_staged_x")
+         mock_simulation_state.housing_service.release_contract.assert_called_with(101, saga_id)

@@ -19,6 +19,7 @@
 | **TD-FIN-MAGIC-BASE-RATE** | Finance | `FinanceSystem.issue_treasury_bonds` uses hardcoded `0.03`. | **Low**: Config. | Identified |
 | **TD-ARCH-SSOT-BYPASS** | Architecture | **Protocol Evasion**: Direct mutation bypassing `SettlementSystem`. Linked to `AUDIT-S3-2A-SSOT-BYPASS`. | **CRITICAL**: SSoT. | **ACTIVE (SPEC)** |
 | **TD-SYS-TRANSFER-HANDLER-GAP**| Finance | **Invisible P2P**: Generic `transfer` lacks handler. Linked to `AUDIT-S3-2B-TRANSFER-GAP`. | **CRITICAL**: Integrity. | **ACTIVE (SPEC)** |
+| **TD-FIN-TX-HANDLER-HARDENING**| Finance | **Typed TX Errors**: Convert `Destination account does not exist` to typed `TransactionError` for clean rollbacks. | **High**: Stability. | **ACTIVE (PH22)** |
 | **TD-WAVE3-DTO-SWAP** | DTO | **IndustryDomain Shift**: Replace `major` with `IndustryDomain` enum. | **Medium**: Structure. | **SPECCED** |
 | **TD-WAVE3-TALENT-VEIL** | Agent | **Hidden Talent**: `EconStateDTO` missing `hidden_talent`. | **High**: Intent. | **RESOLVED** |
 | **TD-WAVE3-MATCH-REWRITE** | Market | **Bargaining vs OrderBook**: Existing LaborMarket assumes sorting. | **High**: Economy. | **RESOLVED** |
@@ -38,6 +39,8 @@
 | **TD-ARCH-PROTOCOL-EVASION** | Architecture | **[S3-1] Protocol Evasion**: `hasattr()` usage in lifecycle logic (Ref: [AUDIT_PLATFORM_DEEP.md](file:///c:/coding/economics/reports/audits/AUDIT_PLATFORM_DEEP.md)). | **Medium**: Safety. | **ACTIVE** |
 | **TD-ARCH-GOD-WORLDSTATE** | Architecture | **God Class Incursion**: `WorldState` holding service instances instead of pure data (Ref: [AUDIT_PLATFORM_DEEP.md](file:///c:/coding/economics/reports/audits/AUDIT_PLATFORM_DEEP.md)). | **High**: Purity. | **NEW** |
 | **TD-ARCH-DTO-FRAGMENTATION** | Architecture | **Loose Typing**: Event queues using `Dict/Any` instead of DTOs (Ref: [AUDIT_PLATFORM_DEEP.md](file:///c:/coding/economics/reports/audits/AUDIT_PLATFORM_DEEP.md)). | **Medium**: Type Safety. | **NEW** |
+| **TD-MEM-ENGINE-CYCLIC** | Memory | **Engine Lifecycle Memory Leak**: Cyclic references between `Simulation`, `TickOrchestrator`, and `ActionProcessor` prevented GC. | **High**: Reliability. | **RESOLVED (2026-03-04)** |
+| **TD-MEM-TEARDOWN-HARDCODE** | Memory | **Hardcoded Teardown List**: `WorldState.teardown()` uses a 40-item string list; new systems risk silent leaks if not added. Consider `__dict__`-based dynamic teardown. | **Medium**: Maintenance. | **NEW (2026-03-04)** |
 | **TD-MEM-TEARDOWN-HARDCODE** | Memory | **Hardcoded Teardown List**: `WorldState.teardown()` uses a 40-item string list; new systems risk silent leaks if not added. Consider `__dict__`-based dynamic teardown. | **Medium**: Maintenance. | **NEW (2026-03-04)** |
 | **TD-MEM-TEARDOWN-INCOMPLETE** | Memory | **Incomplete Teardown**: `bank`, `central_bank`, `stock_market` missing from `WorldState.teardown()` subsystems list. | **High**: Memory Leak. | **NEW (2026-03-04)** |
 | **TD-MEM-REGISTRY-INPLACE** | Memory | **List Reference Leak**: `AgentRegistry.purge_inactive()` overwrites `households`/`firms` lists instead of in-place `[:]` modification; cached references become stale. | **Medium**: Data Integrity. | **NEW (2026-03-04)** |
@@ -47,7 +50,9 @@
 | **TD-TEST-MOCK-SPEC-ENFORCE** | Testing | **Global Mock Spec Enforcement**: Bare `MagicMock()` in `tests/utils/mocks.py` caused Mock Drift. Need to enforce `spec=<Interface>` on all global test mocks via linting or refactor. | **Medium**: Test Integrity. | **NEW (2026-03-04)** |
 | **TD-ECON-MASLOW-STATIC** | AI/Economy | **Maslow Static Weights**: `NeedsEngine` uses static `desire_weights` instead of dynamic suppression formula $W_{L+1}$. Blocks emergent Veblen/network effects. | **Medium**: Economy. | **NEW (ROADMAP)** |
 | **TD-ECON-SIGNALING-DRIFT** | AI/Economy | **Signaling→HumanCapital Drift**: Education modeled as direct productivity enhancement instead of labor market signal. `HRDepartment` missing Halo Effect logic. | **Medium**: Economy. | **NEW (ROADMAP)** |
-| **TD-TEST-GC-MOCK-EXPLOSION** | Testing | **GC Hang due to Mocks**: Massive `MagicMock` graphs during initialization cause memory spikes and tens of seconds of GC pause in tests. | **CRITICAL**: Developer Velocity. | **NEW (SPEC DRAFTED)** |
+| **TD-TEST-GC-MOCK-EXPLOSION** | Testing | **GC Hang due to Mocks**: Massive `MagicMock` graphs during initialization cause memory spikes and tens of seconds of GC pause in tests. | **CRITICAL**: Developer Velocity. | **RESOLVED (2026-03-05)** |
+| **TD-TEST-MOCK-BYPASS** | Testing | **Transaction Metadata Duct-tape**: Government tests bypass `TransactionMetadataDTO` using `getattr(metadata, "original_metadata")`. | **Low**: Stability. | **NEW** |
+| **TD-ARCH-HEAVY-FINANCE-API** | Architecture | **Heavy Finance API**: `modules.finance.api` (1200+ lines) causes Gemini OOM by pulling Gov/HR. | **High**: Rigidity. | **NEW (2026-03-05)** |
 
 ---
 
@@ -110,6 +115,13 @@
 - **Solution**: Ensure all inter-module communication uses strictly typed DTOs (e.g., `WelfareCandidateDTO`).
 - **Status**: NEW (AUDIT)
 
+### ID: TD-ARCH-HEAVY-FINANCE-API
+- **Title**: Heavy Dependency Bloat in `modules.finance.api`
+- **Symptom**: Gemini-CLI OOM failures when analyzing small modules like `AccountRegistry`; 1200+ line API file pulling in unrelated domain modules (Government, HR, Saga).
+- **Risk**: High architectural rigidity; unmanageable context size for AI agents; violating Interface Segregation Principle.
+- **Solution**: Segregate finance API into granular functional protocols; move concrete DTOs to sub-modules; ensure core finance interfaces do not depend on high-level domain services.
+- **Status**: NEW (2026-03-05)
+
 ---
 
 ## Financial Systems (Finance & Transactions)
@@ -142,6 +154,14 @@
 - **Risk**: Confusion between `price: float` (dollars) and `total_pennies: int` (pennies), leading to conversion errors.
 - **Solution**: Completely remove `price: float` or rename it to `price_display: float` and mark as secondary.
 - **Status**: NEW (AUDIT)
+
+### ID: TD-FIN-TX-HANDLER-HARDENING
+- **Title**: Transaction Handler Hardening (Typed Errors)
+- **Symptom**: Settlement failures (e.g. invalid destinations) are treated as generic runtime engine errors.
+- **Risk**: Prevents graceful catching and rolling back of specific failed transactions without aborting the broader engine sequence.
+- **Audit Update (PH21)**: `TransactionEngine` must validate `recipient_id` existence before processing. Convert "Destination account does not exist" to typed `TransactionError`.
+- **Solution**: Introduce `TransactionError` hierarchy. Implement fail-fast destination checks in `Bank` registry.
+- **Status**: **ACTIVE** (Phase 22 Spec)
 
 ### ID: TD-FIN-FLOAT-INCURSION
 - **Title**: Float Incursion during Ledger Metadata Parsing

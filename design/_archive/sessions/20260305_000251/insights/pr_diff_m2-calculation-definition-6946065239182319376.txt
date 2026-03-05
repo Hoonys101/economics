@@ -1,0 +1,677 @@
+diff --git a/communications/insights/WO-IMPL-FIN-M2-CALC-FIX.md b/communications/insights/WO-IMPL-FIN-M2-CALC-FIX.md
+new file mode 100644
+index 00000000..ad47c878
+--- /dev/null
++++ b/communications/insights/WO-IMPL-FIN-M2-CALC-FIX.md
+@@ -0,0 +1,62 @@
++# WO-IMPL-FIN-M2-CALC-FIX: Refined M2 Calculation Definition
++
++## 1. [Architectural Insights]
++
++### Consolidated M2 Logic
++The M2 calculation logic has been consolidated into `SettlementSystem.get_total_m2_pennies`. This method now serves as the Single Source of Truth (SSoT) for the money supply held by the public. The logic explicitly iterates over active and estate agents, summing their `balance_pennies` (or `get_balance(DEFAULT_CURRENCY)`), while strictly excluding:
++- **System Agents**: `ID_SYSTEM`, `ID_CENTRAL_BANK`, `ID_ESCROW`, `ID_PUBLIC_MANAGER`.
++- **Commercial Banks**: Agents implementing the `IBank` protocol.
++
++This definition ensures that M2 represents **Money held by the Non-Bank Public**. Bank Reserves (assets) and System funds are correctly treated as M0 or outside the money supply, eliminating the previous double-counting where both "Circulating Cash" (which included deposits in wallet form) and "Total Deposits" (reported by banks) were summed.
++
++### Deduplication Strategy
++To prevent M2 inflation due to race conditions or lifecycle transitions (e.g., death), the new implementation uses a `processed_ids` set to ensure each agent is counted exactly once, even if they appear in both `AgentRegistry` and `EstateRegistry` during a tick transition.
++
++### Verification Alignment
++The `audit_total_m2` method has been updated to verify the system's actual M2 (calculated via the new logic) against the `MonetaryLedger`'s expected M2. This aligns the forensic tools with the architectural definition.
++
++## 2. [Regression Analysis]
++
++### Broken Tests & Fixes
++Two unit tests failed initially because they relied on the old, double-counting definition of M2 (M2 = Cash + Deposits + Reserves).
++1.  `tests/unit/simulation/systems/test_audit_total_m2.py`: `test_audit_total_m2_logic` expected M2 to be 300 (Sum of all assets). It failed because the new logic correctly excludes the Bank (50) and does not double-count deposits (200), resulting in 100 (Household Balance).
++    *   **Fix**: Updated the expectation to 100 and the log message assertion to match the new format.
++2.  `tests/unit/systems/test_settlement_security.py`: `test_audit_total_m2_strict_protocol` expected 5200. It failed because the new logic returns 200 (Public Agent Balance).
++    *   **Fix**: Updated the expectation to 200.
++
++### Forensics Findings
++`operation_forensics.py` reported a high M2 Delta (~1.1B) even after the fix. Analysis revealed:
++- **Current M2 (~1.9B)**: Matches the sum of Household balances (verified via logs). This confirms the calculation logic is correct (Single Count).
++- **Expected M2 (~0.98B)**: Matches the Baseline set at Tick 0.
++- **Delta (+1B)**: Represents unrecorded monetary expansion during the simulation (likely Bank -> Public flows such as loans or interest payments that are not capturing `record_monetary_expansion`). While the calculation definition is now correct, the *tracking* of money creation in the wider simulation needs future attention (out of scope for this calculation fix).
++
++## 3. [Test Evidence]
++
++### Unit & Integration Tests
++All 1064 tests passed successfully.
++
++```bash
++$ python -m pytest tests/
++============================= test session starts ==============================
++platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
++rootdir: /app
++configfile: pytest.ini
++plugins: asyncio-0.25.3, cov-6.0.0, anyio-4.8.0, mock-3.14.0, hypothesis-6.125.2
++collected 1071 items
++
++tests/unit/simulation/systems/test_audit_total_m2.py .                     [  0%]
++tests/unit/systems/test_settlement_security.py .                             [  0%]
++...
++tests/unit/utils/test_config_factory.py ..                                   [100%]
++
++================ 1064 passed, 7 skipped, 1 warning in 14.17s =================
++```
++
++### Operation Forensics Verification
++Manually verified `SettlementSystem` exclusion logic using `operation_forensics.py` logs:
++```
++2026-02-25 01:50:00 [WARNING] modules.system.builders.simulation_builder: M2_CALC | High Balance Agent Included: 100 (Type: Household) = 108928810
++...
++2026-02-25 01:50:00 [WARNING] modules.system.builders.simulation_builder: MONEY_SUPPLY_CHECK | Current: 1956939635, Expected: 987302155, Delta: 969637480
++```
++The "Current" value matches the sum of the logged Household balances, confirming that Bank/System agents are correctly excluded and double-counting is eliminated.
+diff --git a/reports/diagnostic_refined.md b/reports/diagnostic_refined.md
+index 768e3230..7a5e50be 100644
+--- a/reports/diagnostic_refined.md
++++ b/reports/diagnostic_refined.md
+@@ -1,150 +1,102 @@
+ # Refined Diagnostic Logs
+ Critical events extracted for Gemini analysis.
+ 
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 443283109, Expected: 243651910, Delta: 199631199
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 464433002, Expected: 248985176, Delta: 215447826
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 832553732, Expected: 433067418, Delta: 399486314
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 864147098, Expected: 448885978, Delta: 415261120
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1232159532, Expected: 632914072, Delta: 599245460
+-- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1232115778, Expected: 632914072, Delta: 599201706
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1641731059, Expected: 832187623, Delta: 809543436
+-- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1641687305, Expected: 832187623, Delta: 809499682
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2019652669, Expected: 1021192182, Delta: 998460487
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2050748715, Expected: 1036762082, Delta: 1013986633
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2405541, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2405541, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2405541, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2405541, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2405541, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2405541, Req: 5000000.
+-- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2050704961, Expected: 1036762082, Delta: 1013942879
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4452897, Req: 5000000.
+-- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2062426735, Expected: 1036762082, Delta: 1025664653
+-- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2074886795, Expected: 1036762082, Delta: 1038124713
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2463124023, Expected: 1224235495, Delta: 1238888528
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3791473, Req: 5000000.
+-- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2470471137, Expected: 1227930929, Delta: 1242540208
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2861950551, Expected: 1423692513, Delta: 1438258038
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2879205311, Expected: 1432341770, Delta: 1446863541
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3270589757, Expected: 1628055870, Delta: 1642533887
+-- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3270546003, Expected: 1628055870, Delta: 1642490133
+-- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3289788787, Expected: 1628055870, Delta: 1661732917
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4746743, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4746743, Req: 5000000.
+-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3298986509, Expected: 1632676608, Delta: 1666309901
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3688218083, Expected: 1827314272, Delta: 1860903811
+-- **Tick 23** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.56 out of bounds [8.79, 11.92]
+-  - Details: agent_id=122
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3717323465, Expected: 1841888840, Delta: 1875434625
+-- **Tick 24** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 8.13 out of bounds [8.79, 11.92]
+-  - Details: agent_id=122
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4106464097, Expected: 2036481033, Delta: 2069983064
+-- **Tick 25** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.72 out of bounds [8.79, 11.92]
+-  - Details: agent_id=122
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4135477967, Expected: 2051009845, Delta: 2084468122
+-- **Tick 26** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 7.33 out of bounds [8.79, 11.92]
+-  - Details: agent_id=122
+-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4135434213, Expected: 2051009845, Delta: 2084424368
+-- **Tick 27** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.96 out of bounds [8.79, 11.92]
+-  - Details: agent_id=122
+-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4165775074, Expected: 2051009845, Delta: 2114765229
+-- **Tick 28** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.61 out of bounds [8.78, 11.91]
+-  - Details: agent_id=122
+-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4165731320, Expected: 2051009845, Delta: 2114721475
+-- **Tick 29** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 6.27 out of bounds [8.78, 11.91]
+-  - Details: agent_id=122
+-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 123 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+-  - Details: agent_id=123
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4471863022, Expected: 2204097573, Delta: 2267765449
+-- **Tick 30** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.95 out of bounds [8.76, 11.89]
+-  - Details: agent_id=122
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4593770084, Expected: 2265072981, Delta: 2328697103
+-- **Tick 31** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.65 out of bounds [8.76, 11.89]
+-  - Details: agent_id=122
+-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 120 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+-  - Details: agent_id=120
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4899276486, Expected: 2417848059, Delta: 2481428427
+-- **Tick 32** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.36 out of bounds [8.76, 11.89]
+-  - Details: agent_id=122
+-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4899232732, Expected: 2417848059, Delta: 2481384673
+-- **Tick 33** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 5.09 out of bounds [8.76, 11.89]
+-  - Details: agent_id=122
+-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4915856467, Expected: 2417848059, Delta: 2498008408
+-- **Tick 34** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.83 out of bounds [8.75, 11.88]
+-  - Details: agent_id=122
+-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4915812713, Expected: 2417848059, Delta: 2497964654
+-- **Tick 35** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.58 out of bounds [8.75, 11.88]
+-  - Details: agent_id=122
+-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4915768959, Expected: 2417848059, Delta: 2497920900
+-- **Tick 36** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 4.35 out of bounds [8.74, 11.87]
+-  - Details: agent_id=122
+-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 121 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+-  - Details: agent_id=121
+-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 122 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+-  - Details: agent_id=122
+-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4943185884, Expected: 2417848059, Delta: 2525337825
+-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4943142130, Expected: 2417848059, Delta: 2525294071
+-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4943098376, Expected: 2417848059, Delta: 2525250317
+-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4943054622, Expected: 2417848059, Delta: 2525206563
+-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4943010868, Expected: 2417848059, Delta: 2525162809
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5118245990, Expected: 2505487497, Delta: 2612758493
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5370953878, Expected: 2631863318, Delta: 2739090560
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5545897644, Expected: 2719357078, Delta: 2826540566
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5808620858, Expected: 2850740562, Delta: 2957880296
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5983579942, Expected: 2938241981, Delta: 3045337961
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6246215600, Expected: 3069581687, Delta: 3176633913
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6421087148, Expected: 3157039338, Delta: 3264047810
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6683635282, Expected: 3288335282, Delta: 3395300000
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6858316456, Expected: 3375697746, Delta: 3482618710
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7130877992, Expected: 3512000391, Delta: 3618877601
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7305469698, Expected: 3599318121, Delta: 3706151577
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7577941784, Expected: 3735576041, Delta: 3842365743
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7752444056, Expected: 3822849054, Delta: 3929595002
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8024826728, Expected: 3959062267, Delta: 4065764461
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8209237608, Expected: 4051289584, Delta: 4157948024
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8481323152, Expected: 4187354233, Delta: 4293968919
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8665848454, Expected: 4279638761, Delta: 4386209693
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8937842658, Expected: 4415657740, Delta: 4522184918
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9122276636, Expected: 4507896606, Delta: 4614380030
+-- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
+-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9394076660, Expected: 4643818495, Delta: 4750258165
+\ No newline at end of file
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 200051140
++- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 443890518, Expected: 243890518, Delta: 200000000
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 200051140
++- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 443846682, Expected: 243890518, Delta: 199956164
++- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 199938311
++- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 843629354, Expected: 443803772, Delta: 399825582
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 199938311
++- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 843585518, Expected: 443803772, Delta: 399781746
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 51490.
++- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
++- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1082695256, Expected: 563380559, Delta: 519314697
++- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 189928071
++- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1446888282, Expected: 737735388, Delta: 709152894
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 189928071
++- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
++- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1466593948, Expected: 747612198, Delta: 718981750
++- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1699567, Req: 5000000.
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 102705886
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 102766915
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 102766994
++- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1549837094, Expected: 789257929, Delta: 760579165
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 102705886
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 102766915
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 102766994
++- **Tick ?** | **WARNING** | No handler for tx type: monetary_expansion
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 204215828
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 103 (Type: Household) = 103874754
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 105 (Type: Household) = 103804734
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 106 (Type: Household) = 103770743
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 113799282
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 118860299
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 113860378
++- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1956988773, Expected: 987302155, Delta: 969686618
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 1 (Type: Government) = 204215828
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 103 (Type: Household) = 103874754
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 105 (Type: Household) = 103804734
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 106 (Type: Household) = 103770743
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 113799282
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 118860299
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 113860378
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4578574, Req: 5000000.
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 100 (Type: Household) = 108928810
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 101 (Type: Household) = 109899533
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 102 (Type: Household) = 109892325
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 103 (Type: Household) = 114968733
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 104 (Type: Household) = 109904301
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 105 (Type: Household) = 114897910
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 106 (Type: Household) = 114862894
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 107 (Type: Household) = 104890992
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 109 (Type: Household) = 109970419
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 111 (Type: Household) = 109942527
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 112 (Type: Household) = 104909684
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 114 (Type: Household) = 104937017
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 124890459
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 129924100
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 124951543
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 118 (Type: Household) = 104930250
++- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1956939635, Expected: 987302155, Delta: 969637480
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 100 (Type: Household) = 108928810
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 101 (Type: Household) = 109899533
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 102 (Type: Household) = 109892325
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 103 (Type: Household) = 114968733
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 104 (Type: Household) = 109904301
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 105 (Type: Household) = 114897910
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 106 (Type: Household) = 114862894
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 107 (Type: Household) = 104890992
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 109 (Type: Household) = 109970419
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 111 (Type: Household) = 109942527
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 112 (Type: Household) = 104909684
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 114 (Type: Household) = 104937017
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 115 (Type: Household) = 124890459
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 116 (Type: Household) = 129924100
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 117 (Type: Household) = 124951543
++- **Tick ?** | **WARNING** | M2_CALC | High Balance Agent Included: 118 (Type: Household) = 104930250
+\ No newline at end of file
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index 8b730de2..8d02de19 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -183,64 +183,69 @@ class SettlementSystem(IMonetaryAuthority):
+ 
+     def get_total_circulating_cash(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+         """
+-        Returns total physical cash held by non-bank agents (M0 outside bank reserves).
+-        Includes Estate Agents to prevent M2 Leak upon death.
++        Deprecated: Use get_total_m2_pennies() instead.
++        Previously returned physical cash held by non-bank agents.
++        Now aliases to get_total_m2_pennies() for backward compatibility.
+         """
+-        total_cash = 0
++        return self.get_total_m2_pennies(currency)
+ 
+-        # 1. Active Agents
+-        if self.agent_registry:
+-            agents = self.agent_registry.get_all_financial_agents()
+-            system_ids = {str(ID_CENTRAL_BANK), str(ID_SYSTEM), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
++    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """
++        Calculates total M2 = Sum(balances of Household + Firm + Government + Estate Registry agents).
++        Strictly excludes ID_SYSTEM, ID_CENTRAL_BANK, ID_ESCROW, ID_PUBLIC_MANAGER, and any agent implementing IBank.
++        Ensures agents are not counted twice (e.g. if in both registries).
++        """
++        total_m2 = 0
++        processed_ids = set()
+ 
+-            for agent in agents:
+-                # Skip System Agents
+-                if str(agent.id) in system_ids:
+-                    continue
++        # System Agents to Exclude
++        excluded_ids = {str(ID_SYSTEM), str(ID_CENTRAL_BANK), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
++        if self.bank:
++             excluded_ids.add(str(self.bank.id))
+ 
+-                # Skip Commercial Banks (Reserves)
+-                if isinstance(agent, IBank):
+-                    continue
++        def process_agent_balance(agent: Any) -> int:
++            if not agent: return 0
+ 
+-                balance = 0
+-                if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
+-                    balance = agent.balance_pennies
+-                elif isinstance(agent, IFinancialAgent):
+-                    balance = agent.get_balance(currency)
+-                elif isinstance(agent, ICurrencyHolder):
+-                     assets = agent.get_assets_by_currency()
+-                     balance = assets.get(currency, 0)
++            # 0. Deduplication
++            if agent.id in processed_ids:
++                return 0
++            processed_ids.add(agent.id)
+ 
+-                if balance > 0:
+-                    total_cash += balance
++            # 1. ID Check
++            if str(agent.id) in excluded_ids:
++                return 0
+ 
+-        # 2. Estate Agents (Liquidation Holding)
+-        if self.estate_registry:
+-            for agent in self.estate_registry.get_all_estate_agents():
+-                balance = 0
+-                if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
+-                    balance = agent.balance_pennies
+-                elif isinstance(agent, IFinancialAgent):
+-                    balance = agent.get_balance(currency)
+-
+-                if balance > 0:
+-                    total_cash += balance
+-
+-        return total_cash
++            # 2. Type Check (Exclude Banks - Reserves are M0)
++            if isinstance(agent, IBank):
++                # self.logger.debug(f"M2_CALC | Excluded Bank by Type: {agent.id}")
++                return 0
++
++            # 3. Get Balance
++            balance = 0
++            # Prefer IFinancialEntity for direct access
++            if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
++                balance = agent.balance_pennies
++            # Fallback to IFinancialAgent
++            elif isinstance(agent, IFinancialAgent):
++                balance = agent.get_balance(currency)
++            # Fallback to ICurrencyHolder
++            elif isinstance(agent, ICurrencyHolder):
++                 balance = agent.get_assets_by_currency().get(currency, 0)
+ 
+-    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+-        """Calculates total M2 = Circulating Cash + Total Deposits."""
+-        if not self.agent_registry: return 0
++            return balance
+ 
+-        circulating_cash = self.get_total_circulating_cash(currency)
++        # 1. Active Agents
++        if self.agent_registry:
++            agents = self.agent_registry.get_all_financial_agents()
++            for agent in agents:
++                total_m2 += process_agent_balance(agent)
+ 
+-        total_deposits = 0
+-        agents = self.agent_registry.get_all_financial_agents()
+-        for agent in agents:
+-            if isinstance(agent, IBank):
+-                total_deposits += agent.get_total_deposits()
++        # 2. Estate Agents
++        if self.estate_registry:
++            for agent in self.estate_registry.get_all_estate_agents():
++                total_m2 += process_agent_balance(agent)
+ 
+-        return circulating_cash + total_deposits
++        return total_m2
+ 
+     def get_assets_by_currency(self) -> Dict[str, int]:
+         """
+@@ -743,56 +748,22 @@ class SettlementSystem(IMonetaryAuthority):
+         )
+ 
+     def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:
+-        if not self.agent_registry: return False
+-
+-        agents = self.agent_registry.get_all_financial_agents()
+-        total_cash = 0
+-        total_liabilities = 0
+-        bank_reserves = 0
+-        total_deposits = 0
+-
+-        for agent in agents:
+-            if isinstance(agent, IFinancialAgent):
+-                agent_id = agent.id
+-            else:
+-                continue
+-
+-            if agent_id == ID_CENTRAL_BANK or str(agent_id) == str(ID_CENTRAL_BANK):
+-                continue
+-
+-            current_balance = 0
+-            if isinstance(agent, IFinancialEntity):
+-                current_balance = agent.balance_pennies
+-            elif isinstance(agent, IFinancialAgent):
+-                current_balance = agent.get_balance(DEFAULT_CURRENCY)
+-            elif isinstance(agent, ICurrencyHolder):
+-                 assets = agent.get_assets_by_currency()
+-                 current_balance = assets.get(DEFAULT_CURRENCY, 0)
+-
+-            if current_balance >= 0:
+-                total_cash += current_balance
+-            else:
+-                total_liabilities += current_balance
+-
+-            if isinstance(agent, IBank):
+-                bank_reserves += current_balance
+-                total_deposits += agent.get_total_deposits()
+-
+-        # M2 = Circulating Cash + Deposits + Liabilities
+-        # Liabilities are negative, so adding them preserves the zero-sum ledger
+-        total_m2 = (total_cash - bank_reserves) + total_deposits + total_liabilities
++        """
++        Verifies that the current M2 matches the expected total.
++        logs MONEY_SUPPLY_CHECK tag for forensics.
++        """
++        current_m2 = self.get_total_m2_pennies(DEFAULT_CURRENCY)
+ 
+         if expected_total is not None:
+-            if total_m2 != expected_total:
++            if current_m2 != expected_total:
+                 self.logger.critical(
+-                    f"AUDIT_INTEGRITY_FAILURE | M2 Mismatch! Expected: {expected_total}, Actual: {total_m2}, Diff: {total_m2 - expected_total} "
+-                    f"(Cash: {total_cash}, Deposits: {total_deposits}, Liabilities: {total_liabilities})",
+-                    extra={"expected": expected_total, "actual": total_m2, "diff": total_m2 - expected_total}
++                    f"AUDIT_INTEGRITY_FAILURE | M2 Mismatch! Expected: {expected_total}, Actual: {current_m2}, Diff: {current_m2 - expected_total}",
++                    extra={"expected": expected_total, "actual": current_m2, "diff": current_m2 - expected_total, "tag": "MONEY_SUPPLY_CHECK"}
+                 )
+                 return False
+             else:
+-                self.logger.info(f"AUDIT_PASS | M2 Verified: {total_m2} (Cash: {total_cash}, Liab: {total_liabilities})")
++                self.logger.info(f"AUDIT_PASS | M2 Verified: {current_m2} (Delta: 0)", extra={"tag": "MONEY_SUPPLY_CHECK"})
+                 return True
+         else:
+-             self.logger.info(f"AUDIT_PASS | M2 Current: {total_m2} (Cash: {total_cash}, Liab: {total_liabilities}, No expectation set)")
++             self.logger.info(f"AUDIT_PASS | M2 Current: {current_m2} (No expectation set)", extra={"tag": "MONEY_SUPPLY_CHECK"})
+              return True
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index ef0e0833..dd03696b 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -46,7 +46,7 @@ if TYPE_CHECKING:
+ from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry, DEFAULT_CURRENCY # Added for Phase 33
+ from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW
+ from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
+-from modules.finance.api import IShareholderRegistry
++from modules.finance.api import IShareholderRegistry, IBank
+ from modules.simulation.api import AgentID, IEstateRegistry
+ from modules.governance.api import SystemCommand
+ from simulation.dtos.commands import GodCommandDTO
+@@ -196,6 +196,9 @@ class WorldState:
+         # M2 from SSoT
+         if self.monetary_ledger:
+             total_m2_pennies = self.monetary_ledger.get_total_m2_pennies(DEFAULT_CURRENCY)
++        else:
++             # Re-run full calculation if ledger missing
++             return self._legacy_calculate_total_money()
+ 
+         # Calculate System Debt (Legacy Iteration)
+         # Helper to process an agent
+@@ -213,18 +216,23 @@ class WorldState:
+                 system_debt_pennies += abs(val)
+ 
+         # 1. Active Agents in Registry
+-        system_agent_ids = {ID_CENTRAL_BANK, ID_SYSTEM, getattr(self.bank, 'id', -999) if self.bank else -999}
++        excluded_ids = {str(ID_SYSTEM), str(ID_CENTRAL_BANK), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
++        if self.bank:
++             excluded_ids.add(str(self.bank.id))
+         
+         for agent in self.agents.values():
+             # Dead Agent Guard (Strict)
+             if hasattr(agent, 'is_active') and not agent.is_active:
+                 continue
+             
+-            # Exclude System Agents from Debt check if needed (System Debt usually implies Gov Debt, but here it sums private debt?)
+-            # "system_debt_pennies" usually means "Total Debt in the System".
+-            if hasattr(agent, 'id') and agent.id in system_agent_ids:
++            # Exclude System Agents
++            if hasattr(agent, 'id') and str(agent.id) in excluded_ids:
+                 continue
+-                
++
++            # Exclude IBank
++            if isinstance(agent, IBank):
++                continue
++
+             process_debt(agent)
+ 
+         # 2. Estate Agents
+@@ -232,11 +240,6 @@ class WorldState:
+             for agent in self.estate_registry.get_all_estate_agents():
+                 process_debt(agent)
+ 
+-        # Fallback if Ledger missing (should not happen in initialized sim)
+-        if not self.monetary_ledger:
+-             # Re-run full calculation if ledger missing
+-             return self._legacy_calculate_total_money()
+-
+         return MoneySupplyDTO(
+             total_m2_pennies=total_m2_pennies,
+             system_debt_pennies=system_debt_pennies,
+@@ -247,24 +250,31 @@ class WorldState:
+         # Fallback logic mirroring original implementation
+         total_m2_pennies = 0
+         system_debt_pennies = 0
++        processed_ids = set()
+ 
+         def process_agent(agent):
+             nonlocal total_m2_pennies, system_debt_pennies
++            if not hasattr(agent, 'id') or agent.id in processed_ids: return
++            processed_ids.add(agent.id)
++
+             if not hasattr(agent, 'get_assets_by_currency'): return
+             val = int(agent.get_assets_by_currency().get(DEFAULT_CURRENCY, 0))
+             if val >= 0: total_m2_pennies += val
+             else: system_debt_pennies += abs(val)
+ 
+-        system_agent_ids = {
+-            ID_CENTRAL_BANK,
+-            ID_SYSTEM,
+-            ID_ESCROW,
+-            ID_PUBLIC_MANAGER,
+-            getattr(self.bank, 'id', -999) if self.bank else -999
++        excluded_ids = {
++            str(ID_CENTRAL_BANK),
++            str(ID_SYSTEM),
++            str(ID_ESCROW),
++            str(ID_PUBLIC_MANAGER)
+         }
++        if self.bank:
++            excluded_ids.add(str(self.bank.id))
++
+         for agent in self.agents.values():
+             if hasattr(agent, 'is_active') and not agent.is_active: continue
+-            if hasattr(agent, 'id') and agent.id in system_agent_ids: continue
++            if hasattr(agent, 'id') and str(agent.id) in excluded_ids: continue
++            if isinstance(agent, IBank): continue
+             process_agent(agent)
+ 
+         if self.estate_registry:
+diff --git a/tests/unit/simulation/systems/test_audit_total_m2.py b/tests/unit/simulation/systems/test_audit_total_m2.py
+index d9ce0f5b..7fd008e2 100644
+--- a/tests/unit/simulation/systems/test_audit_total_m2.py
++++ b/tests/unit/simulation/systems/test_audit_total_m2.py
+@@ -25,7 +25,9 @@ def test_audit_total_m2_logic():
+     # Total Cash = HH(100) + Bank(50) = 150.
+     # Bank Reserves = 50.
+     # Total Deposits = 200.
+-    # M2 = (150 - 50) + 200 = 300.
++    # New M2 Definition: Sum of Public Balances (Household + Firm).
++    # Bank Reserves (M0) and Deposits (Liabilities) are NOT summed.
++    # M2 = HH(100).
+     bank = MagicMock(spec=IBank)
+     bank.id = 2
+     # IBank uses get_balance method
+@@ -40,7 +42,7 @@ def test_audit_total_m2_logic():
+ 
+     # Verify M2 calculation
+     # Since audit_total_m2 returns bool based on expectation, we pass expectation.
+-    result = ss.audit_total_m2(expected_total=300)
++    result = ss.audit_total_m2(expected_total=100)
+ 
+     if not result:
+         # Debug why it failed
+@@ -51,5 +53,5 @@ def test_audit_total_m2_logic():
+             print(f"All logs: {ss.logger.mock_calls}")
+ 
+     assert result
+-    # Expected: Cash 150, Liab: 0
+-    ss.logger.info.assert_called_with("AUDIT_PASS | M2 Verified: 300 (Cash: 150, Liab: 0)")
++    # Expected: M2 = 100.
++    ss.logger.info.assert_called_with("AUDIT_PASS | M2 Verified: 100 (Delta: 0)", extra={'tag': 'MONEY_SUPPLY_CHECK'})
+diff --git a/tests/unit/systems/test_settlement_security.py b/tests/unit/systems/test_settlement_security.py
+index 225af792..16342e39 100644
+--- a/tests/unit/systems/test_settlement_security.py
++++ b/tests/unit/systems/test_settlement_security.py
+@@ -114,19 +114,18 @@ def test_audit_total_m2_strict_protocol():
+     bank = StrictMockBank(id=1, balance=1000, deposits=5000)
+     agent = StrictFinancialAgent(id=2, balance=200) # Cash in circulation
+ 
+-    # M2 = (Total Cash - Bank Reserves) + Total Deposits + Escrow
+-    # Cash: Bank(1000) + Agent(200) = 1200
+-    # Bank Reserves: 1000
+-    # Deposits: 5000
+-    # Escrow: 0
+-    # M2 = (1200 - 1000) + 5000 + 0 = 5200
++    # New M2 Definition: Sum of Public Balances.
++    # Bank (1000) is Excluded.
++    # Deposits (5000) are NOT added separately.
++    # Agent (200) is Included.
++    # M2 = 200.
+ 
+     # Mock Registry
+     mock_registry = MagicMock()
+     mock_registry.get_all_financial_agents.return_value = [bank, agent]
+     system.agent_registry = mock_registry
+ 
+-    assert system.audit_total_m2(expected_total=5200) == True
++    assert system.audit_total_m2(expected_total=200) == True
+ 
+ def test_transfer_memo_validation():
+     """

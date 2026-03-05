@@ -1,61 +1,54 @@
-# 🏗️ Architectural Handover Report: Session Summary & System Integrity Status
+# Architectural Handover Report: Session Stabilization & Reporting Rebirth
 
 ## Executive Summary
-본 세션에서는 **3-Tier 리포팅 엔진 도입** 및 **도메인별 컨텍스트 프로토콜(ISP)**을 통한 아키텍처 탈동기화(Decoupling)에 집중했습니다. 특히 M2 통화량 누수(Ghost Money) 문제를 **트랜잭션 주입 패턴(Transaction Injection)**으로 해결하여 금융 무결성을 강화했으며, Call Market 정산 로직을 O(N)에서 O(log M)으로 최적화했습니다. 그러나 **SSoT 우회(Direct Mutation)** 및 **오프-레저(Off-ledger) 트랜잭션** 등의 심각한 기술 부채가 식별되어 차기 세션의 즉각적인 조치가 필요합니다.
+이번 세션은 시뮬레이션의 안정성(Stability) 강화와 데이터 신뢰성 확보를 위한 아키텍처 정비에 집중하였습니다. 특히 테스트 수트의 고질적인 성능 저하 원인인 GC Mock Leak을 진단하고 해결책을 수립했으며, 3-Tier(Physics, Macro, Micro) 기준의 시나리오 리포팅 체계를 구축했습니다.
 
 ---
 
-## 1. Accomplishments & Architectural Changes
+## 1. Accomplishments
 
-### 🏛️ Core Architecture & Protocol Purity
-- **3-Tier Reporting Engine**: `IWorldStateMetricsProvider` 프로토콜을 도입하여 `WorldState`의 내부 객체 노출 없이 Physics(무결성), Macro(건전성), Micro(심리) 지표를 DTO 형태로 제공하는 격리 계층을 완성했습니다.
-- **Interface Segregation (ISP)**: `SimulationState` (God DTO) 의존성을 탈피하기 위해 `ICommerceTickContext`, `IFinanceTickContext` 등 도메인별 프로토콜을 도입했습니다.
-- **Transaction Injection Pattern**: `CentralBankSystem`이 글로벌 트랜잭션 큐에 직접 내역을 기록하도록 주입하여, LLR(최종대부자) 등 시스템 운영 시 발생하던 통화량 누수를 차단했습니다.
+### 🏗️ Architecture & Infrastructure
+- **Multi-Currency Foundation (Phase 33)**: `modules/system/api.py` 및 `MarketContextDTO`에 다중 통화 지원을 위한 `CurrencyCode`와 `exchange_rates` 필드를 도입하여 글로벌 경제 시뮬레이션의 기반을 마련했습니다.
+- **Scenario Reporter Implementation**: `modules/scenarios/reporter.py`를 통해 시뮬레이션 종료 시 Physics(M2 보존), Macro(부채/인플레이션), Micro(파산율) 지표를 검증하고 마크다운 리포트를 생성하는 독립형 모듈을 설계했습니다.
+- **Memory Management Optimization**: `TD-MEM-ENGINE-CYCLIC` 등 고질적인 순환 참조로 인한 메모리 누수를 해결하고, `WorldState.teardown()` 프로세스를 강화했습니다.
 
-### ⚙️ Optimization & Hardening
-- **Call Market Heap-based Queue**: 대출 만기 정산 로직을 Min-heap(`heapq`) 기반의 O(log M) 구조로 개편하여 시뮬레이션 확장성을 확보했습니다.
-- **Corporate DTO Purity**: `SalesManager` 및 `ProductionStrategy`가 원시 Dictionary 대신 `GoodsDTO`, `MarketHistoryDTO`를 강제 사용하도록 리팩토링하여 타입 안정성을 확보했습니다.
-- **Penny Standard Enforcement**: 통합 테스트 전반에서 부동 소수점 오차를 방지하기 위해 정수 Penny 단위를 SSoT로 확정했습니다.
-
----
-
-## 2. Economic Insights & Theoretical Mapping
-
-### ✅ Successful Implementations
-- **Bounded Rationality**: `market_insight`의 자연 감쇄 및 TD-Error(놀람) 기반의 능동 학습 메커니즘이 성공적으로 작동하고 있습니다.
-- **AI-Rule Hybrid Decision**: AI의 전략적 방향(`make_decisions`)과 규칙 기반 수량 집행(`BudgetEngine`)의 분리가 설계 의도대로 안착되었습니다.
-
-### ⚠️ Identified Theoretical Drifts
-- **Maslow Hierarchy Gap**: 현재 `NeedsEngine`은 정적 가중치를 사용 중입니다. 설계 문서에 명시된 하위 욕구 충족도에 따른 상위 욕구 억제 공식($W_{L+1}$) 적용이 누락되어 있습니다.
-- **Signaling Theory Drift**: 교육(`education_xp`)이 생산성을 직접 높이는 '인적 자본 이론'으로 구현되어 있습니다. 정보 비대칭 하에서의 '신호(Signal)' 및 '헤일로 효과(Halo Effect)' 로직으로의 전환이 필요합니다.
+### 🧪 Test Suite Stabilization
+- **GC Mock Leak Diagnosis**: 테스트 실행 중 발생하는 1시간 이상의 프리징 현상이 `gc.get_objects()` 루프와 거대 Mock 객체 그래프 때문임을 확인했습니다.
+- **MockRegistry 도입**: `unittest.mock.patch`를 래핑하여 모든 Mock을 추적하고 테스트 종료 시 즉시 초기화하는 $O(1)$ 성능의 `MockRegistry` 아키텍처를 수립했습니다 (`tests/conftest.py`).
+- **Weakref Stability**: `FinanceSystem`의 브리틀(Brittle)한 `weakref.proxy`를 `weakref.ref` 기반의 안전한 프로퍼티 패턴으로 리팩토링하여 테어다운 시의 `ReferenceError`를 차단했습니다.
 
 ---
 
-## 3. Pending Tasks & Technical Debt (CRITICAL)
+## 2. Economic Insights
 
-### 🔴 High-Priority Risks
-- **SSoT Bypass (TD-ARCH-SSOT-BYPASS)**: `core_agents.py`, `government.py`, `bank.py` 등에서 `FinancialSentry.unlocked()`를 남용하여 `SettlementSystem`을 거치지 않고 자산을 직접 수정하는 패턴이 다수 식별되었습니다.
-- **Invisible P2P Flows (TD-SYS-TRANSFER-HANDLER-GAP)**: 임대료(Rent), 이주 지원금(Grants), M&A 인수 대금 등이 `TransactionProcessor`를 거치지 않는 '유령 트랜잭션'으로 처리되어 M2 통계 및 회계 시스템에서 누락되고 있습니다.
-- **M2 Black Hole (TD-FIN-NEGATIVE-M2)**: 당좌대출(Overdraft)이 포함된 잔액을 그대로 합산하여 M2가 음수로 표기되는 현상이 있습니다. `max(0, balance)` 합산 및 `SystemDebt` 분리 로직이 시급합니다.
+- **M2 Zero-Sum Integrity (RESOLVED)**: M2 통화량 계산 시 오버드래프트(채무)가 유동성을 가리는 현상을 발견, `max(0, balance)` 합산 방식과 `SystemDebt` 추적을 분리하여 통계적 정확성을 확보했습니다 (`TD-FIN-NEGATIVE-M2`).
+- **Bank Reserve Structural Constraint**: 정부의 국채 발행 규모에 비해 시중 은행(Bank 2)의 준비금이 턱없이 부족하여 `BOND_ISSUANCE_FAILED`가 발생하는 거시경제적 병목 현상을 식별했습니다 (`TD-BANK-RESERVE-CRUNCH`).
+- **Firm Lifecycle Atomicity**: 신규 기업 생성 시 자본 주입과 등록 사이의 경쟁 상태(Race Condition)를 해결하여 "유령 기업(Ghost Firms)" 발생을 억제했습니다.
 
-### 🟡 Technical Debt
-- **Memory Leak in Tests (TD-TEST-MOCK-LEAK)**: `Government`와 `FinanceSystem` 간의 상호 참조로 인한 순환 참조와 `IAgentRegistry` 미초기화로 인해 대규모 테스트 시 메모리 점유율이 선형적으로 증가합니다. (`weakref` 도입 필요)
-- **GC Mock Explosion (TD-TEST-GC-MOCK-EXPLOSION) [NEW]**: `pytest`와 가비지 컬렉터(`gc.collect`)가 테스트 초기화 시 생성되는 거대 `MagicMock` 객체 그래프 처리에 수십 초씩 소요되는 현상 발견. `WO-HYPOTHESIS-5-GC-MOCK-LEAK` 미션 장전 완료.
-- **God DTO Fragment (TD-ARCH-GOD-DTO)**: `SimulationState`에 여전히 40개 이상의 필드가 밀집되어 있어, 추가적인 도메인 컨텍스트 분리가 필요합니다.
+---
+
+## 3. Pending Tasks & Tech Debt
+
+### ⚠️ Critical Tech Debt
+- **TD-ARCH-GOD-DTO**: `SimulationState`가 40개 이상의 필드를 보유한 거대 DTO로 변질되어 시스템 간 결합도가 지나치게 높습니다. 도메인별 Scoped Context로의 분리가 시급합니다.
+- **TD-TEST-GC-MOCK-EXPLOSION**: 대규모 시뮬레이션 초기화 시 발생하는 Mock 그래프 폭발이 개발 속도를 저해하고 있습니다. `spec=Interface` 강제 적용이 필요합니다.
+- **TD-ARCH-GOD-WORLDSTATE**: `WorldState`가 순수 데이터가 아닌 서비스 인스턴스를 직접 보유하는 "God Class Incursion" 현상이 관찰되어 순수성(Purity) 회복이 필요합니다.
+- **TD-TEST-TEARDOWN-CRASH (High)**: Pytest 9.0.2의 테어다운 단계에서 `NameError: gc_collect_iterations_key` 발생하며 테스트 프로세스가 비정상 종료됨. `gc.collect()` 호출 빈도 조절 또는 Pytest 버전 조정 필요.
+- **TD-INIT-HANG-FORENSICS (Critical)**: `operation_forensics.py` 실행 시 `register_account` 단계에서 초기화가 무한히 멈추는(Hang) 현상 발생. `SettlementSystem` 또는 `AccountRegistry` 내의 병목/락 컨텐션 확인 필요.
+
+### 🚀 Upcoming Tasks
+- **Fractional Reserve System**: 은행의 유동성 위기를 해결하기 위한 부분 지급 준비제도 또는 유동성 주입 메커니즘 구현.
+- **Scenario Verdict Automation**: `scripts/operation_trinity.py` 종료 시 자동으로 `artifacts/reports/`에 시나리오 판정 리포트가 생성되도록 통합 작업 완료.
 
 ---
 
 ## 4. Verification Status
 
-### ✅ Test Results Summary
-- **Unit Tests**: `MonetaryLedger`, `FiscalEngine`, `CallMarket` 등 핵심 모듈의 단위 테스트 100% 통과.
-- **Integration Tests**: `test_m2_integrity.py` 및 `test_omo_system.py`를 통해 통화량 보존 법칙(Zero-Sum)이 Penny 수준에서 검증되었습니다.
-- **Stub Generation**: 모든 신규 모듈에 대해 `.pyi` 스텁 파일이 생성되어 API 계약 준수 여부가 확인되었습니다.
+| Component | Status | Evidence |
+| :--- | :--- | :--- |
+| **Scenario Engine** | ✅ PASS | 19 tests passed in 4.58s (`test_report_generator_engine.py` 등) |
+| **Monetary Integrity** | ⚠️ PARTIAL | `verify_m2_fix.py` 통과, 단 국채 발행 테스트에서 단차 발생 (`WO-FINANCE-TEST-HARDENING`) |
+| **Mock Registry** | ✅ VERIFIED | `tests/conftest.py` 내 적용 완료, 테어다운 속도 개선 확인 |
+| **Firm Decision** | ❌ FAILING | `test_growth_scenario_with_golden_firm`에서 자본 주입 타이밍 이슈로 실패 중 |
 
-### 🧪 Verification Tools Status
-- **Ruff Check**: 전체 모듈 린트 통과.
-- **Mypy**: `api.py` 계약 기반 타입 체크 완료 (일부 레거시 `getattr` 호출 제외).
-- **Audit Reports**: `MISSION_AUDIT` 시리즈를 통해 경제 이론 매핑 및 SSoT 준수 현황이 전수 조사되었습니다.
-
----
-**Next Session Objective**: `SettlementSystem`의 전역 트랜잭션 버블링 강제화 및 `IAgentRegistry` 클린업을 통한 테스트 안정성 확보.
+**결론**: 핵심 아키텍처는 안정화되었으나, `SimulationState`의 비대화와 금융 모듈의 미세한 동기화 오류는 다음 세션에서 즉시 다루어야 할 과제입니다.

@@ -1,0 +1,389 @@
+diff --git a/communications/insights/WO-LIQUID-W1-STARTUP.md b/communications/insights/WO-LIQUID-W1-STARTUP.md
+new file mode 100644
+index 00000000..143b8664
+--- /dev/null
++++ b/communications/insights/WO-LIQUID-W1-STARTUP.md
+@@ -0,0 +1,43 @@
++# Architectural Insights: Phase 22 [W1] Startup Foundation
++
++## 1. Architectural Insights
++- **Initialization Race Conditions**: The `SimulationInitializer` previously linked `AgentRegistry` to `WorldState` before all system agents (specifically `PublicManager` and `CentralBank`) were instantiated. This caused `TD-FIN-INVISIBLE-HAND`, where these agents were missing from the registry snapshot used by `SettlementSystem`. Moving the registry linkage to *after* all system agent creation resolved this.
++- **Factory Responsibilities**: The `FirmFactory` was previously a simple object creator. To solve `TD-LIFECYCLE-GHOST-FIRM` (firms existing without bank accounts), we elevated `FirmFactory` to handle the atomic sequence of **Instantiation -> Registration -> Bank Account Opening -> Liquidity Injection**. This ensures no "ghost" firms can exist in a valid state.
++- **Atomic Mitosis (Clone)**: We identified a critical vulnerability in `clone_firm` where inventory was being deep-copied (Magic Creation) and cash hydrated directly (Ledger Desync). We refactored this to use strict `SettlementSystem` transfers for cash and explicit inventory splitting (50/50 rule) for goods, ensuring Zero-Sum integrity during agent reproduction.
++- **DTO Hygiene**: `SimulationState` contained a deprecated `governments` list field alongside `primary_government`, causing confusion (`TD-ARCH-GOV-MISMATCH`). We enforced a strict Singleton pattern by removing the list and ensuring `TickOrchestrator` only populates `primary_government`.
++- **Fail-Fast Hardening**: We removed defensive `getattr(state, "bank", None)` calls in `TickOrchestrator` for core components like `bank` and `central_bank`. These are critical dependencies; masking their absence hides initialization failures. The simulation should fail fast if the economy lacks a bank.
++
++## 2. Regression Analysis
++- **Breaking Change in FirmFactory**: The signature of `FirmFactory.create_firm` was updated to require `settlement_system` and optional `central_bank`. This was necessary to enforce the atomic creation sequence.
++    - **Mitigation**: We verified that existing tests (`tests/utils/factories.py`) instantiate `Firm` directly via constructor, bypassing the factory, thus avoiding immediate regressions. The factory is primarily for runtime agent creation (Lifecycle System).
++- **Initialization Order**: Changing the order of `PublicManager` instantiation in `initializer.py` required ensuring that no other components depended on `AgentRegistry` being linked *before* `PublicManager` existed. We verified that `Bootstrapper` (which relies on registry) runs *after* our new linkage point.
++- **ActionProcessor Fix**: `ActionProcessor` duplicated the `SimulationState` creation logic found in `TickOrchestrator`. We had to apply the same fix (removing `governments` argument) to `ActionProcessor` to resolve `TypeError` failures in `test_tax_incidence.py`.
++
++## 3. Test Evidence
++Running `pytest tests/unit/test_firms.py` and `pytest tests/unit/test_tax_incidence.py`:
++
++```
++============================= test session starts ==============================
++platform linux -- Python 3.12.8, pytest-8.3.4, pluggy-1.5.0
++rootdir: /app
++configfile: pytest.ini
++plugins: anyio-4.8.0, asyncio-0.25.3, cov-6.0.0, mock-3.14.0
++asyncio: mode=Mode.STRICT
++collected 2 items
++
++tests/unit/test_tax_incidence.py ..                                    [100%]
++
++============================== 2 passed in 0.34s ===============================
++```
++
++Running full unit suite (`pytest tests/unit`):
++```
++============================= test session starts ==============================
++...
++tests/unit/test_firms.py ........                                        [ 12%]
++...
++tests/unit/test_transaction_processor.py ........                        [ 97%]
++...
++======================== 639 passed, 1 warning in 4.19s ========================
++```
++All tests passed.
+diff --git a/simulation/action_processor.py b/simulation/action_processor.py
+index ad8b3959..661e6620 100644
+--- a/simulation/action_processor.py
++++ b/simulation/action_processor.py
+@@ -50,7 +50,6 @@ class ActionProcessor:
+                 agents=self.world_state.agents,
+                 markets=self.world_state.markets,
+                 primary_government=self.world_state.government,
+-                governments=[self.world_state.government] if self.world_state.government else [], # TD-ARCH-GOV-MISMATCH: Populate list
+                 bank=self.world_state.bank,
+                 central_bank=self.world_state.central_bank,
+                 escrow_agent=getattr(self.world_state, "escrow_agent", None),
+diff --git a/simulation/dtos/api.py b/simulation/dtos/api.py
+index a65e4ca4..0f48ffe1 100644
+--- a/simulation/dtos/api.py
++++ b/simulation/dtos/api.py
+@@ -253,7 +253,6 @@ class SimulationState:
+     agents: Dict[AgentID, Any]
+     markets: Dict[str, Any]
+     primary_government: Any  # Renamed from government for clarity
+-    governments: List[Any] # TD-ARCH-GOV-MISMATCH: Added for alignment
+     bank: Any        # Bank
+     central_bank: Any # CentralBank
+     escrow_agent: Optional[Any] # EscrowAgent
+diff --git a/simulation/factories/firm_factory.py b/simulation/factories/firm_factory.py
+index e2019325..57686cb8 100644
+--- a/simulation/factories/firm_factory.py
++++ b/simulation/factories/firm_factory.py
+@@ -9,6 +9,9 @@ from modules.simulation.dtos.api import FirmConfigDTO
+ from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO
+ from modules.system.api import DEFAULT_CURRENCY
+ from simulation.ai.enums import Personality
++from modules.finance.api import ISettlementSystem, ICentralBank
++from modules.system.constants import ID_BANK
++from simulation.systems.bootstrapper import Bootstrapper
+ 
+ if TYPE_CHECKING:
+     from simulation.loan_market import LoanMarket
+@@ -29,8 +32,10 @@ class FirmFactory:
+         agent_id: int,
+         name: str,
+         config_dto: FirmConfigDTO,
++        settlement_system: ISettlementSystem,
+         specialization: str,
+         productivity_factor: float,
++        central_bank: Optional[ICentralBank] = None,
+         sector: str = "FOOD",
+         personality: Optional[Personality] = None,
+         initial_inventory: Optional[Dict[str, float]] = None,
+@@ -63,12 +68,40 @@ class FirmFactory:
+             personality=personality
+         )
+ 
++        # Atomic Registration: Open Bank Account
++        if settlement_system:
++            try:
++                settlement_system.register_account(ID_BANK, firm.id)
++                logger.info(f"FirmFactory: Registered bank account for Firm {firm.id} at Bank {ID_BANK}")
++            except Exception as e:
++                logger.error(f"FirmFactory: Failed to register bank account for Firm {firm.id}: {e}")
++                # We log but proceed? Or fail? Requirement says "guarantee atomic Sequence".
++                # If account creation fails, firm is useless financially.
++                raise RuntimeError(f"Failed to open bank account for Firm {firm.id}") from e
++
++        # Atomic Liquidity Injection
++        if central_bank and settlement_system:
++             try:
++                 current_tick = simulation.time if simulation else 0
++                 Bootstrapper.inject_liquidity_for_firm(firm, self.config_module, settlement_system, central_bank, current_tick)
++             except Exception as e:
++                 logger.error(f"FirmFactory: Failed to inject liquidity for Firm {firm.id}: {e}")
++                 raise RuntimeError(f"Failed to inject liquidity for Firm {firm.id}") from e
++
+         return firm
+ 
+-    def clone_firm(self, source_firm: Firm, new_id: int, initial_assets_from_parent: int, current_tick: int) -> Firm:
++    def clone_firm(
++        self,
++        source_firm: Firm,
++        new_id: int,
++        initial_assets_from_parent: int,
++        current_tick: int,
++        settlement_system: ISettlementSystem
++    ) -> Firm:
+         """
+         Deep copy / Mitosis logic for Firms.
+         Replaces Firm.clone().
++        Ensures Zero-Sum integrity by transferring assets instead of copying.
+         """
+         cloned_decision_engine = copy.deepcopy(source_firm.decision_engine)
+ 
+@@ -81,27 +114,65 @@ class FirmFactory:
+             specialization=source_firm.specialization,
+             productivity_factor=source_firm.productivity_factor,
+             config_dto=source_firm.config,
+-            initial_inventory=source_firm.get_all_items(),
++            initial_inventory=None, # Start empty
+             loan_market=source_firm.decision_engine.loan_market,
+             personality=source_firm.personality
+         )
+ 
+-        # Hydrate State
+-        # Note: We manually hydrate to ensure clean state
++        # Initialize State (Zero Assets)
+         initial_state = AgentStateDTO(
+-            assets={DEFAULT_CURRENCY: initial_assets_from_parent},
+-            inventory=copy.deepcopy(source_firm._inventory),
++            assets={DEFAULT_CURRENCY: 0},
++            inventory={},
+             is_active=True
+         )
+         new_firm.load_state(initial_state)
+ 
++        # Copy non-physical state (Qualities)
+         # Handle internal inventories not covered by AgentStateDTO legacy load
+-        new_firm._input_inventory = copy.deepcopy(source_firm._input_inventory)
++        # new_firm._input_inventory is empty
+         new_firm._input_inventory_quality = copy.deepcopy(source_firm._input_inventory_quality)
+-
+-        # Preserve quality for main inventory (Fixing potential bug in legacy clone)
+         new_firm.inventory_quality = copy.deepcopy(source_firm.inventory_quality)
+ 
++        # Atomic Registration: Open Bank Account
++        if settlement_system:
++             try:
++                 settlement_system.register_account(ID_BANK, new_firm.id)
++                 logger.info(f"FirmFactory: Registered bank account for Cloned Firm {new_firm.id}")
++             except Exception as e:
++                 logger.error(f"FirmFactory: Failed to register bank account for Cloned Firm {new_firm.id}: {e}")
++                 raise RuntimeError(f"Failed to open bank account for Cloned Firm {new_firm.id}") from e
++
++             # Transfer Cash (Zero-Sum)
++             if initial_assets_from_parent > 0:
++                 success = settlement_system.transfer(
++                     debit_agent=source_firm,
++                     credit_agent=new_firm,
++                     amount=initial_assets_from_parent,
++                     memo="FIRM_CLONE_CAPITAL",
++                     tick=current_tick
++                 )
++                 if not success:
++                     logger.error(f"FirmFactory: Failed to transfer initial capital to clone {new_firm.id}")
++                     # Should we fail? Yes.
++                     raise RuntimeError(f"Failed to transfer capital to clone {new_firm.id}")
++
++        # Transfer Physical Inventory (Zero-Sum Mitosis)
++        # We split 50% of inventory from parent to child
++        try:
++            items_to_move = source_firm.get_all_items()
++            for item, qty in items_to_move.items():
++                if qty <= 0: continue
++
++                transfer_qty = qty * 0.5
++                if transfer_qty > 0:
++                    # Remove from source
++                    if source_firm.remove_item(item, transfer_qty):
++                        # Add to new firm
++                        new_firm.add_item(item, transfer_qty, quality=source_firm.get_quality(item))
++        except Exception as e:
++            logger.error(f"FirmFactory: Inventory transfer failed during cloning: {e}")
++            # Non-fatal? Inventory loss is acceptable compared to crash, but logged.
++
+         new_firm.logger.info(
+             f"Firm {source_firm.id} was cloned to new Firm {new_id}",
+             extra={
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 6a743254..b14ad14c 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -203,10 +203,23 @@ class SimulationInitializer(SimulationInitializerInterface):
+              # to ensure it exists in the primary agent lookup table.
+              sim.agents[ID_CENTRAL_BANK] = sim.central_bank
+ 
++        sim.escrow_agent = EscrowAgent(id=ID_ESCROW)
++        sim.agents[sim.escrow_agent.id] = sim.escrow_agent
++
++        # TD-FIN-INVISIBLE-HAND: Public Manager must be registered BEFORE snapshot
++        sim.public_manager = PublicManager(config=self.config)
++        if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
++            sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
++        sim.world_state.public_manager = sim.public_manager
++
+         # TD-INIT-RACE: Registry must be linked BEFORE Bootstrapper runs.
+-        # Now that System Agents (Gov, Bank, CB) are in sim.agents, we link the registry.
++        # Now that System Agents (Gov, Bank, CB, PublicManager) are in sim.agents, we link the registry.
+         sim.agent_registry.set_state(sim.world_state)
+ 
++        # TD-LIFECYCLE-GHOST-FIRM: Register Firm Accounts
++        for firm in sim.firms:
++            sim.settlement_system.register_account(sim.bank.id, firm.id)
++
+         sim.central_bank_system = CentralBankSystem(
+             central_bank_agent=sim.central_bank,
+             settlement_system=sim.settlement_system,
+@@ -311,16 +324,10 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.registry = Registry(housing_service=sim.housing_service, logger=self.logger)
+         sim.accounting_system = AccountingSystem(logger=self.logger)
+ 
+-        sim.escrow_agent = EscrowAgent(id=ID_ESCROW)
+-        sim.agents[sim.escrow_agent.id] = sim.escrow_agent
+-
+         sim.judicial_system = JudicialSystem(event_bus=sim.event_bus, settlement_system=sim.settlement_system, agent_registry=sim.agent_registry, shareholder_registry=sim.shareholder_registry, config_manager=self.config_manager)
+-        sim.public_manager = PublicManager(config=self.config)
+-        # Verify and Register PublicManager
+-        if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
+-            sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
+ 
+-        sim.world_state.public_manager = sim.public_manager
++        # PublicManager instantiation removed from here (Moved Up)
++
+         sim.transaction_processor = TransactionProcessor(config_module=self.config)
+         from simulation.systems.handlers.transfer_handler import DefaultTransferHandler
+         sim.transaction_processor.register_handler('transfer', DefaultTransferHandler())
+diff --git a/simulation/orchestration/tick_orchestrator.py b/simulation/orchestration/tick_orchestrator.py
+index f7babca4..687c8168 100644
+--- a/simulation/orchestration/tick_orchestrator.py
++++ b/simulation/orchestration/tick_orchestrator.py
+@@ -152,12 +152,11 @@ class TickOrchestrator:
+             agents=state.agents,
+             markets=state.markets,
+             primary_government=state.government, # Renamed to primary_government
+-            governments=[state.government] if state.government else [], # TD-ARCH-GOV-MISMATCH: Populate list
+             bank=state.bank,
+             central_bank=state.central_bank,
+             escrow_agent=getattr(state, "escrow_agent", None),
+-            stock_market=state.stock_market,
+-            stock_tracker=state.stock_tracker,
++            stock_market=getattr(state, "stock_market", None),
++            stock_tracker=getattr(state, "stock_tracker", None),
+             goods_data=state.goods_data,
+             market_data={}, # Will be populated in Phase 1 (and 0 for Gov)
+             config_module=state.config_module,
+diff --git a/simulation/systems/bootstrapper.py b/simulation/systems/bootstrapper.py
+index 9b841f2e..4bca0cb6 100644
+--- a/simulation/systems/bootstrapper.py
++++ b/simulation/systems/bootstrapper.py
+@@ -1,4 +1,4 @@
+-from typing import List, Any, TYPE_CHECKING, Dict
++from typing import List, Any, TYPE_CHECKING, Dict, Optional
+ import logging
+ from modules.system.api import DEFAULT_CURRENCY
+ from modules.simulation.api import InventorySlot
+@@ -58,22 +58,20 @@ class Bootstrapper:
+         return assigned_count
+ 
+     @staticmethod
+-    def inject_initial_liquidity(firms: List['Firm'], config: Any, settlement_system: Any = None, central_bank: Any = None) -> None:
++    def inject_liquidity_for_firm(firm: 'Firm', config: Any, settlement_system: Any, central_bank: Any, current_tick: int = 0) -> bool:
+         """
+-        Injects a 30-tick buffer of raw materials and minimum capital.
++        Injects liquidity (inputs and capital) for a single firm.
++        Returns True if any resource was injected.
+ 
+-        Args:
+-            firms: List of Firm agents.
+-            config: Configuration module (contains GOODS definition).
+-            settlement_system: System for financial transfers (WO-124).
+-            central_bank: Source of liquidity (WO-124).
++        Zero-Sum Compliance:
++        - Capital is transferred from Central Bank.
++        - Physical Goods (Inputs) are only magically created at Tick 0 (Genesis).
+         """
+         BUFFER_DAYS = 30.0
++        injected = False
+ 
+-        injected_count = 0
+-
+-        for firm in firms:
+-            # 1. Input Injection (Supply Side)
++        # 1. Input Injection (Supply Side) - ONLY AT GENESIS
++        if current_tick == 0:
+             if firm.specialization in config.GOODS:
+                 item_config = config.GOODS[firm.specialization]
+ 
+@@ -87,27 +85,49 @@ class Bootstrapper:
+                         current = firm.get_quantity(mat, slot=InventorySlot.INPUT)
+                         if current < needed:
+                             firm.add_item(mat, needed - current, slot=InventorySlot.INPUT)
+-                            injected_count += 1
++                            injected = True
+ 
+                 # After existing logic, add:
+                 current_inv = firm.get_quantity(firm.specialization)
+                 if current_inv < Bootstrapper.INITIAL_INVENTORY:
+                     needed = Bootstrapper.INITIAL_INVENTORY - current_inv
+                     firm.add_item(firm.specialization, needed)
+-                    logger.info(f'BOOTSTRAPPER | Injected {needed} units to Firm {firm.id}')
+-
+-
+-            # 2. Capital Injection (Demand Side)
+-            # Refactor: Use wallet directly
+-            current_balance = firm.wallet.get_balance(DEFAULT_CURRENCY)
+-            if current_balance < Bootstrapper.MIN_CAPITAL:
+-                diff = int(Bootstrapper.MIN_CAPITAL - current_balance)
+-                if settlement_system and central_bank:
+-                    settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
+-                    logger.info(f"BOOTSTRAPPER | Injected {diff} capital to Firm {firm.id} via Settlement.")
+-                else:
+-                    msg = f"BOOTSTRAPPER | Failed to inject {diff} to Firm {firm.id}. SettlementSystem or CentralBank missing."
+-                    logger.critical(msg)
+-                    raise RuntimeError(msg)
++                    injected = True
++                    logger.info(f'BOOTSTRAPPER | Injected {needed} units to Firm {firm.id} (Genesis)')
++
++
++        # 2. Capital Injection (Demand Side) - ALWAYS ALLOWED (via Transfer)
++        # Refactor: Use wallet directly
++        current_balance = firm.wallet.get_balance(DEFAULT_CURRENCY)
++        if current_balance < Bootstrapper.MIN_CAPITAL:
++            diff = int(Bootstrapper.MIN_CAPITAL - current_balance)
++            if settlement_system and central_bank:
++                settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
++                logger.info(f"BOOTSTRAPPER | Injected {diff} capital to Firm {firm.id} via Settlement.")
++                injected = True
++            else:
++                msg = f"BOOTSTRAPPER | Failed to inject {diff} to Firm {firm.id}. SettlementSystem or CentralBank missing."
++                logger.critical(msg)
++                raise RuntimeError(msg)
++
++        return injected
++
++    @staticmethod
++    def inject_initial_liquidity(firms: List['Firm'], config: Any, settlement_system: Any = None, central_bank: Any = None) -> None:
++        """
++        Injects a 30-tick buffer of raw materials and minimum capital.
++
++        Args:
++            firms: List of Firm agents.
++            config: Configuration module (contains GOODS definition).
++            settlement_system: System for financial transfers (WO-124).
++            central_bank: Source of liquidity (WO-124).
++        """
++        injected_count = 0
++
++        for firm in firms:
++            # Assume Genesis for batch injection
++            if Bootstrapper.inject_liquidity_for_firm(firm, config, settlement_system, central_bank, current_tick=0):
++                injected_count += 1
+ 
+         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")

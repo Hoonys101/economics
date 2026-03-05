@@ -1,0 +1,335 @@
+diff --git a/communications/insights/MISSION_labor_api_dto.md b/communications/insights/MISSION_labor_api_dto.md
+new file mode 100644
+index 00000000..26f46635
+--- /dev/null
++++ b/communications/insights/MISSION_labor_api_dto.md
+@@ -0,0 +1,47 @@
++# MISSION: Labor Module API & DTO Realignment
++# Mission Key: MISSION_labor_api_dto
++
++## 1. [Architectural Insights]
++
++### DTO vs. Usage Realignment
++- Identified a critical mismatch between `JobOfferDTO` and `JobSeekerDTO` definitions (which correctly use `_pennies` and `int` types as per Phase 4.1) and their usage in `modules/labor/system.py` and unit tests (which were using legacy `offer_wage` float attributes).
++- Refactored `LaborMarket` implementation to strictly use penny-based arithmetic for matching and transaction generation, ensuring Zero-Sum Integrity and avoiding floating-point precision issues.
++- Updated `LaborMarketMatchResultDTO` instantiation to use penny fields (`base_wage_pennies`, `matched_wage_pennies`, `surplus_pennies`), aligning the system implementation with the API contract.
++
++### Environment Stabilization
++- Restored `FiscalPolicyDTO` in `modules/government/dtos.py`. This DTO was missing but required by `simulation/agents/government.py`, causing `ImportError` that prevented any tests from running. This fix was necessary to validate the Labor module changes.
++
++## 2. [Regression Analysis]
++
++### Fixed Broken Tests
++- `tests/unit/test_labor_market_system.py`: Tests were failing (conceptually, if imports worked) because they instantiated DTOs with invalid arguments (`offer_wage`). Updated all test cases to use `offer_wage_pennies` and integer values (e.g., 20.0 -> 2000).
++- `tests/unit/modules/labor/test_bargaining.py`: Similar fixes applied. Also updated usage of `IndustryDomain` enum to match strict typing requirements.
++
++## 3. [Test Evidence]
++
++```
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_post_job_offer PASSED [ 10%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_post_job_seeker PASSED [ 20%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_match_market_perfect_match PASSED [ 30%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_match_market_mismatch_major PASSED [ 40%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_match_market_wage_too_low PASSED [ 50%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_place_order_adapter PASSED [ 60%]
++tests/unit/test_labor_market_system.py::TestLaborMarketSystem::test_place_order_backward_compatibility PASSED [ 70%]
++tests/unit/modules/labor/test_bargaining.py::TestBargainingAndAdaptiveLearning::test_firm_adaptive_learning_wage_decrease PASSED [ 80%]
++tests/unit/modules/labor/test_bargaining.py::TestBargainingAndAdaptiveLearning::test_firm_adaptive_learning_wage_increase PASSED [ 90%]
++tests/unit/modules/labor/test_bargaining.py::TestBargainingAndAdaptiveLearning::test_nash_bargaining_surplus_sharing PASSED [100%]
++
++=============================== warnings summary ===============================
++../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_mode
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
++======================== 10 passed, 2 warnings in 0.30s ========================
++```
+diff --git a/modules/government/dtos.py b/modules/government/dtos.py
+index 44bc8369..0a04eb10 100644
+--- a/modules/government/dtos.py
++++ b/modules/government/dtos.py
+@@ -173,3 +173,14 @@ class BailoutResultDTO:
+     payment_request: PaymentRequestDTO # The initial transfer of funds
+ 
+ # endregion
++
++@dataclass
++class FiscalPolicyDTO:
++    """
++    Mutable configuration for fiscal policy.
++    Used by the Government agent to track current stance.
++    """
++    income_tax_rate: float
++    corporate_tax_rate: float
++    welfare_budget_multiplier: float = 1.0
++    tax_brackets: List[TaxBracketDTO] = field(default_factory=list)
+diff --git a/modules/labor/system.py b/modules/labor/system.py
+index a77080d1..4aaff182 100644
+--- a/modules/labor/system.py
++++ b/modules/labor/system.py
+@@ -35,7 +35,8 @@ class LaborMarket(ILaborMarket, IMarket):
+         matches: List[LaborMarketMatchResultDTO] = []
+ 
+         # Sort offers by wage descending (High paying jobs pick first)
+-        sorted_offers = sorted(self._job_offers, key=lambda x: x.offer_wage, reverse=True)
++        # Using offer_wage_pennies
++        sorted_offers = sorted(self._job_offers, key=lambda x: x.offer_wage_pennies, reverse=True)
+ 
+         # Bucket seekers by Major for Performance Optimization (O(N*M) -> O(N*K) where K is subset)
+         seekers_by_major: Dict[IndustryDomain, List[JobSeekerDTO]] = {}
+@@ -67,7 +68,7 @@ class LaborMarket(ILaborMarket, IMarket):
+ 
+             best_candidate = None
+             best_score = -1.0
+-            best_wage = 0.0
++            best_wage_pennies = 0
+             best_compatibility = "MISMATCH"
+ 
+             for major_key in search_buckets:
+@@ -81,10 +82,10 @@ class LaborMarket(ILaborMarket, IMarket):
+                         continue
+ 
+                     # 1. Base Score (Wage vs Reservation)
+-                    if seeker.reservation_wage <= 0:
++                    if seeker.reservation_wage_pennies <= 0:
+                         base_score = 1.0
+                     else:
+-                        base_score = offer.offer_wage / seeker.reservation_wage
++                        base_score = offer.offer_wage_pennies / seeker.reservation_wage_pennies
+ 
+                     # Filter: Must meet reservation wage
+                     if base_score < 1.0:
+@@ -136,27 +137,27 @@ class LaborMarket(ILaborMarket, IMarket):
+ 
+                         # Wave 3: Nash Bargaining
+                         # Surplus = WTP (Offer) - WTA (Reservation)
+-                        surplus = offer.offer_wage - seeker.reservation_wage
++                        surplus = offer.offer_wage_pennies - seeker.reservation_wage_pennies
+                         bargaining_power = 0.5 # Default split
+ 
+                         if surplus > 0:
+-                            best_wage = seeker.reservation_wage + (surplus * bargaining_power)
++                            best_wage_pennies = int(seeker.reservation_wage_pennies + (surplus * bargaining_power))
+                         else:
+-                            best_wage = offer.offer_wage # Fallback
++                            best_wage_pennies = offer.offer_wage_pennies # Fallback
+ 
+                         best_compatibility = compatibility
+ 
+             if best_candidate:
+                 # Recalculate context for DTO
+-                surplus = offer.offer_wage - best_candidate.reservation_wage
++                surplus = offer.offer_wage_pennies - best_candidate.reservation_wage_pennies
+                 matches.append(LaborMarketMatchResultDTO(
+                     employer_id=offer.firm_id,
+                     employee_id=best_candidate.household_id,
+-                    base_wage=offer.offer_wage,
+-                    matched_wage=best_wage,
++                    base_wage_pennies=offer.offer_wage_pennies,
++                    matched_wage_pennies=best_wage_pennies,
+                     match_score=best_score,
+                     major_compatibility=best_compatibility,
+-                    surplus=surplus,
++                    surplus_pennies=surplus,
+                     bargaining_power=0.5
+                 ))
+                 matched_seeker_ids.add(best_candidate.household_id)
+@@ -227,7 +228,7 @@ class LaborMarket(ILaborMarket, IMarket):
+ 
+             offer = JobOfferDTO(
+                 firm_id=AgentID(int(order_dto.agent_id)),
+-                offer_wage=order_dto.price_pennies / 100.0,
++                offer_wage_pennies=int(order_dto.price_pennies),
+                 required_education=metadata.get("required_education", 0),
+                 quantity=order_dto.quantity,
+                 major=major_enum
+@@ -248,7 +249,7 @@ class LaborMarket(ILaborMarket, IMarket):
+ 
+             seeker = JobSeekerDTO(
+                 household_id=AgentID(int(order_dto.agent_id)),
+-                reservation_wage=order_dto.price_pennies / 100.0,
++                reservation_wage_pennies=int(order_dto.price_pennies),
+                 education_level=metadata.get("education_level", 0),
+                 quantity=order_dto.quantity,
+                 major=major_enum
+@@ -266,21 +267,24 @@ class LaborMarket(ILaborMarket, IMarket):
+ 
+         for res in results:
+             # Create HIRE transaction
++            # MIGRATION: matched_wage is now derived from matched_wage_pennies
++            matched_wage = float(res.matched_wage_pennies) / 100.0
++
+             tx = Transaction(
+                 buyer_id=res.employer_id,
+                 seller_id=res.employee_id,
+                 item_id="labor",
+                 quantity=1.0,
+-                price=res.matched_wage,
++                price=matched_wage,
+                 market_id=self.id,
+                 transaction_type="HIRE",
+                 time=current_time,
+-                total_pennies=int(res.matched_wage * 100),
++                total_pennies=res.matched_wage_pennies,
+                 metadata={
+                     "match_score": res.match_score,
+                     "major_compatibility": res.major_compatibility,
+-                    "base_wage": res.base_wage,
+-                    "surplus": res.surplus,
++                    "base_wage": float(res.base_wage_pennies) / 100.0,
++                    "surplus": float(res.surplus_pennies) / 100.0,
+                     "bargaining_power": res.bargaining_power
+                 }
+             )
+diff --git a/tests/unit/modules/labor/test_bargaining.py b/tests/unit/modules/labor/test_bargaining.py
+index e97bb6cd..1bff7bbb 100644
+--- a/tests/unit/modules/labor/test_bargaining.py
++++ b/tests/unit/modules/labor/test_bargaining.py
+@@ -4,6 +4,7 @@ from modules.labor.system import LaborMarket
+ from modules.labor.api import JobOfferDTO, JobSeekerDTO
+ from simulation.components.engines.hr_engine import HREngine
+ from modules.firm.api import HRContextDTO, AgentID, MarketSnapshotDTO
++from modules.common.enums import IndustryDomain
+ 
+ class TestBargainingAndAdaptiveLearning(unittest.TestCase):
+ 
+@@ -12,23 +13,23 @@ class TestBargainingAndAdaptiveLearning(unittest.TestCase):
+         market = LaborMarket()
+ 
+         # WTP (Firm) = 2000 (20.00), WTA (Worker) = 1000 (10.00)
+-        # Surplus = 10.00
+-        # Split = 0.5 (Default) -> Price = 10.00 + 5.00 = 15.00
++        # Surplus = 1000 pennies
++        # Split = 0.5 (Default) -> Price = 1000 + 500 = 1500
+ 
+         offer = JobOfferDTO(
+             firm_id=AgentID(1),
+-            offer_wage=20.00,
++            offer_wage_pennies=2000,
+             required_education=0,
+             quantity=1.0,
+-            major="GENERAL"
++            major=IndustryDomain.GENERAL
+         )
+ 
+         seeker = JobSeekerDTO(
+             household_id=AgentID(101),
+-            reservation_wage=10.00,
++            reservation_wage_pennies=1000,
+             education_level=0,
+             quantity=1.0,
+-            major="GENERAL"
++            major=IndustryDomain.GENERAL
+         )
+ 
+         market.post_job_offer(offer)
+@@ -41,9 +42,9 @@ class TestBargainingAndAdaptiveLearning(unittest.TestCase):
+ 
+         self.assertEqual(match.employer_id, 1)
+         self.assertEqual(match.employee_id, 101)
+-        self.assertAlmostEqual(match.base_wage, 20.00)
+-        self.assertAlmostEqual(match.matched_wage, 15.00) # (10 + 20) / 2
+-        self.assertAlmostEqual(match.surplus, 10.00)
++        self.assertEqual(match.base_wage_pennies, 2000)
++        self.assertEqual(match.matched_wage_pennies, 1500) # (1000 + 2000) / 2
++        self.assertEqual(match.surplus_pennies, 1000)
+         self.assertAlmostEqual(match.bargaining_power, 0.5)
+ 
+     def test_firm_adaptive_learning_wage_increase(self):
+diff --git a/tests/unit/test_labor_market_system.py b/tests/unit/test_labor_market_system.py
+index c231ea85..198df6a6 100644
+--- a/tests/unit/test_labor_market_system.py
++++ b/tests/unit/test_labor_market_system.py
+@@ -14,7 +14,7 @@ class TestLaborMarketSystem:
+     def test_post_job_offer(self, market):
+         offer = JobOfferDTO(
+             firm_id=AgentID(101),
+-            offer_wage=15.0,
++            offer_wage_pennies=1500,
+             required_education=2,
+             quantity=1.0,
+             major=IndustryDomain.TECHNOLOGY
+@@ -26,7 +26,7 @@ class TestLaborMarketSystem:
+     def test_post_job_seeker(self, market):
+         seeker = JobSeekerDTO(
+             household_id=AgentID(201),
+-            reservation_wage=12.0,
++            reservation_wage_pennies=1200,
+             education_level=3,
+             quantity=1.0,
+             major=IndustryDomain.TECHNOLOGY
+@@ -38,13 +38,13 @@ class TestLaborMarketSystem:
+     def test_match_market_perfect_match(self, market):
+         offer = JobOfferDTO(
+             firm_id=AgentID(101),
+-            offer_wage=20.0,
++            offer_wage_pennies=2000,
+             required_education=2,
+             major=IndustryDomain.TECHNOLOGY
+         )
+         seeker = JobSeekerDTO(
+             household_id=AgentID(201),
+-            reservation_wage=15.0,
++            reservation_wage_pennies=1500,
+             education_level=2,
+             major=IndustryDomain.TECHNOLOGY
+         )
+@@ -57,7 +57,7 @@ class TestLaborMarketSystem:
+         match = results[0]
+         assert match.employer_id == AgentID(101)
+         assert match.employee_id == AgentID(201)
+-        assert match.matched_wage == 17.5 # Nash Bargaining: (20 + 15) / 2
++        assert match.matched_wage_pennies == 1750 # Nash Bargaining: (2000 + 1500) / 2
+         assert match.major_compatibility == "PERFECT"
+ 
+         # Check queues cleared
+@@ -67,13 +67,13 @@ class TestLaborMarketSystem:
+     def test_match_market_mismatch_major(self, market):
+         offer = JobOfferDTO(
+             firm_id=AgentID(101),
+-            offer_wage=20.0,
++            offer_wage_pennies=2000,
+             required_education=2,
+             major=IndustryDomain.TECHNOLOGY
+         )
+         seeker = JobSeekerDTO(
+             household_id=AgentID(201),
+-            reservation_wage=15.0,
++            reservation_wage_pennies=1500,
+             education_level=2,
+             major=IndustryDomain.FOOD_PROD
+         )
+@@ -91,13 +91,13 @@ class TestLaborMarketSystem:
+     def test_match_market_wage_too_low(self, market):
+         offer = JobOfferDTO(
+             firm_id=AgentID(101),
+-            offer_wage=10.0,
++            offer_wage_pennies=1000,
+             required_education=2,
+             major=IndustryDomain.TECHNOLOGY
+         )
+         seeker = JobSeekerDTO(
+             household_id=AgentID(201),
+-            reservation_wage=15.0,
++            reservation_wage_pennies=1500,
+             education_level=2,
+             major=IndustryDomain.TECHNOLOGY
+         )
+@@ -133,8 +133,8 @@ class TestLaborMarketSystem:
+ 
+         assert len(market._job_offers) == 1
+         assert len(market._job_seekers) == 1
+-        assert market._job_offers[0].offer_wage == 20.0
+-        assert market._job_seekers[0].reservation_wage == 15.0
++        assert market._job_offers[0].offer_wage_pennies == 2000
++        assert market._job_seekers[0].reservation_wage_pennies == 1500
+ 
+         txs = market.match_orders(1)
+         assert len(txs) == 1

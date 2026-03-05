@@ -1,0 +1,867 @@
+diff --git a/communications/insights/MISSION_liquidation_wave1_shared_kernel.md b/communications/insights/MISSION_liquidation_wave1_shared_kernel.md
+new file mode 100644
+index 00000000..59167921
+--- /dev/null
++++ b/communications/insights/MISSION_liquidation_wave1_shared_kernel.md
+@@ -0,0 +1,52 @@
++# Mission: Shared Financial Kernel & Cycle Breaker (Wave 1)
++
++## 1. Overview
++This mission successfully established the `modules.common.financial` shared kernel, breaking the circular dependency between `modules.finance` and `modules.hr`. It also enforced strict "Penny Standard" (integer arithmetic) for financial claims.
++
++## 2. Execution Summary
++1.  **Kernel Creation**: Created `modules/common/financial` with `dtos.py` and `api.py`.
++2.  **DTO Migration**:
++    -   `MoneyDTO` moved from `finance` to `common.financial`.
++    -   `Claim` moved from `common` to `common.financial`.
++    -   `Claim` upgraded to use `amount_pennies: int`.
++3.  **Interface Migration**:
++    -   `IFinancialEntity` and `IFinancialAgent` moved to `common.financial`.
++    -   `IFinancialAgent` now explicitly inherits `IFinancialEntity`.
++4.  **Refactoring**: Updated all dependent modules (`finance`, `hr`, `simulation`) to use the new kernel.
++5.  **Logic Updates**:
++    -   `LiquidationManager`, `TaxService`, `HRService` updated to use integer math for Claims.
++    -   `SettlementSystem` updated to strictly respect `IFinancialEntity` protocol.
++    -   `Government` and `MockAgent` implementations updated to fully satisfy `IFinancialEntity` (`deposit`, `withdraw`).
++
++## 3. Modified Files
++-   `modules/common/financial/__init__.py` (New)
++-   `modules/common/financial/dtos.py` (New)
++-   `modules/common/financial/api.py` (New)
++-   `modules/finance/api.py`
++-   `modules/finance/dtos.py`
++-   `modules/hr/api.py`
++-   `modules/hr/service.py`
++-   `modules/finance/service.py`
++-   `simulation/firms.py`
++-   `simulation/core_agents.py`
++-   `simulation/agents/government.py`
++-   `simulation/systems/liquidation_manager.py`
++-   `modules/finance/wallet/wallet.py`
++-   `modules/common/dtos.py` (Deleted)
++-   `tests/integration/test_liquidation_waterfall.py`
++-   `tests/unit/systems/test_liquidation_manager.py`
++-   `tests/unit/finance/test_settlement_system_overdraft.py`
++-   `tests/unit/systems/test_settlement_system.py`
++-   `tests/unit/test_ssot_compliance.py`
++-   `tests/unit/simulation/systems/test_audit_total_m2.py`
++-   `tests/finance/test_settlement_fx_swap.py`
++-   `tests/finance/test_protocol_integrity.py`
++-   `tests/unit/modules/finance/test_double_entry.py`
++-   `tests/unit/systems/test_housing_system.py`
++-   `tests/integration/test_liquidation_services.py`
++
++## 4. Test Evidence
++Ran `pytest tests/`.
++Result: **1005 passed, 11 skipped**.
++All relevant tests for Liquidation, Settlement, and Finance passed.
++Regression tests passed.
+diff --git a/modules/common/dtos.py b/modules/common/dtos.py
+deleted file mode 100644
+index a7ff56c0..00000000
+--- a/modules/common/dtos.py
++++ /dev/null
+@@ -1,10 +0,0 @@
+-from dataclasses import dataclass
+-from typing import Any
+-
+-@dataclass
+-class Claim:
+-    """Represents a creditor's claim against a liquidating entity."""
+-    creditor_id: Any
+-    amount: float
+-    tier: int
+-    description: str
+diff --git a/modules/common/financial/__init__.py b/modules/common/financial/__init__.py
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/modules/common/financial/api.py b/modules/common/financial/api.py
+new file mode 100644
+index 00000000..86dd0c68
+--- /dev/null
++++ b/modules/common/financial/api.py
+@@ -0,0 +1,60 @@
++from typing import Protocol, runtime_checkable, Dict, Any
++from modules.simulation.api import AgentID
++from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
++
++@runtime_checkable
++class IFinancialEntity(Protocol):
++    """
++    Standard interface for any entity capable of holding and transferring financial value.
++    Replaces legacy `hasattr` checks and standardizes on integer pennies.
++    """
++    @property
++    def balance_pennies(self) -> int:
++        """Returns the balance in the default currency (pennies)."""
++        ...
++
++    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """Deposits funds into the entity's wallet."""
++        ...
++
++    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """Withdraws funds from the entity's wallet."""
++        ...
++
++@runtime_checkable
++class IFinancialAgent(IFinancialEntity, Protocol):
++    """
++    Protocol for agents participating in the financial system.
++    """
++    id: AgentID
++
++    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> int:
++        ...
++
++    def get_total_debt(self) -> int:
++        ...
++
++    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """Deposits a specific amount of a given currency. Internal use only."""
++        ...
++
++    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """
++        Withdraws a specific amount of a given currency.
++        Raises InsufficientFundsError if funds are insufficient.
++        Internal use only.
++        """
++        ...
++
++    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """Returns the current balance for the specified currency."""
++        ...
++
++    def get_all_balances(self) -> Dict[CurrencyCode, int]:
++        """Returns a copy of all currency balances."""
++        ...
++
++    @property
++    def total_wealth(self) -> int:
++        """Returns the total wealth in default currency estimation."""
++        ...
+diff --git a/modules/common/financial/dtos.py b/modules/common/financial/dtos.py
+new file mode 100644
+index 00000000..48ce5302
+--- /dev/null
++++ b/modules/common/financial/dtos.py
+@@ -0,0 +1,22 @@
++from dataclasses import dataclass
++from typing import Any
++
++@dataclass(frozen=True)
++class MoneyDTO:
++    """
++    Represents a monetary value with its associated currency.
++    MIGRATION NOTE: Used to be float 'amount'. Now 'amount_pennies' (int).
++    """
++    amount_pennies: int
++    currency: str = "USD"
++
++@dataclass(frozen=True)
++class Claim:
++    """
++    Represents a creditor's claim against a liquidating entity.
++    Migrated from modules.common.dtos with Breaking Change: 'amount' (float) -> 'amount_pennies' (int).
++    """
++    creditor_id: Any
++    amount_pennies: int
++    tier: int
++    description: str
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index bba7bf5d..e92ae364 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -6,7 +6,7 @@ import abc
+ from abc import ABC, abstractmethod
+ from uuid import UUID
+ from modules.finance.dtos import (
+-    MoneyDTO, MultiCurrencyWalletDTO, LoanApplicationDTO, LoanDTO, DepositDTO, FXMatchDTO,
++    MultiCurrencyWalletDTO, LoanApplicationDTO, LoanDTO, DepositDTO, FXMatchDTO,
+     BondDTO, BailoutCovenant, BailoutLoanDTO, GrantBailoutCommand, SettlementOrder,
+     PortfolioAsset, PortfolioDTO, TaxCollectionResult, DebtStatusDTO,
+     BorrowerProfileDTO, CreditAssessmentResultDTO, LienDTO, MortgageApplicationDTO,
+@@ -14,6 +14,8 @@ from modules.finance.dtos import (
+ )
+ from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY, CurrencyCode
+ from modules.simulation.api import AgentID, AnyAgentID
++from modules.common.financial.api import IFinancialEntity, IFinancialAgent
++from modules.common.financial.dtos import MoneyDTO, Claim
+ 
+ @runtime_checkable
+ class ITransaction(Protocol):
+@@ -29,7 +31,6 @@ if TYPE_CHECKING:
+     from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
+     from simulation.dtos.api import GovernmentSensoryDTO
+     from simulation.models import Order, Transaction
+-    from modules.common.dtos import Claim
+     from modules.finance.wallet.api import IWallet
+     from modules.hr.api import IHRService
+     from modules.finance.engine_api import BankStateDTO, DepositStateDTO, LoanStateDTO
+@@ -76,25 +77,6 @@ class IConfig(Protocol):
+     """Protocol for configuration module."""
+     def get(self, key: str, default: Any = None) -> Any: ...
+ 
+-@runtime_checkable
+-class IFinancialEntity(Protocol):
+-    """
+-    Standard interface for any entity capable of holding and transferring financial value.
+-    Replaces legacy `hasattr` checks and standardizes on integer pennies.
+-    """
+-    @property
+-    def balance_pennies(self) -> int:
+-        """Returns the balance in the default currency (pennies)."""
+-        ...
+-
+-    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        """Deposits funds into the entity's wallet."""
+-        ...
+-
+-    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        """Withdraws funds from the entity's wallet."""
+-        ...
+-
+ @runtime_checkable
+ class IFinancialFirm(IFinancialEntity, Protocol):
+     """
+@@ -286,44 +268,6 @@ class ILiquidatable(Protocol):
+         """
+         ...
+ 
+-@runtime_checkable
+-class IFinancialAgent(Protocol):
+-    """
+-    Protocol for agents participating in the financial system.
+-    """
+-    id: AgentID
+-
+-    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> int:
+-        ...
+-
+-    def get_total_debt(self) -> int:
+-        ...
+-
+-    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        """Deposits a specific amount of a given currency. Internal use only."""
+-        ...
+-
+-    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        """
+-        Withdraws a specific amount of a given currency.
+-        Raises InsufficientFundsError if funds are insufficient.
+-        Internal use only.
+-        """
+-        ...
+-
+-    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+-        """Returns the current balance for the specified currency."""
+-        ...
+-
+-    def get_all_balances(self) -> Dict[CurrencyCode, int]:
+-        """Returns a copy of all currency balances."""
+-        ...
+-
+-    @property
+-    def total_wealth(self) -> int:
+-        """Returns the total wealth in default currency estimation."""
+-        ...
+-
+ @runtime_checkable
+ class IBankService(Protocol):
+     """
+diff --git a/modules/finance/dtos.py b/modules/finance/dtos.py
+index c5bedfb8..24288fe1 100644
+--- a/modules/finance/dtos.py
++++ b/modules/finance/dtos.py
+@@ -2,19 +2,11 @@ from __future__ import annotations
+ from typing import Dict, Optional, List, TypeAlias, Literal, Any, Union
+ from dataclasses import dataclass, field
+ from modules.simulation.api import AgentID
++from modules.common.financial.dtos import MoneyDTO
+ 
+ CurrencyCode: TypeAlias = str
+ LoanStatus = Literal["PENDING", "ACTIVE", "PAID", "DEFAULTED"]
+ 
+-@dataclass
+-class MoneyDTO:
+-    """
+-    Represents a monetary value with its associated currency.
+-    MIGRATION NOTE: Used to be float 'amount'. Now 'amount_pennies' (int).
+-    """
+-    amount_pennies: int
+-    currency: CurrencyCode
+-
+ @dataclass
+ class MultiCurrencyWalletDTO:
+     """Represents a complete portfolio of assets, keyed by currency."""
+diff --git a/modules/finance/service.py b/modules/finance/service.py
+index a47851c7..39a9139e 100644
+--- a/modules/finance/service.py
++++ b/modules/finance/service.py
+@@ -1,7 +1,7 @@
+ from __future__ import annotations
+ from typing import List, TYPE_CHECKING
+ from modules.finance.api import ITaxService
+-from modules.common.dtos import Claim
++from modules.common.financial.dtos import Claim
+ from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+@@ -32,7 +32,7 @@ class TaxService(ITaxService):
+ 
+             claims.append(Claim(
+                 creditor_id=gov_id,
+-                amount=tax_liability,
++                amount_pennies=int(tax_liability),
+                 tier=3,
+                 description="Corporate Tax"
+             ))
+diff --git a/modules/finance/wallet/wallet.py b/modules/finance/wallet/wallet.py
+index 71bd201e..6f94edcf 100644
+--- a/modules/finance/wallet/wallet.py
++++ b/modules/finance/wallet/wallet.py
+@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
+ from .api import IWallet, WalletOpLogDTO, CurrencyCode, DEFAULT_CURRENCY
+ from .audit import GLOBAL_WALLET_LOG
+ from modules.finance.api import InsufficientFundsError
+-from modules.finance.dtos import MoneyDTO
++from modules.common.financial.dtos import MoneyDTO
+ 
+ class Wallet(IWallet):
+     """
+diff --git a/modules/hr/api.py b/modules/hr/api.py
+index 217806f5..f7ea870a 100644
+--- a/modules/hr/api.py
++++ b/modules/hr/api.py
+@@ -2,10 +2,10 @@ from __future__ import annotations
+ from abc import ABC, abstractmethod
+ from typing import List, Optional, TYPE_CHECKING, Protocol
+ 
+-from modules.finance.api import IFinancialAgent
++from modules.common.financial.api import IFinancialAgent
+ 
+ if TYPE_CHECKING:
+-    from modules.common.dtos import Claim
++    from modules.common.financial.dtos import Claim
+     from simulation.firms import Firm
+ 
+ class IHRService(ABC):
+diff --git a/modules/hr/service.py b/modules/hr/service.py
+index 323b0e7b..558430bf 100644
+--- a/modules/hr/service.py
++++ b/modules/hr/service.py
+@@ -1,7 +1,7 @@
+ from __future__ import annotations
+ from typing import List, TYPE_CHECKING
+ from modules.hr.api import IHRService
+-from modules.common.dtos import Claim
++from modules.common.financial.dtos import Claim
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+@@ -21,7 +21,7 @@ class HRService(IHRService):
+                 if total_unpaid > 0:
+                     claims.append(Claim(
+                         creditor_id=employee_id,
+-                        amount=total_unpaid,
++                        amount_pennies=int(total_unpaid),
+                         tier=1,
+                         description="Unpaid Wages"
+                     ))
+@@ -51,7 +51,7 @@ class HRService(IHRService):
+                 if severance_amount > 0:
+                     claims.append(Claim(
+                         creditor_id=employee.id,
+-                        amount=severance_amount,
++                        amount_pennies=int(severance_amount),
+                         tier=1,
+                         description=f"Severance ({effective_tenure:.2f} yr)"
+                     ))
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 70ba7857..5755af62 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -15,7 +15,8 @@ from modules.common.utils.shadow_logger import log_shadow
+ from simulation.models import Transaction
+ from simulation.systems.ministry_of_education import MinistryOfEducation
+ from simulation.portfolio import Portfolio
+-from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset, IFinancialAgent
++from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset
++from modules.common.financial.api import IFinancialAgent
+ from modules.government.dtos import (
+     FiscalPolicyDTO,
+     GovernmentPolicyDTO,
+@@ -668,6 +669,16 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
+     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+         return self.wallet.get_balance(currency)
+ 
++    @property
++    def balance_pennies(self) -> int:
++        return self.wallet.get_balance(DEFAULT_CURRENCY)
++
++    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self._deposit(amount_pennies, currency)
++
++    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self._withdraw(amount_pennies, currency)
++
+     # --- IFinancialAgent Implementation ---
+     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         self.wallet.add(amount, currency, memo="Deposit")
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 10f4d3b8..ff72a904 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -23,7 +23,8 @@ from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchest
+ from simulation.ai.household_ai import HouseholdAI
+ from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+ from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
+-from modules.finance.api import IFinancialAgent, IFinancialEntity, ICreditFrozen
++from modules.finance.api import ICreditFrozen
++from modules.common.financial.api import IFinancialAgent, IFinancialEntity
+ from modules.simulation.api import IEducated
+ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+ from modules.finance.wallet.wallet import Wallet
+diff --git a/simulation/firms.py b/simulation/firms.py
+index a4922c8a..2ba25589 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -61,10 +61,11 @@ from modules.agent_framework.components.inventory_component import InventoryComp
+ from modules.agent_framework.components.financial_component import FinancialComponent
+ 
+ from modules.common.utils.shadow_logger import log_shadow
+-from modules.finance.api import InsufficientFundsError, IFinancialFirm, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake, IBank, ISalesTracker
++from modules.finance.api import InsufficientFundsError, IFinancialFirm, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake, IBank, ISalesTracker
++from modules.common.financial.api import IFinancialAgent
+ from modules.common.interfaces import IPropertyOwner
+-from modules.common.dtos import Claim
+-from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
++from modules.common.financial.dtos import Claim, MoneyDTO
++from modules.finance.dtos import MultiCurrencyWalletDTO
+ from modules.finance.wallet.wallet import Wallet
+ from modules.inventory.manager import InventoryManager
+ from simulation.systems.api import ILearningAgent, LearningUpdateContext
+@@ -729,7 +730,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         if total_debt > 0:
+             all_claims.append(Claim(
+                 creditor_id=bank_agent_id,
+-                amount=total_debt,
++                amount_pennies=int(total_debt),
+                 tier=2,
+                 description="Secured Loan"
+             ))
+diff --git a/simulation/systems/liquidation_manager.py b/simulation/systems/liquidation_manager.py
+index 89f075a8..49ce5a7c 100644
+--- a/simulation/systems/liquidation_manager.py
++++ b/simulation/systems/liquidation_manager.py
+@@ -1,7 +1,7 @@
+ from __future__ import annotations
+ from typing import List, TYPE_CHECKING, Optional, Any, Dict
+ import logging
+-from modules.common.dtos import Claim
++from modules.common.financial.dtos import Claim
+ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+ from simulation.systems.liquidation_handlers import InventoryLiquidationHandler, ILiquidationHandler
+ from modules.finance.api import ILiquidatable, LiquidationContext
+@@ -63,7 +63,7 @@ class LiquidationManager:
+         all_assets_dict = agent.liquidate_assets(state.time)
+ 
+         # TD-033: Handle Multi-Currency
+-        available_cash = all_assets_dict.get(DEFAULT_CURRENCY, 0.0)
++        available_cash = all_assets_dict.get(DEFAULT_CURRENCY, 0)
+         other_assets = {k: v for k, v in all_assets_dict.items() if k != DEFAULT_CURRENCY and v > 0}
+ 
+         # 2. Build Liquidation Context
+@@ -78,7 +78,7 @@ class LiquidationManager:
+         all_claims = agent.get_all_claims(context)
+ 
+         logger.info(
+-            f"LIQUIDATION_START | Agent {agent.id} starting liquidation. Assets: {available_cash:.2f}, Total Claims: {sum(c.amount for c in all_claims):.2f}",
++            f"LIQUIDATION_START | Agent {agent.id} starting liquidation. Assets: {available_cash}, Total Claims: {sum(c.amount_pennies for c in all_claims)}",
+             extra={"tick": current_tick, "agent_id": agent.id, "tags": ["liquidation", "waterfall"]}
+         )
+ 
+@@ -111,23 +111,23 @@ class LiquidationManager:
+                 continue
+ 
+             tier_claims = claims_by_tier[tier]
+-            total_tier_claim = sum(c.amount for c in tier_claims)
++            total_tier_claim = sum(c.amount_pennies for c in tier_claims)
+ 
+             if remaining_cash <= 0:
+-                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} reached with 0 cash. Claims unpaid: {total_tier_claim:.2f}")
++                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} reached with 0 cash. Claims unpaid: {total_tier_claim}")
+                 break
+ 
+             if remaining_cash >= total_tier_claim:
+                 # Pay all fully
+                 for claim in tier_claims:
+-                    self._pay_claim(agent, claim, claim.amount)
++                    self._pay_claim(agent, claim, claim.amount_pennies)
+                 remaining_cash -= total_tier_claim
+-                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} fully paid. Remaining cash: {remaining_cash:.2f}")
++                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} fully paid. Remaining cash: {remaining_cash}")
+             else:
+                 # Pay pro-rata
+                 factor = remaining_cash / total_tier_claim
+                 for claim in tier_claims:
+-                    payment = claim.amount * factor
++                    payment = int(claim.amount_pennies * factor)
+                     self._pay_claim(agent, claim, payment, partial=True)
+                 remaining_cash = 0.0
+                 logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} partially paid (Factor: {factor:.2f}). Cash exhausted.")
+@@ -163,9 +163,9 @@ class LiquidationManager:
+ 
+                 logger.info(f"LIQUIDATION_WATERFALL | Tier 5 (Equity) distributed {total_distributed_cash:.2f} {DEFAULT_CURRENCY} and foreign assets: {total_distributed_foreign} to shareholders.")
+ 
+-    def _pay_claim(self, agent: ILiquidatable, claim: Claim, amount: float, partial: bool = False):
++    def _pay_claim(self, agent: ILiquidatable, claim: Claim, amount_pennies: int, partial: bool = False):
+         """Helper to execute transfer using AgentRegistry."""
+-        if amount <= 0:
++        if amount_pennies <= 0:
+             return
+ 
+         creditor_id = claim.creditor_id
+@@ -173,8 +173,6 @@ class LiquidationManager:
+ 
+         if creditor:
+             memo = f"Liquidation Payout: {claim.description}" + (" (Partial)" if partial else "")
+-            # MIGRATION: Ensure amount is int pennies
+-            amount_pennies = int(amount)
+             success = self.settlement_system.transfer(agent, creditor, amount_pennies, memo, currency=DEFAULT_CURRENCY)
+ 
+             if success:
+@@ -183,6 +181,6 @@ class LiquidationManager:
+                     creditor.receive_repayment(agent.id, amount_pennies)
+ 
+             if not success:
+-                 logger.error(f"LIQUIDATION_PAYMENT_FAIL | Failed to transfer {amount:.2f} to {creditor.id}")
++                 logger.error(f"LIQUIDATION_PAYMENT_FAIL | Failed to transfer {amount_pennies} to {creditor.id}")
+         else:
+             logger.warning(f"LIQUIDATION_PAYMENT_SKIP | Creditor {creditor_id} not found for claim {claim.description}")
+diff --git a/tests/finance/test_protocol_integrity.py b/tests/finance/test_protocol_integrity.py
+index 3cc8fe20..2fb7179d 100644
+--- a/tests/finance/test_protocol_integrity.py
++++ b/tests/finance/test_protocol_integrity.py
+@@ -28,11 +28,17 @@ class MockAgent:
+     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         self.balance_pennies += amount
+ 
++    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self._deposit(amount, currency)
++
+     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         if self.balance_pennies < amount:
+             raise Exception("Insufficient funds") # SettlementSystem should check this first
+         self.balance_pennies -= amount
+ 
++    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self._withdraw(amount, currency)
++
+     def get_total_debt(self) -> float:
+         return 0.0
+ 
+@@ -66,9 +72,15 @@ class MockCentralBank:
+     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         pass
+ 
++    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        pass
++
+     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         pass
+ 
++    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        pass
++
+     def get_total_debt(self) -> float:
+         return 0.0
+ 
+diff --git a/tests/finance/test_settlement_fx_swap.py b/tests/finance/test_settlement_fx_swap.py
+index 6e423704..6a6f13e2 100644
+--- a/tests/finance/test_settlement_fx_swap.py
++++ b/tests/finance/test_settlement_fx_swap.py
+@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
+ from typing import Dict, Any
+ from modules.finance.api import IFinancialAgent, FXMatchDTO
+ from simulation.systems.settlement_system import SettlementSystem
+-from modules.system.api import IAgentRegistry
++from modules.system.api import IAgentRegistry, DEFAULT_CURRENCY
+ 
+ # Mock Agent Class that implements IFinancialAgent and ITransactionParticipant
+ class MockFinancialAgent:
+@@ -24,6 +24,10 @@ class MockFinancialAgent:
+             raise Exception("Insufficient funds")
+         self._balances[currency] = current - amount
+ 
++    @property
++    def balance_pennies(self) -> int:
++        return self._balances.get(DEFAULT_CURRENCY, 0)
++
+     # Implement protocol requirements for IFinancialAgent
+     def _deposit(self, amount: int, currency: str = "USD") -> None:
+         self.deposit(amount, currency)
+diff --git a/tests/integration/test_liquidation_services.py b/tests/integration/test_liquidation_services.py
+index a51ae5b8..05ff2b11 100644
+--- a/tests/integration/test_liquidation_services.py
++++ b/tests/integration/test_liquidation_services.py
+@@ -45,7 +45,7 @@ class TestLiquidationServices(unittest.TestCase):
+ 
+         self.assertEqual(len(claims), 1)
+         self.assertEqual(claims[0].creditor_id, 101)
+-        self.assertEqual(claims[0].amount, 500.0)
++        self.assertEqual(claims[0].amount_pennies, 500)
+         self.assertEqual(claims[0].tier, 1)
+ 
+     def test_hr_service_severance(self):
+@@ -69,7 +69,7 @@ class TestLiquidationServices(unittest.TestCase):
+ 
+         self.assertEqual(len(claims), 1)
+         self.assertEqual(claims[0].creditor_id, 101)
+-        self.assertAlmostEqual(claims[0].amount, 2807.69, delta=1.0)
++        self.assertAlmostEqual(claims[0].amount_pennies, 2807, delta=1.0)
+ 
+     def test_tax_service(self):
+         self.firm.finance_state.current_profit = 1000.0
+@@ -83,5 +83,5 @@ class TestLiquidationServices(unittest.TestCase):
+ 
+         self.assertEqual(len(claims), 1)
+         self.assertEqual(claims[0].creditor_id, "gov_real_id")
+-        self.assertEqual(claims[0].amount, 200.0) # 20% of 1000
++        self.assertEqual(claims[0].amount_pennies, 200) # 20% of 1000
+         self.assertEqual(claims[0].tier, 3)
+diff --git a/tests/integration/test_liquidation_waterfall.py b/tests/integration/test_liquidation_waterfall.py
+index 3ef74964..f48a6a16 100644
+--- a/tests/integration/test_liquidation_waterfall.py
++++ b/tests/integration/test_liquidation_waterfall.py
+@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, Mock
+ from typing import List
+ 
+ from simulation.systems.liquidation_manager import LiquidationManager
+-from modules.common.dtos import Claim
++from modules.common.financial.dtos import Claim
+ from simulation.firms import Firm
+ from simulation.core_agents import Household
+ from simulation.dtos.api import SimulationState
+@@ -86,7 +86,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
+                 bank_id = "bank"
+                 if self.firm.decision_engine and self.firm.decision_engine.loan_market and self.firm.decision_engine.loan_market.bank:
+                     bank_id = self.firm.decision_engine.loan_market.bank.id
+-                claims.append(Claim(creditor_id=bank_id, amount=self.firm.total_debt, tier=2, description="Secured Loan"))
++                claims.append(Claim(creditor_id=bank_id, amount_pennies=int(self.firm.total_debt), tier=2, description="Secured Loan"))
+             return claims
+ 
+         self.firm.get_all_claims.side_effect = get_all_claims_side_effect
+diff --git a/tests/unit/finance/test_settlement_system_overdraft.py b/tests/unit/finance/test_settlement_system_overdraft.py
+index 7992ddc6..da6cd834 100644
+--- a/tests/unit/finance/test_settlement_system_overdraft.py
++++ b/tests/unit/finance/test_settlement_system_overdraft.py
+@@ -4,7 +4,7 @@ from simulation.systems.settlement_system import SettlementSystem
+ from modules.finance.api import IFinancialAgent, IFinancialEntity
+ from modules.system.api import DEFAULT_CURRENCY, ISystemFinancialAgent
+ 
+-class MockNormalAgent(IFinancialEntity, IFinancialAgent):
++class MockNormalAgent(IFinancialAgent):
+     def __init__(self, id, balance):
+         self.id = id
+         self._balance_pennies = balance
+diff --git a/tests/unit/modules/finance/test_double_entry.py b/tests/unit/modules/finance/test_double_entry.py
+index 958d3a1f..d4efb7c4 100644
+--- a/tests/unit/modules/finance/test_double_entry.py
++++ b/tests/unit/modules/finance/test_double_entry.py
+@@ -24,6 +24,8 @@ class MockGovernment:
+     def total_wealth(self): return self._assets
+     @property
+     def assets(self): return self.total_wealth # Alias for tests
++    @property
++    def balance_pennies(self): return self._assets
+     def get_balance(self, currency=DEFAULT_CURRENCY): return self._assets
+     def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self._assets)
+     @property
+@@ -34,7 +36,9 @@ class MockGovernment:
+     def get_debt_to_gdp_ratio(self):
+         return 0.5
+     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
++    def deposit(self, amount, currency=DEFAULT_CURRENCY): self._deposit(amount, currency)
+     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
++    def withdraw(self, amount, currency=DEFAULT_CURRENCY): self._withdraw(amount, currency)
+     def get_all_balances(self): return {DEFAULT_CURRENCY: self._assets}
+ 
+ class MockCentralBank:
+@@ -45,6 +49,8 @@ class MockCentralBank:
+     def total_wealth(self): return self._assets
+     @property
+     def assets(self): return self.total_wealth # Alias for tests
++    @property
++    def balance_pennies(self): return self.assets['cash']
+     def get_balance(self, currency=DEFAULT_CURRENCY): return self.assets['cash']
+     def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self.assets['cash'])
+     def get_total_debt(self): return 0.0
+@@ -53,7 +59,9 @@ class MockCentralBank:
+     def add_bond_to_portfolio(self, bond):
+         self.assets["bonds"].append(bond)
+     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] += amount
++    def deposit(self, amount, currency=DEFAULT_CURRENCY): self._deposit(amount, currency)
+     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] -= amount
++    def withdraw(self, amount, currency=DEFAULT_CURRENCY): self._withdraw(amount, currency)
+     def get_all_balances(self): return {DEFAULT_CURRENCY: self.assets['cash']}
+ 
+ class MockBank:
+@@ -69,11 +77,15 @@ class MockBank:
+     def total_wealth(self): return self._assets
+     @property
+     def assets(self): return self.total_wealth # Alias for tests
++    @property
++    def balance_pennies(self): return self._assets
+     def get_balance(self, currency=DEFAULT_CURRENCY): return self._assets
+     def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self._assets)
+     def get_total_debt(self): return 0.0
+     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
++    def deposit(self, amount, currency=DEFAULT_CURRENCY): self._deposit(amount, currency)
+     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
++    def withdraw(self, amount, currency=DEFAULT_CURRENCY): self._withdraw(amount, currency)
+     def get_all_balances(self): return {DEFAULT_CURRENCY: self._assets}
+ 
+ class MockFirm:
+@@ -88,11 +100,15 @@ class MockFirm:
+     def total_wealth(self): return self.cash_reserve
+     @property
+     def assets(self): return self.total_wealth # Alias for tests
++    @property
++    def balance_pennies(self): return self.cash_reserve
+     def get_balance(self, currency=DEFAULT_CURRENCY): return self.cash_reserve
+     def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self.cash_reserve)
+     def get_total_debt(self): return 0.0
+     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve += amount
++    def deposit(self, amount, currency=DEFAULT_CURRENCY): self._deposit(amount, currency)
+     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve -= amount
++    def withdraw(self, amount, currency=DEFAULT_CURRENCY): self._withdraw(amount, currency)
+     def get_all_balances(self): return {DEFAULT_CURRENCY: self.cash_reserve}
+ 
+ class MockConfig:
+diff --git a/tests/unit/simulation/systems/test_audit_total_m2.py b/tests/unit/simulation/systems/test_audit_total_m2.py
+index 57d70375..d9ce0f5b 100644
+--- a/tests/unit/simulation/systems/test_audit_total_m2.py
++++ b/tests/unit/simulation/systems/test_audit_total_m2.py
+@@ -14,6 +14,7 @@ def test_audit_total_m2_logic():
+     hh = MagicMock(spec=IFinancialAgent)
+     hh.id = 1
+     hh.get_balance.return_value = 100
++    type(hh).balance_pennies = PropertyMock(return_value=100)
+ 
+     # 2. Central Bank (Should be Excluded) -> IFinancialEntity
+     cb = MagicMock(spec=IFinancialEntity)
+@@ -29,6 +30,7 @@ def test_audit_total_m2_logic():
+     bank.id = 2
+     # IBank uses get_balance method
+     bank.get_balance.return_value = 50
++    type(bank).balance_pennies = PropertyMock(return_value=50)
+     bank.get_total_deposits.return_value = 200
+ 
+     ss.agent_registry.get_all_financial_agents.return_value = [hh, cb, bank]
+diff --git a/tests/unit/systems/test_housing_system.py b/tests/unit/systems/test_housing_system.py
+index b3c830c3..2384d81f 100644
+--- a/tests/unit/systems/test_housing_system.py
++++ b/tests/unit/systems/test_housing_system.py
+@@ -30,11 +30,17 @@ class MockAgent:
+     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         self.balance_pennies += amount
+ 
++    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self._deposit(amount, currency)
++
+     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         if self.balance_pennies < amount:
+             raise Exception("Insufficient funds")
+         self.balance_pennies -= amount
+ 
++    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self._withdraw(amount, currency)
++
+     def get_total_debt(self) -> float: return 0.0
+     def get_liquid_assets(self, currency="USD") -> float: return float(self.balance_pennies)
+     @property
+diff --git a/tests/unit/systems/test_liquidation_manager.py b/tests/unit/systems/test_liquidation_manager.py
+index fda31b5d..6cd813ca 100644
+--- a/tests/unit/systems/test_liquidation_manager.py
++++ b/tests/unit/systems/test_liquidation_manager.py
+@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, call
+ from typing import List
+ 
+ from simulation.systems.liquidation_manager import LiquidationManager
+-from modules.common.dtos import Claim
++from modules.common.financial.dtos import Claim
+ from simulation.firms import Firm
+ from simulation.dtos.api import SimulationState
+ from modules.system.api import IAssetRecoverySystem, IAgentRegistry, DEFAULT_CURRENCY, AssetBuyoutResultDTO
+@@ -71,8 +71,8 @@ class TestLiquidationManager(unittest.TestCase):
+ 
+     def test_initiate_liquidation_orchestration(self):
+         # Setup Claims returned by services
+-        claim_hr = Claim(creditor_id=101, amount=100.0, tier=1, description="Wage")
+-        claim_tax = Claim(creditor_id="gov", amount=50.0, tier=3, description="Tax")
++        claim_hr = Claim(creditor_id=101, amount_pennies=100, tier=1, description="Wage")
++        claim_tax = Claim(creditor_id="gov", amount_pennies=50, tier=3, description="Tax")
+ 
+         # Mock Registry resolution
+         agent_101 = MagicMock()
+@@ -114,7 +114,7 @@ class TestLiquidationManager(unittest.TestCase):
+         self.mock_registry.get_agent.return_value = bank_agent
+         
+         # Mock Bank Claim via Protocol
+-        bank_claim = Claim(creditor_id="bank_1", amount=500.0, tier=2, description="Secured Loan")
++        bank_claim = Claim(creditor_id="bank_1", amount_pennies=500, tier=2, description="Secured Loan")
+         self.firm.get_all_claims.return_value = [bank_claim]
+ 
+         self.manager.initiate_liquidation(self.firm, self.state)
+diff --git a/tests/unit/systems/test_settlement_system.py b/tests/unit/systems/test_settlement_system.py
+index ef90d39a..6b1c4767 100644
+--- a/tests/unit/systems/test_settlement_system.py
++++ b/tests/unit/systems/test_settlement_system.py
+@@ -48,6 +48,16 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
+     def assets(self):
+         return self._assets
+ 
++    @property
++    def balance_pennies(self) -> int:
++        return self._assets
++
++    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
++        self._withdraw(amount, currency)
++
++    def deposit(self, amount, currency=DEFAULT_CURRENCY):
++        self._deposit(amount, currency)
++
+     def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
+         if currency != DEFAULT_CURRENCY:
+              raise ValueError(f"MockAgent only supports {DEFAULT_CURRENCY}")
+@@ -109,6 +119,16 @@ class MockBank(IBank):
+         self.accounts = {}
+         self.own_assets = 10000
+ 
++    @property
++    def balance_pennies(self) -> int:
++        return self.own_assets
++
++    def deposit(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
++        self._deposit(amount, currency)
++
++    def withdraw(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
++        self._withdraw(amount, currency)
++
+     # IFinancialAgent impl
+     def _deposit(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
+         if currency == DEFAULT_CURRENCY:
+diff --git a/tests/unit/test_ssot_compliance.py b/tests/unit/test_ssot_compliance.py
+index b46b86ef..66f63060 100644
+--- a/tests/unit/test_ssot_compliance.py
++++ b/tests/unit/test_ssot_compliance.py
+@@ -101,6 +101,7 @@ class TestSSoTCompliance:
+ 
+         # Case 2: Agent implements IFinancialAgent (get_balance())
+         financial_agent = MagicMock(spec=IFinancialAgent)
++        financial_agent.balance_pennies = 67890
+         financial_agent.get_balance.return_value = 67890
+         settlement.agent_registry.get_agent.return_value = financial_agent
+ 

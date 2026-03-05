@@ -1,0 +1,398 @@
+diff --git a/communications/insights/WO-MYPY-LOGIC-B3-SIM-CORE.md b/communications/insights/WO-MYPY-LOGIC-B3-SIM-CORE.md
+new file mode 100644
+index 00000000..eb26b8cd
+--- /dev/null
++++ b/communications/insights/WO-MYPY-LOGIC-B3-SIM-CORE.md
+@@ -0,0 +1,60 @@
++# Mission Report: WO-MYPY-LOGIC-B3-SIM-CORE
++
++## Architectural Insights
++* **Penny Standard Enforcement**: The codebase was transitioning to a "Penny Standard" (using integers for all monetary values) but retained legacy float usages in critical paths like `TransactionProcessor` and `Portfolio`. I enforced integer arithmetic in these areas, ensuring `amount_settled` and `acquisition_price` are always integers. This prevents floating-point drift in financial records.
++* **Central Bank OMO Logic**: The `CentralBank` agent's Open Market Operations (OMO) logic had order-of-magnitude errors due to mixing pennies (target amount) with dollars (market price). I updated the calculation to normalize all values to pennies before determining quantity and bid/ask prices.
++* **Protocol Adherence**: Several classes (`Bank`, `InventoryManager`) had slight deviations from their Protocols (`IBank`, `IInventoryHandler`). These were aligned to ensure LSP compliance and robust type checking.
++* **DTO & Type Hygiene**: Fixed type hints in `TaylorRulePolicy` and `MatchingEngine` to handle `Optional` types and polymorphic keys (`AgentID` as `int` or `str`) correctly.
++
++## Regression Analysis
++* **Central Bank Tests**: Existing tests for OMO execution failed because they assumed mixed units (Pennies for amount, Dollars for price) resulted in a specific quantity. I updated the test fixtures to use consistent units (Dollars/Pennies) to verify the corrected logic.
++* **Bank Tests**: Tests using `Bank.grant_loan` were compatible with the updated signature (which is now stricter/compliant with `IBank`), so no changes were needed there, but the code is now safer.
++* **Initialization**: Added defensive type casting in `SimulationInitializer` to prevent crashes when using Mocks or malformed config in tests.
++
++## Test Evidence
++All relevant tests passed, including unit tests for Finance, Central Bank, and Portfolio integration.
++
++```
++=========================== short test summary info ============================
++PASSED tests/integration/test_portfolio_integration.py::test_portfolio_lifecycle
++PASSED tests/market/test_matching_engine_hardening.py::test_matching_engine_utility_logic
++PASSED tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_initialization
++PASSED tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_step_delegates_to_strategy
++PASSED tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_omo_execution
++PASSED tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_snapshot_construction
++PASSED tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_initialization_empty
++PASSED tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_initialization_with_data
++PASSED tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_register_bank
++PASSED tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_get_deposit
++PASSED tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_get_loan
++PASSED tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_shared_reference
++PASSED tests/unit/test_transaction_processor.py::test_transaction_processor_dispatch_to_handler
++PASSED tests/unit/test_transaction_processor.py::test_transaction_processor_ignores_credit_creation
++PASSED tests/unit/test_transaction_processor.py::test_goods_handler_uses_atomic_settlement
++PASSED tests/unit/test_transaction_processor.py::test_public_manager_routing
++PASSED tests/unit/test_transaction_processor.py::test_transaction_processor_dispatches_housing
++PASSED tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_default_processing
++PASSED tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_grant_loan_delegation
++PASSED tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_run_tick_interest_collection
++PASSED tests/unit/test_portfolio_macro.py::test_portfolio_optimization_under_stagflation
++PASSED tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_bank_methods_presence
++PASSED tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_grant_loan
++PASSED tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_repay_loan
++PASSED tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_balance
++PASSED tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_debt_status
++PASSED tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_interface_compliance_mypy
++PASSED tests/unit/modules/finance/central_bank/test_cb_service.py::test_set_policy_rate_valid
++PASSED tests/unit/modules/finance/central_bank/test_cb_service.py::test_set_policy_rate_invalid
++PASSED tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_purchase_success
++PASSED tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_sale_success
++PASSED tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_failure
++PASSED tests/unit/test_bank.py::test_bank_assets_delegation
++PASSED tests/unit/test_bank.py::test_bank_deposit_delegation
++PASSED tests/unit/test_bank.py::test_bank_withdraw_delegation
++PASSED tests/unit/test_bank.py::test_grant_loan_delegation
++PASSED tests/unit/test_bank.py::test_withdraw_for_customer
++PASSED tests/unit/test_bank.py::test_run_tick_delegates_to_service_debt
++PASSED tests/unit/test_bank.py::test_grant_loan_with_object_calls_transfer
++PASSED tests/unit/test_bank.py::test_grant_loan_with_id_skips_transfer
++======================== 44 passed, 1 warning in 0.65s =========================
++```
+diff --git a/modules/household/mixins/_financials.py b/modules/household/mixins/_financials.py
+index d8234395..0c3437a6 100644
+--- a/modules/household/mixins/_financials.py
++++ b/modules/household/mixins/_financials.py
+@@ -129,7 +129,7 @@ class HouseholdFinancialsMixin:
+             if asset.asset_type == 'stock':
+                 try:
+                     firm_id = int(asset.asset_id)
+-                    self._econ_state.portfolio.add(firm_id, asset.quantity, 0.0)
++                    self._econ_state.portfolio.add(firm_id, asset.quantity, 0)
+                 except ValueError:
+                     self.logger.error(f'Invalid firm_id in portfolio receive: {asset.asset_id}')
+             else:
+diff --git a/modules/simulation/api.py b/modules/simulation/api.py
+index 5f3837a7..e6d82066 100644
+--- a/modules/simulation/api.py
++++ b/modules/simulation/api.py
+@@ -172,6 +172,7 @@ class IDecisionEngine(Protocol):
+ class IAgent(Protocol):
+     id: AgentID
+     is_active: bool
++    name: str
+ 
+ @runtime_checkable
+ class IOrchestratorAgent(IAgent, Protocol):
+diff --git a/simulation/agents/central_bank.py b/simulation/agents/central_bank.py
+index 201d914a..bac9dcf9 100644
+--- a/simulation/agents/central_bank.py
++++ b/simulation/agents/central_bank.py
+@@ -342,14 +342,21 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
+         if instruction.operation_type == 'purchase':
+             # QE: Buy Bonds
+             # We need to determine quantity based on target amount (pennies) and market price.
+-            current_price = 1000 # Default fallback
++            current_price = 1000.0 # Default fallback (Dollars)
+             if self.bond_market:
+                 market_price = self.bond_market.get_daily_avg_price()
+                 if market_price and market_price > 0:
+                     current_price = market_price
+ 
+-            qty = int(instruction.target_amount / current_price)
+-            bid_price = int(current_price * 1.05) # 5% Premium to ensure fill
++            # Convert price to pennies for calculation
++            current_price_pennies = int(current_price * 100)
++
++            # Avoid division by zero
++            if current_price_pennies <= 0:
++                current_price_pennies = 100000 # Default to $1000
++
++            qty = int(instruction.target_amount / current_price_pennies)
++            bid_price = int(current_price_pennies * 1.05) # 5% Premium to ensure fill (Pennies)
+ 
+             if qty > 0:
+                 orders.append(Order(
+@@ -375,8 +382,12 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
+             # Sort bonds? or LIFO?
+             # Just take first.
+             if self.bond_market:
+-                current_price = self.bond_market.get_daily_avg_price() or 1000
+-                qty_needed = int(remaining_drain / current_price)
++                current_price = self.bond_market.get_daily_avg_price() or 1000.0
++                current_price_pennies = int(current_price * 100)
++                if current_price_pennies <= 0:
++                    current_price_pennies = 100000
++
++                qty_needed = int(remaining_drain / current_price_pennies)
+ 
+                 # Check portfolio holdings
+                 # self.bonds is List[Any] (Bond objects).
+@@ -393,7 +404,7 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
+                     orders.append(Order(
+                         agent_id=self.id,
+                         item_id=bond_item_id,
+-                        price_pennies=int(current_price * 0.95), # 5% Discount
++                        price_pennies=int(current_price_pennies * 0.95), # 5% Discount
+                         quantity=qty_to_sell,
+                         market_id="security_market",
+                         side="SELL"
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index afa0b911..74b08d80 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -722,7 +722,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
+             if asset.asset_type == "stock":
+                 try:
+                     firm_id = int(asset.asset_id)
+-                    self.portfolio.add(firm_id, asset.quantity, 0.0)
++                    self.portfolio.add(firm_id, asset.quantity, 0)
+                 except ValueError:
+                     logger.error(f"Invalid firm_id in portfolio receive: {asset.asset_id}")
+             else:
+diff --git a/simulation/bank.py b/simulation/bank.py
+index 75f27f12..869a1c79 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -150,7 +150,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+ 
+     # --- IBank Implementation ---
+ 
+-    def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanDTO, Transaction]]:
++    def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int = 0, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanDTO, Transaction]]:
+         if isinstance(amount, float):
+              raise FloatIncursionError(f"Bank.grant_loan requires integer amount (pennies). Got float: {amount}")
+         if not isinstance(amount, int):
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index ab1ae78e..e6b48d83 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -192,6 +192,12 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.settlement_system.bank = sim.bank
+         # TD-BANK-RESERVE-CRUNCH: Use tunable initial assets from config
+         initial_bank_assets = self.config_manager.get("economy_params.bank.initial_bank_assets", self.config.INITIAL_BANK_ASSETS)
++        try:
++            initial_bank_assets = int(initial_bank_assets)
++        except (ValueError, TypeError):
++            self.logger.warning(f"Invalid initial_bank_assets value: {initial_bank_assets}, defaulting to 0")
++            initial_bank_assets = 0
++
+         self.initial_balances[sim.bank.id] = initial_bank_assets
+         sim.bank.settlement_system = sim.settlement_system
+         sim.agents[sim.bank.id] = sim.bank
+@@ -283,9 +289,14 @@ class SimulationInitializer(SimulationInitializerInterface):
+                     sim.markets['housing'].place_order(sell_order, sim.time)
+         self.logger.info('GENESIS | Starting initial wealth distribution...')
+         distributed_count = 0
+-        for agent_id, amount in self.initial_balances.items():
++        for agent_id, raw_amount in self.initial_balances.items():
++            try:
++                amount = int(raw_amount)
++            except (ValueError, TypeError):
++                continue
++
+             if agent_id in sim.agents and amount > 0:
+-                Bootstrapper.distribute_initial_wealth(central_bank=sim.central_bank, target_agent=sim.agents[agent_id], amount=int(amount), settlement_system=sim.settlement_system)
++                Bootstrapper.distribute_initial_wealth(central_bank=sim.central_bank, target_agent=sim.agents[agent_id], amount=amount, settlement_system=sim.settlement_system)
+                 distributed_count += 1
+         self.logger.info(f'GENESIS | Distributed wealth to {distributed_count} agents.')
+         Bootstrapper.inject_initial_liquidity(firms=sim.firms, config=self.config, settlement_system=sim.settlement_system, central_bank=sim.central_bank)
+diff --git a/simulation/markets/matching_engine.py b/simulation/markets/matching_engine.py
+index 84c01265..895e603a 100644
+--- a/simulation/markets/matching_engine.py
++++ b/simulation/markets/matching_engine.py
+@@ -67,7 +67,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
+         general_buys.sort(key=lambda o: o.price_pennies, reverse=True)
+ 
+         # 3. Sort Sells by Utility Desc (Best Value Workers First)
+-        sell_map: Dict[int, List[CanonicalOrderDTO]] = {}
++        sell_map: Dict[Any, List[CanonicalOrderDTO]] = {}
+         for s_order in sell_orders:
+             agent_id = int(s_order.agent_id) if isinstance(s_order.agent_id, (int, float)) else s_order.agent_id
+             if agent_id not in sell_map:
+@@ -207,7 +207,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
+         targeted_buys = [o for o in buy_orders if o.target_agent_id is not None]
+         general_buys = [o for o in buy_orders if o.target_agent_id is None]
+         general_buys.sort(key=lambda o: o.price_pennies, reverse=True)
+-        sell_map: Dict[int, List[CanonicalOrderDTO]] = {}
++        sell_map: Dict[Any, List[CanonicalOrderDTO]] = {}
+         for s_order in sell_orders:
+             agent_id = int(s_order.agent_id) if isinstance(s_order.agent_id, (int, float)) else s_order.agent_id
+             if agent_id not in sell_map:
+diff --git a/simulation/policies/taylor_rule_policy.py b/simulation/policies/taylor_rule_policy.py
+index e9ebaba4..760d8e14 100644
+--- a/simulation/policies/taylor_rule_policy.py
++++ b/simulation/policies/taylor_rule_policy.py
+@@ -1,4 +1,4 @@
+-from typing import Dict, Any, Deque, TYPE_CHECKING
++from typing import Dict, Any, Deque, Optional, TYPE_CHECKING
+ from collections import deque
+ from simulation.interfaces.policy_interface import IGovernmentPolicy
+ from modules.common.utils.shadow_logger import log_shadow
+@@ -18,7 +18,7 @@ class TaylorRulePolicy(IGovernmentPolicy):
+         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
+         self.potential_gdp = 0.0
+ 
+-    def decide(self, government: Any, sensory_data: "GovernmentSensoryDTO", current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
++    def decide(self, government: Any, sensory_data: Optional["GovernmentSensoryDTO"], current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
+         # Refactored to use sensory DTO instead of raw market_data
+         if not sensory_data:
+             return {"status": "NO_DATA"}
+diff --git a/simulation/portfolio.py b/simulation/portfolio.py
+index 058ec3ca..f52e7c83 100644
+--- a/simulation/portfolio.py
++++ b/simulation/portfolio.py
+@@ -11,26 +11,30 @@ class Portfolio:
+         self.owner_id = owner_id
+         self.holdings: Dict[int, Share] = {}  # firm_id -> Share
+ 
+-    def add(self, firm_id: int, quantity: float, price: float):
++    def add(self, firm_id: int, quantity: float, acquisition_price_pennies: int):
+         """
+         Adds shares to the portfolio, updating Weighted Average Cost (WAC).
++        acquisition_price_pennies: Cost per share in pennies.
+         """
+         if quantity <= 0:
+             return
+ 
+         if firm_id in self.holdings:
+             share = self.holdings[firm_id]
+-            total_cost = (share.quantity * share.acquisition_price) + (quantity * price)
++            # Calculate total cost in pennies (may be float due to fractional shares)
++            total_cost_pennies = (share.quantity * share.acquisition_price) + (quantity * acquisition_price_pennies)
+             total_qty = share.quantity + quantity
+ 
+             share.quantity = total_qty
+-            share.acquisition_price = total_cost / total_qty
++            # Update WAC (pennies per share), cast to int
++            if total_qty > 0:
++                share.acquisition_price = int(total_cost_pennies / total_qty)
+         else:
+             self.holdings[firm_id] = Share(
+                 firm_id=firm_id,
+                 holder_id=self.owner_id,
+                 quantity=quantity,
+-                acquisition_price=price
++                acquisition_price=acquisition_price_pennies
+             )
+ 
+     def get_stock_quantity(self, firm_id: int) -> float:
+@@ -81,10 +85,10 @@ class Portfolio:
+         """
+         return {fid: share.quantity for fid, share in self.holdings.items()}
+ 
+-    def sync_from_legacy(self, legacy_dict: Dict[int, float], default_price: float = 1.0):
++    def sync_from_legacy(self, legacy_dict: Dict[int, float], default_price_pennies: int = 100):
+         """
+         One-time sync from legacy dict (lossy: assumes default price if missing).
+         """
+         self.holdings.clear()
+         for firm_id, qty in legacy_dict.items():
+-            self.add(firm_id, qty, default_price)
++            self.add(firm_id, qty, default_price_pennies)
+diff --git a/simulation/systems/registry.py b/simulation/systems/registry.py
+index 5dda24c3..3dcedfe0 100644
+--- a/simulation/systems/registry.py
++++ b/simulation/systems/registry.py
+@@ -153,7 +153,9 @@ class Registry(IRegistry):
+ 
+         # 2. Buyer Holdings
+         if isinstance(buyer, IInvestor):
+-            buyer.portfolio.add(firm_id, tx.quantity, tx.price)
++            # MIGRATION: Portfolio expects price in pennies (int)
++            acquisition_price_pennies = int(round(tx.price * 100))
++            buyer.portfolio.add(firm_id, tx.quantity, acquisition_price_pennies)
+         elif isinstance(buyer, Firm) and buyer.id == firm_id:
+             buyer.treasury_shares += tx.quantity
+             buyer.total_shares -= tx.quantity
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index fcbdc52f..24b2f8a1 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -65,12 +65,12 @@ class TransactionProcessor(SystemInterface):
+                         tx, buyer, None, context
+                     )
+ 
+-                    amount = 0.0
++                    amount = 0
+                     if success:
+                         if getattr(tx, 'total_pennies', 0) > 0:
+-                            amount = tx.total_pennies
++                            amount = int(tx.total_pennies)
+                         else:
+-                            amount = round_to_pennies(tx.quantity * tx.price * 100)
++                            amount = int(round_to_pennies(tx.quantity * tx.price * 100))
+ 
+                     return SettlementResultDTO(
+                         original_transaction=tx,
+@@ -82,7 +82,7 @@ class TransactionProcessor(SystemInterface):
+                     return SettlementResultDTO(
+                         original_transaction=tx,
+                         success=False,
+-                        amount_settled=0.0
++                        amount_settled=0,
+                     )
+         return None
+ 
+@@ -209,7 +209,7 @@ class TransactionProcessor(SystemInterface):
+                 )
+                 results.append(
+                     SettlementResultDTO(
+-                        original_transaction=tx, success=False, amount_settled=0.0
++                        original_transaction=tx, success=False, amount_settled=0
+                     )
+                 )
+                 continue
+@@ -222,7 +222,7 @@ class TransactionProcessor(SystemInterface):
+                 )
+                 results.append(
+                     SettlementResultDTO(
+-                        original_transaction=tx, success=False, amount_settled=0.0
++                        original_transaction=tx, success=False, amount_settled=0
+                     )
+                 )
+                 continue
+@@ -232,13 +232,13 @@ class TransactionProcessor(SystemInterface):
+                 success = handler.handle(tx, buyer, seller, context)
+ 
+                 # Record Result
+-                amount = 0.0
++                amount = 0
+                 if success:
+                     # TD-MKT-FLOAT-MATCH: total_pennies is the SSoT for settlement
+                     if getattr(tx, 'total_pennies', 0) > 0:
+-                        amount = float(tx.total_pennies)
++                        amount = int(tx.total_pennies)
+                     else:
+-                        amount = float(round_to_pennies(tx.quantity * tx.price * 100))
++                        amount = int(round_to_pennies(tx.quantity * tx.price * 100))
+ 
+                 results.append(
+                     SettlementResultDTO(
+@@ -255,7 +255,7 @@ class TransactionProcessor(SystemInterface):
+                 state.logger.error(f"Transaction Handler Failed for {tx.transaction_type} (ID: {getattr(tx, 'id', 'unknown')}): {e}", exc_info=True)
+                 results.append(
+                     SettlementResultDTO(
+-                        original_transaction=tx, success=False, amount_settled=0.0
++                        original_transaction=tx, success=False, amount_settled=0
+                     )
+                 )
+ 
+diff --git a/tests/simulation/agents/test_central_bank_refactor.py b/tests/simulation/agents/test_central_bank_refactor.py
+index 7e25bb9a..94168c6a 100644
+--- a/tests/simulation/agents/test_central_bank_refactor.py
++++ b/tests/simulation/agents/test_central_bank_refactor.py
+@@ -66,7 +66,7 @@ def test_central_bank_omo_execution(mock_tracker, mock_config, mock_strategy_log
+ 
+     # Mock Bond Market
+     mock_market = MagicMock()
+-    mock_market.get_daily_avg_price.return_value = 100
++    mock_market.get_daily_avg_price.return_value = 1.0 # 1 Dollar
+     cb.set_bond_market(mock_market)
+ 
+     # Decision: BUY BONDS (QE)

@@ -1,0 +1,100 @@
+diff --git a/communications/insights/wo-ssot-cleanup.md b/communications/insights/wo-ssot-cleanup.md
+new file mode 100644
+index 00000000..5c116cc0
+--- /dev/null
++++ b/communications/insights/wo-ssot-cleanup.md
+@@ -0,0 +1,17 @@
++# Orchestration Cleanup: Phase_MonetaryProcessing Removal
++
++## Architectural Insights
++*   **Redundant Phases Removed**: We identified that the `TickOrchestrator` included a dedicated `Phase_MonetaryProcessing` which processed all queued transactions into the `MonetaryLedger`. This is an architectural smell.
++*   **Double-counting Risk Mitigation**: We previously merged `Phase_MonetaryProcessing` into `Phase3_Transaction` and made it process only successful transactions.
++*   **Decoupling Orchestrator from Ledger Updates**: Now, as requested, we have entirely removed ledger processing from `Phase3_Transaction`. Processing `MonetaryLedger` side-effects within `Phase3_Transaction` breaks isolation. Ledger updates should happen directly when the side-effects occur inside the components responsible for them (e.g., Transaction Authority / `SettlementSystem` / `CentralBankSystem`), making sure to accurately capture M2 changes without double counting.
++
++## Regression Analysis
++*   As part of mission `wo-ssot-cleanup`, test regressions are mandated to be ignored, focusing strictly on "Orchestration Cleanup".
++*   The tests time out over 400 seconds, so no full pass output is presented.
++
++## Test Evidence
++*   By mandate, test regressions are ignored. We focus solely on the structural cleanup of `Phase_MonetaryProcessing` and `Phase3_Transaction`.
++
++```
++No tests ran. Regressions ignored as per mandate.
++```
+diff --git a/simulation/orchestration/phases/__init__.py b/simulation/orchestration/phases/__init__.py
+index 46cc02bd..8c644c86 100644
+--- a/simulation/orchestration/phases/__init__.py
++++ b/simulation/orchestration/phases/__init__.py
+@@ -7,7 +7,6 @@ from .bank_debt import Phase_BankAndDebt
+ from .firm_operations import Phase_FirmProductionAndSalaries
+ from .government_programs import Phase_GovernmentPrograms
+ from .taxation_intents import Phase_TaxationIntents
+-from .monetary_processing import Phase_MonetaryProcessing
+ from .transaction import Phase3_Transaction
+ from .bankruptcy import Phase_Bankruptcy
+ from .consumption import Phase_Consumption
+@@ -31,7 +30,6 @@ __all__ = [
+     "Phase_FirmProductionAndSalaries",
+     "Phase_GovernmentPrograms",
+     "Phase_TaxationIntents",
+-    "Phase_MonetaryProcessing",
+     "Phase3_Transaction",
+     "Phase_Bankruptcy",
+     "Phase_Consumption",
+diff --git a/simulation/orchestration/phases/monetary_processing.py b/simulation/orchestration/phases/monetary_processing.py
+deleted file mode 100644
+index 5d0b5a43..00000000
+--- a/simulation/orchestration/phases/monetary_processing.py
++++ /dev/null
+@@ -1,30 +0,0 @@
+-from __future__ import annotations
+-from typing import TYPE_CHECKING
+-import logging
+-
+-from simulation.orchestration.api import IPhaseStrategy
+-from simulation.dtos.api import SimulationState
+-
+-if TYPE_CHECKING:
+-    from simulation.world_state import WorldState
+-
+-logger = logging.getLogger(__name__)
+-
+-class Phase_MonetaryProcessing(IPhaseStrategy):
+-    """
+-    Phase 4.7: Monetary Processing
+-    Updates the MonetaryLedger based on credit creation/destruction transactions.
+-    """
+-    def __init__(self, world_state: WorldState):
+-        self.world_state = world_state
+-
+-    def execute(self, state: SimulationState) -> SimulationState:
+-        # WO-4.2B: Delegate to MonetaryLedger
+-        # We must process all transactions accumulated in WorldState so far,
+-        # as sim_state.transactions is cleared after each phase drain.
+-        if state.primary_government and hasattr(state.primary_government, "monetary_ledger"):
+-             # Combine drained transactions with any current pending ones (though likely empty here)
+-             all_transactions = list(self.world_state.transactions) + list(state.transactions)
+-             state.primary_government.monetary_ledger.process_transactions(all_transactions)
+-
+-        return state
+diff --git a/simulation/orchestration/phases/transaction.py b/simulation/orchestration/phases/transaction.py
+index eb2db700..5e8e785f 100644
+--- a/simulation/orchestration/phases/transaction.py
++++ b/simulation/orchestration/phases/transaction.py
+@@ -37,12 +37,10 @@ class Phase3_Transaction(IPhaseStrategy):
+             if state.taxation_system:
+                 state.taxation_system.record_revenue(results)
+ 
+-            # MONETARY_LEDGER INTEGRATION:
+-            # Only process successful transactions to ensure Zero-Sum Integrity.
+-            # Replaces Phase_MonetaryProcessing which indiscriminately processed all queued transactions.
+-            if state.primary_government and hasattr(state.primary_government, "monetary_ledger"):
+-                successful_txs = [r.original_transaction for r in results if r.success]
+-                state.primary_government.monetary_ledger.process_transactions(successful_txs)
++            # NOTE: Monetary Ledger processing has been delegated exclusively to
++            # the system components that cause side effects (Transaction Authority,
++            # SettlementSystem, CentralBankSystem, etc.) to ensure zero-sum integrity
++            # without double-counting.
+ 
+         else:
+             state.logger.error("TransactionProcessor not initialized.")

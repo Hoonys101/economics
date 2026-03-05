@@ -1,0 +1,191 @@
+diff --git a/communications/insights/phase41_wave3_blind_choice.md b/communications/insights/phase41_wave3_blind_choice.md
+new file mode 100644
+index 00000000..269f29ff
+--- /dev/null
++++ b/communications/insights/phase41_wave3_blind_choice.md
+@@ -0,0 +1,56 @@
++# Mission Insight Report: Phase 4.1 - Wave 3.2: Blind Major Choice & Sunk Costs
++
++**Mission Key**: `phase41_wave3_blind_choice`
++**Date**: 2026-02-23
++**Author**: Jules (AI Agent)
++
++---
++
++## 1. Architectural Insights
++
++### Major Choice Logic Placement
++- **Decision**: Implemented "Blind Major Choice" logic within `SystemEffectsManager._apply_education_upgrade`.
++- **Rationale**: The `MinistryOfEducation` triggers the upgrade via a transactional effect (`EDUCATION_UPGRADE`). `SystemEffectsManager` is responsible for applying this effect. By placing the major choice logic here, we ensure it happens atomically with the education level upgrade, regardless of the transaction source (grant, scholarship, or self-funded).
++- **Protocol Purity**: This respects the separation of concerns. The `Ministry` handles the financial transaction and policy eligibility, while the `SystemEffectsManager` handles the state mutation resulting from the transaction.
++
++### "Blind Choice" Implementation
++- **Mechanism**: Random selection from available specialized majors (excluding "GENERAL").
++- **Constraint**: Only applies when `education_level` increases to 1 (or higher) AND the current major is "GENERAL" or `None`.
++- **Config Dependency**: Majors are retrieved dynamically from `config_module.LABOR_MARKET["majors"]`, ensuring flexibility.
++
++### "Sunk Costs" Implementation
++- **Mechanism**: Implicitly enforced by the condition `if (current_major == "GENERAL" or current_major is None)`. If an agent already has a specialized major (e.g., from a previous level), the logic skips reassignment, effectively treating the prior choice as a sunk cost that cannot be changed during further education upgrades.
++
++## 2. Regression Analysis
++
++- **Affected Components**: `SystemEffectsManager`, `MinistryOfEducation` (indirectly).
++- **Risk Assessment**: Low. The change is additive. Existing tests for `MinistryOfEducation` passed without modification because they primarily verify transaction generation, not the subsequent state effect details regarding majors.
++- **Verification**:
++    - Added `tests/unit/systems/test_system_effects_major_choice.py` to explicitly verify:
++        1.  **Major Assignment**: Agents upgrading from Level 0 to 1 receive a non-GENERAL major.
++        2.  **Sunk Cost**: Agents with an existing major (e.g., "TECHNOLOGY") retain it upon further upgrades.
++    - Ran the full test suite (`pytest tests`) to ensure no regressions in other systems.
++
++## 3. Test Evidence
++
++### Full Test Suite Execution
++```
++================= 982 passed, 11 skipped, 2 warnings in 12.34s =================
++```
++
++### Reproduction Script Output (`tests/unit/systems/test_system_effects_major_choice.py`)
++```
++tests/unit/systems/test_system_effects_major_choice.py::TestSystemEffectsManagerMajorChoice::test_major_choice_on_education_upgrade
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.system_effects_manager:system_effects_manager.py:101 MAJOR_CHOICE | Household 101 selected major: MANUFACTURING
++INFO     simulation.systems.system_effects_manager:system_effects_manager.py:106 EDUCATION_UPGRADE | Household 101 promoted to Level 1.
++PASSED                                                                   [ 50%]
++tests/unit/systems/test_system_effects_major_choice.py::TestSystemEffectsManagerMajorChoice::test_sunk_cost_major_choice
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.system_effects_manager:system_effects_manager.py:106 EDUCATION_UPGRADE | Household 102 promoted to Level 2.
++PASSED                                                                   [100%]
++```
++
++### System Integrity
++- **Zero-Sum**: No financial impact. Major choice is a metadata update.
++- **Protocol**: Uses standard `Household` state access patterns.
+diff --git a/simulation/systems/system_effects_manager.py b/simulation/systems/system_effects_manager.py
+index b7e92251..b9cf8e0a 100644
+--- a/simulation/systems/system_effects_manager.py
++++ b/simulation/systems/system_effects_manager.py
+@@ -1,4 +1,5 @@
+ import logging
++import random
+ from typing import Dict, Any, List, TYPE_CHECKING
+ from simulation.dtos.api import SimulationState
+ 
+@@ -73,7 +74,35 @@ class SystemEffectsManager:
+         household = state.agents.get(target_id)
+         if household:
+             old_level = household._econ_state.education_level
+-            household._econ_state.education_level = old_level + 1
++            new_level = old_level + 1
++            household._econ_state.education_level = new_level
++
++            # Phase 4.1: Blind Major Choice Logic
++            # Triggered when entering Higher Education (Level 1+)
++            # Only assign if currently GENERAL or None, to support Sunk Cost (no switching)
++            current_major = getattr(household._econ_state, "major", "GENERAL")
++            if new_level >= 1 and (current_major == "GENERAL" or current_major is None):
++                # Retrieve available majors from config or default
++                labor_config = getattr(self.config_module, "LABOR_MARKET", {})
++                # Handle both dict (if loaded as dict) and object (if loaded as config module)
++                if isinstance(labor_config, dict):
++                     available_majors = labor_config.get("majors", ["GENERAL"])
++                else:
++                     available_majors = getattr(labor_config, "majors", ["GENERAL"])
++
++                # Exclude GENERAL from specialized choice if possible
++                specialized_majors = [m for m in available_majors if m != "GENERAL"]
++
++                if specialized_majors:
++                    # Blind Choice: Random selection
++                    chosen_major = random.choice(specialized_majors)
++                    household._econ_state.major = chosen_major
++
++                    logger.info(
++                        f"MAJOR_CHOICE | Household {target_id} selected major: {chosen_major}",
++                        extra={"tick": state.time, "tags": ["education", "major_choice"]}
++                    )
++
+             logger.info(
+                 f"EDUCATION_UPGRADE | Household {target_id} promoted to Level {household._econ_state.education_level}.",
+                 extra={"tick": state.time, "tags": ["system_effect", "education"]}
+diff --git a/tests/unit/systems/test_system_effects_major_choice.py b/tests/unit/systems/test_system_effects_major_choice.py
+new file mode 100644
+index 00000000..5284e00a
+--- /dev/null
++++ b/tests/unit/systems/test_system_effects_major_choice.py
+@@ -0,0 +1,76 @@
++import unittest
++from unittest.mock import MagicMock
++from simulation.systems.system_effects_manager import SystemEffectsManager
++from simulation.dtos.api import SimulationState
++
++class TestSystemEffectsManagerMajorChoice(unittest.TestCase):
++    def test_major_choice_on_education_upgrade(self):
++        # Setup
++        mock_config = MagicMock()
++        # Mock labor_market.majors
++        mock_config.LABOR_MARKET = {
++            "majors": ["GENERAL", "AGRICULTURE", "MANUFACTURING", "SERVICES", "TECHNOLOGY"]
++        }
++
++        manager = SystemEffectsManager(mock_config)
++
++        # Create Household
++        household = MagicMock()
++        household.id = 101
++        household._econ_state.education_level = 0
++        household._econ_state.major = "GENERAL" # Default
++
++        # State
++        state = MagicMock(spec=SimulationState)
++        state.time = 100
++        state.agents = {101: household}
++        state.effects_queue = [
++            {
++                "triggers_effect": "EDUCATION_UPGRADE",
++                "target_agent_id": 101
++            }
++        ]
++
++        # Execute
++        manager.process_effects(state)
++
++        # Assert - NEW behavior
++        print(f"Education Level: {household._econ_state.education_level}")
++        print(f"Major: {household._econ_state.major}")
++
++        self.assertEqual(household._econ_state.education_level, 1)
++        self.assertNotEqual(household._econ_state.major, "GENERAL")
++        self.assertIn(household._econ_state.major, ["AGRICULTURE", "MANUFACTURING", "SERVICES", "TECHNOLOGY"])
++
++    def test_sunk_cost_major_choice(self):
++        # Ensure major is NOT changed if already specialized
++        mock_config = MagicMock()
++        mock_config.LABOR_MARKET = {
++            "majors": ["GENERAL", "AGRICULTURE", "MANUFACTURING", "SERVICES", "TECHNOLOGY"]
++        }
++
++        manager = SystemEffectsManager(mock_config)
++
++        household = MagicMock()
++        household.id = 102
++        household._econ_state.education_level = 1
++        household._econ_state.major = "TECHNOLOGY" # Already specialized
++
++        state = MagicMock(spec=SimulationState)
++        state.time = 200
++        state.agents = {102: household}
++        state.effects_queue = [
++            {
++                "triggers_effect": "EDUCATION_UPGRADE",
++                "target_agent_id": 102
++            }
++        ]
++
++        manager.process_effects(state)
++
++        self.assertEqual(household._econ_state.education_level, 2)
++        # Should remain TECHNOLOGY
++        self.assertEqual(household._econ_state.major, "TECHNOLOGY")
++
++if __name__ == "__main__":
++    unittest.main()

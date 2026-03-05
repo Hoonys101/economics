@@ -1,0 +1,567 @@
+diff --git a/communications/insights/forensics_hardening_phase2.md b/communications/insights/forensics_hardening_phase2.md
+new file mode 100644
+index 00000000..28cb6e58
+--- /dev/null
++++ b/communications/insights/forensics_hardening_phase2.md
+@@ -0,0 +1,48 @@
++# Forensics Hardening Phase 2 Insight Report
++
++## Architectural Insights
++
++### Technical Debt Identified
++
++1.  **DTO Inconsistency**:
++    -   `LoanApplicationDTO` is defined as a `TypedDict` in `modules/finance/dtos.py` but as a `@dataclass` in `modules/finance/engine_api.py`. They have different fields.
++    -   `LoanDTO` is a `TypedDict` in `modules/finance/dtos.py` but `LoanStateDTO` is a `@dataclass` in `modules/finance/engine_api.py` with slight differences.
++    -   `TransactionContext` is a `TypedDict` in `simulation/dtos/transactions.py` but a `@dataclass` in `simulation/systems/api.py`.
++
++2.  **Corporate Tax Calculation Bug**:
++    -   In `modules/government/taxation/system.py`, `generate_corporate_tax_intents` multiplies the already-pennies `tax_amount` by 100, effectively inflating tax by 100x. This is a critical zero-sum integrity violation (magic money creation/destruction leak).
++
++3.  **Use of `TypedDict` for Cross-Boundary Data**:
++    -   `modules/finance/dtos.py` uses `TypedDict` extensively, which violates the mandate "DTO Purity: Use typed DTOs/Dataclasses for cross-boundary data. Avoid raw dicts."
++
++### Architectural Decisions
++
++1.  **Unify DTOs**:
++    -   Promote `@dataclass` versions as the canonical DTOs.
++    -   Move `TransactionContext` to `simulation/dtos/transactions.py` (as dataclass).
++    -   Convert `modules/finance/dtos.py` contents to `@dataclass`.
++    -   Update `modules/finance/engine_api.py` to import from `modules/finance/dtos.py`.
++
++2.  **Fix Zero-Sum Integrity**:
++    -   Remove the 100x multiplier in corporate tax calculation.
++
++## Regression Analysis
++
++(To be filled after implementation)
++
++## Test Evidence
++
++(To be filled after implementation)
++
++## Test Evidence
++
++All relevant tests passed (26/26):
++- `tests/finance/test_settlement_fx_swap.py`: Verified FXMatchDTO dataclass usage.
++- `tests/finance/test_protocol_integrity.py`: Verified settlement system integrity.
++- `tests/forensics/test_bond_liquidity.py`: Verified bond liquidity checks.
++- `tests/forensics/test_escheatment_crash.py`: Verified escheatment handler stability.
++- `tests/forensics/test_ghost_account.py`: Verified dynamic agent resolution.
++- `tests/forensics/test_saga_integrity.py`: Verified saga orchestrator DTO validation.
++
++Specific Regression Test for Corporate Tax Bug:
++- Created and ran `tests/modules/government/taxation/test_corporate_tax_bug.py` which confirmed the fix (100 pennies vs 10000 pennies).
+diff --git a/modules/finance/dtos.py b/modules/finance/dtos.py
+index 43f12d42..cae54303 100644
+--- a/modules/finance/dtos.py
++++ b/modules/finance/dtos.py
+@@ -1,9 +1,13 @@
+-from typing import TypedDict, Dict, Optional, List, TypeAlias, Literal
++from __future__ import annotations
++from typing import Dict, Optional, List, TypeAlias, Literal, Any
++from dataclasses import dataclass, field
+ from modules.simulation.api import AgentID
+ 
+ CurrencyCode: TypeAlias = str
++LoanStatus = Literal["PENDING", "ACTIVE", "PAID", "DEFAULTED"]
+ 
+-class MoneyDTO(TypedDict):
++@dataclass
++class MoneyDTO:
+     """
+     Represents a monetary value with its associated currency.
+     MIGRATION NOTE: Used to be float 'amount'. Now 'amount_pennies' (int).
+@@ -11,46 +15,72 @@ class MoneyDTO(TypedDict):
+     amount_pennies: int
+     currency: CurrencyCode
+ 
+-class MultiCurrencyWalletDTO(TypedDict):
++@dataclass
++class MultiCurrencyWalletDTO:
+     """Represents a complete portfolio of assets, keyed by currency."""
+     balances: Dict[CurrencyCode, int] # Pennies
+ 
+-class InvestmentOrderDTO(TypedDict):
++@dataclass
++class InvestmentOrderDTO:
+     """Defines an internal order for investment (e.g., R&D, Capex)."""
+     order_type: str # e.g., "INVEST_RD", "INVEST_AUTOMATION"
+     investment: MoneyDTO
+-    target_agent_id: Optional[AgentID] # For M&A, etc.
++    target_agent_id: Optional[AgentID] = None # For M&A, etc.
+ 
+ # --- Bank Decomposition DTOs (TD-274) ---
+ 
+-LoanStatus = Literal["PENDING", "ACTIVE", "PAID", "DEFAULTED"]
+-
+-class LoanApplicationDTO(TypedDict):
+-    applicant_id: AgentID
++@dataclass
++class LoanApplicationDTO:
++    """
++    Input for assessing a new loan application.
++    Unified DTO merging engine_api and legacy specs.
++    """
++    borrower_id: AgentID
+     amount_pennies: int
+-    purpose: str
+-    term_months: int # Or ticks, depending on usage. Assuming ticks based on Bank code.
+-    # Spec says term_months, but Bank code uses term_ticks. I'll stick to spec name but note usage.
+ 
+-class LoanDTO(TypedDict):
++    # Optional fields
++    lender_id: Optional[AgentID] = None # Specific bank targeted
++    borrower_profile: Optional[Dict[str, Any]] = None # Financial profile
++
++    # Legacy/Spec fields
++    applicant_id: Optional[AgentID] = None # Deprecated, use borrower_id
++    purpose: Optional[str] = None
++    term_months: Optional[int] = None # Or ticks
++
++@dataclass
++class LoanDTO:
++    """
++    Represents a loan, either as state or data transfer.
++    Unified DTO merging LoanStateDTO and legacy LoanDTO.
++    """
+     loan_id: str
+     borrower_id: AgentID
+     principal_pennies: int
+-    interest_rate: float
+-    term_months: int
+     remaining_principal_pennies: int
+-    status: LoanStatus
++    interest_rate: float
+     origination_tick: int
+-    due_tick: Optional[int]
+ 
+-class DepositDTO(TypedDict):
++    # Unified fields
++    lender_id: Optional[AgentID] = None
++    due_tick: Optional[int] = None
++    term_months: Optional[int] = None
++    status: LoanStatus = "ACTIVE"
++    is_defaulted: bool = False
++
++@dataclass
++class DepositDTO:
++    """Represents a single deposit account."""
+     owner_id: AgentID
+     balance_pennies: int
+     interest_rate: float
++    deposit_id: Optional[str] = None # Added for compatibility with DepositStateDTO
++    customer_id: Optional[AgentID] = None # Alias for owner_id if needed
++    currency: CurrencyCode = "USD" # Default currency
+ 
+ # --- Phase 4.1: FX Barter DTOs ---
+ 
+-class FXMatchDTO(TypedDict):
++@dataclass
++class FXMatchDTO:
+     """
+     Represents an atomic swap agreement between two parties.
+     Used by the Matching Engine to instruct Settlement.
+diff --git a/modules/finance/engine_api.py b/modules/finance/engine_api.py
+index 7884fbba..286c03bf 100644
+--- a/modules/finance/engine_api.py
++++ b/modules/finance/engine_api.py
+@@ -1,35 +1,28 @@
+-from typing import TypedDict, List, Dict, Optional, Protocol, runtime_checkable
++from typing import TypedDict, List, Dict, Optional, Protocol, runtime_checkable, Any
+ from dataclasses import dataclass, field
+ 
+ from modules.simulation.api import AgentID
+ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
+ from simulation.models import Transaction
++from modules.finance.dtos import LoanApplicationDTO, LoanDTO, DepositDTO
+ 
+ # =================================================================
+ # 1. CORE STATE DTOs (The Financial Ledger)
+ # =================================================================
+ 
+ # Represents a single loan on the books
+-@dataclass
+-class LoanStateDTO:
+-    loan_id: str
+-    borrower_id: AgentID
+-    lender_id: AgentID # e.g., Bank ID
+-    principal_pennies: int
+-    remaining_principal_pennies: int
+-    interest_rate: float
+-    origination_tick: int
+-    due_tick: int
+-    is_defaulted: bool = False
++# Mapped to LoanDTO for consistency, but with strict state requirements if needed.
++# For now, we alias it or inherit. Since LoanDTO has optional fields that are required here,
++# we might want to keep a strict version, but for DTO purity, let's try to use LoanDTO.
++# But LoanDTO has optional due_tick. LoanStateDTO requires it.
++# Let's keep LoanStateDTO as a specialized version or alias it if we accept Optionals.
++# To avoid breakage, let's Alias it but developers should populate all fields.
++LoanStateDTO = LoanDTO
+ 
+ # Represents a single deposit account
+-@dataclass
+-class DepositStateDTO:
+-    deposit_id: str
+-    customer_id: AgentID
+-    balance_pennies: int
+-    interest_rate: float
+-    currency: CurrencyCode = DEFAULT_CURRENCY
++# DepositDTO in dtos.py has owner_id. DepositStateDTO has customer_id.
++# We should probably update DepositStateDTO to use DepositDTO and alias/map fields.
++DepositStateDTO = DepositDTO
+ 
+ # Represents a government bond
+ @dataclass
+@@ -77,15 +70,7 @@ class EngineOutputDTO:
+     updated_ledger: FinancialLedgerDTO
+     generated_transactions: List[Transaction] = field(default_factory=list)
+ 
+-# Input for assessing a new loan application
+-@dataclass
+-class LoanApplicationDTO:
+-    borrower_id: AgentID
+-    lender_id: AgentID # Specific bank targeted
+-    amount_pennies: int
+-    # Borrower financial profile, credit score, etc.
+-    # To be defined, but let's assume it's a dict for now
+-    borrower_profile: Dict
++# LoanApplicationDTO is now imported from modules.finance.dtos
+ 
+ # Decision from the risk assessment engine
+ @dataclass
+diff --git a/modules/finance/engines/loan_booking_engine.py b/modules/finance/engines/loan_booking_engine.py
+index 39d662a8..b88ef23a 100644
+--- a/modules/finance/engines/loan_booking_engine.py
++++ b/modules/finance/engines/loan_booking_engine.py
+@@ -58,7 +58,8 @@ class LoanBookingEngine(ILoanBookingEngine):
+         else:
+             deposit = DepositStateDTO(
+                 deposit_id=deposit_id,
+-                customer_id=application.borrower_id,
++                owner_id=application.borrower_id, # Use owner_id as primary
++                customer_id=application.borrower_id, # Legacy/Alias
+                 balance_pennies=application.amount_pennies,
+                 interest_rate=0.0 # Default
+             )
+diff --git a/modules/government/taxation/system.py b/modules/government/taxation/system.py
+index fac6ba32..d77ae8c8 100644
+--- a/modules/government/taxation/system.py
++++ b/modules/government/taxation/system.py
+@@ -283,7 +283,7 @@ class TaxationSystem:
+                     market_id="system",
+                     transaction_type="tax",
+                     time=current_tick
+-                , total_pennies=int(tax_amount * 1.0 * 100))
++                , total_pennies=tax_amount)
+                 intents.append(transaction)
+ 
+         return intents
+diff --git a/simulation/dtos/transactions.py b/simulation/dtos/transactions.py
+index cfa635f5..3d9fe2bc 100644
+--- a/simulation/dtos/transactions.py
++++ b/simulation/dtos/transactions.py
+@@ -1,14 +1,16 @@
+ from __future__ import annotations
+-from typing import TypedDict, List, Any, Optional
+ from dataclasses import dataclass
+-
+-# Avoid circular import by using TYPE_CHECKING or just relying on users to import Transaction from models if they need the full class.
+-# But for DTO alias, we need the class.
+-from typing import TYPE_CHECKING
++from typing import List, Dict, Any, Optional, TYPE_CHECKING
+ from simulation.models import Transaction
+ 
++if TYPE_CHECKING:
++    from simulation.agents.government import Government
++    from simulation.systems.settlement_system import SettlementSystem
++    from modules.government.taxation.system import TaxationSystem
++    from modules.finance.api import IShareholderRegistry
++    from logging import Logger
++
+ # Alias for Spec Compliance
+-# At runtime, users should use simulation.models.Transaction
+ TransactionDTO = Transaction
+ 
+ @dataclass
+@@ -19,7 +21,27 @@ class TransactionResult:
+     error_message: Optional[str] = None
+     amount_processed: int = 0 # Changed to int (pennies)
+ 
+-class TransactionContext(TypedDict):
+-    """Context passed to transaction handlers."""
+-    simulation_state: Any # SimulationState
+-    current_time: int
++@dataclass(frozen=True)
++class TransactionContext:
++    """
++    Provides all necessary simulation state to a transaction handler.
++    This is an immutable snapshot of state for a single transaction,
++    ensuring that handlers have a consistent view of the world.
++    Moved from simulation/systems/api.py for DTO Purity.
++    """
++    agents: Dict[int, Any]
++    inactive_agents: Dict[int, Any]
++    government: 'Government'
++    settlement_system: 'SettlementSystem'
++    taxation_system: 'TaxationSystem'
++    stock_market: Any
++    real_estate_units: List[Any]
++    market_data: Dict[str, Any]
++    config_module: Any
++    logger: 'Logger'
++    time: int
++    bank: Optional[Any] # Bank
++    central_bank: Optional[Any] # CentralBank
++    public_manager: Optional[Any] # PublicManager
++    transaction_queue: List['Transaction'] # For appending side-effect transactions (e.g. credit creation)
++    shareholder_registry: Optional['IShareholderRegistry'] = None # TD-275
+diff --git a/simulation/systems/api.py b/simulation/systems/api.py
+index b3a1a372..195001d3 100644
+--- a/simulation/systems/api.py
++++ b/simulation/systems/api.py
+@@ -29,6 +29,8 @@ if TYPE_CHECKING:
+     from modules.government.taxation.system import TaxationSystem
+     from logging import Logger
+ 
++# Import TransactionContext from DTO module
++from simulation.dtos.transactions import TransactionContext
+ 
+ # ===================================================================
+ # 1. 시스템 간 통신을 위한 DTO (Data Transfer Objects)
+@@ -274,30 +276,6 @@ class ITransactionManager(SystemInterface, Protocol):
+     """
+     pass
+ 
+-@dataclass(frozen=True)
+-class TransactionContext:
+-    """
+-    Provides all necessary simulation state to a transaction handler.
+-    This is an immutable snapshot of state for a single transaction,
+-    ensuring that handlers have a consistent view of the world.
+-    """
+-    agents: Dict[int, Any]
+-    inactive_agents: Dict[int, Any]
+-    government: 'Government'
+-    settlement_system: 'SettlementSystem'
+-    taxation_system: 'TaxationSystem'
+-    stock_market: Any
+-    real_estate_units: List[Any]
+-    market_data: Dict[str, Any]
+-    config_module: Any
+-    logger: 'Logger'
+-    time: int
+-    bank: Optional[Any] # Bank
+-    central_bank: Optional[Any] # CentralBank
+-    public_manager: Optional[Any] # PublicManager
+-    transaction_queue: List['Transaction'] # For appending side-effect transactions (e.g. credit creation)
+-    shareholder_registry: Optional['IShareholderRegistry'] = None # TD-275
+-
+ class ITransactionHandler(ABC):
+     """
+     Abstract Base Class defining the interface for handling a specific
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index 6e3c5236..f445fa9d 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -348,7 +348,7 @@ class SettlementSystem(IMonetaryAuthority):
+         Ensures both legs (A->B, B->A) succeed or neither occurs.
+         """
+         # 1. Validate Inputs
+-        if match["amount_a_pennies"] <= 0 or match["amount_b_pennies"] <= 0:
++        if match.amount_a_pennies <= 0 or match.amount_b_pennies <= 0:
+             self.logger.error(f"FX_SWAP_FAIL | Non-positive amounts: {match}")
+             return None
+ 
+@@ -357,39 +357,39 @@ class SettlementSystem(IMonetaryAuthority):
+         party_b = None
+ 
+         if self.agent_registry:
+-            party_a = self.agent_registry.get_agent(match["party_a_id"])
+-            party_b = self.agent_registry.get_agent(match["party_b_id"])
++            party_a = self.agent_registry.get_agent(match.party_a_id)
++            party_b = self.agent_registry.get_agent(match.party_b_id)
+ 
+         if not party_a or not party_b:
+-            self.logger.error(f"FX_SWAP_FAIL | Agents not found. A: {match['party_a_id']}, B: {match['party_b_id']}")
++            self.logger.error(f"FX_SWAP_FAIL | Agents not found. A: {match.party_a_id}, B: {match.party_b_id}")
+             return None
+ 
+         # 3. Seamless Funds Check (Pre-flight)
+         # Note: This is an optimization. The engine will strictly enforce this, but we check early to avoid engine overhead.
+-        if not self._prepare_seamless_funds(party_a, match["amount_a_pennies"], match["currency_a"]):
++        if not self._prepare_seamless_funds(party_a, match.amount_a_pennies, match.currency_a):
+             return None
+-        if not self._prepare_seamless_funds(party_b, match["amount_b_pennies"], match["currency_b"]):
++        if not self._prepare_seamless_funds(party_b, match.amount_b_pennies, match.currency_b):
+             return None
+ 
+         # 4. Construct Atomic Batch
+         # Leg 1: A -> B (Currency A)
+         tx1 = TransactionDTO(
+-            transaction_id=f"swap_{match['match_tick']}_leg1",
++            transaction_id=f"swap_{match.match_tick}_leg1",
+             source_account_id=str(party_a.id),
+             destination_account_id=str(party_b.id),
+-            amount=match["amount_a_pennies"],
+-            currency=match["currency_a"],
+-            description=f"FX Swap Leg 1: {match['amount_a_pennies']} {match['currency_a']}"
++            amount=match.amount_a_pennies,
++            currency=match.currency_a,
++            description=f"FX Swap Leg 1: {match.amount_a_pennies} {match.currency_a}"
+         )
+ 
+         # Leg 2: B -> A (Currency B)
+         tx2 = TransactionDTO(
+-            transaction_id=f"swap_{match['match_tick']}_leg2",
++            transaction_id=f"swap_{match.match_tick}_leg2",
+             source_account_id=str(party_b.id),
+             destination_account_id=str(party_a.id),
+-            amount=match["amount_b_pennies"],
+-            currency=match["currency_b"],
+-            description=f"FX Swap Leg 2: {match['amount_b_pennies']} {match['currency_b']}"
++            amount=match.amount_b_pennies,
++            currency=match.currency_b,
++            description=f"FX Swap Leg 2: {match.amount_b_pennies} {match.currency_b}"
+         )
+ 
+         # 5. Execute Atomically
+@@ -412,17 +412,17 @@ class SettlementSystem(IMonetaryAuthority):
+         return Transaction(
+             buyer_id=party_a.id,
+             seller_id=party_b.id,
+-            item_id=match["currency_a"],
+-            quantity=match["amount_a_pennies"],
+-            price=match["rate_a_to_b"], # Store rate as price
+-            total_pennies=match["amount_a_pennies"],
++            item_id=match.currency_a,
++            quantity=match.amount_a_pennies,
++            price=match.rate_a_to_b, # Store rate as price
++            total_pennies=match.amount_a_pennies,
+             market_id="fx_market",
+             transaction_type="FX_SWAP",
+-            time=match["match_tick"],
++            time=match.match_tick,
+             metadata={
+-                "swap_leg_2_amount": match["amount_b_pennies"],
+-                "swap_leg_2_currency": match["currency_b"],
+-                "rate": match["rate_a_to_b"]
++                "swap_leg_2_amount": match.amount_b_pennies,
++                "swap_leg_2_currency": match.currency_b,
++                "rate": match.rate_a_to_b
+             }
+         )
+ 
+diff --git a/tests/finance/test_settlement_fx_swap.py b/tests/finance/test_settlement_fx_swap.py
+index 4c63b8c5..6e423704 100644
+--- a/tests/finance/test_settlement_fx_swap.py
++++ b/tests/finance/test_settlement_fx_swap.py
+@@ -66,16 +66,16 @@ def test_execute_swap_success(settlement_system):
+     registry.get_agent.side_effect = get_agent_side_effect
+ 
+     # Define Match
+-    match: FXMatchDTO = {
+-        "party_a_id": 101,
+-        "party_b_id": 102,
+-        "amount_a_pennies": 500,
+-        "currency_a": "USD",
+-        "amount_b_pennies": 400,
+-        "currency_b": "EUR",
+-        "match_tick": 1,
+-        "rate_a_to_b": 0.8
+-    }
++    match = FXMatchDTO(
++        party_a_id=101,
++        party_b_id=102,
++        amount_a_pennies=500,
++        currency_a="USD",
++        amount_b_pennies=400,
++        currency_b="EUR",
++        match_tick=1,
++        rate_a_to_b=0.8
++    )
+ 
+     # Execute
+     tx = system.execute_swap(match)
+@@ -103,16 +103,16 @@ def test_execute_swap_insufficient_funds_rollback(settlement_system):
+ 
+     registry.get_agent.side_effect = get_agent_side_effect
+ 
+-    match: FXMatchDTO = {
+-        "party_a_id": 101,
+-        "party_b_id": 102,
+-        "amount_a_pennies": 500,
+-        "currency_a": "USD",
+-        "amount_b_pennies": 400, # Needs 400 EUR
+-        "currency_b": "EUR",
+-        "match_tick": 1,
+-        "rate_a_to_b": 0.8
+-    }
++    match = FXMatchDTO(
++        party_a_id=101,
++        party_b_id=102,
++        amount_a_pennies=500,
++        currency_a="USD",
++        amount_b_pennies=400, # Needs 400 EUR
++        currency_b="EUR",
++        match_tick=1,
++        rate_a_to_b=0.8
++    )
+ 
+     # Execute
+     tx = system.execute_swap(match)
+@@ -136,16 +136,16 @@ def test_execute_swap_invalid_amounts(settlement_system):
+ 
+     registry.get_agent.side_effect = get_agent_side_effect
+ 
+-    match: FXMatchDTO = {
+-        "party_a_id": 101,
+-        "party_b_id": 102,
+-        "amount_a_pennies": -500, # Negative
+-        "currency_a": "USD",
+-        "amount_b_pennies": 400,
+-        "currency_b": "EUR",
+-        "match_tick": 1,
+-        "rate_a_to_b": 0.8
+-    }
++    match = FXMatchDTO(
++        party_a_id=101,
++        party_b_id=102,
++        amount_a_pennies=-500, # Negative
++        currency_a="USD",
++        amount_b_pennies=400,
++        currency_b="EUR",
++        match_tick=1,
++        rate_a_to_b=0.8
++    )
+ 
+     tx = system.execute_swap(match)
+     assert tx is None
+@@ -161,16 +161,16 @@ def test_execute_swap_missing_agent(settlement_system):
+ 
+     registry.get_agent.side_effect = get_agent_side_effect
+ 
+-    match: FXMatchDTO = {
+-        "party_a_id": 101,
+-        "party_b_id": 102,
+-        "amount_a_pennies": 500,
+-        "currency_a": "USD",
+-        "amount_b_pennies": 400,
+-        "currency_b": "EUR",
+-        "match_tick": 1,
+-        "rate_a_to_b": 0.8
+-    }
++    match = FXMatchDTO(
++        party_a_id=101,
++        party_b_id=102,
++        amount_a_pennies=500,
++        currency_a="USD",
++        amount_b_pennies=400,
++        currency_b="EUR",
++        match_tick=1,
++        rate_a_to_b=0.8
++    )
+ 
+     tx = system.execute_swap(match)
+     assert tx is None

@@ -1,0 +1,250 @@
+diff --git a/communications/insights/WO-IMPL-MODULAR-DB.md b/communications/insights/WO-IMPL-MODULAR-DB.md
+new file mode 100644
+index 00000000..98f02065
+--- /dev/null
++++ b/communications/insights/WO-IMPL-MODULAR-DB.md
+@@ -0,0 +1,39 @@
++# Mission Report: WO-IMPL-MODULAR-DB
++
++## 1. Architectural Insights
++- **Migration Strategy**: The `SchemaMigrator` was integrated into the `Simulation` lifecycle via a new `initialize()` method. This ensures that database schema updates occur explicitly and idempotently before the simulation loop begins, preventing runtime errors due to schema mismatches.
++- **Refactoring `SimulationRepository`**: The automatic migration call was removed from `SimulationRepository.__init__` to decouple repository instantiation from schema management. This allows for more controlled initialization and safer testing contexts where migration might not be desired or possible.
++- **Legacy Drift Handling**: The migrator specifically handles the addition of the `total_pennies` column to the `transactions` table. It uses `ROUND(price * quantity * 100)` cast to `INTEGER` to strictly enforce the Penny Standard during backfilling, aligning with `modules.finance.utils.currency_math`.
++- **Protocol Fidelity**: Fixed a missing `Tuple` import in `modules/market/api.py` which was causing `NameError` in tests, ensuring protocol definitions remain valid.
++
++## 2. Regression Analysis
++- **`modules/market/api.py`**: A `NameError` was detected due to a missing `Tuple` import. This was fixed to ensure the test suite passes.
++- **`tests/unit/simulation/systems/test_audit_total_m2.py`**: This test failed because the mock `Household` agent was assigned `id=1`, which conflicted with `ID_GOVERNMENT` (a system agent excluded from M2 calculations). The test was updated to use `id=101` for the household, and `get_balance` was explicitly mocked to prevent `MagicMock` pollution in aggregation logic.
++- **Backward Compatibility**: The new `migrate()` method in `SimulationRepository` ensures that existing code using the repository can opt-in to migration, while `Simulation.initialize()` guarantees it for the main execution path.
++
++## 3. Test Evidence
++
++### Unit Test: `tests/unit/test_db_migration.py`
++```
++tests/unit/test_db_migration.py::test_migration_creates_tables_if_missing
++-------------------------------- live log call ---------------------------------
++INFO     simulation.db.migration:migration.py:55 Table 'transactions' missing. Creating tables via schema definition.
++PASSED                                                                   [ 33%]
++tests/unit/test_db_migration.py::test_migration_adds_total_pennies_column
++-------------------------------- live log call ---------------------------------
++INFO     simulation.db.migration:migration.py:63 Column 'total_pennies' missing in 'transactions'. Migrating schema.
++INFO     simulation.db.migration:migration.py:80 Migration complete: Added 'total_pennies' to 'transactions'. Updated 1 rows.
++PASSED                                                                   [ 66%]
++tests/unit/test_db_migration.py::test_migration_idempotency
++-------------------------------- live log call ---------------------------------
++INFO     simulation.db.migration:migration.py:55 Table 'transactions' missing. Creating tables via schema definition.
++PASSED                                                                   [100%]
++```
++
++### Affected Legacy Test: `tests/unit/simulation/systems/test_audit_total_m2.py`
++```
++tests/unit/simulation/systems/test_audit_total_m2.py::test_audit_total_m2_logic PASSED [100%]
++```
++
++### Full Suite Validation
++All tests passed (1067 passed, 11 skipped).
+diff --git a/modules/market/api.py b/modules/market/api.py
+index ec06b87d..5369161d 100644
+--- a/modules/market/api.py
++++ b/modules/market/api.py
+@@ -1,5 +1,5 @@
+ from dataclasses import dataclass, field
+-from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING, List, runtime_checkable, Union
++from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING, List, runtime_checkable, Union, Tuple
+ from enum import Enum
+ import uuid
+ from pydantic import BaseModel, Field, field_validator
+diff --git a/simulation/db/migration.py b/simulation/db/migration.py
+index c650c7fe..43fe9840 100644
+--- a/simulation/db/migration.py
++++ b/simulation/db/migration.py
+@@ -67,7 +67,8 @@ class SchemaMigrator:
+                 cursor.execute("ALTER TABLE transactions ADD COLUMN total_pennies INTEGER DEFAULT 0")
+ 
+                 # Populate column
+-                # Using ROUND(price * quantity * 100) to ensure precision before casting to INT
++                # Using ROUND(price * quantity * 100) to ensure precision before casting to INT.
++                # This aligns with modules.finance.utils.currency_math.round_to_pennies.
+                 cursor.execute("""
+                     UPDATE transactions
+                     SET total_pennies = CAST(ROUND(price * quantity * 100) AS INTEGER)
+diff --git a/simulation/db/repository.py b/simulation/db/repository.py
+index 24e924f4..7d00dbde 100644
+--- a/simulation/db/repository.py
++++ b/simulation/db/repository.py
+@@ -32,7 +32,16 @@ class SimulationRepository:
+     def __init__(self):
+         self.conn = get_db_connection()
+ 
+-        # Database Migration
++        # Initialize sub-repositories sharing the same connection
++        self.agents = AgentRepository(self.conn)
++        self.markets = MarketRepository(self.conn)
++        self.analytics = AnalyticsRepository(self.conn)
++        self.runs = RunRepository(self.conn)
++
++    def migrate(self) -> None:
++        """
++        Executes database schema migration.
++        """
+         migrator = SchemaMigrator(self.conn)
+         report = migrator.migrate()
+         if not report.success:
+@@ -41,12 +50,6 @@ class SimulationRepository:
+         elif report.migrated_tables:
+             logger.info(f"Database Migration Successful: {report.migrated_tables}, Rows affected: {report.rows_affected}")
+ 
+-        # Initialize sub-repositories sharing the same connection
+-        self.agents = AgentRepository(self.conn)
+-        self.markets = MarketRepository(self.conn)
+-        self.analytics = AnalyticsRepository(self.conn)
+-        self.runs = RunRepository(self.conn)
+-
+     def clear_all_data(self):
+         """
+         모든 시뮬레이션 관련 테이블의 데이터를 삭제합니다.
+diff --git a/simulation/engine.py b/simulation/engine.py
+index b6171562..3b55d930 100644
+--- a/simulation/engine.py
++++ b/simulation/engine.py
+@@ -71,6 +71,15 @@ class Simulation:
+         # Expose via global module attribute for access by agents
+         simulation.logger = self.simulation_logger
+ 
++    def initialize(self) -> None:
++        """
++        Final initialization step for the Simulation facade.
++        Ensures the database schema is up-to-date before any processing begins.
++        """
++        if self.world_state.repository:
++            self.world_state.repository.migrate()
++        logger.info("Simulation initialized and database schema verified.")
++
+     def __getattr__(self, name: str) -> Any:
+         return getattr(self.world_state, name)
+ 
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index f7b0b13b..0eb74ca4 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -121,6 +121,9 @@ class SimulationInitializer(SimulationInitializerInterface):
+         # Phase 5: Genesis
+         self._init_phase5_genesis(sim)
+ 
++        # Final Initialization: Database Migration & Verification
++        sim.initialize()
++
+         self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
+         return sim
+ 
+diff --git a/tests/unit/simulation/systems/test_audit_total_m2.py b/tests/unit/simulation/systems/test_audit_total_m2.py
+index 81d3a98d..dd62a3ea 100644
+--- a/tests/unit/simulation/systems/test_audit_total_m2.py
++++ b/tests/unit/simulation/systems/test_audit_total_m2.py
+@@ -14,9 +14,10 @@ def test_audit_total_m2_logic():
+ 
+     # 1. Standard Agent (Household)
+     hh = MagicMock(spec=Household)
+-    hh.id = 1
++    hh.id = 101
+     # Household implements IFinancialEntity via protocol/duck typing, ensure property exists
+     type(hh).balance_pennies = PropertyMock(return_value=100)
++    hh.get_balance.return_value = 100
+     # Fallback for instance check failure
+     hh.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 100}
+ 
+diff --git a/tests/unit/test_db_migration.py b/tests/unit/test_db_migration.py
+new file mode 100644
+index 00000000..adaa9286
+--- /dev/null
++++ b/tests/unit/test_db_migration.py
+@@ -0,0 +1,89 @@
++import pytest
++import sqlite3
++import os
++from simulation.db.migration import SchemaMigrator
++from simulation.db.repository import SimulationRepository
++from simulation.db.schema import create_tables
++
++DB_PATH = "test_migration.db"
++
++@pytest.fixture
++def db_connection():
++    if os.path.exists(DB_PATH):
++        os.remove(DB_PATH)
++    conn = sqlite3.connect(DB_PATH)
++    yield conn
++    conn.close()
++    if os.path.exists(DB_PATH):
++        os.remove(DB_PATH)
++
++def test_migration_creates_tables_if_missing(db_connection):
++    migrator = SchemaMigrator(db_connection)
++    report = migrator.migrate()
++
++    assert report.success
++    assert "transactions (created)" in report.migrated_tables
++
++    cursor = db_connection.cursor()
++    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'")
++    assert cursor.fetchone() is not None
++
++def test_migration_adds_total_pennies_column(db_connection):
++    # 1. Setup Legacy Schema (Transactions without total_pennies)
++    cursor = db_connection.cursor()
++    cursor.execute("""
++        CREATE TABLE transactions (
++            id INTEGER PRIMARY KEY AUTOINCREMENT,
++            run_id INTEGER,
++            time INTEGER,
++            buyer_id INTEGER,
++            seller_id INTEGER,
++            item_id TEXT,
++            quantity REAL,
++            price REAL,
++            market_id TEXT,
++            transaction_type TEXT
++        )
++    """)
++    # Insert legacy data
++    cursor.execute("""
++        INSERT INTO transactions (run_id, time, buyer_id, seller_id, item_id, quantity, price, market_id, transaction_type)
++        VALUES (1, 1, 101, 201, 'food', 10.0, 5.50, 'food_market', 'purchase')
++    """)
++    db_connection.commit()
++
++    # Verify column is missing
++    cursor.execute("PRAGMA table_info(transactions)")
++    columns = [info[1] for info in cursor.fetchall()]
++    assert "total_pennies" not in columns
++
++    # 2. Run Migration
++    migrator = SchemaMigrator(db_connection)
++    report = migrator.migrate()
++
++    assert report.success
++    assert "transactions (added total_pennies)" in report.migrated_tables
++
++    # 3. Verify Column Added and Backfilled
++    cursor.execute("PRAGMA table_info(transactions)")
++    columns = [info[1] for info in cursor.fetchall()]
++    assert "total_pennies" in columns
++
++    cursor.execute("SELECT total_pennies FROM transactions WHERE id=1")
++    row = cursor.fetchone()
++    # 10.0 * 5.50 = 55.0 -> 5500 pennies
++    assert row[0] == 5500
++    assert isinstance(row[0], int)
++
++def test_migration_idempotency(db_connection):
++    migrator = SchemaMigrator(db_connection)
++
++    # First Run
++    report1 = migrator.migrate()
++    assert report1.success
++
++    # Second Run
++    report2 = migrator.migrate()
++    assert report2.success
++    assert not report2.migrated_tables  # Should be empty
++    assert not report2.errors

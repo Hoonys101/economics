@@ -19,3 +19,11 @@ class PlatformLockManager(ILockManager):
         """
         Releases the lock and closes the file.
         """
+    async def async_acquire(self) -> None:
+        """
+        Asynchronously acquires the lock using asyncio.to_thread to prevent blocking the event loop.
+        """
+    async def async_release(self) -> None:
+        """
+        Asynchronously releases the lock using asyncio.to_thread.
+        """

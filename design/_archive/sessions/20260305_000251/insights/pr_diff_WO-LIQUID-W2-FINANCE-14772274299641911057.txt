@@ -1,0 +1,359 @@
+diff --git a/communications/insights/WO-LIQUID-W2-FINANCE.md b/communications/insights/WO-LIQUID-W2-FINANCE.md
+new file mode 100644
+index 00000000..d0a160ed
+--- /dev/null
++++ b/communications/insights/WO-LIQUID-W2-FINANCE.md
+@@ -0,0 +1,60 @@
++# Phase 22 [W2]: Financial Integrity & Saga Recovery (WO-LIQUID-W2-FINANCE)
++
++## 1. Architectural Insights
++*   **M2 Definition Refinement**: The `calculate_total_money` logic was overhauled to explicitly separate **System Debt** (negative balances from Soft Budget Agents like `PublicManager`) from **Circulating Money** (M2). Previously, negative balances were netted against positive cash, artificially lowering M2 and triggering false-positive leak alarms. The new audit contract returns `{DEFAULT_CURRENCY: m2_int, "SYSTEM_DEBT": debt_int}`.
++*   **Protocol-Driven Rollback**: The `CommandService` rollback logic was hardened by enforcing the `IRestorableRegistry` protocol. We removed brittle `hasattr` checks for implementation details like `delete_layer` and standardized on `delete_entry` (for creation rollback) and `restore_entry` (for modification rollback). To ensure clean state restoration in layered registries, modification rollback now explicitly clears the key before restoring the snapshot.
++*   **Accounting Gap (Asset Swaps)**: A subtle accounting flaw was identified where raw material purchases by Firms were being double-counted as expenses—once upon purchase (via `GoodsTransactionHandler`) and again upon usage (via `FinanceEngine.record_expense` during production). We updated the handler to treat raw material acquisition as a pure Asset Swap (Cash -> Inventory), reserving expense recognition for the actual consumption event (COGS).
++*   **Market Float Truncation**: The `MatchingEngine` (both Stock and OrderBook) was refactored to use `int(round(...))` instead of integer truncation (`//`) for mid-price calculations. This eliminates a systemic deflationary bias ("Penny Shaving") where fractional values were consistently destroyed.
++
++## 2. Regression Analysis
++*   **Rollback Failure in `CommandService`**:
++    *   **Issue**: `test_rollback_set_param_preserves_origin` failed because `restore_entry` in `GlobalRegistry` only updated the specific layer passed to it, failing to remove the higher-priority `GOD_MODE` layer added by the command being rolled back.
++    *   **Fix**: Modified `CommandService.rollback_last_tick` to explicitly call `registry.delete_entry(key)` before `registry.restore_entry(...)`. This ensures the state is wiped clean before the snapshot is reinstated, guaranteeing the removal of any overriding layers.
++*   **Saga Orchestrator Spam**:
++    *   **Issue**: `SagaOrchestrator` logged thousands of `SAGA_SKIP` warnings for dead agents but kept the invalid sagas in the active queue.
++    *   **Fix**: Changed logic to `SAGA_CANCELLED` and immediately removed the saga from `active_sagas` if critical participants are invalid/missing.
++
++## 3. Test Evidence
++```text
++============================= test session starts ==============================
++platform linux -- Python 3.12.8, pytest-8.3.4, pluggy-1.5.0
++rootdir: /app
++configfile: pytest.ini
++plugins: anyio-4.8.0, asyncio-0.25.3, cov-6.0.0
++asyncio: mode=Mode.STRICT
++collected 129 items
++
++tests/unit/finance/test_settlement_atomic.py ....                        [  3%]
++tests/unit/finance/test_settlement_fx_swap.py ..                         [  4%]
++tests/unit/finance/test_settlement_integrity.py .....                    [  8%]
++tests/unit/systems/test_accounting_system.py .                           [  9%]
++tests/unit/systems/test_analytics_system.py .                            [ 10%]
++tests/unit/systems/test_central_bank_system.py ....                      [ 13%]
++tests/unit/systems/test_commerce_system.py .                             [ 13%]
++tests/unit/systems/test_demographic_manager.py ....                      [ 17%]
++tests/unit/systems/test_event_system.py .                                [ 17%]
++tests/unit/systems/test_firm_management.py ...                           [ 20%]
++tests/unit/systems/test_generational_wealth_audit.py ..                  [ 21%]
++tests/unit/systems/test_housing_system.py ....                           [ 24%]
++tests/unit/systems/test_immigration_manager.py ...                       [ 27%]
++tests/unit/systems/test_inheritance_manager.py ....                      [ 30%]
++tests/unit/systems/test_labor_market_analyzer.py .....                   [ 34%]
++tests/unit/systems/test_lifecycle_manager.py ....                        [ 37%]
++tests/unit/systems/test_liquidation_manager.py ....                      [ 40%]
++tests/unit/systems/test_ma_manager.py ....                               [ 43%]
++tests/unit/systems/test_ministry_of_education.py ...                     [ 45%]
++tests/unit/systems/test_perception_system.py ...                         [ 48%]
++tests/unit/systems/test_persistence_manager.py ....                      [ 51%]
++tests/unit/systems/test_registry.py ....                                 [ 54%]
++tests/unit/systems/test_sensory_system.py ....                           [ 57%]
++tests/unit/systems/test_settlement_saga_integration.py ......            [ 62%]
++tests/unit/systems/test_settlement_system.py ........................... [ 82%]
++.......                                                                  [ 88%]
++tests/unit/systems/test_social_system.py ..                              [ 89%]
++tests/unit/systems/test_system_effects_major_choice.py ..                [ 91%]
++tests/unit/systems/test_tax_agency.py .....                              [ 95%]
++tests/unit/systems/test_technology_manager.py ....                       [ 98%]
++tests/system/test_command_service_rollback.py ...                        [100%]
++
++============================= 129 passed in 4.52s ==============================
++```
+diff --git a/config/economy_params.yaml b/config/economy_params.yaml
+index 3cb2e320..cdd23545 100644
+--- a/config/economy_params.yaml
++++ b/config/economy_params.yaml
+@@ -62,6 +62,8 @@ taxation:
+ # Bank & Finance Configuration
+ # ----------------------------------------------------------------------
+ bank:
++  initial_bank_assets: 1000000.0
++  base_rate: 0.03
+   initial_base_annual_rate: 0.05
+   default_loan_term_ticks: 50
+   deposit_margin: 0.02
+diff --git a/modules/finance/sagas/orchestrator.py b/modules/finance/sagas/orchestrator.py
+index 8e4b2881..737953a3 100644
+--- a/modules/finance/sagas/orchestrator.py
++++ b/modules/finance/sagas/orchestrator.py
+@@ -90,11 +90,15 @@ class SagaOrchestrator(ISagaOrchestrator):
+                 try:
+                     buyer_id = int(buyer_id_raw)
+                 except (ValueError, TypeError):
+-                    logger.error(f"SAGA_SKIP | Saga {saga_id} has invalid buyer ID: {buyer_id_raw}")
++                    logger.error(f"SAGA_CANCELLED | Saga {saga_id} has invalid buyer ID: {buyer_id_raw}")
++                    if saga_id in self.active_sagas:
++                        del self.active_sagas[saga_id]
+                     continue
+ 
+                 if seller_id is None:
+-                    logger.warning(f"SAGA_SKIP | Saga {saga_id} missing seller ID.")
++                    logger.warning(f"SAGA_CANCELLED | Saga {saga_id} missing seller ID.")
++                    if saga_id in self.active_sagas:
++                        del self.active_sagas[saga_id]
+                     continue
+ 
+                 buyer = sim_state.agents.get(buyer_id)
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index 1efa1d65..11eb0870 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -314,7 +314,7 @@ class FinanceSystem(IFinanceSystem):
+ 
+         # Updates self.ledger.treasury.bonds
+ 
+-        base_rate = 0.03
++        base_rate = self.config_module.get("economy_params.bank.base_rate", 0.03)
+         all_banks = self.bank_registry.get_all_banks()
+         if all_banks:
+             base_rate = all_banks[0].base_rate
+@@ -488,7 +488,7 @@ class FinanceSystem(IFinanceSystem):
+             logger.warning(f"BAILOUT_DENIED | Government insufficient funds: {gov_bal} < {amount}")
+             return None
+ 
+-        base_rate = 0.03 # Default
++        base_rate = self.config_module.get("economy_params.bank.base_rate", 0.03)
+         all_banks = self.bank_registry.get_all_banks()
+         if all_banks:
+             base_rate = all_banks[0].base_rate
+diff --git a/modules/system/services/command_service.py b/modules/system/services/command_service.py
+index 933bad53..d7831359 100644
+--- a/modules/system/services/command_service.py
++++ b/modules/system/services/command_service.py
+@@ -320,48 +320,26 @@ class CommandService:
+             return True # Nothing to rollback is a success? Or implies failure to find batch?
+                         # If called when nothing happened, it's fine.
+ 
++        if not isinstance(self.registry, IRestorableRegistry):
++             logger.critical("ROLLBACK_FAIL: Registry does not implement IRestorableRegistry.")
++             return False
++
+         success = True
+         # Reverse order for rollback
+         for record in reversed(records):
+             try:
+                 if record.command_type == "SET_PARAM":
+-                     # 1. Remove the layer added by the command (if we tracked the origin)
+-                     layer_removed = False
+-                     if record.origin is not None and hasattr(self.registry, 'delete_layer'):
+-                         self.registry.delete_layer(record.parameter_key, record.origin)
+-                         layer_removed = True
+-
+-                     # 2. Restore previous entry state if needed
+-                     # If previous_entry is None, delete_layer might have been enough if it was a new key.
+-                     # But if the key didn't exist at all, delete_layer logic (which only deletes one layer)
+-                     # implies we might need to be sure no other layers exist if it was truly new?
+-                     # No, if it was new, set() added one layer. delete_layer removes it. Done.
+-
+-                     # However, for robustness, we restore previous_entry if available.
+-                     if isinstance(self.registry, IRestorableRegistry):
+-                         if record.previous_entry is None:
+-                             # If we deleted the layer, we are good.
+-                             # But if delete_layer didn't happen (e.g. no origin recorded), fallback to delete_entry?
+-                             if not layer_removed:
+-                                 self.registry.delete_entry(record.parameter_key)
+-                                 logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
+-                         else:
+-                             # Restore entry (re-writes the previous layer)
+-                             self.registry.restore_entry(record.parameter_key, record.previous_entry)
+-                             logger.info(f"ROLLBACK: Restored {record.parameter_key} to {record.previous_entry.value} (Origin: {record.previous_entry.origin})")
++                     if record.previous_entry is None:
++                         # Creation -> Delete
++                         self.registry.delete_entry(record.parameter_key)
++                         logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
+                      else:
+-                         # Fallback if registry does not support IRestorableRegistry
+-                         if record.previous_entry is not None:
+-                             self.registry.set(
+-                                 record.parameter_key,
+-                                 record.previous_entry.value,
+-                                 origin=record.previous_entry.origin
+-                             )
+-                             logger.warning(f"ROLLBACK: Used set() fallback for {record.parameter_key} (Registry not IRestorableRegistry). Lock state might be incorrect.")
+-                         else:
+-                             # If it was new and we can't delete...
+-                             if record.origin is None:
+-                                  logger.warning(f"ROLLBACK_FAIL: Cannot delete {record.parameter_key} because registry is not IRestorableRegistry")
++                         # Modification -> Restore
++                         # Explicitly delete entry first to remove the layer added by the command (e.g. GOD_MODE override)
++                         # Then restore the previous state (e.g. SYSTEM layer)
++                         self.registry.delete_entry(record.parameter_key)
++                         self.registry.restore_entry(record.parameter_key, record.previous_entry)
++                         logger.info(f"ROLLBACK: Restored {record.parameter_key} to {record.previous_entry.value} (Origin: {record.previous_entry.origin})")
+ 
+                 elif record.command_type in ["INJECT_ASSET", "INJECT_MONEY"]:
+                      self._rollback_injection(record)
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 6a743254..91d383a7 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -187,7 +187,9 @@ class SimulationInitializer(SimulationInitializerInterface):
+         # Initialize System Agents with Fixed IDs
+         sim.bank = Bank(id=ID_BANK, initial_assets=0, config_manager=self.config_manager, settlement_system=sim.settlement_system, credit_scoring_service=credit_scoring_service, event_bus=sim.event_bus)
+         sim.settlement_system.bank = sim.bank
+-        self.initial_balances[sim.bank.id] = self.config.INITIAL_BANK_ASSETS
++        # TD-BANK-RESERVE-CRUNCH: Use tunable initial assets from config
++        initial_bank_assets = self.config_manager.get("economy_params.bank.initial_bank_assets", self.config.INITIAL_BANK_ASSETS)
++        self.initial_balances[sim.bank.id] = initial_bank_assets
+         sim.bank.settlement_system = sim.settlement_system
+         sim.agents[sim.bank.id] = sim.bank
+ 
+diff --git a/simulation/markets/matching_engine.py b/simulation/markets/matching_engine.py
+index bce2d55b..ab9777c4 100644
+--- a/simulation/markets/matching_engine.py
++++ b/simulation/markets/matching_engine.py
+@@ -274,7 +274,8 @@ class OrderBookMatchingEngine(IMatchingEngine):
+                 if market_id == 'labor' or market_id == 'research_labor':
+                     trade_price_pennies = b_wrapper.dto.price_pennies
+                 else:
+-                    trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
++                    # TD-MARKET-FLOAT-TRUNC: Use round() instead of truncation to prevent deflationary bias
++                    trade_price_pennies = int(round((b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) / 2))
+                 trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
+                 trade_total_pennies = int(round(trade_price_pennies * trade_qty))
+                 effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
+@@ -354,7 +355,8 @@ class StockMatchingEngine(IMatchingEngine):
+                 idx_s += 1
+                 continue
+             if b_order.dto.price_pennies >= s_order.dto.price_pennies:
+-                trade_price_pennies = (b_order.dto.price_pennies + s_order.dto.price_pennies) // 2
++                # TD-MARKET-FLOAT-TRUNC: Use round() instead of truncation
++                trade_price_pennies = int(round((b_order.dto.price_pennies + s_order.dto.price_pennies) / 2))
+                 trade_qty = min(b_order.remaining_qty, s_order.remaining_qty)
+                 trade_total_pennies = int(round(trade_price_pennies * trade_qty))
+                 effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
+diff --git a/simulation/systems/accounting.py b/simulation/systems/accounting.py
+index 95e4734b..656cb57b 100644
+--- a/simulation/systems/accounting.py
++++ b/simulation/systems/accounting.py
+@@ -48,9 +48,9 @@ class AccountingSystem(IAccountingSystem):
+             elif tx_type == "interest_payment":
+                  buyer.record_expense(amount, transaction.currency)
+             # What about goods (raw materials)?
+-            # TransactionProcessor didn't explicitly record expense for raw materials in _handle_goods_transaction
+-            # It only updated inventory.
+-            # Wait, let's check TransactionProcessor again.
++            # TD-SYS-ACCOUNTING-GAP: Raw material purchases are Asset Swaps (Cash -> Inventory).
++            # Expense is recorded upon usage (COGS) in Firm.produce -> FinanceEngine.record_expense.
++            # Therefore, we do NOT record expense here for raw materials to avoid double counting.
+             pass
+ 
+         # 3. Dividend Income
+diff --git a/simulation/systems/handlers/goods_handler.py b/simulation/systems/handlers/goods_handler.py
+index edb07fa7..6a0f2dd6 100644
+--- a/simulation/systems/handlers/goods_handler.py
++++ b/simulation/systems/handlers/goods_handler.py
+@@ -134,7 +134,16 @@ class GoodsTransactionHandler(ITransactionHandler):
+             seller.record_sale(tx.item_id, tx.quantity, context.time)
+ 
+         # 3. Buyer Financial Records (Expense) - WO-124 Fix
+-        if isinstance(buyer, IExpenseTracker):
++        # TD-SYS-ACCOUNTING-GAP: Skip expense recording for raw materials (Inventory Asset Swap)
++        # Expense is recorded upon usage (COGS) in ProductionEngine/FinanceEngine.
++        is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
++        should_record_expense = True
++
++        # Check if buyer is a Firm (has sector) and item is raw material
++        if is_raw_material and hasattr(buyer, "sector"):
++             should_record_expense = False
++
++        if should_record_expense and isinstance(buyer, IExpenseTracker):
+             buyer.record_expense(buyer_total_cost)
+ 
+         # 4. Household Consumption Tracking
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index ac08fca8..d6908f28 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -42,7 +42,7 @@ if TYPE_CHECKING:
+     from modules.common.config_manager.api import ConfigManager
+     from simulation.dtos.scenario import StressScenarioConfig
+     from modules.government.politics_system import PoliticsSystem
+-from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry # Added for Phase 33
++from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry, DEFAULT_CURRENCY # Added for Phase 33
+ from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM
+ from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
+ from modules.finance.api import IShareholderRegistry
+@@ -178,37 +178,43 @@ class WorldState:
+                 totals[cur] = totals.get(cur, 0) + max(0, int(amount))
+         return totals
+ 
+-    def calculate_total_money(self) -> Dict[CurrencyCode, int]:
++    def calculate_total_money(self) -> Dict[str, int]:
+         """
+-        Calculates M2 (Total Money Supply).
+-        M2 = Currency in Circulation + Deposits.
+-        In this simulation, Non-Bank Agent Wallets represent their liquidity.
+-        MIGRATION: Returns int (pennies).
++        Calculates M2 (Total Money Supply) and System Debt.
++        M2 = Sum(max(0, balance)) for all non-system agents.
++        SystemDebt = Sum(abs(balance)) where balance < 0.
++        Returns: {DEFAULT_CURRENCY: total_m2, "SYSTEM_DEBT": total_debt}
+         """
+-        totals: Dict[CurrencyCode, int] = {}
++        total_money = 0
++        system_debt = 0
++
+         for holder in self.currency_holders:
+-            # Exclude CentralBank (Source) and Commercial Bank (Reserves) from M2 summation.
+-            # M2 is money in the hands of the public (Households, Firms, Gov).
+-                if hasattr(holder, 'id'):
+-                    # WO-WAVE5-MONETARY-FIX: Harmonize M2 Perimeter
+-                    # Exclude System Sinks (Central Bank, Public Manager, System)
+-                    holder_id_str = str(holder.id)
+-                    if holder_id_str == str(ID_CENTRAL_BANK) or holder_id_str == str(ID_PUBLIC_MANAGER) or holder_id_str == str(ID_SYSTEM):
+-                        continue
+-                    
+-                    # Note: We include the Bank in the audit to track Bank Reserves (M0).
+-                    # This ensures LLR injections are captured immediately in the total money sum.
+-                    # M2 is usually Public Circulation, but for a strict Zero-Sum audit, we check M0 + M2.
++            if hasattr(holder, 'id'):
++                # WO-WAVE5-MONETARY-FIX: Harmonize M2 Perimeter
++                # Exclude System Sinks (Central Bank, Public Manager, System)
++                holder_id_str = str(holder.id)
++                if holder_id_str == str(ID_CENTRAL_BANK) or holder_id_str == str(ID_PUBLIC_MANAGER) or holder_id_str == str(ID_SYSTEM):
++                    continue
++
++                # Note: We include the Bank in the audit to track Bank Reserves (M0).
++                # This ensures LLR injections are captured immediately in the total money sum.
++                # M2 is usually Public Circulation, but for a strict Zero-Sum audit, we check M0 + M2.
+ 
+-                    # Dead Agent Guard (Strict)
+-                    if hasattr(holder, 'is_active') and not holder.is_active:
+-                        continue
++                # Dead Agent Guard (Strict)
++                if hasattr(holder, 'is_active') and not holder.is_active:
++                    continue
++
++            # Retrieve assets safely
++            # We assume DEFAULT_CURRENCY primarily for the M2 audit per spec.
++            assets_dict = holder.get_assets_by_currency()
++            val = int(assets_dict.get(DEFAULT_CURRENCY, 0))
+             
+-                # Retrieve assets safely
+-                assets_dict = holder.get_assets_by_currency()
+-                for cur, amount in assets_dict.items():
+-                    totals[cur] = totals.get(cur, 0) + max(0, int(amount))
+-        return totals
++            if val >= 0:
++                total_money += val
++            else:
++                system_debt += abs(val)
++
++        return {DEFAULT_CURRENCY: total_money, "SYSTEM_DEBT": system_debt}
+ 
+     def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = "USD") -> float:
+         """
+@@ -221,6 +227,7 @@ class WorldState:
+         if self.tracker and hasattr(self.tracker, "exchange_engine"):
+             total = 0.0
+             for cur, amount in all_money.items():
++                if cur == "SYSTEM_DEBT": continue
+                 converted = self.tracker.exchange_engine.convert(amount, cur, target_currency)
+                 total += converted
+             return total

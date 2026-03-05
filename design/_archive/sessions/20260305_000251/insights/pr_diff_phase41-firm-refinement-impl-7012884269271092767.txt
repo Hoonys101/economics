@@ -1,0 +1,570 @@
+diff --git a/communications/insights/phase41_firm_refinement_impl.md b/communications/insights/phase41_firm_refinement_impl.md
+new file mode 100644
+index 00000000..bd095573
+--- /dev/null
++++ b/communications/insights/phase41_firm_refinement_impl.md
+@@ -0,0 +1,57 @@
++# Phase 4.1: Firm Refinement & SEO Migration (Insight Report)
++
++**Date**: 2026-02-22
++**Mission**: `phase41_firm_refinement_impl`
++**Status**: SUCCESS (972 Passed, 0 Failed, 11 Skipped)
++
++## 1. Architectural Insights
++
++### SEO Migration of Firm Decision Making
++We have successfully migrated `Firm.make_decision` to a pure "Stateless Engine Orchestration" (SEO) model.
++- **Legacy Decision Engine Removed**: The legacy `RuleBasedFirmDecisionEngine` call has been completely removed from `make_decision`.
++- **Production Engine Procurement**: `ProductionEngine` now implements `decide_procurement(context: ProductionContextDTO) -> ProcurementIntentDTO`. This handles the generation of `BUY` orders for input materials, a responsibility previously hidden in the legacy engine.
++- **Unified Order Flow**: `make_decision` now aggregates orders from `Finance` (Budget), `HR` (Hiring/Firing), `Production` (Procurement), and `Sales` (Pricing/Marketing).
++
++### Capital Stock Renaming
++We addressed `TD-LIFECYCLE-NAMING` by renaming `capital_stock_pennies` to `capital_stock_units` across the codebase.
++- **Clarification**: The property name now correctly reflects that it holds the *quantity* of capital units, not their monetary value.
++- **Valuation Logic**: `get_financial_snapshot` and `FinanceSystem.evaluate_solvency` now explicitly calculate value as `capital_stock_units * 100` (assuming 1 unit = 100 pennies), preventing potential 100x inflation or "Double-Conversion" bugs.
++
++## 2. Regression Analysis & Fixes
++
++### Mock Drift in Tests
++Several tests failed during the refactor due to mock objects becoming out of sync with the updated DTO schemas and logic.
++
++*   **Issue**: `AttributeError: Mock object has no attribute 'production_target'`.
++    *   **Cause**: `ProductionEngine` now requires `production_target` in `ProductionContextDTO` to calculate procurement needs.
++    *   **Fix**: Updated `ProductionInputDTO` and `FirmSnapshotDTO` mocks in `test_production_engine.py` and `test_production_int_math.py` to include `production_target`.
++
++*   **Issue**: `AttributeError: Mock object has no attribute 'goods'`.
++    *   **Cause**: `Firm._build_production_context` accesses `self.config.goods` to determine input requirements.
++    *   **Fix**: Populated `goods` and other missing config fields (`labor_alpha`, etc.) in `mock_config_dto` within `test_firm_surgical_separation.py`.
++
++*   **Issue**: `Legacy Decision Engine` Logic Checks in Tests.
++    *   **Cause**: `test_firm_surgical_separation.py` asserted that legacy orders were present.
++    *   **Fix**: Updated the test to verify `ProductionEngine.decide_procurement` results instead of legacy outputs.
++
++### Finance System Mock Alignment
++Tests involving `FinanceSystem` (e.g., `test_solvency_logic.py`, `test_circular_imports_fix.py`) relied on the old `capital_stock_pennies` property.
++- **Fix**: Updated all mocks to use `capital_stock_units` and adjusted values where necessary to maintain test semantic correctness (e.g., setting units to `200` to represent `20000` pennies value).
++
++## 3. Test Evidence
++
++```text
++=========================== short test summary info ============================
++SKIPPED [1] tests/integration/test_server_integration.py:16: websockets is mocked
++SKIPPED [1] tests/security/test_god_mode_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_websocket_auth.py:13: websockets is mocked
++SKIPPED [1] tests/system/test_server_auth.py:11: websockets is mocked, skipping server auth tests
++SKIPPED [1] tests/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/test_ws.py:11: fastapi is mocked
++SKIPPED [1] tests/market/test_dto_purity.py:26: Pydantic is mocked
++SKIPPED [1] tests/market/test_dto_purity.py:54: Pydantic is mocked
++SKIPPED [1] tests/modules/system/test_global_registry.py:101: Pydantic is mocked
++SKIPPED [1] tests/modules/system/test_global_registry.py:132: Pydantic is mocked
++================= 972 passed, 11 skipped, 2 warnings in 7.99s ==================
++```
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 030d0f74..da1c0a61 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -73,8 +73,8 @@ class IFinancialFirm(IFinancialEntity, Protocol):
+         ...
+ 
+     @property
+-    def capital_stock_pennies(self) -> int:
+-        """The capital stock value in pennies."""
++    def capital_stock_units(self) -> int:
++        """The capital stock quantity in units."""
+         ...
+ 
+     @property
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index c53cecd8..bb451b04 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -265,10 +265,11 @@ class FinanceSystem(IFinanceSystem):
+             # All inputs should be int pennies. Ratios will be same.
+ 
+             inventory_value_pennies = firm.inventory_value_pennies
+-            capital_stock_pennies = firm.capital_stock_pennies
++            # Capital Stock Value (Estimate: 1 unit = 100 pennies)
++            capital_stock_value = firm.capital_stock_units * 100
+ 
+             # Total Assets = Cash + Inventory + Capital
+-            total_assets = firm.balance_pennies + capital_stock_pennies + inventory_value_pennies
++            total_assets = firm.balance_pennies + capital_stock_value + inventory_value_pennies
+ 
+             # Working Capital = Current Assets - Current Liabilities
+             # Simplified: Cash + Inventory - Debt
+@@ -446,7 +447,7 @@ class FinanceSystem(IFinanceSystem):
+             borrower_id=firm.id,
+             gross_income=0.0, # Unknown via IFinancialFirm
+             existing_debt_payments=0.0,
+-            collateral_value=float(firm.capital_stock_pennies),
++            collateral_value=float(firm.capital_stock_units * 100),
+             credit_score=float(BAILOUT_CREDIT_SCORE),
+             employment_status="FIRM",
+             preferred_lender_id=self.bank.id
+diff --git a/modules/firm/api.py b/modules/firm/api.py
+index 395a8c42..ed93a38e 100644
+--- a/modules/firm/api.py
++++ b/modules/firm/api.py
+@@ -112,6 +112,7 @@ class ProductionContextDTO(BaseDepartmentContextDTO):
+     inventory_raw_materials: Dict[str, float]
+     inventory_finished_goods: Dict[str, float]
+     current_workforce_count: int
++    production_target: float
+     technology_level: float
+     production_efficiency: float
+     # Capital & Automation
+@@ -144,6 +145,11 @@ class ProductionIntentDTO:
+     automation_decay: float = 0.0
+     quality: float = 1.0
+ 
++@dataclass(frozen=True)
++class ProcurementIntentDTO:
++    """Intent for procurement (buying inputs) from Production Department."""
++    purchase_orders: List[Order]
++
+ @dataclass(frozen=True)
+ class HRContextDTO(BaseDepartmentContextDTO):
+     """Context for HR Department."""
+@@ -430,6 +436,12 @@ class IProductionEngine(IProductionDepartment, Protocol):
+         """
+         ...
+ 
++    def decide_procurement(self, context: ProductionContextDTO) -> ProcurementIntentDTO:
++        """
++        Decides on procurement of raw materials.
++        """
++        ...
++
+ 
+ @runtime_checkable
+ class IAssetManagementEngine(Protocol):
+@@ -584,6 +596,7 @@ __all__ = [
+     'BaseDepartmentContextDTO',
+     'ProductionContextDTO',
+     'ProductionIntentDTO',
++    'ProcurementIntentDTO',
+     'HRContextDTO',
+     'HRIntentDTO',
+     'SalesContextDTO',
+diff --git a/simulation/components/engines/production_engine.py b/simulation/components/engines/production_engine.py
+index dec16278..84449e8d 100644
+--- a/simulation/components/engines/production_engine.py
++++ b/simulation/components/engines/production_engine.py
+@@ -1,14 +1,15 @@
+ from __future__ import annotations
+ import logging
+ import math
+-from typing import Dict, Any, Optional
++from typing import Dict, Any, Optional, List
+ 
+ from modules.firm.api import (
+     IProductionEngine, ProductionInputDTO, ProductionResultDTO,
+-    ProductionContextDTO, ProductionIntentDTO,
++    ProductionContextDTO, ProductionIntentDTO, ProcurementIntentDTO,
+     IProductionDepartment, AgentID
+ )
+ from modules.system.api import MarketSnapshotDTO
++from simulation.models import Order
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -119,6 +120,58 @@ class ProductionEngine(IProductionEngine, IProductionDepartment):
+             quality=actual_quality
+         )
+ 
++    def decide_procurement(self, context: ProductionContextDTO) -> ProcurementIntentDTO:
++        """
++        Decides on procurement of raw materials based on production target.
++        """
++        orders: List[Order] = []
++        if not context.input_goods:
++            return ProcurementIntentDTO(purchase_orders=[])
++
++        target_production = context.production_target
++        if target_production <= 0:
++            return ProcurementIntentDTO(purchase_orders=[])
++
++        market_signals = context.market_snapshot.market_signals if context.market_snapshot else {}
++        market_data = context.market_snapshot.market_data if context.market_snapshot else {}
++
++        for mat, req_per_unit in context.input_goods.items():
++            needed = target_production * req_per_unit
++            current = context.inventory_raw_materials.get(mat, 0.0)
++            deficit = needed - current
++
++            if deficit > 0:
++                bid_price = 1000 # Default 10.00 pennies
++
++                # Check Market Signals (Last Traded)
++                if mat in market_signals and market_signals[mat].last_traded_price:
++                     bid_price = market_signals[mat].last_traded_price
++                # Check Market Signals (Best Ask) if last traded is missing
++                elif mat in market_signals and market_signals[mat].best_ask:
++                     bid_price = market_signals[mat].best_ask
++                # Legacy Fallback
++                elif 'goods_market' in market_data:
++                     key = f'{mat}_avg_traded_price'
++                     if key in market_data['goods_market']:
++                         bid_price = int(market_data['goods_market'][key])
++
++                # Apply Premium
++                bid_price_pennies = int(bid_price * 1.05)
++                if bid_price_pennies <= 0: bid_price_pennies = 1000
++
++                order = Order(
++                    agent_id=context.firm_id,
++                    side='BUY',
++                    item_id=mat,
++                    quantity=deficit,
++                    price_pennies=bid_price_pennies,
++                    price_limit=float(bid_price_pennies)/100.0,
++                    market_id=mat
++                )
++                orders.append(order)
++
++        return ProcurementIntentDTO(purchase_orders=orders)
++
+     def produce(
+         self,
+         input_dto: ProductionInputDTO
+@@ -186,8 +239,9 @@ class ProductionEngine(IProductionEngine, IProductionDepartment):
+             inventory_raw_materials=prod_state.input_inventory,
+             inventory_finished_goods=prod_state.inventory,
+             current_workforce_count=num_employees,
++            production_target=prod_state.production_target, # Populated from snapshot
+             technology_level=tech_level,
+-            production_efficiency=1.0, # Baseline efficiency multiplier, combined into tech_level here or separate? Logic uses tfp = production_efficiency * technology_level. Here tfp = tech_level. So prod_efficiency=1.0.
++            production_efficiency=1.0,
+ 
+             capital_stock=prod_state.capital_stock,
+             automation_level=prod_state.automation_level,
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 7df4acfb..f6ed27a7 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -492,9 +492,9 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         return self.total_debt
+ 
+     @property
+-    def capital_stock_pennies(self) -> int:
+-        """Capital stock value in pennies."""
+-        return int(self.production_state.capital_stock) # Capital is in units or val? Assuming units for now, if val it should be pennies.
++    def capital_stock_units(self) -> int:
++        """Capital stock quantity in units."""
++        return int(self.production_state.capital_stock)
+ 
+     @property
+     def inventory_value_pennies(self) -> int:
+@@ -587,7 +587,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+ 
+         # Calculate Total Assets in Pennies
+         # Capital Stock Value (Estimate: 1 unit = 100 pennies)
+-        capital_val = self.capital_stock_pennies * 100
++        capital_val = self.capital_stock_units * 100
+ 
+         total_assets = total_cash + self.inventory_value_pennies + capital_val
+ 
+@@ -1192,37 +1192,18 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         self.sales_state.marketing_budget_pennies = sales_intent.marketing_spend_pennies
+         self.sales_state.marketing_budget_rate = sales_intent.new_marketing_budget_rate
+ 
+-        # 5. Legacy Decision Engine (for BUYING materials only)
+-        state_dto = self.get_state_dto()
+-        context = DecisionContext(
+-            state=state_dto,
+-            config=self.config,
+-            goods_data=goods_data,
+-            market_data=market_data,
+-            current_time=current_time,
+-            stress_scenario_config=stress_scenario_config,
+-            market_snapshot=market_snapshot,
+-            government_policy=government_policy,
+-            agent_registry=agent_registry or {},
+-            market_context=market_context
+-        )
+-        decision_output = self.decision_engine.make_decisions(context)
+-        
+-        if hasattr(decision_output, "orders"):
+-            legacy_orders = decision_output.orders
+-            tactic = decision_output.metadata
+-        else:
+-            legacy_orders, tactic = decision_output
++        # 5. Production Engine: Decide Procurement (SEO Migration)
++        # Using 1.0 for productivity_multiplier as tech manager is not available in decision phase.
++        # This is acceptable for procurement planning.
++        prod_context = self._build_production_context(1.0, market_snapshot)
++        procurement_intent = self.production_engine.decide_procurement(prod_context)
++        procurement_orders = procurement_intent.purchase_orders
+ 
+-        # Filter legacy orders: Keep only BUY orders for goods (exclude Labor, Fire, Sell)
+-        filtered_legacy = [
+-            o for o in legacy_orders
+-            if o.market_id != 'labor' and o.order_type != 'FIRE'
+-            and getattr(o, 'side', o.order_type) != 'SELL'
+-        ]
++        # Legacy Decision Engine Removed (Migration Complete)
++        tactic = "SEO_PURE"
+ 
+         # Merge orders
+-        all_orders = engine_orders + filtered_legacy + sales_orders
++        all_orders = engine_orders + procurement_orders + sales_orders
+ 
+         # Command Bus execution (Internal Orders like FIRE, SET_TARGET)
+         self.execute_internal_orders(all_orders, fiscal_context, current_time, market_context)
+@@ -1318,6 +1299,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+             )
+ 
+         prod_intent = self.production_engine.decide_production(prod_context)
++        procurement_intent = self.production_engine.decide_procurement(prod_context)
+ 
+         # --- Sales Engine ---
+         sales_context = self._build_sales_context(current_market_snapshot, current_tick)
+@@ -1329,18 +1311,13 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+ 
+         sales_intent = self.sales_engine.decide_pricing(sales_context)
+ 
+-        # --- Legacy Decision Engine (Skipped for Brain Scan to avoid complexity unless mocked) ---
+-        legacy_orders = []
+-        if "decision_engine" in context.mock_responses:
+-             legacy_orders = context.mock_responses["decision_engine"]
+-
+         # Aggregate Results
+         payload = {
+             "budget_plan": budget_plan,
+             "hr_intent": hr_intent,
+             "production_intent": prod_intent,
+-            "sales_intent": sales_intent,
+-            "legacy_orders_simulated": legacy_orders
++            "procurement_intent": procurement_intent,
++            "sales_intent": sales_intent
+         }
+ 
+         return FirmBrainScanResultDTO(
+@@ -1476,6 +1453,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+             inventory_raw_materials=self.inventory_component.input_inventory.copy(),
+             inventory_finished_goods=self.inventory_component.main_inventory.copy(),
+             current_workforce_count=num_employees,
++            production_target=self.production_state.production_target,
+             technology_level=tech_level,
+             production_efficiency=1.0,
+ 
+diff --git a/tests/finance/test_circular_imports_fix.py b/tests/finance/test_circular_imports_fix.py
+index f1358969..7c95a33d 100644
+--- a/tests/finance/test_circular_imports_fix.py
++++ b/tests/finance/test_circular_imports_fix.py
+@@ -76,7 +76,7 @@ class MockGovernment(IGovernmentFinance):
+ class MockFirm(IFinancialFirm):
+     id: AgentID = AgentID(200)
+     age: int = 10
+-    capital_stock_pennies: int = 100000
++    capital_stock_units: int = 1000
+     inventory_value_pennies: int = 50000
+     monthly_wage_bill_pennies: int = 20000
+     total_debt_pennies: int = 10000
+diff --git a/tests/finance/test_solvency_logic.py b/tests/finance/test_solvency_logic.py
+index b8790f0a..ed399062 100644
+--- a/tests/finance/test_solvency_logic.py
++++ b/tests/finance/test_solvency_logic.py
+@@ -59,7 +59,7 @@ class TestSolvencyLogic:
+         # Set up financial data for Z-Score calculation
+         mock_firm.balance_pennies = 10000      # Cash
+         mock_firm.inventory_value_pennies = 5000
+-        mock_firm.capital_stock_pennies = 20000
++        mock_firm.capital_stock_units = 200 # 200 units * 100 = 20000 pennies
+         mock_firm.total_debt_pennies = 8000
+         mock_firm.retained_earnings_pennies = 2000
+         mock_firm.average_profit_pennies = 1000
+@@ -102,8 +102,8 @@ class TestSolvencyLogic:
+ 
+         # Check properties return int
+         # Default initialization values
+-        assert isinstance(firm.capital_stock_pennies, int)
+-        assert firm.capital_stock_pennies == firm.production_state.capital_stock
++        assert isinstance(firm.capital_stock_units, int)
++        assert firm.capital_stock_units == firm.production_state.capital_stock
+ 
+         assert isinstance(firm.inventory_value_pennies, int)
+         assert firm.inventory_value_pennies == 0 # No inventory
+diff --git a/tests/simulation/components/engines/test_firm_decoupling.py b/tests/simulation/components/engines/test_firm_decoupling.py
+index 50ef8eb6..1679c337 100644
+--- a/tests/simulation/components/engines/test_firm_decoupling.py
++++ b/tests/simulation/components/engines/test_firm_decoupling.py
+@@ -14,6 +14,7 @@ def test_production_engine_decoupled():
+     context = ProductionContextDTO(
+         firm_id=AgentID(1), tick=10, budget_pennies=10000, market_snapshot=MarketSnapshotDTO(10, {}, {}), available_cash_pennies=10000, is_solvent=True,
+         inventory_raw_materials={'RAW': 100.0}, inventory_finished_goods={}, current_workforce_count=10,
++        production_target=100.0,
+         technology_level=1.0, production_efficiency=1.0, capital_stock=100.0, automation_level=0.0,
+         input_goods={'RAW': 2.0}, output_good_id='WIDGET', labor_alpha=0.5, automation_labor_reduction=0.0,
+         labor_elasticity_min=0.1, capital_depreciation_rate=0.01, specialization='WIDGET', base_quality=1.0,
+diff --git a/tests/simulation/components/engines/test_production_engine.py b/tests/simulation/components/engines/test_production_engine.py
+index 6897fa9a..3b7811d3 100644
+--- a/tests/simulation/components/engines/test_production_engine.py
++++ b/tests/simulation/components/engines/test_production_engine.py
+@@ -32,6 +32,7 @@ def firm_snapshot():
+     prod = MagicMock(spec=ProductionStateDTO)
+     prod.capital_stock = 100.0
+     prod.automation_level = 0.2
++    prod.production_target = 100.0
+     prod.productivity_factor = 1.0
+     prod.base_quality = 1.0
+     prod.specialization = "FOOD"
+diff --git a/tests/system/test_phase29_depression.py b/tests/system/test_phase29_depression.py
+index a13f117f..c078f430 100644
+--- a/tests/system/test_phase29_depression.py
++++ b/tests/system/test_phase29_depression.py
+@@ -252,7 +252,7 @@ class TestPhase29Depression(unittest.TestCase):
+             # And get_financial_snapshot for EconomicIndicatorTracker
+             f.configure_mock(
+                 balance_pennies=500000,
+-                capital_stock_pennies=0,
++                capital_stock_units=0,
+                 inventory_value_pennies=0,
+                 total_debt_pennies=0,
+                 retained_earnings_pennies=100000,
+diff --git a/tests/test_firm_surgical_separation.py b/tests/test_firm_surgical_separation.py
+index 58472d9c..ac6cc35d 100644
+--- a/tests/test_firm_surgical_separation.py
++++ b/tests/test_firm_surgical_separation.py
+@@ -28,6 +28,11 @@ class TestFirmSurgicalSeparation:
+         mock_config_dto.dividend_rate = 0.1
+         mock_config_dto.profit_history_ticks = 10
+         mock_config_dto.default_unit_cost = 10
++        mock_config_dto.goods = {}
++        mock_config_dto.labor_alpha = 0.5
++        mock_config_dto.automation_labor_reduction = 0.5
++        mock_config_dto.labor_elasticity_min = 0.1
++        mock_config_dto.capital_depreciation_rate = 0.01
+ 
+         firm = Firm(
+             core_config=mock_core_config,
+@@ -110,21 +115,16 @@ class TestFirmSurgicalSeparation:
+             return DynamicPricingResultDTO(orders=orders, price_updates={})
+         mock_firm.sales_engine.check_and_apply_dynamic_pricing.side_effect = side_effect_dynamic_pricing
+ 
+-        # Setup Legacy Decision Engine Return
+-        # Must be BUY for non-labor/non-internal to pass new filters (SalesEngine handles SELL)
+-        legacy_order_keep = Order(
++        # Configure Production Engine (Procurement)
++        from modules.firm.api import ProcurementIntentDTO
++        procurement_order = Order(
+             agent_id=1, side="BUY", item_id="wood", quantity=10,
+             price_pennies=500, market_id="wood",
+             price_limit=5.0
+         )
+-        legacy_order_ignore = Order(
+-            agent_id=1, side="BUY", item_id="labor", quantity=5, # Should be filtered
+-            price_pennies=1000, market_id="labor",
+-            price_limit=10.0
+-        )
+-
+-        # Configure the DE that was injected in fixture
+-        mock_firm.decision_engine.make_decisions.return_value = ([legacy_order_keep, legacy_order_ignore], "TACTIC")
++        mock_procurement_intent = MagicMock(spec=ProcurementIntentDTO)
++        mock_procurement_intent.purchase_orders = [procurement_order]
++        mock_firm.production_engine.decide_procurement.return_value = mock_procurement_intent
+ 
+         # Act
+         external_orders, tactic = mock_firm.make_decision(input_dto)
+@@ -138,21 +138,23 @@ class TestFirmSurgicalSeparation:
+         # Assert: HR Engine called
+         assert mock_firm.hr_engine.decide_workforce.called
+ 
++        # Assert: Production Engine called
++        assert mock_firm.production_engine.decide_procurement.called
++
+         # Assert: Internal execution called
+         mock_firm.execute_internal_orders.assert_called_once()
+         executed_orders = mock_firm.execute_internal_orders.call_args[0][0]
+         # Should be a list, not a Mock
+         assert isinstance(executed_orders, list)
+ 
+-        # Assert: Orders Merged and Filtered
+-        # external_orders should contain generated HR order and legacy_order_keep
++        # Assert: Orders Merged
++        # external_orders should contain generated HR order and procurement_order
+         assert len(external_orders) == 2
+-        assert legacy_order_keep in external_orders
++        assert procurement_order in external_orders
+         # Verify HR order presence
+         hr_orders = [o for o in external_orders if o.market_id == 'labor']
+         assert len(hr_orders) == 1
+         assert hr_orders[0].side == 'BUY'
+-        assert legacy_order_ignore not in external_orders
+ 
+     def test_state_persistence_across_ticks(self, mock_firm):
+         """
+diff --git a/tests/unit/finance/test_finance_system_refactor.py b/tests/unit/finance/test_finance_system_refactor.py
+index 2db9e25e..2d05221a 100644
+--- a/tests/unit/finance/test_finance_system_refactor.py
++++ b/tests/unit/finance/test_finance_system_refactor.py
+@@ -21,7 +21,7 @@ class MockFirm:
+         self.id = id
+         self.total_debt = 0.0
+         self.has_bailout_loan = False
+-        self.capital_stock_pennies = 100000 # 1000.00
++        self.capital_stock_units = 1000
+ 
+ @pytest.fixture
+ def mock_dependencies():
+diff --git a/tests/unit/firm/test_production_int_math.py b/tests/unit/firm/test_production_int_math.py
+index a0358c9c..bdc76203 100644
+--- a/tests/unit/firm/test_production_int_math.py
++++ b/tests/unit/firm/test_production_int_math.py
+@@ -18,6 +18,7 @@ def test_production_integer_depreciation():
+     prod_state = MagicMock(spec=ProductionStateDTO)
+     prod_state.capital_stock = 100000 # 100,000 pennies
+     prod_state.automation_level = 0.0
++    prod_state.production_target = 100.0
+     prod_state.specialization = "WIDGET"
+     prod_state.base_quality = 1.0
+     prod_state.productivity_factor = 1.0
+@@ -58,6 +59,7 @@ def test_production_deterministic_output():
+     prod_state = MagicMock(spec=ProductionStateDTO)
+     prod_state.capital_stock = 10000
+     prod_state.automation_level = 0.0
++    prod_state.production_target = 100.0
+     prod_state.specialization = "WIDGET"
+     prod_state.base_quality = 1.0
+     prod_state.productivity_factor = 1.0
+@@ -104,6 +106,7 @@ def test_production_deterministic_floor():
+     prod_state = MagicMock(spec=ProductionStateDTO)
+     prod_state.capital_stock = 100 # sqrt(100) = 10
+     prod_state.automation_level = 0.0
++    prod_state.production_target = 100.0
+     prod_state.specialization = "WIDGET"
+     prod_state.base_quality = 1.0
+     prod_state.productivity_factor = 1.0
+diff --git a/tests/unit/modules/finance/test_system.py b/tests/unit/modules/finance/test_system.py
+index 183eb88d..3f8d2c91 100644
+--- a/tests/unit/modules/finance/test_system.py
++++ b/tests/unit/modules/finance/test_system.py
+@@ -143,7 +143,7 @@ class StubFirm:
+         self.has_bailout_loan = False
+         self.last_prices = {}
+         # Backing fields for IFinancialFirm properties
+-        self._capital_stock_pennies = 0
++        self._capital_stock_units = 0
+         self._inventory_value_pennies = 0
+ 
+     # IFinancialEntity
+@@ -161,12 +161,12 @@ class StubFirm:
+ 
+     # IFinancialFirm
+     @property
+-    def capital_stock_pennies(self) -> int:
+-        return self._capital_stock_pennies
++    def capital_stock_units(self) -> int:
++        return self._capital_stock_units
+ 
+-    @capital_stock_pennies.setter
+-    def capital_stock_pennies(self, value: int):
+-        self._capital_stock_pennies = value
++    @capital_stock_units.setter
++    def capital_stock_units(self, value: int):
++        self._capital_stock_units = value
+ 
+     @property
+     def inventory_value_pennies(self) -> int:

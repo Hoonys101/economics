@@ -1,0 +1,215 @@
+diff --git a/communications/insights/WO-IMPL-MONETARY-HARDENING.md b/communications/insights/WO-IMPL-MONETARY-HARDENING.md
+new file mode 100644
+index 00000000..8a67e0cf
+--- /dev/null
++++ b/communications/insights/WO-IMPL-MONETARY-HARDENING.md
+@@ -0,0 +1,40 @@
++# WO-IMPL-MONETARY-HARDENING: Insight Report
++
++## 1. Architectural Insights
++- **Defensive Coding in Ledgers**: The `MonetaryLedger` was relying on implicit string conversions and potentially unsafe access to `Transaction` metadata. By enforcing `normalize_id` and strict `principal` extraction, we prevent `FloatIncursionError` and `AttributeError` which are critical in financial systems.
++- **SSoT for Constants**: Moving `ID_PUBLIC_MANAGER` and `ID_CENTRAL_BANK` to `modules.system.constants` and importing them ensures a Single Source of Truth. The previous hardcoding of `"4"` for PublicManager was a fragile implementation detail that has now been removed.
++- **Protocol Purity**: The refactor respects the `Transaction` protocol/dataclass structure, handling `metadata` (which is Optional) safely using `getattr` and dictionary `get` methods.
++
++## 2. Regression Analysis
++- **Existing Tests**: `tests/unit/modules/government/components/test_monetary_ledger_expansion.py` was updated to use `ID_PUBLIC_MANAGER` instead of the hardcoded string `"4"`. The logic for asset liquidation was verified to work correctly with the new ID normalization.
++- **New Logic Coverage**: Added `test_bond_repayment_principal_logic` to cover the new defensive principal extraction. It verifies:
++    - Partial contraction when `principal` is specified (e.g. paying back principal only, not interest).
++    - Full contraction fallback when `principal` is missing or invalid.
++    - Safe handling of `None` metadata.
++- **System Integrity**: Ran `tests/system/` to ensuring core simulation engine and server components remain functional. `tests/test_stub_generator.py` failed due to an unrelated environment issue (missing `_internal` module), but this is outside the scope of this mission and pre-existing.
++
++## 3. Test Evidence
++
++### Unit Tests (Monetary Ledger)
++```
++$ python -m pytest tests/unit/modules/government/components/test_monetary_ledger_expansion.py
++
++tests/unit/modules/government/components/test_monetary_ledger_expansion.py::TestMonetaryLedgerExpansion::test_asset_liquidation_expansion PASSED [ 25%]
++tests/unit/modules/government/components/test_monetary_ledger_expansion.py::TestMonetaryLedgerExpansion::test_bond_repayment_principal_logic PASSED [ 50%]
++tests/unit/modules/government/components/test_monetary_ledger_expansion.py::TestMonetaryLedgerExpansion::test_lender_of_last_resort_expansion PASSED [ 75%]
++tests/unit/modules/government/components/test_monetary_ledger_expansion.py::TestMonetaryLedgerExpansion::test_other_types_no_expansion PASSED [100%]
++
++============================== 4 passed in 0.85s ===============================
++```
++
++### System & Integration Tests (Partial Suite)
++```
++$ python -m pytest tests/unit/modules/government/ tests/system/
++
++...
++tests/system/test_server_security.py::test_server_binding_check_secure PASSED [ 96%]
++tests/system/test_server_binding_check_insecure PASSED [ 98%]
++tests/system/test_server_properties_proxied PASSED [100%]
++
++============================== 63 passed in 4.65s ==============================
++```
+diff --git a/modules/government/components/monetary_ledger.py b/modules/government/components/monetary_ledger.py
+index 05a6f449..7a527cda 100644
+--- a/modules/government/components/monetary_ledger.py
++++ b/modules/government/components/monetary_ledger.py
+@@ -1,7 +1,8 @@
+-from typing import Dict, List
++from typing import Dict, List, Any
+ import logging
+ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
+ from simulation.models import Transaction
++from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -36,7 +37,6 @@ class MonetaryLedger:
+         """
+         Processes transactions related to monetary policy (Credit Creation/Destruction).
+         """
+-        from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER
+ 
+         for tx in transactions:
+             cur = getattr(tx, 'currency', DEFAULT_CURRENCY)
+@@ -47,18 +47,22 @@ class MonetaryLedger:
+             # Any transaction originating from a System Agent (CB/PM) into the public is Expansion.
+             # Any transaction returning to a System Agent from the public is Contraction.
+             
+-            # IDs can be int or string
+-            buyer_id = str(tx.buyer_id)
+-            seller_id = str(tx.seller_id)
+-            cb_id = str(ID_CENTRAL_BANK)
+-            pm_id = str(ID_PUBLIC_MANAGER)
++            # IDs can be int or string. Normalize to int for comparison.
++            def normalize_id(agent_id: Any) -> int:
++                try:
++                    return int(agent_id)
++                except (ValueError, TypeError):
++                    return -1 # Invalid ID, won't match system IDs (which are >= 0)
++
++            buyer_id = normalize_id(tx.buyer_id)
++            seller_id = normalize_id(tx.seller_id)
+ 
+             # Expansion: System -> Public (Money Injection)
+-            if buyer_id in [cb_id, pm_id] and seller_id not in [cb_id, pm_id]:
++            if buyer_id in [ID_CENTRAL_BANK, ID_PUBLIC_MANAGER] and seller_id not in [ID_CENTRAL_BANK, ID_PUBLIC_MANAGER]:
+                 is_expansion = True
+             
+             # Contraction: Public -> System (Money Drain)
+-            elif seller_id in [cb_id, pm_id] and buyer_id not in [cb_id, pm_id]:
++            elif seller_id in [ID_CENTRAL_BANK, ID_PUBLIC_MANAGER] and buyer_id not in [ID_CENTRAL_BANK, ID_PUBLIC_MANAGER]:
+                 is_contraction = True
+             
+             # Explicit types as fallback for non-agent minting (e.g. credit creation by banks if not seller=PM)
+@@ -68,8 +72,9 @@ class MonetaryLedger:
+                 elif tx.transaction_type in ["credit_destruction", "money_destruction"]:
+                     is_contraction = True
+ 
++            amount = int(tx.total_pennies)
++
+             if is_expansion:
+-                amount = int(tx.total_pennies)
+                 if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0
+                 if cur not in self.total_money_issued: self.total_money_issued[cur] = 0
+ 
+@@ -78,14 +83,28 @@ class MonetaryLedger:
+                 logger.debug(f"MONETARY_EXPANSION | {tx.transaction_type} (from {tx.buyer_id}): {amount}")
+ 
+             elif is_contraction:
+-                amount = int(tx.total_pennies)
++                contraction_amount = amount
++
++                if tx.transaction_type == "bond_repayment":
++                    # metadata가 None일 수 있음을 방어하고, 안전하게 principal 추출
++                    metadata = getattr(tx, 'metadata', None) or {}
++                    principal_raw = metadata.get('principal', 0)
++
++                    try:
++                        principal = int(principal_raw)
++                    except (TypeError, ValueError):
++                        principal = 0 # 예기치 않은 타입의 경우 0 처리
++
++                    # principal이 존재하는 경우 principal만큼만 contraction으로 처리
++                    if principal > 0:
++                        contraction_amount = principal
+ 
+                 if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0
+                 if cur not in self.total_money_destroyed: self.total_money_destroyed[cur] = 0
+ 
+-                self.credit_delta_this_tick[cur] -= amount
+-                self.total_money_destroyed[cur] += amount
+-                logger.debug(f"MONETARY_CONTRACTION | {tx.transaction_type} (to {tx.seller_id}): {amount}")
++                self.credit_delta_this_tick[cur] -= contraction_amount
++                self.total_money_destroyed[cur] += contraction_amount
++                logger.debug(f"MONETARY_CONTRACTION | {tx.transaction_type} (to {tx.seller_id}): {contraction_amount}")
+ 
+     def get_monetary_delta(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+         """
+diff --git a/tests/unit/modules/government/components/test_monetary_ledger_expansion.py b/tests/unit/modules/government/components/test_monetary_ledger_expansion.py
+index b949d92a..665a27ba 100644
+--- a/tests/unit/modules/government/components/test_monetary_ledger_expansion.py
++++ b/tests/unit/modules/government/components/test_monetary_ledger_expansion.py
+@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
+ from modules.government.components.monetary_ledger import MonetaryLedger
+ from simulation.models import Transaction
+ from modules.system.api import DEFAULT_CURRENCY
++from modules.system.constants import ID_PUBLIC_MANAGER
+ 
+ class TestMonetaryLedgerExpansion(unittest.TestCase):
+     def setUp(self):
+@@ -31,7 +32,7 @@ class TestMonetaryLedgerExpansion(unittest.TestCase):
+         tx.quantity = 1
+         tx.total_pennies = 10000 # Pennies (matches expectation of 10000 units)
+         tx.currency = DEFAULT_CURRENCY
+-        tx.buyer_id = "4" # ID_PUBLIC_MANAGER
++        tx.buyer_id = ID_PUBLIC_MANAGER # ID_PUBLIC_MANAGER
+         tx.seller_id = "some_seller"
+ 
+         self.ledger.process_transactions([tx])
+@@ -53,3 +54,51 @@ class TestMonetaryLedgerExpansion(unittest.TestCase):
+ 
+         self.assertEqual(self.ledger.total_money_issued[DEFAULT_CURRENCY], 0)
+         self.assertEqual(self.ledger.credit_delta_this_tick.get(DEFAULT_CURRENCY, 0), 0)
++
++    def test_bond_repayment_principal_logic(self):
++        # Case 1: Principal present in metadata (Partial Contraction)
++        tx1 = MagicMock(spec=Transaction)
++        tx1.transaction_type = "bond_repayment"
++        tx1.total_pennies = 10500 # 10000 Principal + 500 Interest
++        tx1.currency = DEFAULT_CURRENCY
++        tx1.seller_id = ID_PUBLIC_MANAGER # Money going TO System (Contraction)
++        tx1.buyer_id = "household_1"
++        tx1.metadata = {'principal': 10000}
++
++        # Case 2: Principal missing (Full Contraction)
++        tx2 = MagicMock(spec=Transaction)
++        tx2.transaction_type = "bond_repayment"
++        tx2.total_pennies = 2000
++        tx2.currency = DEFAULT_CURRENCY
++        tx2.seller_id = ID_PUBLIC_MANAGER
++        tx2.buyer_id = "household_2"
++        tx2.metadata = {} # Empty metadata
++
++        # Case 3: Metadata None (Full Contraction)
++        tx3 = MagicMock(spec=Transaction)
++        tx3.transaction_type = "bond_repayment"
++        tx3.total_pennies = 3000
++        tx3.currency = DEFAULT_CURRENCY
++        tx3.seller_id = ID_PUBLIC_MANAGER
++        tx3.buyer_id = "household_3"
++        tx3.metadata = None
++
++        # Case 4: Invalid Principal Type (Full Contraction fallback)
++        tx4 = MagicMock(spec=Transaction)
++        tx4.transaction_type = "bond_repayment"
++        tx4.total_pennies = 4000
++        tx4.currency = DEFAULT_CURRENCY
++        tx4.seller_id = ID_PUBLIC_MANAGER
++        tx4.buyer_id = "household_4"
++        tx4.metadata = {'principal': "invalid"}
++
++        self.ledger.process_transactions([tx1, tx2, tx3, tx4])
++
++        # Tx1: Contraction = 10000 (Principal)
++        # Tx2: Contraction = 2000 (Total)
++        # Tx3: Contraction = 3000 (Total)
++        # Tx4: Contraction = 4000 (Total)
++        expected_contraction = 10000 + 2000 + 3000 + 4000 # = 19000
++
++        self.assertEqual(self.ledger.total_money_destroyed[DEFAULT_CURRENCY], 19000)
++        self.assertEqual(self.ledger.credit_delta_this_tick[DEFAULT_CURRENCY], -19000)

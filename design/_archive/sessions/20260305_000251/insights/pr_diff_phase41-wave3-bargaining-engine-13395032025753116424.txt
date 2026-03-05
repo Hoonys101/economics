@@ -1,0 +1,520 @@
+diff --git a/communications/insights/phase41_wave3_bargaining_engine.md b/communications/insights/phase41_wave3_bargaining_engine.md
+new file mode 100644
+index 00000000..7d2ae064
+--- /dev/null
++++ b/communications/insights/phase41_wave3_bargaining_engine.md
+@@ -0,0 +1,30 @@
++# Insight Report: Wave 3.3 Search & Bargaining Market Engine
++
++## 1. Architectural Insights
++*   **Nash Bargaining**: The introduction of Nash Bargaining in `LaborMarket` shifts the wage determination from a simple "Buyer Price" (Firm Offer) model to a "Surplus Sharing" model. This required calculating the surplus ($WTP - WTA$) and splitting it based on bargaining power (default 0.5).
++*   **Adaptive Learning (TD-Error)**: Implemented a feedback loop where Firms learn from their previous tick's hiring outcomes. This necessitated extending the `HRState` (Runtime) and `HRContextDTO` (Data Contract) to persist history: `target_hires`, `actual_hires`, and `wage_offer`.
++*   **State Rotation**: To support this, `Firm.reset()` now rotates "current tick" counters to "previous tick" history fields, ensuring that the decision engine in the *next* tick has access to the *result* of the *previous* tick's actions.
++*   **DTO Evolution**: `HRStateDTO` and `HRContextDTO` were evolved to carry these history fields across the stateless engine boundary, adhering to the "Stateless Engine Orchestration" (SEO) pattern.
++
++## 2. Regression Analysis
++*   **Mock Drift in Unit Tests**: Several unit tests (`tests/unit/modules/firm/test_engines.py`, `tests/unit/test_wave6_fiscal_masking.py`) failed because they mocked `HRStateDTO`/`HRContextDTO` without the newly added history fields (`target_hires_prev_tick`, etc.). Since `MagicMock` returns a mock for missing attributes, comparisons like `if target_hires > 0` raised `TypeError`.
++    *   *Fix*: Explicitly initialized these fields to `0` in the test mocks.
++*   **Logic Change in Market Matching**: Tests in `tests/unit/test_labor_market_system.py` failed because they expected the matched wage to be exactly the Firm's Offer Wage. With Nash Bargaining, the wage is now `(Offer + Reservation) / 2`.
++    *   *Fix*: Updated test assertions to expect the bargained wage (e.g., `17.5` instead of `20.0`).
++
++## 3. Test Evidence
++```
++=========================== short test summary info ============================
++SKIPPED [1] tests/integration/test_server_integration.py:16: websockets is mocked
++SKIPPED [1] tests/security/test_god_mode_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_websocket_auth.py:13: websockets is mocked
++SKIPPED [1] tests/system/test_server_auth.py:11: websockets is mocked, skipping server auth tests
++SKIPPED [1] tests/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/test_ws.py:11: fastapi is mocked
++SKIPPED [1] tests/market/test_dto_purity.py:26: Pydantic is mocked
++SKIPPED [1] tests/market/test_dto_purity.py:54: Pydantic is mocked
++SKIPPED [1] tests/modules/system/test_global_registry.py:101: Pydantic is mocked
++SKIPPED [1] tests/modules/system/test_global_registry.py:132: Pydantic is mocked
++================= 985 passed, 11 skipped, 2 warnings in 7.46s ==================
++```
+diff --git a/modules/firm/api.py b/modules/firm/api.py
+index 438ca4ba..5573bf9c 100644
+--- a/modules/firm/api.py
++++ b/modules/firm/api.py
+@@ -172,12 +172,18 @@ class HRContextDTO(BaseDepartmentContextDTO):
+     specialization: str # Added for Major-Matching
+     major: str # Added for Major-Matching (Phase 4.1)
+ 
++    # Adaptive Learning / Bargaining Memory
++    hires_prev_tick: int = 0
++    target_hires_prev_tick: int = 0
++    wage_offer_prev_tick: int = 0
++
+ @dataclass(frozen=True)
+ class HRIntentDTO:
+     """Intent from HR Department."""
+     hiring_target: int  # Positive to hire, Negative to fire
+     wage_updates: Dict[AgentID, int]  # AgentID -> New Wage (Pennies)
+     fire_employee_ids: List[AgentID] = field(default_factory=list)
++    hiring_wage_offer: int = 0 # Wage to offer for new hires (Pennies)
+ 
+ @dataclass(frozen=True)
+ class SalesContextDTO(BaseDepartmentContextDTO):
+diff --git a/modules/labor/system.py b/modules/labor/system.py
+index 3920a3a8..dfc6696b 100644
+--- a/modules/labor/system.py
++++ b/modules/labor/system.py
+@@ -132,19 +132,31 @@ class LaborMarket(ILaborMarket, IMarket):
+                     if final_score > best_score:
+                         best_score = final_score
+                         best_candidate = seeker
+-                        # Wage determination: usually offer wage, or mid-point?
+-                        # For simplicity, use offer wage.
+-                        best_wage = offer.offer_wage
++
++                        # Wave 3: Nash Bargaining
++                        # Surplus = WTP (Offer) - WTA (Reservation)
++                        surplus = offer.offer_wage - seeker.reservation_wage
++                        bargaining_power = 0.5 # Default split
++
++                        if surplus > 0:
++                            best_wage = seeker.reservation_wage + (surplus * bargaining_power)
++                        else:
++                            best_wage = offer.offer_wage # Fallback
++
+                         best_compatibility = compatibility
+ 
+             if best_candidate:
++                # Recalculate context for DTO
++                surplus = offer.offer_wage - best_candidate.reservation_wage
+                 matches.append(LaborMarketMatchResultDTO(
+                     employer_id=offer.firm_id,
+                     employee_id=best_candidate.household_id,
+                     base_wage=offer.offer_wage,
+                     matched_wage=best_wage,
+                     match_score=best_score,
+-                    major_compatibility=best_compatibility
++                    major_compatibility=best_compatibility,
++                    surplus=surplus,
++                    bargaining_power=0.5
+                 ))
+                 matched_seeker_ids.add(best_candidate.household_id)
+ 
+@@ -254,7 +266,9 @@ class LaborMarket(ILaborMarket, IMarket):
+                 metadata={
+                     "match_score": res.match_score,
+                     "major_compatibility": res.major_compatibility,
+-                    "base_wage": res.base_wage
++                    "base_wage": res.base_wage,
++                    "surplus": res.surplus,
++                    "bargaining_power": res.bargaining_power
+                 }
+             )
+             transactions.append(tx)
+diff --git a/modules/simulation/dtos/api.py b/modules/simulation/dtos/api.py
+index b892c58b..cefd3653 100644
+--- a/modules/simulation/dtos/api.py
++++ b/modules/simulation/dtos/api.py
+@@ -70,6 +70,11 @@ class HRStateDTO:
+     employees: List[str]
+     employees_data: Dict[str, Dict[str, Any]]
+ 
++    # Adaptive Learning / Bargaining Memory
++    hires_prev_tick: int = 0
++    target_hires_prev_tick: int = 0
++    wage_offer_prev_tick: int = 0
++
+ @dataclass(frozen=True)
+ class FirmStateDTO:
+     """
+diff --git a/simulation/components/engines/hr_engine.py b/simulation/components/engines/hr_engine.py
+index 9e9aaba6..52dd5f24 100644
+--- a/simulation/components/engines/hr_engine.py
++++ b/simulation/components/engines/hr_engine.py
+@@ -48,7 +48,39 @@ class HREngine(IHREngine, IHRDepartment):
+         profit_based_premium = avg_profit / (base_wage * 10.0) if base_wage > 0 else 0.0
+         wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
+ 
+-        target_wage = int(base_wage * (1 + wage_premium))
++        # Wave 3: Adaptive Learning (TD-Error from previous hiring attempt)
++        adaptive_premium = 0.0
++
++        target_hires = context.target_hires_prev_tick
++        actual_hires = context.hires_prev_tick
++        last_offer = context.wage_offer_prev_tick
++        hiring_deficit = 0
++
++        if target_hires > 0:
++            hiring_deficit = target_hires - actual_hires
++
++            if hiring_deficit > 0:
++                # Failed to hire enough -> Market is tight -> Increase wage
++                # TD-Error > 0
++                adaptive_premium = 0.1 * (hiring_deficit / target_hires) # Increase by up to 10%
++
++            elif hiring_deficit <= 0 and actual_hires > 0:
++                # Successfully hired all targets -> Maybe overpaying? -> Slight decrease or hold
++                # TD-Error <= 0
++                adaptive_premium = -0.01 # Decrease by 1% to test market
++
++        # Combine premiums
++        total_premium = wage_premium + adaptive_premium
++        total_premium = max(0, min(total_premium, max_premium)) # Clamp
++
++        # Base calculation on Market Avg OR Last Offer (if higher/relevant)
++        if last_offer > base_wage and hiring_deficit > 0:
++             # If we already offered above market and failed, base next offer on our last offer
++             anchor_wage = last_offer
++        else:
++             anchor_wage = base_wage
++
++        target_wage = int(anchor_wage * (1 + total_premium))
+ 
+         # Wage Scaling: Update existing employees if underpaid
+         current_wage_bill = 0
+@@ -97,7 +129,8 @@ class HREngine(IHREngine, IHRDepartment):
+         return HRIntentDTO(
+             hiring_target=hiring_target,
+             wage_updates=wage_updates,
+-            fire_employee_ids=firing_ids
++            fire_employee_ids=firing_ids,
++            hiring_wage_offer=target_wage
+         )
+ 
+     def manage_workforce(self, input_dto: HRDecisionInputDTO) -> HRDecisionOutputDTO:
+@@ -156,24 +189,8 @@ class HREngine(IHREngine, IHRDepartment):
+ 
+         # Hiring Orders
+         if intent.hiring_target > 0:
+-            # Determine offered wage (target wage)
+-            # We can infer it from intent.wage_updates if any, or recalculate
+-            # But context.labor_market_avg_wage is available.
+-            # Wait, decide_workforce calculated target_wage internally but didn't return it explicitly except in wage_updates.
+-            # If no wage updates, we don't know the target wage?
+-            # We should probably return target_wage in Intent or infer it.
+-            # Re-calculating target wage here is redundant but safe.
+-            # OR assume wage_updates contains the target wage.
+-            # Let's recalculate for safety/simplicity as it's cheap.
+-
+-            base_wage = context.labor_market_avg_wage
+-            sensitivity = 0.1
+-            max_premium = 2.0
+-            profit_history = context.profit_history
+-            avg_profit = sum(profit_history) / len(profit_history) if profit_history else 0.0
+-            profit_based_premium = avg_profit / (base_wage * 10.0) if base_wage > 0 else 0.0
+-            wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
+-            offered_wage = int(base_wage * (1 + wage_premium))
++            # Use wage from intent (Adaptive Learning result)
++            offered_wage = intent.hiring_wage_offer
+ 
+             orders.append(Order(
+                 agent_id=firm_state.id,
+@@ -230,7 +247,12 @@ class HREngine(IHREngine, IHRDepartment):
+             max_employees=getattr(config, 'firm_max_employees', 100),
+             severance_pay_weeks=getattr(config, 'severance_pay_weeks', 2),
+             specialization=firm_state.production.specialization,
+-            major=getattr(firm_state.production, 'major', 'GENERAL') # Phase 4.1
++            major=getattr(firm_state.production, 'major', 'GENERAL'), # Phase 4.1
++
++            # Adaptive Learning History
++            hires_prev_tick=firm_state.hr.hires_prev_tick,
++            target_hires_prev_tick=firm_state.hr.target_hires_prev_tick,
++            wage_offer_prev_tick=firm_state.hr.wage_offer_prev_tick
+         )
+ 
+     def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: int, config: FirmConfigDTO) -> int:
+@@ -423,7 +445,7 @@ class HREngine(IHREngine, IHRDepartment):
+     def hire(self, hr_state: HRState, employee: IEmployeeDataProvider, wage: int, current_tick: int = 0):
+         hr_state.employees.append(employee)
+         hr_state.employee_wages[employee.id] = wage
+-        hr_state.hires_last_tick += 1
++        hr_state.hires_this_tick += 1
+         employee.employment_start_tick = current_tick
+ 
+     def remove_employee(self, hr_state: HRState, employee: IEmployeeDataProvider):
+diff --git a/simulation/components/state/firm_state_models.py b/simulation/components/state/firm_state_models.py
+index 71814b8c..0a4661e1 100644
+--- a/simulation/components/state/firm_state_models.py
++++ b/simulation/components/state/firm_state_models.py
+@@ -12,7 +12,25 @@ class HRState:
+     employee_wages: Dict[int, int] = field(default_factory=dict) # MIGRATION: Wages in int pennies
+     employees_data: Dict[int, Dict[str, Any]] = field(default_factory=dict) # Metadata (e.g. productivity_modifier)
+     unpaid_wages: Dict[int, List[Tuple[int, int]]] = field(default_factory=dict) # MIGRATION: Wages in int pennies
+-    hires_last_tick: int = 0
++
++    # Adaptive Learning / Bargaining Memory
++    hires_this_tick: int = 0
++    hires_prev_tick: int = 0
++
++    target_hires_this_tick: int = 0
++    target_hires_prev_tick: int = 0
++
++    wage_offer_this_tick: int = 0
++    wage_offer_prev_tick: int = 0
++
++    @property
++    def hires_last_tick(self) -> int:
++        """Deprecated alias for backward compatibility."""
++        return self.hires_this_tick
++
++    @hires_last_tick.setter
++    def hires_last_tick(self, value: int):
++        self.hires_this_tick = value
+ 
+ @dataclass
+ class FinanceState:
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 4e4f7b13..59504000 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -658,9 +658,14 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         """
+         self.reset_finance()
+         self.sales_volume_this_tick = 0.0
+-        # Reset other per-tick states if necessary
+-        # e.g., self.production_state.current_production is state, not counter
+-        # self.inventory_component.reset_tick() # If it exists
++
++        # Adaptive Learning Rotation
++        self.hr_state.hires_prev_tick = self.hr_state.hires_this_tick
++        self.hr_state.hires_this_tick = 0
++        self.hr_state.target_hires_prev_tick = self.hr_state.target_hires_this_tick
++        self.hr_state.target_hires_this_tick = 0
++        self.hr_state.wage_offer_prev_tick = self.hr_state.wage_offer_this_tick
++        self.hr_state.wage_offer_this_tick = 0
+ 
+     def init_ipo(self, stock_market: StockMarket):
+         """Register firm in stock market order book."""
+@@ -888,7 +893,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+ 
+         hr_dto = HRStateDTO(
+             employees=employee_ids,
+-            employees_data=employees_data
++            employees_data=employees_data,
++            hires_prev_tick=self.hr_state.hires_prev_tick,
++            target_hires_prev_tick=self.hr_state.target_hires_prev_tick,
++            wage_offer_prev_tick=self.hr_state.wage_offer_prev_tick
+         )
+ 
+         # 2. Finance State
+@@ -1034,7 +1042,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+ 
+         hr_dto = HRStateDTO(
+             employees=employee_ids,
+-            employees_data=employees_data
++            employees_data=employees_data,
++            hires_prev_tick=self.hr_state.hires_prev_tick,
++            target_hires_prev_tick=self.hr_state.target_hires_prev_tick,
++            wage_offer_prev_tick=self.hr_state.wage_offer_prev_tick
+         )
+ 
+         # 2. Finance State
+@@ -1191,6 +1202,15 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         hr_orders = self._generate_hr_orders(hr_intent, hr_context)
+         engine_orders = hr_orders
+ 
++        # Adaptive Learning: Capture Hiring Intent
++        if hr_intent.hiring_target > 0:
++            self.hr_state.target_hires_this_tick = hr_intent.hiring_target
++            # Find the hiring order to get the price
++            for order in hr_orders:
++                if order.side == 'BUY' and order.item_id == 'labor':
++                    self.hr_state.wage_offer_this_tick = order.price_pennies
++                    break
++
+         # 4. Sales Engine: Decide Pricing & Sales
+         sales_context = self._build_sales_context(market_snapshot, current_time)
+         sales_intent = self.sales_engine.decide_pricing(sales_context)
+@@ -1520,7 +1540,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+             max_employees=getattr(self.config, 'firm_max_employees', 100),
+             severance_pay_weeks=getattr(self.config, 'severance_pay_weeks', 2),
+             specialization=self.production_state.specialization,
+-            major=self.major # Phase 4.1
++            major=self.major, # Phase 4.1
++            hires_prev_tick=self.hr_state.hires_prev_tick,
++            target_hires_prev_tick=self.hr_state.target_hires_prev_tick,
++            wage_offer_prev_tick=self.hr_state.wage_offer_prev_tick
+         )
+ 
+     def _generate_hr_orders(self, intent: HRIntentDTO, context: HRContextDTO) -> List[Order]:
+diff --git a/tests/unit/modules/firm/test_engines.py b/tests/unit/modules/firm/test_engines.py
+index 1535c53f..d3ffc9d2 100644
+--- a/tests/unit/modules/firm/test_engines.py
++++ b/tests/unit/modules/firm/test_engines.py
+@@ -138,6 +138,10 @@ class TestHREngine:
+             4: {"wage": 1000, "skill": 1.0},
+             5: {"wage": 1000, "skill": 1.0},
+         }
++        # Adaptive Learning History Mocks
++        hr_state.target_hires_prev_tick = 0
++        hr_state.hires_prev_tick = 0
++        hr_state.wage_offer_prev_tick = 0
+ 
+         fin_state = MagicMock(spec=FinanceStateDTO)
+         fin_state.profit_history = [10000]
+diff --git a/tests/unit/modules/labor/test_bargaining.py b/tests/unit/modules/labor/test_bargaining.py
+new file mode 100644
+index 00000000..e97bb6cd
+--- /dev/null
++++ b/tests/unit/modules/labor/test_bargaining.py
+@@ -0,0 +1,126 @@
++import unittest
++from unittest.mock import MagicMock
++from modules.labor.system import LaborMarket
++from modules.labor.api import JobOfferDTO, JobSeekerDTO
++from simulation.components.engines.hr_engine import HREngine
++from modules.firm.api import HRContextDTO, AgentID, MarketSnapshotDTO
++
++class TestBargainingAndAdaptiveLearning(unittest.TestCase):
++
++    def test_nash_bargaining_surplus_sharing(self):
++        # Setup Market
++        market = LaborMarket()
++
++        # WTP (Firm) = 2000 (20.00), WTA (Worker) = 1000 (10.00)
++        # Surplus = 10.00
++        # Split = 0.5 (Default) -> Price = 10.00 + 5.00 = 15.00
++
++        offer = JobOfferDTO(
++            firm_id=AgentID(1),
++            offer_wage=20.00,
++            required_education=0,
++            quantity=1.0,
++            major="GENERAL"
++        )
++
++        seeker = JobSeekerDTO(
++            household_id=AgentID(101),
++            reservation_wage=10.00,
++            education_level=0,
++            quantity=1.0,
++            major="GENERAL"
++        )
++
++        market.post_job_offer(offer)
++        market.post_job_seeker(seeker)
++
++        matches = market.match_market(current_tick=1)
++
++        self.assertEqual(len(matches), 1)
++        match = matches[0]
++
++        self.assertEqual(match.employer_id, 1)
++        self.assertEqual(match.employee_id, 101)
++        self.assertAlmostEqual(match.base_wage, 20.00)
++        self.assertAlmostEqual(match.matched_wage, 15.00) # (10 + 20) / 2
++        self.assertAlmostEqual(match.surplus, 10.00)
++        self.assertAlmostEqual(match.bargaining_power, 0.5)
++
++    def test_firm_adaptive_learning_wage_increase(self):
++        # Scenario: Firm failed to hire in previous tick
++        # target_hires = 5, actual_hires = 0
++        # TD-Error > 0 -> Increase Wage
++
++        engine = HREngine()
++
++        # Mock Context
++        context = MagicMock(spec=HRContextDTO)
++        context.target_workforce_count = 10
++        context.current_headcount = 5
++        context.budget_pennies = 1000000
++        context.labor_market_avg_wage = 1000 # 10.00
++        context.profit_history = [10000]
++        context.employee_wages = {}
++        context.current_employees = []
++        context.min_employees = 1
++        context.max_employees = 100
++        context.severance_pay_weeks = 2
++
++        # Adaptive History
++        context.target_hires_prev_tick = 5
++        context.hires_prev_tick = 0 # Failed!
++        context.wage_offer_prev_tick = 1000 # 10.00
++
++        intent = engine.decide_workforce(context)
++
++        # Expect wage > 1000 (adaptive premium applied)
++        # Profit premium: 10000/(1000*10) = 1.0 -> 0.1 (10%)
++        # Base increase = 1000 * 1.1 = 1100.
++
++        # Adaptive:
++        # hiring_deficit = 5.
++        # adaptive_premium = 0.1 * (5/5) = 0.1 (10%).
++        # total_premium = 0.1 + 0.1 = 0.2 (20%).
++        # Target Wage = 1000 * 1.2 = 1200.
++
++        self.assertGreater(intent.hiring_wage_offer, 1100)
++        self.assertEqual(intent.hiring_wage_offer, 1200)
++
++    def test_firm_adaptive_learning_wage_decrease(self):
++        # Scenario: Firm hired everyone easily
++        # target_hires = 5, actual_hires = 5
++        # TD-Error <= 0 -> Decrease/Hold
++
++        engine = HREngine()
++
++        context = MagicMock(spec=HRContextDTO)
++        context.target_workforce_count = 10
++        context.current_headcount = 5
++        context.budget_pennies = 1000000
++        context.labor_market_avg_wage = 1000
++        context.profit_history = [10000] # Premium 0.1
++        context.employee_wages = {}
++        context.current_employees = []
++        context.min_employees = 1
++        context.max_employees = 100
++        context.severance_pay_weeks = 2
++
++        # Adaptive History
++        context.target_hires_prev_tick = 5
++        context.hires_prev_tick = 5 # Success!
++        context.wage_offer_prev_tick = 1200
++
++        intent = engine.decide_workforce(context)
++
++        # Base premium 0.1.
++        # Adaptive premium:
++        # hiring_deficit = 0.
++        # actual_hires > 0 -> -0.01 (-1%).
++        # total_premium = 0.1 - 0.01 = 0.09.
++
++        # Anchor: base_wage (1000).
++        # (Last offer > base, but deficit <= 0, so anchor reset to base)
++
++        # Target = 1000 * 1.09 = 1090.
++
++        self.assertEqual(intent.hiring_wage_offer, 1090)
+diff --git a/tests/unit/test_labor_market_system.py b/tests/unit/test_labor_market_system.py
+index b11ffccd..5a5f2f65 100644
+--- a/tests/unit/test_labor_market_system.py
++++ b/tests/unit/test_labor_market_system.py
+@@ -56,7 +56,7 @@ class TestLaborMarketSystem:
+         match = results[0]
+         assert match.employer_id == AgentID(101)
+         assert match.employee_id == AgentID(201)
+-        assert match.matched_wage == 20.0
++        assert match.matched_wage == 17.5 # Nash Bargaining: (20 + 15) / 2
+         assert match.major_compatibility == "PERFECT"
+ 
+         # Check queues cleared
+@@ -138,7 +138,7 @@ class TestLaborMarketSystem:
+         txs = market.match_orders(1)
+         assert len(txs) == 1
+         assert txs[0].transaction_type == "HIRE"
+-        assert txs[0].total_pennies == 2000
++        assert txs[0].total_pennies == 1750 # Nash Bargaining: (2000 + 1500) / 2
+ 
+     def test_place_order_backward_compatibility(self, market):
+         # CanonicalOrderDTO without metadata (Legacy)
+diff --git a/tests/unit/test_wave6_fiscal_masking.py b/tests/unit/test_wave6_fiscal_masking.py
+index fd4a40a1..e5cec976 100644
+--- a/tests/unit/test_wave6_fiscal_masking.py
++++ b/tests/unit/test_wave6_fiscal_masking.py
+@@ -64,6 +64,10 @@ class TestFiscalMasking:
+             101: {'wage': 1000, 'skill': 1.0, 'education_level': 0}, # Underpaid
+             102: {'wage': 5000, 'skill': 1.0, 'education_level': 0}  # Well paid
+         }
++        # Adaptive Learning History Mocks
++        hr_state.target_hires_prev_tick = 0
++        hr_state.hires_prev_tick = 0
++        hr_state.wage_offer_prev_tick = 0
+ 
+         firm_snapshot = MagicMock(spec=FirmStateDTO)
+         firm_snapshot.id = 1

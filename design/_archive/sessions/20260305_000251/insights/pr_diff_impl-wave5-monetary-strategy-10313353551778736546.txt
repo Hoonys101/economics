@@ -1,0 +1,1185 @@
+diff --git a/communications/insights/MISSION_impl_wave5_monetary.md b/communications/insights/MISSION_impl_wave5_monetary.md
+new file mode 100644
+index 00000000..e47e761b
+--- /dev/null
++++ b/communications/insights/MISSION_impl_wave5_monetary.md
+@@ -0,0 +1,50 @@
++# Insight Report: Wave 5 Monetary Strategy Pattern
++**Mission Key:** MISSION_impl_wave5_monetary
++**Date:** 2026-02-23
++**Author:** Jules (Software Engineer)
++
++## 1. Architectural Insights & Technical Debt
++
++### 1.1. Single Source of Truth (SSoT) Alignment
++- **Decision**: `EconomicIndicatorTracker` was updated to track `monetary_base` (M0) and expose `gdp_history` and `cpi_history`. This ensures the `CentralBank` has access to the same SSoT as other agents via `MacroEconomicSnapshotDTO`.
++- **Reasoning**: The McCallum Rule requires M0 (Base Money) targeting. Previously, only M2 (Money Supply) was tracked. By exposing M0, we enable precise Base Money targeting.
++
++### 1.2. Protocol Purity & Strategy Pattern
++- **Decision**: Refactored `CentralBank` to use `IMonetaryStrategy` protocol. The `MonetaryEngine` was deprecated and replaced by dynamic strategy injection (`TaylorRuleStrategy`, `FriedmanKPercentStrategy`, `McCallumRuleStrategy`).
++- **Benefit**: This allows the simulation to switch monetary regimes (Keynesian vs. Monetarist) at runtime or via configuration without code changes.
++
++### 1.3. OMO Execution Gap Resolution
++- **Resolution**: `CentralBank` now implements `execute_open_market_operation` which generates real `Order` objects for the `security_market`.
++- **Dependency**: The `CentralBank` now requires a reference to `BondMarket`. This dependency is injected via `set_bond_market` in `SimulationInitializer` to handle the circular dependency (Bank created before Market).
++
++## 2. Regression Analysis
++- **Taylor Rule**: The new `TaylorRuleStrategy` replicates the logic of the legacy `MonetaryEngine`.
++    - **Regression**: The legacy implementation used a custom `output_gap` calculation derived from Potential GDP.
++    - **Mitigation**: The `MacroEconomicSnapshotDTO` includes `output_gap` which `CentralBank` populates using its internal `potential_gdp` tracking (preserved from legacy). This ensures identical behavior for the default strategy.
++    - **Test Evidence**: `tests/modules/finance/monetary/test_strategies.py::test_taylor_rule` passes with expected values.
++
++- **Economic Tracker**: `EconomicIndicatorTracker.track()` signature was updated.
++    - **Compatibility**: The new `monetary_base` argument is optional (defaults to 0.0) to preserve compatibility with existing tests that call `track()` manually.
++    - **Update**: `TickOrchestrator` was updated to pass the real `monetary_base` (from `WorldState.calculate_base_money()`).
++
++## 3. Test Evidence
++
++### 3.1. New Strategy Tests
++```
++tests/modules/finance/monetary/test_strategies.py::test_taylor_rule PASSED [ 12%]
++tests/modules/finance/monetary/test_strategies.py::test_taylor_rule_no_explicit_output_gap PASSED [ 25%]
++tests/modules/finance/monetary/test_strategies.py::test_friedman_rule PASSED [ 37%]
++tests/modules/finance/monetary/test_strategies.py::test_mccallum_rule PASSED [ 50%]
++```
++
++### 3.2. Central Bank Refactor Tests
++```
++tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_initialization PASSED [ 62%]
++tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_step_delegates_to_strategy PASSED [ 75%]
++tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_omo_execution PASSED [ 87%]
++tests/simulation/agents/test_central_bank_refactor.py::test_central_bank_snapshot_construction PASSED [100%]
++```
++
++### 3.3. Full Suite Regression Check
++Ran `pytest tests/` (1029 tests).
++**Result:** 1029 passed, 11 skipped. 100% Pass Rate.
+diff --git a/design/3_work_artifacts/specs/monetary_strategy_spec.md b/design/3_work_artifacts/specs/monetary_strategy_spec.md
+new file mode 100644
+index 00000000..328d8c7c
+--- /dev/null
++++ b/design/3_work_artifacts/specs/monetary_strategy_spec.md
+@@ -0,0 +1,108 @@
++# Specification: Wave 5 Monetary Strategy Pattern
++
++## 1. Overview
++This specification details the refactoring of the Central Bank's decision-making process into a **Strategy Pattern**. This allows the simulation to switch dynamically between different economic philosophies (Keynesian vs. Monetarist) without rewriting the agent's core code.
++
++## 2. Core Components
++
++### 2.1. The Strategy Interface (`IMonetaryStrategy`)
++Every monetary rule must implement `calculate_decision`. The input is a strictly typed `MacroEconomicSnapshotDTO` (SSoT), ensuring the Central Bank reacts to the *true* state of the economy, not an internal approximation.
++
++### 2.2. Concrete Strategies
++
++#### A. `TaylorRuleStrategy` (The Default)
++*   **Philosophy**: Price Stability via Interest Rate Control.
++*   **Logic**:
++    $$i_t = r^* + \pi_t + \alpha_{\pi}(\pi_t - \pi^*) + \beta_{y}(y_t)$$
++    Where $y_t$ is the Output Gap (Current GDP vs Potential GDP).
++*   **Output**: Sets `target_interest_rate`. `omo_action` is typically `NONE` (assumes rate sets via signaling), or `BUY/SELL` if we model the interbank market explicitly. For V1, we assume **Rate Signaling**.
++
++#### B. `FriedmanKPercentStrategy` (The Monetarist)
++*   **Philosophy**: Control Inflation by controlling the Money Supply quantity.
++*   **Logic**:
++    1.  Calculate Target M2: $M2_{target} = M2_{prev} \times (1 + k)$ where $k$ is typically 3% annually.
++    2.  Compare with Current M2 ($M2_{curr}$).
++    3.  Delta $\Delta = M2_{target} - M2_{curr}$.
++*   **Output**:
++    *   If $\Delta > 0$: `target_interest_rate` = Market Rate (Ignore). `omo_action` = `BUY_BONDS` (Inject $\Delta$ cash).
++    *   If $\Delta < 0$: `omo_action` = `SELL_BONDS` (Drain $\Delta$ cash).
++
++#### C. `McCallumRuleStrategy` (The NGDP Targeter)
++*   **Philosophy**: Target Nominal GDP to stabilize aggregate demand.
++*   **Logic**:
++    $$MB_{target} = MB_{t-1} + (NGDP^*_{growth} - V_{avg}) + \lambda(NGDP^* - NGDP_{t-1})$$
++    Adjusts the Monetary Base ($MB$) to offset changes in Velocity ($V$).
++*   **Output**: Similar to Friedman, but targets Base Money (Cash + Reserves) explicitly via OMO.
++
++## 3. The OMO Execution Gap (The "How")
++
++The `CentralBank` class must be upgraded to support **Quantity-Based Operations**.
++
++### 3.1. Execution Logic (`CentralBank.execute_open_market_operation`)
++When the strategy returns a `MonetaryDecisionDTO` with `omo_action != NONE`:
++
++1.  **BUY_BONDS (QE)**:
++    *   Bank creates a `BuyOrder` for Government Bonds on the `BondMarket`.
++    *   Price: Market Price + Premium (to ensure fill).
++    *   Funding: **Minting** (Negative Balance allowed for CB).
++    *   Result: Bank gets Bonds, Seller gets Cash. M2 increases.
++
++2.  **SELL_BONDS (QT)**:
++    *   Bank checks its `self.bonds` portfolio.
++    *   If empty -> **Force Majeure** (Cannot drain money if no assets to sell).
++    *   Else -> Creates `SellOrder`.
++    *   Result: Buyer gets Bonds, Bank gets Cash. Bank **Burns** the cash (removes from circulation). M2 decreases.
++
++## 4. Architecture & Data Flow
++
++```mermaid
++graph TD
++    Market[MarketSystem] -->|Snapshot| SSoT[MacroEconomicSnapshotDTO]
++    SSoT --> Engine[MonetaryEngine]
++    Config[MonetaryPolicyConfig] --> Engine
++
++    subgraph Strategies
++        Taylor[TaylorRule]
++        Friedman[FriedmanRule]
++        McCallum[McCallumRule]
++    end
++
++    Engine -->|Delegates| Taylor
++    Engine -->|Delegates| Friedman
++
++    Taylor -->|DecisionDTO| CB[CentralBank]
++    Friedman -->|DecisionDTO| CB
++
++    CB -->|Set Rate| BankSystem
++    CB -->|Execute OMO| BondMarket
++```
++
++## 5. Migration Plan (Refactoring `CentralBank`)
++
++1.  **Rename Attributes**:
++    *   `self.strategy` (Scenario) -> Keep.
++    *   New: `self.monetary_policy: IMonetaryStrategy`.
++    *   New: `self.monetary_config: MonetaryPolicyConfigDTO`.
++2.  **Logic Swap**:
++    *   In `step()`: Build `MacroEconomicSnapshotDTO`.
++    *   Call `self.monetary_policy.calculate_decision(...)`.
++    *   Apply `decision.target_interest_rate`.
++    *   Execute `decision.omo_action`.
++3.  **Backward Compatibility**:
++    *   Ensure the default config instantiates `TaylorRuleStrategy` with parameters matching the old hardcoded logic.
++
++## 6. Verification Plan
++
++### 6.1. Unit Tests
++*   **`test_taylor_rule_calculation`**: Verify math matches the formula.
++*   **`test_friedman_rule_omo`**:
++    *   Mock M2 = 1000. Target Growth 10%. Target = 1100.
++    *   Verify Decision requests `BUY_BONDS` of 100.
++*   **`test_liquidity_trap`**:
++    *   Friedman Rule requests `SELL_BONDS`.
++    *   Central Bank has 0 bonds.
++    *   Verify graceful failure (Log warning, no crash).
++
++### 6.2. Integration Tests
++*   **Rate Transmission**: Verify that when CB sets rate, `IBankService.get_interest_rate()` reflects the change in the next tick.
++*   **Inflation Response**: Inject High Inflation -> Run Taylor Strategy -> Verify Rate Increases.
+diff --git a/modules/finance/monetary/__init__.py b/modules/finance/monetary/__init__.py
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/modules/finance/monetary/api.py b/modules/finance/monetary/api.py
+new file mode 100644
+index 00000000..2e281a4b
+--- /dev/null
++++ b/modules/finance/monetary/api.py
+@@ -0,0 +1,141 @@
++from __future__ import annotations
++from dataclasses import dataclass, field
++from enum import Enum, auto
++from typing import Protocol, Dict, Any, Optional, runtime_checkable
++from modules.system.api import CurrencyCode
++
++# region: Enums
++
++class MonetaryRuleType(Enum):
++    """
++    Defines the philosophical framework used by the Central Bank.
++    """
++    TAYLOR_RULE = auto()        # Interest Rate Targeting (Counter-cyclical)
++    FRIEDMAN_K_PERCENT = auto() # Money Supply Targeting (Fixed Growth)
++    MCCALLUM_RULE = auto()      # Monetary Base Targeting (NGDP Targeting)
++    PEG_EXCHANGE_RATE = auto()  # Fixed Exchange Rate (Not implemented in V1)
++
++class OMOActionType(Enum):
++    """
++    The type of Open Market Operation required to fulfill the policy.
++    """
++    NONE = auto()
++    BUY_BONDS = auto()  # Quantitative Easing (Inject Cash)
++    SELL_BONDS = auto() # Quantitative Tightening (Drain Cash)
++
++# endregion
++
++# region: DTOs
++
++@dataclass(frozen=True)
++class MacroEconomicSnapshotDTO:
++    """
++    Standardized view of the economy consumed by Monetary Strategies.
++    SSoT: Provided by EconomyTracker / MarketSystem.
++    """
++    tick: int
++
++    # Prices & Growth
++    inflation_rate_annual: float # e.g., 0.02 for 2%
++    nominal_gdp: int             # In pennies
++    real_gdp_growth: float       # e.g., 0.03 for 3%
++
++    # Employment
++    unemployment_rate: float     # e.g., 0.05 for 5%
++
++    # Monetary Aggregates
++    current_m2_supply: int       # Total Money Supply (Cash + Deposits)
++    current_monetary_base: int   # Cash in Circulation + Bank Reserves
++    velocity_of_money: float     # V = GDP / M2
++
++    # Derived
++    output_gap: Optional[float] = None # (Current GDP - Potential GDP) / Potential GDP
++
++@dataclass(frozen=True)
++class MonetaryPolicyConfigDTO:
++    """
++    Configuration parameters for the active strategy.
++    """
++    rule_type: MonetaryRuleType
++
++    # Targets
++    inflation_target: float = 0.02
++    unemployment_target: float = 0.05
++    m2_growth_target: float = 0.03 # For Friedman Rule (k%)
++    ngdp_target_growth: float = 0.04 # For McCallum Rule
++
++    # Coefficients (Taylor Rule)
++    taylor_alpha: float = 1.5 # Weight on Inflation
++    taylor_beta: float = 0.5  # Weight on Output Gap
++    neutral_rate: float = 0.02 # r*
++
++    # Constraints
++    min_interest_rate: float = 0.0 # Zero Lower Bound
++    max_interest_rate: float = 0.20
++
++@dataclass(frozen=True)
++class MonetaryDecisionDTO:
++    """
++    The output of a Monetary Strategy.
++    Instructs the Central Bank on what variables to target.
++    """
++    rule_type: MonetaryRuleType
++    tick: int
++
++    # Rate Target (Primary tool for Taylor Rule)
++    target_interest_rate: float
++
++    # Quantity Target (Primary tool for Friedman/McCallum)
++    target_m2_supply: Optional[int] = None
++    target_monetary_base: Optional[int] = None
++
++    # Derived Action (For OMO Execution)
++    omo_action: OMOActionType = OMOActionType.NONE
++    omo_amount_pennies: int = 0
++
++    reasoning: str = ""
++
++# endregion
++
++# region: Protocols
++
++@runtime_checkable
++class IMonetaryStrategy(Protocol):
++    """
++    Interface for implementing a Monetary Policy Rule.
++    Decouples the logic (Thinker) from the Central Bank (Actor).
++    """
++
++    @property
++    def rule_type(self) -> MonetaryRuleType:
++        """Returns the type of rule implemented."""
++        ...
++
++    def calculate_decision(
++        self,
++        snapshot: MacroEconomicSnapshotDTO,
++        current_rate: float,
++        config: MonetaryPolicyConfigDTO
++    ) -> MonetaryDecisionDTO:
++        """
++        Computes the target interest rate or money supply targets
++        based on the provided economic snapshot.
++        """
++        ...
++
++@runtime_checkable
++class IMonetaryEngine(Protocol):
++    """
++    Context holder that manages the active strategy and executes it.
++    """
++    active_policy: IMonetaryStrategy
++
++    def set_policy(self, policy: IMonetaryStrategy) -> None:
++        ...
++
++    def execute_tick(
++        self,
++        snapshot: MacroEconomicSnapshotDTO,
++        current_rate: float
++    ) -> MonetaryDecisionDTO:
++        ...
+diff --git a/modules/finance/monetary/strategies.py b/modules/finance/monetary/strategies.py
+new file mode 100644
+index 00000000..b2c766d2
+--- /dev/null
++++ b/modules/finance/monetary/strategies.py
+@@ -0,0 +1,170 @@
++from __future__ import annotations
++from typing import Optional
++from modules.finance.monetary.api import (
++    IMonetaryStrategy, MonetaryRuleType, MacroEconomicSnapshotDTO,
++    MonetaryPolicyConfigDTO, MonetaryDecisionDTO, OMOActionType
++)
++
++class TaylorRuleStrategy:
++    """
++    Implements the Taylor Rule for interest rate targeting.
++    i = r* + pi + alpha(pi - pi*) + beta(y)
++    """
++    @property
++    def rule_type(self) -> MonetaryRuleType:
++        return MonetaryRuleType.TAYLOR_RULE
++
++    def calculate_decision(
++        self,
++        snapshot: MacroEconomicSnapshotDTO,
++        current_rate: float,
++        config: MonetaryPolicyConfigDTO
++    ) -> MonetaryDecisionDTO:
++
++        inflation_rate = snapshot.inflation_rate_annual
++
++        # Determine Output Gap
++        # Priority 1: Provided explicit output gap (Legacy compatibility)
++        # Priority 2: Okun's Law (Unemployment Gap)
++        if snapshot.output_gap is not None:
++            output_gap = snapshot.output_gap
++        else:
++            # Okun's Law: Gap ~ -2 * (u - u*)
++            # Note: If u > u* (high unemployment), Gap is negative (recession).
++            # We assume a coefficient of 2.0 implicitly or just use the raw gap.
++            # Standard Taylor Rule uses log output gap.
++            # Here we substitute y with (u* - u).
++            # If u=5%, u*=5%, gap=0. If u=6%, gap=-1%.
++            output_gap = (config.unemployment_target - snapshot.unemployment_rate)
++
++        # Taylor Rule Calculation
++        # i = r* + pi + alpha * (pi - pi*) + beta * output_gap
++
++        target_rate = (
++            config.neutral_rate +
++            inflation_rate +
++            config.taylor_alpha * (inflation_rate - config.inflation_target) +
++            config.taylor_beta * output_gap
++        )
++
++        # Apply Zero Lower Bound (ZLB) and Max Rate
++        target_rate = max(config.min_interest_rate, min(config.max_interest_rate, target_rate))
++
++        # Smoothing (Optional, but good for stability)
++        # We don't implement smoothing here strictly, but usually CBs smooth changes.
++        # The legacy engine implemented smoothing (max change 0.25%).
++        # We will return the raw target and let the Agent apply smoothing if desired,
++        # OR we can apply it here if we had 'current_rate'.
++        # We DO have current_rate.
++
++        max_change = 0.0025 # 25 bps
++        delta = target_rate - current_rate
++        if abs(delta) > max_change:
++            target_rate = current_rate + (max_change * (1.0 if delta > 0 else -1.0))
++
++        return MonetaryDecisionDTO(
++            rule_type=self.rule_type,
++            tick=snapshot.tick,
++            target_interest_rate=target_rate,
++            omo_action=OMOActionType.NONE,
++            reasoning=f"Taylor Rule: Infl={inflation_rate:.2%}, Gap={output_gap:.2%}, Target={target_rate:.2%}"
++        )
++
++
++class FriedmanKPercentStrategy:
++    """
++    Implements Friedman's k-percent rule.
++    Targets a fixed growth rate of Money Supply (M2).
++    """
++    @property
++    def rule_type(self) -> MonetaryRuleType:
++        return MonetaryRuleType.FRIEDMAN_K_PERCENT
++
++    def calculate_decision(
++        self,
++        snapshot: MacroEconomicSnapshotDTO,
++        current_rate: float,
++        config: MonetaryPolicyConfigDTO
++    ) -> MonetaryDecisionDTO:
++
++        # 1. Calculate Target M2
++        # Target = Current * (1 + k_period)
++        # k is annual, need to adjust for period?
++        # Assuming config.m2_growth_target is Annual.
++        # And update interval is... unknown here.
++        # Assuming the target provided in config is relevant for the update frequency
++        # or we accept base drift.
++        # Let's assume config.m2_growth_target is the target growth for the PERIOD (e.g. 1 tick or 1 update cycle).
++        # OR, more safely, treat it as annual and scale it?
++        # The Spec says: "M2_target = M2_prev * (1 + k)".
++        # We will use the configured target directly.
++
++        # Note: Ideally we should track the *Path* to avoid Base Drift, but for V1 we target next step.
++        target_m2 = int(snapshot.current_m2_supply * (1.0 + config.m2_growth_target))
++
++        delta = target_m2 - snapshot.current_m2_supply
++
++        action = OMOActionType.NONE
++        amount = 0
++
++        if delta > 0:
++            action = OMOActionType.BUY_BONDS
++            amount = delta
++        elif delta < 0:
++            action = OMOActionType.SELL_BONDS
++            amount = abs(delta)
++
++        return MonetaryDecisionDTO(
++            rule_type=self.rule_type,
++            tick=snapshot.tick,
++            target_interest_rate=current_rate, # No change to rates, quantity led
++            target_m2_supply=target_m2,
++            omo_action=action,
++            omo_amount_pennies=amount,
++            reasoning=f"Friedman k%: Current M2={snapshot.current_m2_supply}, Target={target_m2}, Delta={delta}"
++        )
++
++
++class McCallumRuleStrategy:
++    """
++    Implements McCallum Rule.
++    Targets Monetary Base (M0) to stabilize Nominal GDP.
++    """
++    @property
++    def rule_type(self) -> MonetaryRuleType:
++        return MonetaryRuleType.MCCALLUM_RULE
++
++    def calculate_decision(
++        self,
++        snapshot: MacroEconomicSnapshotDTO,
++        current_rate: float,
++        config: MonetaryPolicyConfigDTO
++    ) -> MonetaryDecisionDTO:
++
++        # Simplified McCallum: Target MB growth to match Target NGDP growth, adjusted for Velocity.
++        # Target MB = Current MB * (1 + Target NGDP Growth)
++        # We assume Velocity is constant for V1 (or implicitly captured).
++
++        target_mb = int(snapshot.current_monetary_base * (1.0 + config.ngdp_target_growth))
++
++        delta = target_mb - snapshot.current_monetary_base
++
++        action = OMOActionType.NONE
++        amount = 0
++
++        if delta > 0:
++            action = OMOActionType.BUY_BONDS
++            amount = delta
++        elif delta < 0:
++            action = OMOActionType.SELL_BONDS
++            amount = abs(delta)
++
++        return MonetaryDecisionDTO(
++            rule_type=self.rule_type,
++            tick=snapshot.tick,
++            target_interest_rate=current_rate,
++            target_monetary_base=target_mb,
++            omo_action=action,
++            omo_amount_pennies=amount,
++            reasoning=f"McCallum Rule: Current MB={snapshot.current_monetary_base}, Target={target_mb}, Delta={delta}"
++        )
+diff --git a/simulation/agents/central_bank.py b/simulation/agents/central_bank.py
+index 5ac3656d..0142e494 100644
+--- a/simulation/agents/central_bank.py
++++ b/simulation/agents/central_bank.py
+@@ -1,25 +1,36 @@
+ import logging
+ from typing import Any, List, Optional, Dict, TYPE_CHECKING
+ import numpy as np
+-from modules.finance.api import InsufficientFundsError, IFinancialAgent, IFinancialEntity, IBank, ICentralBank, OMOInstructionDTO
++
++from modules.finance.api import (
++    InsufficientFundsError, IFinancialAgent, IFinancialEntity,
++    IBank, ICentralBank, OMOInstructionDTO
++)
+ from modules.finance.wallet.wallet import Wallet
+ from modules.finance.wallet.api import IWallet
+-from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY, MarketSnapshotDTO
++from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY
+ from modules.system.constants import ID_CENTRAL_BANK
+-from modules.finance.engines.monetary_engine import MonetaryEngine
+-from modules.finance.engines.api import MonetaryStateDTO
+ from simulation.models import Order, Transaction
+ 
++# Wave 5: Strategy Pattern
++from modules.finance.monetary.api import (
++    IMonetaryStrategy, MonetaryRuleType, MacroEconomicSnapshotDTO,
++    MonetaryPolicyConfigDTO, MonetaryDecisionDTO, OMOActionType
++)
++from modules.finance.monetary.strategies import TaylorRuleStrategy
++
+ if TYPE_CHECKING:
+     from modules.memory.api import MemoryV2Interface
+     from simulation.dtos.strategy import ScenarioStrategy
++    from simulation.core_markets import Market
+ 
+ logger = logging.getLogger(__name__)
+ 
+ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBank):
+     """
+-    Phase 10: Central Bank Agent.
+-    Implements Taylor Rule to dynamically adjust interest rates.
++    Wave 5: Central Bank Agent.
++    Implements Multi-Rule Strategy Pattern for monetary policy.
++    Supports Taylor Rule, Friedman k%, and McCallum Rule.
+     """
+ 
+     def __init__(self, tracker: Any, config_module: Any, memory_interface: Optional["MemoryV2Interface"] = None, strategy: Optional["ScenarioStrategy"] = None):
+@@ -27,35 +38,51 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
+         self.tracker = tracker
+         self.config_module = config_module
+         self.memory_v2 = memory_interface
+-        self.strategy = strategy
++        self.strategy = strategy # Scenario Strategy (God Mode Override)
+ 
+         # Balance Sheet
+         self.bonds: List[Any] = []
+         self.wallet = Wallet(self.id, allow_negative_balance=True)
++        self.bond_market: Optional["Market"] = None
+ 
+         # Initial Rate
+         self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", 0.05)
+-        # WO-136: Check Strategy for Initial Rate
+         if self.strategy and self.strategy.initial_base_interest_rate is not None:
+             self.base_rate = self.strategy.initial_base_interest_rate
+ 
+         # Configuration
+         self.update_interval = getattr(config_module, "CB_UPDATE_INTERVAL", 10)
+         self.inflation_target = getattr(config_module, "CB_INFLATION_TARGET", 0.02)
+-        self.alpha = getattr(config_module, "CB_TAYLOR_ALPHA", 1.5)
+-        self.beta = getattr(config_module, "CB_TAYLOR_BETA", 0.5)
+ 
+-        # GDP Potential Tracking (EMA)
++        # Initialize Monetary Policy (Internal Brain)
++        # Default to Taylor Rule
++        self.monetary_policy: IMonetaryStrategy = TaylorRuleStrategy()
++
++        # Initialize Policy Config
++        self.monetary_config = MonetaryPolicyConfigDTO(
++            rule_type=MonetaryRuleType.TAYLOR_RULE,
++            inflation_target=self.inflation_target,
++            unemployment_target=getattr(config_module, "CB_UNEMPLOYMENT_TARGET", 0.05),
++            m2_growth_target=getattr(config_module, "CB_M2_GROWTH_TARGET", 0.03),
++            ngdp_target_growth=getattr(config_module, "CB_NGDP_TARGET_GROWTH", 0.04),
++            taylor_alpha=getattr(config_module, "CB_TAYLOR_ALPHA", 1.5),
++            taylor_beta=getattr(config_module, "CB_TAYLOR_BETA", 0.5),
++            neutral_rate=getattr(config_module, "CB_NEUTRAL_RATE", 0.02)
++        )
++
++        # GDP Potential Tracking (EMA) - Retained for internal potential calculation
+         self.potential_gdp = 0.0
+         self.gdp_ema_alpha = 0.05 # Smoothing factor for Potential GDP (slow moving)
+ 
+-        self.monetary_engine = MonetaryEngine(config_module)
+-
+         logger.info(
+-            f"CENTRAL_BANK_INIT | Rate: {self.base_rate:.2%}, Target Infl: {self.inflation_target:.2%}",
++            f"CENTRAL_BANK_INIT | Rate: {self.base_rate:.2%}, Target Infl: {self.inflation_target:.2%}, Policy: {self.monetary_policy.rule_type}",
+             extra={"tick": 0, "tags": ["central_bank", "init"]}
+         )
+ 
++    def set_bond_market(self, market: "Market") -> None:
++        """Sets the bond market reference for OMO execution."""
++        self.bond_market = market
++
+     @property
+     def assets(self) -> Dict[CurrencyCode, int]:
+         """Legacy compatibility accessor."""
+@@ -106,11 +133,15 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
+     def step(self, current_tick: int):
+         """
+         Called every tick by Engine.
+-        Updates Potential GDP estimate and recalculates rate periodically.
++        Updates Potential GDP estimate and recalculates rate/executes OMO periodically.
+         """
+         # 1. Update Potential GDP Estimate (Every tick to be smooth)
+         latest_indicators = self.tracker.get_latest_indicators()
+-        current_gdp = latest_indicators.get("total_production", 0.0)
++        current_gdp = latest_indicators.get("total_production", 0.0) # Quantity or Nominal? Tracker seems to store Quantity as total_production?
++        # Wait, EconomicTracker.track: record["total_production"] = sum(f.current_production). This is quantity.
++        # record["gdp"] = nominal_gdp = production * price.
++        # Potential GDP usually refers to Real GDP (Quantity).
++        # So using total_production is correct for Potential Output tracking.
+ 
+         if current_gdp > 0:
+             if self.potential_gdp == 0.0:
+@@ -125,81 +156,119 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
+         is_stabilizer_enabled = getattr(self.config_module, "ENABLE_MONETARY_STABILIZER", True)
+ 
+         if is_stabilizer_enabled and not is_ai_controlled and current_tick > 0 and current_tick % self.update_interval == 0:
+-            self.calculate_rate(current_tick, current_gdp)
++            self._execute_monetary_policy(current_tick, latest_indicators)
+ 
+-    def calculate_rate(self, current_tick: int, current_gdp: float):
++    def _execute_monetary_policy(self, current_tick: int, indicators: Dict[str, Any]):
+         """
+-        Calculates interest rate using MonetaryEngine (Taylor Rule).
++        Executes the active monetary strategy.
+         """
+-        # A. Calculate Inflation
+-        price_history = self.tracker.metrics.get("avg_goods_price", [])
+-        inflation_rate = 0.0
+-        if len(price_history) > self.update_interval:
+-            p_current = price_history[-1]
+-            p_prev = price_history[-self.update_interval]
+-            if p_prev > 0:
+-                ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100)
+-                period_inflation = (p_current - p_prev) / p_prev
+-                inflation_rate = period_inflation * (ticks_per_year / self.update_interval)
+-
+-        # B. Prepare Strategy Overrides
+-        override_target_rate = None
+-        rate_multiplier = None
+-        if self.strategy and self.strategy.is_active:
+-             override_target_rate = self.strategy.monetary_shock_target_rate
+-             rate_multiplier = self.strategy.base_interest_rate_multiplier
+-
+-        # C. Construct DTOs
+-        state = MonetaryStateDTO(
+-            tick=current_tick,
+-            current_base_rate=self.base_rate,
+-            potential_gdp=self.potential_gdp,
+-            inflation_target=self.inflation_target,
+-            override_target_rate=override_target_rate,
+-            rate_multiplier=rate_multiplier
+-        )
+-
+-        snapshot = MarketSnapshotDTO(
+-            tick=current_tick,
+-            market_signals={},
+-            market_data={
+-                "inflation_rate_annual": inflation_rate,
+-                "current_gdp": current_gdp
+-            }
+-        )
++        # A. Build Snapshot
++        snapshot = self._build_snapshot(current_tick, indicators)
+ 
+-        # D. Call Engine
+-        decision = self.monetary_engine.calculate_rate(state, snapshot)
++        # B. Calculate Decision
++        decision = self.monetary_policy.calculate_decision(snapshot, self.base_rate, self.monetary_config)
+ 
+-        # E. Apply Decision
++        # C. Apply Rate Decision
+         old_rate = self.base_rate
+-        self.base_rate = decision.new_base_rate
+-
+-        # Logging (retained for consistency)
+-        # Re-calc output gap for logging only
+-        output_gap = 0.0
+-        if self.potential_gdp > 0:
+-            output_gap = (current_gdp - self.potential_gdp) / self.potential_gdp
+-
+-        old_rate_val = old_rate if isinstance(old_rate, (int, float)) else 0.0
+-        new_rate_val = self.base_rate if isinstance(self.base_rate, (int, float)) else 0.0
+-        infl_val = inflation_rate if isinstance(inflation_rate, (int, float)) else 0.0
+-        gap_val = output_gap if isinstance(output_gap, (int, float)) else 0.0
+-        pot_gdp_val = self.potential_gdp if isinstance(self.potential_gdp, (int, float)) else 0.0
+ 
++        # Check for Scenario Override
++        if self.strategy and self.strategy.is_active:
++             if self.strategy.monetary_shock_target_rate is not None:
++                 decision = MonetaryDecisionDTO(
++                     rule_type=decision.rule_type,
++                     tick=decision.tick,
++                     target_interest_rate=self.strategy.monetary_shock_target_rate,
++                     omo_action=decision.omo_action,
++                     omo_amount_pennies=decision.omo_amount_pennies,
++                     reasoning="Scenario Override"
++                 )
++             if self.strategy.base_interest_rate_multiplier is not None:
++                 decision = MonetaryDecisionDTO(
++                     rule_type=decision.rule_type,
++                     tick=decision.tick,
++                     target_interest_rate=decision.target_interest_rate * self.strategy.base_interest_rate_multiplier,
++                     omo_action=decision.omo_action,
++                     omo_amount_pennies=decision.omo_amount_pennies,
++                     reasoning="Scenario Multiplier"
++                 )
++
++        self.base_rate = decision.target_interest_rate
++
++        # D. Execute OMO if needed
++        if decision.omo_action != OMOActionType.NONE:
++            instruction = OMOInstructionDTO(
++                operation_type='purchase' if decision.omo_action == OMOActionType.BUY_BONDS else 'sale',
++                target_amount=decision.omo_amount_pennies
++            )
++            orders = self.execute_open_market_operation(instruction)
++            # Since self.execute_open_market_operation just creates orders but doesn't place them in current logic?
++            # Wait, execute_open_market_operation should PLACE orders if it has bond_market.
++            # But the protocol signature returns List[Order].
++            # So I should place them here if returned.
++            if self.bond_market:
++                for order in orders:
++                    self.bond_market.place_order(order, current_tick)
++                    logger.info(f"CENTRAL_BANK_OMO | Placed order: {order.side} {order.quantity} on {order.market_id}")
++
++        # Logging
+         logger.info(
+-            f"CB_RATE_UPDATE | Rate: {old_rate_val:.2%} -> {new_rate_val:.2%} "
+-            f"(Infl: {infl_val:.2%}, Gap: {gap_val:.2%}, PotGDP: {pot_gdp_val:.2f})",
++            f"CB_POLICY_EXEC | Rule: {decision.rule_type.name} | Rate: {old_rate:.2%} -> {self.base_rate:.2%} | "
++            f"OMO: {decision.omo_action.name} ({decision.omo_amount_pennies}) | Reason: {decision.reasoning}",
+             extra={
+                 "tick": current_tick,
+                 "old_rate": old_rate,
+                 "new_rate": self.base_rate,
+-                "inflation": inflation_rate,
+-                "output_gap": output_gap,
++                "rule": decision.rule_type.name,
+                 "tags": ["central_bank", "policy"]
+             }
+         )
+ 
++    def _build_snapshot(self, tick: int, indicators: Dict[str, Any]) -> MacroEconomicSnapshotDTO:
++        # Calculate annual inflation
++        price_history = self.tracker.metrics.get("goods_price_index", []) # Used to use avg_goods_price, updated tracker uses goods_price_index
++        if not price_history:
++             price_history = self.tracker.metrics.get("avg_goods_price", []) # Fallback
++
++        inflation_rate = 0.0
++        if len(price_history) > self.update_interval:
++            p_current = price_history[-1]
++            p_prev = price_history[-self.update_interval]
++            if p_prev > 0:
++                ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100)
++                period_inflation = (p_current - p_prev) / p_prev
++                inflation_rate = period_inflation * (ticks_per_year / self.update_interval)
++
++        # Output Gap
++        # Current GDP (Nominal or Real?)
++        # Tracker 'gdp' is Nominal. 'total_production' is Real (Quantity).
++        current_real_gdp = indicators.get("total_production", 0.0)
++        output_gap = 0.0
++        if self.potential_gdp > 0:
++            output_gap = (current_real_gdp - self.potential_gdp) / self.potential_gdp
++
++        # Real GDP Growth
++        # Need history of Real GDP.
++        # Using self.potential_gdp as a proxy for trend? No.
++        # We can approximate current growth using change in total_production.
++        # But for V1, let's assume 0.0 if not tracked, or use change from last tick?
++        # Tracker does not give history easily via get_latest_indicators.
++        # But we can access self.tracker.metrics["total_production"] if accessible.
++        # self.tracker is the instance.
++        real_gdp_growth = 0.0
++        # If we could access history, we would.
++
++        return MacroEconomicSnapshotDTO(
++            tick=tick,
++            inflation_rate_annual=inflation_rate,
++            nominal_gdp=int(indicators.get("gdp", 0)),
++            real_gdp_growth=real_gdp_growth, # Placeholder
++            unemployment_rate=indicators.get("unemployment_rate", 0.0) / 100.0, # Tracker stores as percentage 0-100
++            current_m2_supply=int(indicators.get("money_supply", 0)), # Pennies
++            current_monetary_base=int(indicators.get("monetary_base", 0)), # Pennies (Requires Tracker Update)
++            velocity_of_money=indicators.get("velocity_of_money", 0.0),
++            output_gap=output_gap
++        )
++
+     def _internal_add_assets(self, amount: float) -> None:
+         """[INTERNAL ONLY] Increase cash reserves."""
+         self.wallet.add(amount, memo="Internal Add")
+@@ -251,12 +320,86 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
+     def execute_open_market_operation(self, instruction: OMOInstructionDTO) -> List[Order]:
+         """
+         Takes an instruction and creates market orders to fulfill it.
++        This generates the Orders, but they must be placed by the caller (step method).
+         """
+-        logger.info(f"CENTRAL_BANK | Executing OMO: {instruction}")
+-        return []
++        if instruction.target_amount <= 0:
++            return []
++
++        orders = []
++        # Target Bond ID? Usually "GOV_BOND_10Y" or generic.
++        # BondMarket usually matches based on item_id.
++        # We assume standard bond ID "gov_bond" or similar.
++        # Needs to match what Treasury issues.
++        # Treasury uses `issue_treasury_bonds`.
++        bond_item_id = "gov_bond_10y" # Assumption, needs verification with FinanceSystem
++
++        if instruction.operation_type == 'purchase':
++            # QE: Buy Bonds
++            # We need to determine quantity based on target amount (pennies) and market price.
++            current_price = 1000 # Default fallback
++            if self.bond_market:
++                market_price = self.bond_market.get_daily_avg_price()
++                if market_price and market_price > 0:
++                    current_price = market_price
++
++            qty = int(instruction.target_amount / current_price)
++            bid_price = int(current_price * 1.05) # 5% Premium to ensure fill
++
++            if qty > 0:
++                orders.append(Order(
++                    agent_id=self.id,
++                    item_id=bond_item_id,
++                    price_pennies=bid_price,
++                    quantity=qty,
++                    market_id="security_market",
++                    side="BUY"
++                ))
++
++        elif instruction.operation_type == 'sale':
++            # QT: Sell Bonds
++            # Must have bonds to sell
++            if not self.bonds:
++                logger.warning("CENTRAL_BANK_QT | Force Majeure: Cannot sell bonds (Portfolio Empty).")
++                return []
++
++            # Simplified: Sell first available bonds
++            # Value to drain = target_amount
++            remaining_drain = instruction.target_amount
++
++            # Sort bonds? or LIFO?
++            # Just take first.
++            if self.bond_market:
++                current_price = self.bond_market.get_daily_avg_price() or 1000
++                qty_needed = int(remaining_drain / current_price)
++
++                # Check portfolio holdings
++                # self.bonds is List[Any] (Bond objects).
++                # We need to sell them.
++                # This implies placing Sell Orders.
++                # Assuming bonds are fungible for "gov_bond_10y" market.
++
++                # We will place one large sell order if we have enough units.
++                total_units_held = len(self.bonds) # Assuming 1 unit per object
++
++                qty_to_sell = min(qty_needed, total_units_held)
++
++                if qty_to_sell > 0:
++                    orders.append(Order(
++                        agent_id=self.id,
++                        item_id=bond_item_id,
++                        price_pennies=int(current_price * 0.95), # 5% Discount
++                        quantity=qty_to_sell,
++                        market_id="security_market",
++                        side="SELL"
++                    ))
++
++        return orders
+ 
+     def process_omo_settlement(self, transaction: Transaction) -> None:
+         """
+         Callback for OMO settlement.
+         """
+         logger.info(f"CENTRAL_BANK | OMO Settlement processed: {transaction.transaction_id}")
++        # If we bought bonds, we need to add them to portfolio?
++        # Simulation usually handles asset transfer via TransactionProcessor -> AssetTransferHandler.
++        # If handler calls `add_bond_to_portfolio`, we are good.
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 9a7be139..995c6aee 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -223,6 +223,8 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.markets: Dict[str, Market] = {good_name: OrderBookMarket(market_id=good_name, config_module=self.config) for good_name in self.config.GOODS}
+         sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
+         sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config)
++        if sim.central_bank:
++             sim.central_bank.set_bond_market(sim.markets['security_market'])
+         sim.markets['loan_market'] = LoanMarket(market_id='loan_market', bank=sim.bank, config_module=self.config)
+         sim.markets['loan_market'].agents_ref = sim.agents
+         if getattr(self.config, 'STOCK_MARKET_ENABLED', False):
+diff --git a/simulation/metrics/economic_tracker.py b/simulation/metrics/economic_tracker.py
+index 4fd69bf1..66c9bac5 100644
+--- a/simulation/metrics/economic_tracker.py
++++ b/simulation/metrics/economic_tracker.py
+@@ -35,6 +35,7 @@ class EconomicIndicatorTracker:
+             "unemployment_rate": [],
+             "avg_wage": [],
+             "money_supply": [],
++            "monetary_base": [],
+             "total_labor_income": [],
+             "total_sales_volume": [],
+             # TD-015: New Centralized Metrics
+@@ -203,6 +204,7 @@ class EconomicIndicatorTracker:
+         markets: Dict[str, Market],
+         money_supply: float = 0.0,
+         m2_leak: float = 0.0,
++        monetary_base: float = 0.0,
+     ) -> None:
+         """현재 시뮬레이션 틱의 경제 지표를 계산하고 기록합니다."""
+         self.logger.debug(
+@@ -213,6 +215,7 @@ class EconomicIndicatorTracker:
+ 
+         # WO-043: Track Money Supply
+         record["money_supply"] = money_supply
++        record["monetary_base"] = monetary_base
+ 
+         # Perform calculations...
+         # TD-213: Tracks all assets converted to DEFAULT_CURRENCY.
+diff --git a/simulation/orchestration/tick_orchestrator.py b/simulation/orchestration/tick_orchestrator.py
+index 0c538d8e..68af3711 100644
+--- a/simulation/orchestration/tick_orchestrator.py
++++ b/simulation/orchestration/tick_orchestrator.py
+@@ -283,13 +283,18 @@ class TickOrchestrator:
+ 
+             # Track Economics
+             if state.tracker:
++                # Calculate Monetary Base (M0) for tracking
++                m0_dict = state.calculate_base_money()
++                m0_pennies = m0_dict.get(DEFAULT_CURRENCY, 0)
++
+                 state.tracker.track(
+                     time=state.time,
+                     households=state.households,
+                     firms=state.firms,
+                     markets=state.markets,
+                     money_supply=current_money,
+-                    m2_leak=m2_leak_delta
++                    m2_leak=m2_leak_delta,
++                    monetary_base=float(m0_pennies)
+                 )
+ 
+         # Phase 4.1: Market Panic Index Calculation (Architect Directive)
+diff --git a/tests/modules/finance/monetary/test_strategies.py b/tests/modules/finance/monetary/test_strategies.py
+new file mode 100644
+index 00000000..ae2a501b
+--- /dev/null
++++ b/tests/modules/finance/monetary/test_strategies.py
+@@ -0,0 +1,110 @@
++import pytest
++from unittest.mock import MagicMock
++from modules.finance.monetary.api import (
++    MacroEconomicSnapshotDTO, MonetaryPolicyConfigDTO, MonetaryRuleType, OMOActionType
++)
++from modules.finance.monetary.strategies import (
++    TaylorRuleStrategy, FriedmanKPercentStrategy, McCallumRuleStrategy
++)
++
++@pytest.fixture
++def snapshot():
++    return MacroEconomicSnapshotDTO(
++        tick=100,
++        inflation_rate_annual=0.03, # 3%
++        nominal_gdp=10_000_000,
++        real_gdp_growth=0.02,
++        unemployment_rate=0.06, # 6%
++        current_m2_supply=1_000_000,
++        current_monetary_base=200_000,
++        velocity_of_money=10.0,
++        output_gap=-0.01 # -1%
++    )
++
++@pytest.fixture
++def config():
++    return MonetaryPolicyConfigDTO(
++        rule_type=MonetaryRuleType.TAYLOR_RULE,
++        inflation_target=0.02,
++        unemployment_target=0.05,
++        taylor_alpha=1.5,
++        taylor_beta=0.5,
++        neutral_rate=0.02,
++        m2_growth_target=0.05,
++        ngdp_target_growth=0.04
++    )
++
++def test_taylor_rule(snapshot, config):
++    strategy = TaylorRuleStrategy()
++    current_rate = 0.04
++
++    decision = strategy.calculate_decision(snapshot, current_rate, config)
++
++    assert decision.rule_type == MonetaryRuleType.TAYLOR_RULE
++    # i = r* + pi + alpha(pi - pi*) + beta(output_gap)
++    # i = 0.02 + 0.03 + 1.5(0.03 - 0.02) + 0.5(-0.01)
++    # i = 0.05 + 1.5(0.01) + 0.5(-0.01)
++    # i = 0.05 + 0.015 - 0.005
++    # i = 0.06
++
++    # Delta = 0.06 - 0.04 = 0.02. Max change is 0.0025.
++    # So should return 0.04 + 0.0025 = 0.0425
++    expected_rate = 0.04 + 0.0025
++
++    assert decision.target_interest_rate == pytest.approx(expected_rate)
++    assert decision.omo_action == OMOActionType.NONE
++
++def test_taylor_rule_no_explicit_output_gap(snapshot, config):
++    # Snapshot without explicit output_gap (fallback to Okun's)
++    snapshot_no_gap = MacroEconomicSnapshotDTO(
++        tick=100,
++        inflation_rate_annual=0.03,
++        nominal_gdp=10_000_000,
++        real_gdp_growth=0.02,
++        unemployment_rate=0.06,
++        current_m2_supply=1_000_000,
++        current_monetary_base=200_000,
++        velocity_of_money=10.0,
++        output_gap=None
++    )
++
++    strategy = TaylorRuleStrategy()
++    current_rate = 0.04
++    decision = strategy.calculate_decision(snapshot_no_gap, current_rate, config)
++
++    # Okun's Gap = u* - u = 0.05 - 0.06 = -0.01.
++    # Same as previous test case.
++    expected_rate = 0.04 + 0.0025
++    assert decision.target_interest_rate == pytest.approx(expected_rate)
++
++def test_friedman_rule(snapshot, config):
++    strategy = FriedmanKPercentStrategy()
++    current_rate = 0.04
++
++    decision = strategy.calculate_decision(snapshot, current_rate, config)
++
++    assert decision.rule_type == MonetaryRuleType.FRIEDMAN_K_PERCENT
++    # Target M2 = 1_000_000 * 1.05 = 1_050_000
++    # Delta = 50_000 (Positive)
++    # Should BUY BONDS
++
++    assert decision.target_m2_supply == 1_050_000
++    assert decision.omo_action == OMOActionType.BUY_BONDS
++    assert decision.omo_amount_pennies == 50_000
++    assert decision.target_interest_rate == current_rate
++
++def test_mccallum_rule(snapshot, config):
++    strategy = McCallumRuleStrategy()
++    current_rate = 0.04
++
++    decision = strategy.calculate_decision(snapshot, current_rate, config)
++
++    assert decision.rule_type == MonetaryRuleType.MCCALLUM_RULE
++    # Target MB = Current MB * (1 + NGDP Growth Target)
++    # MB = 200_000. NGDP Target Growth = 0.04.
++    # Target MB = 200_000 * 1.04 = 208_000
++    # Delta = 8_000
++
++    assert decision.target_monetary_base == 208_000
++    assert decision.omo_action == OMOActionType.BUY_BONDS
++    assert decision.omo_amount_pennies == 8_000
+diff --git a/tests/simulation/agents/test_central_bank_refactor.py b/tests/simulation/agents/test_central_bank_refactor.py
+new file mode 100644
+index 00000000..7e25bb9a
+--- /dev/null
++++ b/tests/simulation/agents/test_central_bank_refactor.py
+@@ -0,0 +1,109 @@
++import pytest
++from unittest.mock import MagicMock, PropertyMock
++from simulation.agents.central_bank import CentralBank
++from modules.finance.monetary.api import (
++    IMonetaryStrategy, MonetaryDecisionDTO, MonetaryRuleType, OMOActionType
++)
++from modules.system.api import DEFAULT_CURRENCY
++
++@pytest.fixture
++def mock_tracker():
++    tracker = MagicMock()
++    tracker.metrics = {"goods_price_index": [1.0, 1.02]}
++    tracker.get_latest_indicators.return_value = {
++        "gdp": 10000,
++        "total_production": 100.0,
++        "unemployment_rate": 5.0,
++        "money_supply": 1000,
++        "monetary_base": 200
++    }
++    return tracker
++
++@pytest.fixture
++def mock_config():
++    config = MagicMock()
++    config.INITIAL_BASE_ANNUAL_RATE = 0.05
++    config.CB_UPDATE_INTERVAL = 1
++    config.CB_INFLATION_TARGET = 0.02
++    config.TICKS_PER_YEAR = 100
++    config.ENABLE_MONETARY_STABILIZER = True
++    config.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
++    return config
++
++@pytest.fixture
++def mock_strategy_logic():
++    strategy = MagicMock(spec=IMonetaryStrategy)
++    type(strategy).rule_type = PropertyMock(return_value=MonetaryRuleType.TAYLOR_RULE)
++    return strategy
++
++def test_central_bank_initialization(mock_tracker, mock_config):
++    cb = CentralBank(mock_tracker, mock_config)
++    assert cb.base_rate == 0.05
++    assert cb.monetary_policy.rule_type == MonetaryRuleType.TAYLOR_RULE
++
++def test_central_bank_step_delegates_to_strategy(mock_tracker, mock_config, mock_strategy_logic):
++    cb = CentralBank(mock_tracker, mock_config)
++    cb.monetary_policy = mock_strategy_logic
++
++    # Setup mock decision
++    decision = MonetaryDecisionDTO(
++        rule_type=MonetaryRuleType.TAYLOR_RULE,
++        tick=10,
++        target_interest_rate=0.06,
++        omo_action=OMOActionType.NONE
++    )
++    mock_strategy_logic.calculate_decision.return_value = decision
++
++    cb.step(10)
++
++    # Verify calculate_decision called
++    mock_strategy_logic.calculate_decision.assert_called_once()
++    assert cb.base_rate == 0.06
++
++def test_central_bank_omo_execution(mock_tracker, mock_config, mock_strategy_logic):
++    cb = CentralBank(mock_tracker, mock_config)
++    cb.monetary_policy = mock_strategy_logic
++
++    # Mock Bond Market
++    mock_market = MagicMock()
++    mock_market.get_daily_avg_price.return_value = 100
++    cb.set_bond_market(mock_market)
++
++    # Decision: BUY BONDS (QE)
++    decision = MonetaryDecisionDTO(
++        rule_type=MonetaryRuleType.FRIEDMAN_K_PERCENT,
++        tick=10,
++        target_interest_rate=0.05,
++        omo_action=OMOActionType.BUY_BONDS,
++        omo_amount_pennies=1000
++    )
++    mock_strategy_logic.calculate_decision.return_value = decision
++
++    cb.step(10)
++
++    # Verify Market Order Placed
++    mock_market.place_order.assert_called_once()
++    order = mock_market.place_order.call_args[0][0]
++    assert order.side == "BUY"
++    assert order.quantity == 10 # 1000 / 100
++    assert order.agent_id == cb.id
++
++def test_central_bank_snapshot_construction(mock_tracker, mock_config):
++    cb = CentralBank(mock_tracker, mock_config)
++
++    # Setup tracker data
++    mock_tracker.get_latest_indicators.return_value = {
++        "gdp": 5000, # Nominal
++        "total_production": 100.0, # Real
++        "unemployment_rate": 6.0,
++        "money_supply": 2000,
++        "monetary_base": 500,
++        "velocity_of_money": 2.5
++    }
++
++    snapshot = cb._build_snapshot(10, mock_tracker.get_latest_indicators())
++
++    assert snapshot.nominal_gdp == 5000
++    assert snapshot.current_m2_supply == 2000
++    assert snapshot.current_monetary_base == 500
++    assert snapshot.unemployment_rate == 0.06 # 6.0 / 100

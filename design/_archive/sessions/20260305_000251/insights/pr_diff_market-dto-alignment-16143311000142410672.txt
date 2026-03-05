@@ -1,0 +1,339 @@
+diff --git a/communications/insights/WO-IMPL-MARKET-DTO-ALIGNMENT.md b/communications/insights/WO-IMPL-MARKET-DTO-ALIGNMENT.md
+new file mode 100644
+index 00000000..84b5e215
+--- /dev/null
++++ b/communications/insights/WO-IMPL-MARKET-DTO-ALIGNMENT.md
+@@ -0,0 +1,44 @@
++# WO-IMPL-MARKET-DTO-ALIGNMENT Insight Report
++
++## 1. Architectural Insights
++- **Stateless Engine Pattern**: Successfully decoupled `OrderBookMatchingEngine` and `StockMatchingEngine` from global configuration state. They now receive explicit `MarketConfigDTO` (or optional) in their `match` methods.
++- **DTO Injection**: `OrderBookMarket` now strictly accepts `MarketConfigDTO` in its constructor, eliminating reliance on the raw `config_module` for market volatility and matching parameters.
++- **Penny Standard**: Maintained strict integer math in price calculations within the engine, respecting the new matching modes (BID/ASK/MIDPOINT).
++
++## 2. Regression Analysis
++- **Test Failure in Cancellation**: `tests/unit/markets/test_order_book_market_cancellation.py` failed initially because it was passing `index_circuit_breaker` keyword argument to `OrderBookMarket`, which expected `circuit_breaker`. This suggests the test was stale or using an incorrect argument name that was previously swallowed or handled differently. Corrected the test to use `circuit_breaker`.
++- **Backward Compatibility**: `StockMarket` required no changes as it utilizes the default `config=None` in `IMatchingEngine.match`, preserving its existing behavior while allowing future DTO adoption.
++
++## 3. Test Evidence
++```
++tests/unit/markets/test_order_book_market.py::TestOrderBookMarketInitialization::test_market_initialization PASSED [  3%]
++tests/unit/markets/test_order_book_market.py::TestPlaceOrderToBook::test_add_single_buy_order PASSED [  7%]
++tests/unit/markets/test_order_book_market.py::TestPlaceOrderToBook::test_add_buy_orders_sorted PASSED [ 10%]
++tests/unit/markets/test_order_book_market.py::TestPlaceOrderToBook::test_add_sell_orders_sorted PASSED [ 14%]
++tests/unit/markets/test_order_book_market.py::TestPlaceOrderToBook::test_add_orders_with_same_price PASSED [ 17%]
++tests/unit/markets/test_order_book_market.py::TestOrderMatching::test_unfilled_order_no_match PASSED [ 21%]
++tests/unit/markets/test_order_book_market.py::TestOrderMatching::test_full_match_one_to_one PASSED [ 25%]
++tests/unit/markets/test_order_book_market.py::TestOrderMatching::test_partial_match_then_book PASSED [ 28%]
++tests/unit/markets/test_order_book_market.py::TestOrderMatching::test_match_with_multiple_orders PASSED [ 32%]
++tests/unit/markets/test_order_book_market.py::TestMarketAPI::test_get_best_bid_empty PASSED [ 35%]
++tests/unit/markets/test_order_book_market.py::TestMarketAPI::test_get_best_bid_non_empty PASSED [ 39%]
++tests/unit/markets/test_order_book_market.py::TestMarketAPI::test_get_best_ask_empty PASSED [ 42%]
++tests/unit/markets/test_order_book_market.py::TestMarketAPI::test_get_best_ask_non_empty PASSED [ 46%]
++tests/unit/markets/test_order_book_market.py::TestMarketAPI::test_get_last_traded_price PASSED [ 50%]
++tests/unit/markets/test_order_book_market.py::TestMarketAPI::test_get_spread PASSED [ 53%]
++tests/unit/markets/test_order_book_market.py::TestMarketAPI::test_get_spread_no_bid_or_ask PASSED [ 57%]
++tests/unit/markets/test_order_book_market.py::TestMarketAPI::test_get_market_depth PASSED [ 60%]
++tests/unit/markets/test_order_book_market_cancellation.py::TestOrderBookMarketCancellation::test_cancel_orders_removes_agent_orders PASSED [ 64%]
++tests/unit/markets/test_order_book_market_cancellation.py::TestOrderBookMarketCancellation::test_cancel_orders_no_effect_if_no_orders PASSED [ 67%]
++tests/unit/test_stock_market.py::TestStockMarketInitialization::test_initialization PASSED [ 71%]
++tests/unit/test_stock_market.py::TestStockMarketInitialization::test_update_reference_prices PASSED [ 75%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_place_buy_order PASSED [ 78%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_place_sell_order PASSED [ 82%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_price_clamping PASSED [ 85%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_order_sorting PASSED [ 89%]
++tests/unit/test_stock_market.py::TestStockOrderMatching::test_full_match PASSED [ 92%]
++tests/unit/test_stock_market.py::TestStockOrderMatching::test_partial_match PASSED [ 96%]
++tests/unit/test_stock_market.py::TestOrderExpiry::test_clear_expired_orders PASSED [100%]
++
++============================== 28 passed in 0.55s ==============================
++```
+diff --git a/modules/market/api.py b/modules/market/api.py
+index f360984c..fae73782 100644
+--- a/modules/market/api.py
++++ b/modules/market/api.py
+@@ -205,6 +205,12 @@ class MarketConfigDTO:
+     transaction_fee: float = 0.0
+     housing_max_ltv: float = 0.8
+     housing_mortgage_term: int = 300
++    price_volatility_window: int = 20
++    labor_education_weight: float = 0.1
++    commodity_matching_mode: str = "MIDPOINT"
++    labor_matching_mode: str = "BID"
++    initial_property_value: Optional[int] = None
++    initial_rent_price: Optional[int] = None
+ 
+ @dataclass
+ class HousingTransactionContextDTO:
+@@ -260,7 +266,7 @@ class MatchingResultDTO:
+ 
+ class IMatchingEngine(Protocol):
+     """Protocol for stateless market matching engines."""
+-    def match(self, state: Any, current_tick: int) -> MatchingResultDTO:
++    def match(self, state: Any, current_tick: int, config: Optional[MarketConfigDTO] = None) -> MatchingResultDTO:
+         """Executes matching logic on the provided state snapshot."""
+         ...
+ 
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 9ede189b..20a64a01 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -23,7 +23,7 @@ from simulation.agents.central_bank import CentralBank
+ from simulation.loan_market import LoanMarket
+ from simulation.markets.order_book_market import OrderBookMarket
+ from simulation.markets.market_circuit_breaker import IndexCircuitBreaker
+-from modules.market.api import IndexCircuitBreakerConfigDTO
++from modules.market.api import IndexCircuitBreakerConfigDTO, MarketConfigDTO
+ from simulation.markets.stock_market import StockMarket
+ from modules.market.safety.price_limit import PriceLimitEnforcer
+ from modules.market.safety_dtos import PriceLimitConfigDTO
+@@ -308,13 +308,26 @@ class SimulationInitializer(SimulationInitializerInterface):
+         # Load Market Safety Configs
+         safety_configs = self._load_market_safety_config()
+ 
++        # Create MarketConfigDTO from global config
++        market_config = MarketConfigDTO(
++             transaction_fee=getattr(self.config, 'TRANSACTION_FEE', 0.0),
++             housing_max_ltv=getattr(self.config, 'HOUSING_MAX_LTV', 0.8),
++             housing_mortgage_term=getattr(self.config, 'HOUSING_MORTGAGE_TERM', 300),
++             price_volatility_window=getattr(self.config, 'PRICE_VOLATILITY_WINDOW_TICKS', 20),
++             labor_education_weight=getattr(self.config, 'LABOR_EDUCATION_WEIGHT', 0.1),
++             commodity_matching_mode=getattr(self.config, 'COMMODITY_MATCHING_MODE', "MIDPOINT"),
++             labor_matching_mode=getattr(self.config, 'LABOR_MATCHING_MODE', "BID"),
++             initial_property_value=getattr(self.config, 'INITIAL_PROPERTY_VALUE', None),
++             initial_rent_price=getattr(self.config, 'INITIAL_RENT_PRICE', None)
++        )
++
+         sim.markets = {}
+         for good_name in self.config.GOODS:
+              enforcer = self._create_enforcer(good_name, safety_configs)
+              safety_manager.register_enforcer(good_name, enforcer)
+              sim.markets[good_name] = OrderBookMarket(
+                  market_id=good_name,
+-                 config_module=self.config,
++                 config_dto=market_config,
+                  enforcer=enforcer,
+                  circuit_breaker=sim.world_state.index_circuit_breaker
+              )
+@@ -325,7 +338,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         safety_manager.register_enforcer('security_market', sec_enforcer)
+         sim.markets['security_market'] = OrderBookMarket(
+             market_id='security_market',
+-            config_module=self.config,
++            config_dto=market_config,
+             enforcer=sec_enforcer,
+             circuit_breaker=sim.world_state.index_circuit_breaker
+         )
+@@ -349,7 +362,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         safety_manager.register_enforcer('housing', housing_enforcer)
+         sim.markets['housing'] = OrderBookMarket(
+             market_id='housing',
+-            config_module=self.config,
++            config_dto=market_config,
+             enforcer=housing_enforcer,
+             circuit_breaker=sim.world_state.index_circuit_breaker
+         )
+diff --git a/simulation/markets/matching_engine.py b/simulation/markets/matching_engine.py
+index 895e603a..972ae3c7 100644
+--- a/simulation/markets/matching_engine.py
++++ b/simulation/markets/matching_engine.py
+@@ -1,7 +1,7 @@
+ from typing import List, Dict, Any, Optional, Tuple, Protocol
+ from dataclasses import replace
+ import logging
+-from modules.market.api import IMatchingEngine, OrderBookStateDTO, StockMarketStateDTO, MatchingResultDTO, CanonicalOrderDTO
++from modules.market.api import IMatchingEngine, OrderBookStateDTO, StockMarketStateDTO, MatchingResultDTO, CanonicalOrderDTO, MarketConfigDTO
+ from simulation.models import Transaction
+ logger = logging.getLogger(__name__)
+ 
+@@ -12,7 +12,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
+     Uses Integer Math (Pennies) for Zero-Sum Integrity.
+     """
+ 
+-    def match(self, state: OrderBookStateDTO, current_tick: int) -> MatchingResultDTO:
++    def match(self, state: OrderBookStateDTO, current_tick: int, config: Optional[MarketConfigDTO] = None) -> MatchingResultDTO:
+         all_transactions: List[Transaction] = []
+         unfilled_buy_orders: Dict[str, List[CanonicalOrderDTO]] = {}
+         unfilled_sell_orders: Dict[str, List[CanonicalOrderDTO]] = {}
+@@ -25,7 +25,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
+                 unfilled_buy_orders[item_id] = buy_orders
+                 unfilled_sell_orders[item_id] = sell_orders
+                 continue
+-            transactions, remaining_buys, remaining_sells, stats = self._match_item(item_id, buy_orders, sell_orders, state.market_id, current_tick)
++            transactions, remaining_buys, remaining_sells, stats = self._match_item(item_id, buy_orders, sell_orders, state.market_id, current_tick, config)
+             all_transactions.extend(transactions)
+             unfilled_buy_orders[item_id] = remaining_buys
+             unfilled_sell_orders[item_id] = remaining_sells
+@@ -39,10 +39,10 @@ class OrderBookMatchingEngine(IMatchingEngine):
+                     market_stats['last_trade_ticks'][item_id] = current_tick
+         return MatchingResultDTO(transactions=all_transactions, unfilled_buy_orders=unfilled_buy_orders, unfilled_sell_orders=unfilled_sell_orders, market_stats=market_stats)
+ 
+-    def _calculate_labor_utility(self, order: CanonicalOrderDTO) -> float:
++    def _calculate_labor_utility(self, order: CanonicalOrderDTO, education_weight: float = 0.1) -> float:
+         """
+         Calculates utility for a Labor Sell Order.
+-        Utility = (labor_skill * (1.0 + 0.1 * education_level)) / price_pennies
++        Utility = (labor_skill * (1.0 + weight * education_level)) / price_pennies
+         """
+         price = order.price_pennies
+         if price <= 0:
+@@ -52,10 +52,10 @@ class OrderBookMatchingEngine(IMatchingEngine):
+         skill = brand.get('labor_skill', 1.0)
+         education = brand.get('education_level', 0)
+ 
+-        perception = skill * (1.0 + 0.1 * education)
++        perception = skill * (1.0 + education_weight * education)
+         return perception / price
+ 
+-    def _match_labor_utility(self, item_id: str, buy_orders: List[CanonicalOrderDTO], sell_orders: List[CanonicalOrderDTO], market_id: str, current_tick: int) -> Tuple[List[Transaction], List[CanonicalOrderDTO], List[CanonicalOrderDTO], Dict[str, Any]]:
++    def _match_labor_utility(self, item_id: str, buy_orders: List[CanonicalOrderDTO], sell_orders: List[CanonicalOrderDTO], market_id: str, current_tick: int, config: Optional[MarketConfigDTO] = None) -> Tuple[List[Transaction], List[CanonicalOrderDTO], List[CanonicalOrderDTO], Dict[str, Any]]:
+         transactions: List[Transaction] = []
+         stats: Dict[str, Any] = {'volume': 0.0}
+ 
+@@ -143,10 +143,12 @@ class OrderBookMatchingEngine(IMatchingEngine):
+              mutable_general_buys.sort(key=lambda o: o.dto.price_pennies, reverse=True)
+ 
+         # 5. Process General Buys with Utility Priority
++        # Use config for education weight
++        edu_weight = config.labor_education_weight if config else 0.1
+ 
+         # Sort Active Sells by Utility
+         active_sells = [s for s in all_mutable_sells if s.remaining_qty > 1e-9]
+-        active_sells.sort(key=lambda o: self._calculate_labor_utility(o.dto), reverse=True)
++        active_sells.sort(key=lambda o: self._calculate_labor_utility(o.dto, edu_weight), reverse=True)
+ 
+         # Matching Loop
+         for b_wrapper in mutable_general_buys:
+@@ -158,7 +160,16 @@ class OrderBookMatchingEngine(IMatchingEngine):
+ 
+                 if b_wrapper.dto.price_pennies >= s_wrapper.dto.price_pennies:
+                     # Match!
+-                    trade_price_pennies = b_wrapper.dto.price_pennies # Labor uses Bid Price usually (Firm Offer)
++                    # Logic: Use BID price or Configured Mode?
++                    # "labor_matching_mode"
++                    match_mode = config.labor_matching_mode if config else "BID"
++
++                    if match_mode == "MIDPOINT":
++                         trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
++                    elif match_mode == "ASK":
++                         trade_price_pennies = s_wrapper.dto.price_pennies
++                    else: # BID (default for Labor market usually, as Firm Offer)
++                         trade_price_pennies = b_wrapper.dto.price_pennies
+ 
+                     trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
+                     trade_total_pennies = int(round(trade_price_pennies * trade_qty))
+@@ -197,10 +208,10 @@ class OrderBookMatchingEngine(IMatchingEngine):
+ 
+         return (transactions, final_buys, final_sells, stats)
+ 
+-    def _match_item(self, item_id: str, buy_orders: List[CanonicalOrderDTO], sell_orders: List[CanonicalOrderDTO], market_id: str, current_tick: int) -> Tuple[List[Transaction], List[CanonicalOrderDTO], List[CanonicalOrderDTO], Dict[str, Any]]:
++    def _match_item(self, item_id: str, buy_orders: List[CanonicalOrderDTO], sell_orders: List[CanonicalOrderDTO], market_id: str, current_tick: int, config: Optional[MarketConfigDTO] = None) -> Tuple[List[Transaction], List[CanonicalOrderDTO], List[CanonicalOrderDTO], Dict[str, Any]]:
+         # Phase 4.1: Utility-Priority Matching for Labor
+         if market_id in ['labor', 'research_labor']:
+-            return self._match_labor_utility(item_id, buy_orders, sell_orders, market_id, current_tick)
++            return self._match_labor_utility(item_id, buy_orders, sell_orders, market_id, current_tick, config)
+ 
+         transactions: List[Transaction] = []
+         stats: Dict[str, Any] = {'volume': 0.0}
+@@ -274,8 +285,16 @@ class OrderBookMatchingEngine(IMatchingEngine):
+                 if market_id == 'labor' or market_id == 'research_labor':
+                     trade_price_pennies = b_wrapper.dto.price_pennies
+                 else:
+-                    # WO-STABILIZE-POST-MERGE: Revert to integer division (truncation) for strict integer math consistency
+-                    trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
++                    # Determine Matching Mode
++                    match_mode = config.commodity_matching_mode if config else "MIDPOINT"
++
++                    if match_mode == "MIDPOINT":
++                         trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
++                    elif match_mode == "ASK":
++                         trade_price_pennies = s_wrapper.dto.price_pennies
++                    else: # BID
++                         trade_price_pennies = b_wrapper.dto.price_pennies
++
+                 trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
+                 trade_total_pennies = int(round(trade_price_pennies * trade_qty))
+                 effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
+@@ -300,7 +319,7 @@ class StockMatchingEngine(IMatchingEngine):
+     Uses Integer Math (Pennies).
+     """
+ 
+-    def match(self, state: StockMarketStateDTO, current_tick: int) -> MatchingResultDTO:
++    def match(self, state: StockMarketStateDTO, current_tick: int, config: Optional[MarketConfigDTO] = None) -> MatchingResultDTO:
+         all_transactions: List[Transaction] = []
+         unfilled_buy_orders: Dict[str, List[CanonicalOrderDTO]] = {}
+         unfilled_sell_orders: Dict[str, List[CanonicalOrderDTO]] = {}
+@@ -382,4 +401,4 @@ class StockMatchingEngine(IMatchingEngine):
+             stats['last_price'] = last_price
+             stats['high'] = high
+             stats['low'] = low
+-        return (transactions, final_buys, final_sells, stats)
+\ No newline at end of file
++        return (transactions, final_buys, final_sells, stats)
+diff --git a/simulation/markets/order_book_market.py b/simulation/markets/order_book_market.py
+index fc060baa..d8ce8d8a 100644
+--- a/simulation/markets/order_book_market.py
++++ b/simulation/markets/order_book_market.py
+@@ -6,7 +6,7 @@ from dataclasses import dataclass
+ 
+ from simulation.models import Order, Transaction
+ from simulation.core_markets import Market
+-from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, IPriceLimitEnforcer, IIndexCircuitBreaker
++from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, IPriceLimitEnforcer, IIndexCircuitBreaker, MarketConfigDTO
+ from simulation.markets.matching_engine import OrderBookMatchingEngine
+ from modules.market.safety.price_limit import PriceLimitEnforcer
+ from modules.market.safety_dtos import PriceLimitConfigDTO
+@@ -66,19 +66,19 @@ class OrderBookMarket(Market):
+     매수/매도 주문을 접수하고, 가격 우선 및 시간 우선 원칙에 따라 주문을 매칭하여 거래를 체결합니다.
+     """
+ 
+-    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, enforcer: Optional[IPriceLimitEnforcer] = None, circuit_breaker: Optional[IIndexCircuitBreaker] = None):
++    def __init__(self, market_id: str, config_dto: Optional[MarketConfigDTO] = None, logger: Optional[logging.Logger] = None, enforcer: Optional[IPriceLimitEnforcer] = None, circuit_breaker: Optional[IIndexCircuitBreaker] = None):
+         """OrderBookMarket을 초기화합니다.
+ 
+         Args:
+             market_id (str): 시장의 고유 ID (예: 'goods_market', 'labor_market').
+-            config_module (Any, optional): 시뮬레이션 설정 모듈.
++            config_dto (MarketConfigDTO, optional): Market Configuration DTO.
+             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
+             enforcer (IPriceLimitEnforcer, optional): 주입된 가격 제한 집행기.
+             circuit_breaker (IIndexCircuitBreaker, optional): 주입된 시장 전체 서킷 브레이커.
+         """
+         super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
+         self.id = market_id
+-        self.config_module = config_module
++        self.config_dto = config_dto or MarketConfigDTO()
+         # TD-271: Internal state encapsulated
+         self._buy_orders: Dict[str, List[MarketOrder]] = {}
+         self._sell_orders: Dict[str, List[MarketOrder]] = {}
+@@ -297,7 +297,7 @@ class OrderBookMarket(Market):
+         )
+ 
+         # 2. Execute Matching via Engine
+-        result = self.matching_engine.match(state, current_time)
++        result = self.matching_engine.match(state, current_time, self.config_dto)
+ 
+         # 3. Apply Results
+         all_transactions = result.transactions
+@@ -314,7 +314,7 @@ class OrderBookMarket(Market):
+         }
+ 
+         # Update Market Stats
+-        window_size = getattr(self.config_module, "PRICE_VOLATILITY_WINDOW_TICKS", 20) if self.config_module else 20
++        window_size = self.config_dto.price_volatility_window
+         for item_id, price in result.market_stats.get("last_traded_prices", {}).items():
+             self.last_traded_prices[item_id] = price
+             # Update Price History (Telemetry)
+diff --git a/tests/unit/markets/test_order_book_market_cancellation.py b/tests/unit/markets/test_order_book_market_cancellation.py
+index fbb23228..283e9110 100644
+--- a/tests/unit/markets/test_order_book_market_cancellation.py
++++ b/tests/unit/markets/test_order_book_market_cancellation.py
+@@ -10,7 +10,7 @@ class TestOrderBookMarketCancellation:
+         mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+         mock_breaker.check_market_health.return_value = True
+         mock_breaker.is_active.return_value = False
+-        return OrderBookMarket(market_id="test_market", logger=MagicMock(), index_circuit_breaker=mock_breaker)
++        return OrderBookMarket(market_id="test_market", logger=MagicMock(), circuit_breaker=mock_breaker)
+ 
+     def test_cancel_orders_removes_agent_orders(self, market):
+         # Setup orders

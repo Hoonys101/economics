@@ -1,0 +1,343 @@
+diff --git a/communications/insights/WO-LIQUIDATE-LIFECYCLE.md b/communications/insights/WO-LIQUIDATE-LIFECYCLE.md
+new file mode 100644
+index 00000000..8b81ee80
+--- /dev/null
++++ b/communications/insights/WO-LIQUIDATE-LIFECYCLE.md
+@@ -0,0 +1,45 @@
++# Mission Report: WO-LIQUIDATE-LIFECYCLE
++
++## 1. Architectural Insights
++- **Lifecycle DTO Purity**: Successfully decoupled `BirthSystem` and `DeathSystem` from the global `config_module` by enforcing strict DTO usage (`BirthConfigDTO`, `DeathConfigDTO`). This aligns with the "DTO Purity" guardrail.
++- **Dependency Injection**: `VectorizedHouseholdPlanner` is now injected into `BirthSystem` via `AgentLifecycleManager`, rather than being instantiated internally with raw config. This improves testability and reduces coupling.
++- **Config Standardization**: Identified that `ImmigrationManager` and `InheritanceManager` still rely on raw `config_module`. While out of scope for this mission, future refactoring should migrate them to appropriate DTOs (`DemographicsConfigDTO`, `DeathConfigDTO`). Specifically, `InheritanceManager` calculates tax using internal config access, while `DeathSystem` now holds the `death_tax_rate` in its DTO but does not yet enforce it on the manager.
++- **Typing Compatibility**: Fixed a `typing_extensions` dependency issue in `simulation/core_agents.py` by using standard `typing.override` (Python 3.12+), improving environment compatibility.
++
++## 2. Regression Analysis
++- **Test Failures**: Initial test runs failed due to `ImportError` (`typing_extensions`) and missing DTO attributes in mocks.
++- **Fixes**:
++    - Replaced `typing_extensions.override` with `typing.override` in `simulation/core_agents.py`.
++    - Updated unit tests (`test_birth_system.py`, `test_death_system.py`, `test_death_system_performance.py`) to mock `BirthConfigDTO` and `DeathConfigDTO` correctly instead of generic `config` mocks.
++    - Updated `BirthSystem` fixture to inject the mock planner.
++
++## 3. Test Evidence
++
++### `pytest tests/unit/systems/lifecycle/test_birth_system.py`
++```
++tests/unit/systems/lifecycle/test_birth_system.py::TestBirthSystem::test_process_births_with_factory_zero_sum PASSED [100%]
++========================= 1 passed, 1 warning in 0.92s =========================
++```
++
++### `pytest tests/unit/systems/lifecycle/test_death_system.py`
++```
++tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation PASSED [ 50%]
++tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation_cancels_orders PASSED [100%]
++========================= 2 passed, 1 warning in 0.33s =========================
++```
++
++### `pytest tests/unit/systems/lifecycle/test_aging_system.py`
++```
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_execute_delegation PASSED [ 20%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_firm_distress PASSED [ 40%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_firm_grace_period_config PASSED [ 60%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_solvency_gate_active PASSED [ 80%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_solvency_gate_inactive PASSED [100%]
++========================= 5 passed, 1 warning in 0.43s =========================
++```
++
++### `pytest tests/unit/systems/lifecycle/test_death_system_performance.py`
++```
++tests/unit/systems/lifecycle/test_death_system_performance.py::TestDeathSystemPerformance::test_localized_agent_removal PASSED [100%]
++========================= 1 passed, 1 warning in 0.33s =========================
++```
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 8fc600f5..9b9d2c2f 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -1,6 +1,6 @@
+ from __future__ import annotations
+ from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
+-from typing_extensions import override
++from typing import override
+ import logging
+ from logging import Logger
+ from collections import deque, defaultdict
+diff --git a/simulation/systems/lifecycle/api.py b/simulation/systems/lifecycle/api.py
+index 1fef1117..8c058095 100644
+--- a/simulation/systems/lifecycle/api.py
++++ b/simulation/systems/lifecycle/api.py
+@@ -42,6 +42,8 @@ class BirthConfigDTO:
+     reproduction_rate: float
+     immigration_rate: float
+     max_population_cap: int
++    reproduction_age_start: int
++    reproduction_age_end: int
+ 
+     @classmethod
+     def from_config_module(cls, config_module: Any) -> "BirthConfigDTO":
+@@ -49,7 +51,9 @@ class BirthConfigDTO:
+             initial_household_assets_pennies=int(getattr(config_module, "INITIAL_HOUSEHOLD_ASSETS", 100000) * 100),
+             reproduction_rate=float(getattr(config_module, "REPRODUCTION_RATE", 0.01)),
+             immigration_rate=float(getattr(config_module, "IMMIGRATION_RATE", 0.005)),
+-            max_population_cap=int(getattr(config_module, "MAX_POPULATION_CAP", 5000))
++            max_population_cap=int(getattr(config_module, "MAX_POPULATION_CAP", 5000)),
++            reproduction_age_start=int(getattr(config_module, "REPRODUCTION_AGE_START", 20)),
++            reproduction_age_end=int(getattr(config_module, "REPRODUCTION_AGE_END", 45))
+         )
+ 
+ @dataclass(frozen=True)
+@@ -58,13 +62,16 @@ class DeathConfigDTO:
+     death_tax_rate: float
+     min_inheritance_pennies: int
+     liquidation_fee_pennies: int
++    default_fallback_price_pennies: int
+ 
+     @classmethod
+     def from_config_module(cls, config_module: Any) -> "DeathConfigDTO":
++        default_price_float = getattr(config_module, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
+         return cls(
+             death_tax_rate=float(getattr(config_module, "DEATH_TAX_RATE", 0.1)),
+             min_inheritance_pennies=int(getattr(config_module, "MIN_INHERITANCE", 1000) * 100),
+-            liquidation_fee_pennies=int(getattr(config_module, "LIQUIDATION_FEE", 500) * 100)
++            liquidation_fee_pennies=int(getattr(config_module, "LIQUIDATION_FEE", 500) * 100),
++            default_fallback_price_pennies=int(default_price_float * 100)
+         )
+ 
+ @runtime_checkable
+diff --git a/simulation/systems/lifecycle/birth_system.py b/simulation/systems/lifecycle/birth_system.py
+index 11de2c2d..b3e4fd40 100644
+--- a/simulation/systems/lifecycle/birth_system.py
++++ b/simulation/systems/lifecycle/birth_system.py
+@@ -1,7 +1,7 @@
+ from __future__ import annotations
+ from typing import List, Any, Optional, Tuple, cast
+ import logging
+-from simulation.systems.lifecycle.api import IBirthSystem
++from simulation.systems.lifecycle.api import IBirthSystem, BirthConfigDTO
+ from simulation.dtos.api import SimulationState
+ from simulation.models import Transaction
+ from simulation.core_agents import Household
+@@ -19,14 +19,16 @@ class BirthSystem(IBirthSystem):
+     Immigration, and Entrepreneurship (Firm creation).
+     Adheres to Sacred Sequence by returning transactions for execution.
+     """
+-    def __init__(self, config_module: Any,
++    def __init__(self, config: BirthConfigDTO,
++                 breeding_planner: VectorizedHouseholdPlanner,
+                  demographic_manager: DemographicManager,
+                  immigration_manager: ImmigrationManager,
+                  firm_system: FirmSystem,
+                  settlement_system: ISettlementSystem,
+                  logger: logging.Logger,
+                  household_factory: IHouseholdFactory): # Mandatory
+-        self.config = config_module
++        self.config = config
++        self.breeding_planner = breeding_planner
+         self.demographic_manager = demographic_manager
+         self.immigration_manager = immigration_manager
+         self.firm_system = firm_system
+@@ -35,7 +37,6 @@ class BirthSystem(IBirthSystem):
+         if household_factory is None:
+              raise ValueError("IHouseholdFactory is mandatory for BirthSystem.")
+         self.household_factory = household_factory
+-        self.breeding_planner = VectorizedHouseholdPlanner(config_module)
+ 
+     def execute(self, state: SimulationState) -> List[Transaction]:
+         """
+@@ -77,7 +78,7 @@ class BirthSystem(IBirthSystem):
+ 
+         for parent_agent in birth_requests:
+             # Re-verify biological capability (sanity check)
+-            if not (self.config.REPRODUCTION_AGE_START <= parent_agent.age <= self.config.REPRODUCTION_AGE_END):
++            if not (self.config.reproduction_age_start <= parent_agent.age <= self.config.reproduction_age_end):
+                 continue
+ 
+             new_id = state.next_agent_id
+diff --git a/simulation/systems/lifecycle/death_system.py b/simulation/systems/lifecycle/death_system.py
+index e91e31f4..1dc0f69e 100644
+--- a/simulation/systems/lifecycle/death_system.py
++++ b/simulation/systems/lifecycle/death_system.py
+@@ -1,7 +1,7 @@
+ from __future__ import annotations
+ from typing import List, Any, Optional
+ import logging
+-from simulation.systems.lifecycle.api import IDeathSystem
++from simulation.systems.lifecycle.api import IDeathSystem, DeathConfigDTO
+ from simulation.dtos.api import SimulationState
+ from simulation.models import Transaction
+ from simulation.systems.inheritance_manager import InheritanceManager
+@@ -17,14 +17,14 @@ class DeathSystem(IDeathSystem):
+     Handles agent death, liquidation of assets, and inheritance processing.
+     Refactored for Protocol Purity and Integer Math.
+     """
+-    def __init__(self, config_module: Any,
++    def __init__(self, config: DeathConfigDTO,
+                  inheritance_manager: InheritanceManager,
+                  liquidation_manager: LiquidationManager,
+                  settlement_system: ISettlementSystem,
+                  public_manager: IAssetRecoverySystem,
+                  logger: logging.Logger,
+                  estate_registry: Optional[IEstateRegistry] = None):
+-        self.config = config_module
++        self.config = config
+         self.inheritance_manager = inheritance_manager
+         self.liquidation_manager = liquidation_manager
+         self.settlement_system = settlement_system
+@@ -237,8 +237,7 @@ class DeathSystem(IDeathSystem):
+         # Prepare Market Prices
+         market_prices = {}
+         # Simple Logic: Get price from market or default
+-        default_price_float = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
+-        default_price_pennies = int(default_price_float * 100)
++        default_price_pennies = self.config.default_fallback_price_pennies
+ 
+         for item_id in inventory.keys():
+              price_pennies = default_price_pennies
+@@ -311,8 +310,7 @@ class DeathSystem(IDeathSystem):
+         Calculates total inventory value in integer pennies.
+         """
+         total_pennies = 0
+-        default_price_float = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
+-        default_price_pennies = int(default_price_float * 100)
++        default_price_pennies = self.config.default_fallback_price_pennies
+ 
+         for item_id, qty in inventory.items():
+             price_pennies = default_price_pennies
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index 69ed5c08..a6ce05bc 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -25,11 +25,12 @@ from modules.finance.api import IShareholderRegistry
+ from modules.simulation.api import IEstateRegistry
+ 
+ # New Imports
+-from simulation.systems.lifecycle.api import LifecycleConfigDTO
++from simulation.systems.lifecycle.api import LifecycleConfigDTO, BirthConfigDTO, DeathConfigDTO
+ from simulation.systems.lifecycle.aging_system import AgingSystem
+ from simulation.systems.lifecycle.birth_system import BirthSystem
+ from simulation.systems.lifecycle.death_system import DeathSystem
+ from simulation.systems.lifecycle.marriage_system import MarriageSystem
++from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
+ 
+ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+     """
+@@ -75,8 +76,14 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+         if household_factory is None:
+              raise ValueError("IHouseholdFactory is mandatory for AgentLifecycleManager.")
+ 
++        # Create DTOs and dependencies
++        birth_config = BirthConfigDTO.from_config_module(config_module)
++        death_config = DeathConfigDTO.from_config_module(config_module)
++        breeding_planner = VectorizedHouseholdPlanner(config_module)
++
+         self.birth_system = BirthSystem(
+-            config_module,
++            birth_config,
++            breeding_planner,
+             demographic_manager,
+             ImmigrationManager(config_module=config_module, settlement_system=settlement_system),
+             firm_system,
+@@ -86,7 +93,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+         )
+ 
+         self.death_system = DeathSystem(
+-            config_module,
++            death_config,
+             inheritance_manager,
+             self.liquidation_manager,
+             settlement_system,
+diff --git a/tests/unit/systems/lifecycle/test_birth_system.py b/tests/unit/systems/lifecycle/test_birth_system.py
+index 6506dfb0..d9511ce6 100644
+--- a/tests/unit/systems/lifecycle/test_birth_system.py
++++ b/tests/unit/systems/lifecycle/test_birth_system.py
+@@ -1,16 +1,23 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from simulation.systems.lifecycle.birth_system import BirthSystem
++from simulation.systems.lifecycle.api import BirthConfigDTO
+ from simulation.dtos.api import SimulationState
+ from simulation.core_agents import Household
+ from modules.system.api import ICurrencyHolder, DEFAULT_CURRENCY
++from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
+ 
+ class TestBirthSystem:
+     @pytest.fixture
+     def birth_system(self):
+-        config = MagicMock()
+-        config.REPRODUCTION_AGE_START = 20
+-        config.REPRODUCTION_AGE_END = 40
++        # Config DTO Mock
++        config = MagicMock(spec=BirthConfigDTO)
++        config.reproduction_age_start = 20
++        config.reproduction_age_end = 40
++
++        # Planner Mock
++        breeding_planner = MagicMock(spec=VectorizedHouseholdPlanner)
++
+         demographic_manager = MagicMock()
+         immigration_manager = MagicMock()
+         firm_system = MagicMock()
+@@ -20,8 +27,16 @@ class TestBirthSystem:
+ 
+         immigration_manager.process_immigration.return_value = []
+ 
+-        system = BirthSystem(config, demographic_manager, immigration_manager, firm_system, settlement_system, logger, household_factory)
+-        system.breeding_planner = MagicMock()
++        system = BirthSystem(
++            config,
++            breeding_planner,
++            demographic_manager,
++            immigration_manager,
++            firm_system,
++            settlement_system,
++            logger,
++            household_factory
++        )
+         return system
+ 
+     def test_process_births_with_factory_zero_sum(self, birth_system):
+diff --git a/tests/unit/systems/lifecycle/test_death_system.py b/tests/unit/systems/lifecycle/test_death_system.py
+index 9890d614..caecc7af 100644
+--- a/tests/unit/systems/lifecycle/test_death_system.py
++++ b/tests/unit/systems/lifecycle/test_death_system.py
+@@ -1,6 +1,7 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from simulation.systems.lifecycle.death_system import DeathSystem
++from simulation.systems.lifecycle.api import DeathConfigDTO
+ from simulation.dtos.api import SimulationState
+ from simulation.firms import Firm
+ from simulation.interfaces.market_interface import IMarket
+@@ -8,7 +9,9 @@ from simulation.interfaces.market_interface import IMarket
+ class TestDeathSystem:
+     @pytest.fixture
+     def death_system(self):
+-        config = MagicMock()
++        config = MagicMock(spec=DeathConfigDTO)
++        config.default_fallback_price_pennies = 1000
++
+         inheritance_manager = MagicMock()
+         liquidation_manager = MagicMock()
+         settlement_system = MagicMock()
+diff --git a/tests/unit/systems/lifecycle/test_death_system_performance.py b/tests/unit/systems/lifecycle/test_death_system_performance.py
+index b64835a8..3e3fcc4f 100644
+--- a/tests/unit/systems/lifecycle/test_death_system_performance.py
++++ b/tests/unit/systems/lifecycle/test_death_system_performance.py
+@@ -1,6 +1,7 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from simulation.systems.lifecycle.death_system import DeathSystem
++from simulation.systems.lifecycle.api import DeathConfigDTO
+ from simulation.firms import Firm
+ from simulation.core_agents import Household
+ from modules.finance.api import ILiquidatable
+@@ -8,7 +9,9 @@ from modules.finance.api import ILiquidatable
+ class TestDeathSystemPerformance:
+     @pytest.fixture
+     def death_system(self):
+-        config = MagicMock()
++        config = MagicMock(spec=DeathConfigDTO)
++        config.default_fallback_price_pennies = 1000
++
+         inheritance_manager = MagicMock()
+         liquidation_manager = MagicMock()
+         settlement_system = MagicMock()

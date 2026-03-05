@@ -1,0 +1,1274 @@
+diff --git a/communications/insights/IMPL_LIFECYCLE_DECOUPLING.md b/communications/insights/IMPL_LIFECYCLE_DECOUPLING.md
+new file mode 100644
+index 00000000..ca9833a3
+--- /dev/null
++++ b/communications/insights/IMPL_LIFECYCLE_DECOUPLING.md
+@@ -0,0 +1,25 @@
++# communications/insights/IMPL_LIFECYCLE_DECOUPLING.md
++
++## 1. [Architectural Insights]
++- **Lifecycle Context Migration**: Lifecycle 도메인(Aging, Birth, Death)을 묶고 있던 `SimulationState` God Class 의존성을 분리하고, 각 시스템이 요구하는 데이터만을 정의한 `ILifecycleContext`, `IAgingContext`, `IBirthContext`, `IDeathContext` 등 프로토콜로 인터페이스를 격리하였습니다. 이를 통해 Lifecycle 모듈의 단일 책임 원칙(SRP)을 강화하고 메모리 풋프린트 결합도를 낮추었습니다.
++- **Protocol Purity Enforcement**: `SimulationState`를 직접 전달하는 대신, `LifecycleManager`에서 `AgingContextAdapter`, `BirthContextAdapter`, `DeathContextAdapter`를 생성하여 각 시스템에 주입함으로써, 각 시스템이 허용된 데이터에만 접근하도록 강제하였습니다.
++- **Exception Handling**: 각 시스템의 `execute` 메서드 초입에 `isinstance(context, ContextProtocol)` 검사를 추가하여 런타임에 잘못된 컨텍스트가 주입되는 것을 방지하는 Fail-Fast 메커니즘을 구현하였습니다.
++
++## 2. [Regression Analysis]
++- **Signature Breakage in Tests**: `execute(state: SimulationState)`의 메서드 시그니처가 `execute(context: ILifecycleContext)`로 변경되면서, 기존 유닛 테스트들이 실패했습니다.
++- **Resolution**: `tests/unit/systems/lifecycle/*.py` 테스트 파일들을 수정하여 `MagicMock(spec=IContext)`를 사용하도록 변경하였으며, 필요한 속성들을 모의 객체에 명시적으로 설정하여 테스트를 통과시켰습니다. 특히 `FirmSystem`이나 `ImmigrationManager`와 같이 아직 `SimulationState`에 의존하는 하위 시스템과의 호환성을 위해 `ContextAdapter`가 `SimulationState`의 필요한 속성(`logger`, `ai_trainer`, `tracker` 등)을 노출하도록 조정하였습니다.
++
++## 3. [Test Evidence]
++```text
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_execute_delegation PASSED [  9%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_firm_distress PASSED [ 18%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_firm_grace_period_config PASSED [ 27%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_solvency_gate_active PASSED [ 36%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_solvency_gate_inactive PASSED [ 45%]
++tests/unit/systems/lifecycle/test_birth_system.py::TestBirthSystem::test_process_births_with_factory_zero_sum PASSED [ 54%]
++tests/unit/systems/lifecycle/test_birth_system.py::TestBirthSystem::test_birth_system_requires_valid_protocol_context PASSED [ 63%]
++tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation PASSED [ 72%]
++tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation_cancels_orders PASSED [ 81%]
++tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_death_system_emits_settlement_transactions PASSED [ 90%]
++tests/unit/systems/test_lifecycle_manager_integration.py::TestAgentLifecycleManager::test_execute_delegation PASSED [100%]
++```
+diff --git a/modules/simulation/api.py b/modules/simulation/api.py
+index 6e5c796d..143dd9d5 100644
+--- a/modules/simulation/api.py
++++ b/modules/simulation/api.py
+@@ -342,3 +342,60 @@ class HouseholdFactoryContext:
+ class IHouseholdFactory(Protocol):
+     def create_newborn(self, parent: Any, simulation: Any, child_id: int) -> Any:
+         ...
++
++@runtime_checkable
++class ILifecycleContext(Protocol):
++    """
++    Base protocol context for lifecycle operations.
++    Eradicates God-Class SimulationState dependency by ensuring strict data boundaries.
++    """
++    time: int
++    agents: Dict[AgentID, Any]
++    markets: Dict[str, Any]
++
++@runtime_checkable
++class IDeathContext(ILifecycleContext, Protocol):
++    households: List[Any]
++    firms: List[Any]
++    inactive_agents: Dict[AgentID, Any]
++    currency_registry_handler: Any
++    currency_holders: List[Any]
++    settlement_system: Any # Added for DeathSystem
++    primary_government: Any # Added for DeathSystem inheritance
++    real_estate_units: List[Any] # Needed for InheritanceManager
++    bank: Any # Needed for InheritanceManager
++    transaction_processor: Any # Needed for InheritanceManager
++    transactions: List[Any] # Needed for LiquidationManager
++
++@runtime_checkable
++class IBirthContext(ILifecycleContext, Protocol):
++    # Context required to register new agents and initialize zero-sum assets
++    government_agent: Any
++    next_agent_id: int
++    households: List[Any] # Needed for appending new agents
++    currency_registry_handler: Any # Needed for registering new agents
++    currency_holders: List[Any] # Needed for registering new agents
++    stock_market: Any # Needed for updating shareholder registry
++    shareholder_registry: Any # Needed for updating shareholder registry
++    ai_training_manager: Any # Needed for registering new agents
++    ai_trainer: Any # Needed for FirmSystem
++    goods_data: Any # Needed for factory
++    logger: Any # Needed for logging
++    tracker: Any # Needed for ImmigrationManager
++
++@runtime_checkable
++class IAgingContext(ILifecycleContext, Protocol):
++    # Context required for demographic aging and biological distress events
++    demographic_registry: Any # This is typically DemographicManager
++    households: List[Any] # Needed for iterating households
++    firms: List[Any] # Needed for iterating firms
++    market_data: Dict[str, Any] # Needed for aging/needs update
++    stock_market: Any # Needed for liquidating stocks
++
++@runtime_checkable
++class ILifecycleSubsystem(Protocol):
++    """
++    Adheres to SEO Pattern: Stateless execution using pure Context Protocols.
++    """
++    def execute(self, context: ILifecycleContext) -> List[Any]: # Returns List[Transaction]
++        ...
+diff --git a/simulation/systems/lifecycle/adapters.py b/simulation/systems/lifecycle/adapters.py
+new file mode 100644
+index 00000000..2a399f83
+--- /dev/null
++++ b/simulation/systems/lifecycle/adapters.py
+@@ -0,0 +1,148 @@
++from typing import List, Dict, Any, Optional
++from simulation.dtos.api import SimulationState
++from modules.simulation.api import (
++    IAgingContext, IBirthContext, IDeathContext, AgentID
++)
++
++class BaseLifecycleContextAdapter:
++    def __init__(self, state: SimulationState):
++        self._state = state
++
++    @property
++    def time(self) -> int:
++        return self._state.time
++
++    @property
++    def agents(self) -> Dict[AgentID, Any]:
++        return self._state.agents
++
++    @property
++    def markets(self) -> Dict[str, Any]:
++        return self._state.markets
++
++class AgingContextAdapter(BaseLifecycleContextAdapter):
++    def __init__(self, state: SimulationState, demographic_manager: Any):
++        super().__init__(state)
++        self._demographic_manager = demographic_manager
++
++    @property
++    def demographic_registry(self) -> Any:
++        return self._demographic_manager
++
++    @property
++    def households(self) -> List[Any]:
++        return self._state.households
++
++    @property
++    def firms(self) -> List[Any]:
++        return self._state.firms
++
++    @property
++    def market_data(self) -> Dict[str, Any]:
++        return self._state.market_data
++
++    @property
++    def stock_market(self) -> Any:
++        return self._state.stock_market
++
++class BirthContextAdapter(BaseLifecycleContextAdapter):
++    @property
++    def government_agent(self) -> Any:
++        return self._state.primary_government
++
++    @property
++    def next_agent_id(self) -> int:
++        return self._state.next_agent_id
++
++    @next_agent_id.setter
++    def next_agent_id(self, value: int) -> None:
++        self._state.next_agent_id = value
++
++    @property
++    def households(self) -> List[Any]:
++        return self._state.households
++
++    @property
++    def currency_registry_handler(self) -> Any:
++        return self._state.currency_registry_handler
++
++    @property
++    def currency_holders(self) -> List[Any]:
++        return self._state.currency_holders
++
++    @property
++    def stock_market(self) -> Any:
++        return self._state.stock_market
++
++    @property
++    def shareholder_registry(self) -> Any:
++        return self._state.shareholder_registry
++
++    @property
++    def ai_training_manager(self) -> Any:
++        return self._state.ai_training_manager
++
++    @property
++    def ai_trainer(self) -> Any:
++        return self._state.ai_trainer
++
++    @property
++    def logger(self) -> Any:
++        return self._state.logger
++
++    @property
++    def goods_data(self) -> Any:
++        return self._state.goods_data
++
++    @property
++    def tracker(self) -> Any:
++        return self._state.tracker
++
++    @property
++    def government(self) -> Any:
++        return self._state.primary_government
++
++class DeathContextAdapter(BaseLifecycleContextAdapter):
++    @property
++    def households(self) -> List[Any]:
++        return self._state.households
++
++    @property
++    def firms(self) -> List[Any]:
++        return self._state.firms
++
++    @property
++    def inactive_agents(self) -> Dict[AgentID, Any]:
++        return self._state.inactive_agents
++
++    @property
++    def currency_registry_handler(self) -> Any:
++        return self._state.currency_registry_handler
++
++    @property
++    def currency_holders(self) -> List[Any]:
++        return self._state.currency_holders
++
++    @property
++    def settlement_system(self) -> Any:
++        return self._state.settlement_system
++
++    @property
++    def primary_government(self) -> Any:
++        return self._state.primary_government
++
++    @property
++    def real_estate_units(self) -> List[Any]:
++        return self._state.real_estate_units
++
++    @property
++    def bank(self) -> Any:
++        return self._state.bank
++
++    @property
++    def transaction_processor(self) -> Any:
++        return self._state.transaction_processor
++
++    @property
++    def transactions(self) -> List[Any]:
++        return self._state.transactions
+diff --git a/simulation/systems/lifecycle/aging_system.py b/simulation/systems/lifecycle/aging_system.py
+index 6c2e9b14..5e7f3f0c 100644
+--- a/simulation/systems/lifecycle/aging_system.py
++++ b/simulation/systems/lifecycle/aging_system.py
+@@ -1,8 +1,7 @@
+ from __future__ import annotations
+ from typing import List, Any, Dict, Protocol, runtime_checkable, Optional
+ import logging
+-from simulation.systems.lifecycle.api import IAgingSystem, IAgingFirm, IFinanceEngine, LifecycleConfigDTO
+-from simulation.dtos.api import SimulationState
++from simulation.systems.lifecycle.api import IAgingSystem, IAgingFirm, IFinanceEngine, LifecycleConfigDTO, IAgingContext
+ from simulation.models import Transaction
+ from modules.demographics.api import IDemographicManager
+ from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
+@@ -19,25 +18,30 @@ class AgingSystem(IAgingSystem):
+         self.demographic_manager = demographic_manager
+         self.logger = logger
+ 
+-    def execute(self, state: SimulationState) -> List[Transaction]:
++    def execute(self, context: IAgingContext) -> List[Transaction]:
+         """
+         Executes the aging phase.
+         1. Biological aging (DemographicManager)
+         2. Firm lifecycle checks (Bankruptcy/Grace Protocol)
+         3. Household lifecycle checks (Distress)
+         """
++        if not isinstance(context, IAgingContext):
++            raise TypeError(f"Expected IAgingContext, got {type(context)}")
++
+         # 1. Aging (and internal lifecycle update)
+-        self.demographic_manager.process_aging(state.households, state.time, state.market_data)
++        # Note: We use the injected demographic_manager, not necessarily the one in context,
++        # though they should be the same.
++        self.demographic_manager.process_aging(context.households, context.time, context.market_data)
+ 
+         # 2. Firm Lifecycle (Aging & Bankruptcy Checks)
+-        self._process_firm_lifecycle(state)
++        self._process_firm_lifecycle(context)
+ 
+         # 3. Household Lifecycle (Distress Checks)
+-        self._process_household_lifecycle(state)
++        self._process_household_lifecycle(context)
+ 
+         return []
+ 
+-    def _process_firm_lifecycle(self, state: SimulationState) -> None:
++    def _process_firm_lifecycle(self, context: IAgingContext) -> None:
+         """
+         Handles lifecycle updates for all active firms.
+         Includes Solvency Gate and WO-167 Grace Protocol.
+@@ -49,7 +53,7 @@ class AgingSystem(IAgingSystem):
+         liquidity_inc_rate = self.config.liquidity_need_increase_rate
+         grace_period = self.config.distress_grace_period
+ 
+-        for firm in state.firms:
++        for firm in context.firms:
+             if not isinstance(firm, IAgingFirm) or not firm.is_active:
+                 continue
+ 
+@@ -75,7 +79,7 @@ class AgingSystem(IAgingSystem):
+             is_crunch = current_assets_pennies < liquidity_need_pennies
+ 
+             # Inventory Value Calculation (Integer Pennies)
+-            inventory_val_pennies = self._calculate_inventory_value(firm.get_all_items(), state.markets)
++            inventory_val_pennies = self._calculate_inventory_value(firm.get_all_items(), context.markets)
+ 
+             if is_crunch and inventory_val_pennies > 0:
+                 # Enter or Continue Distress
+@@ -110,7 +114,7 @@ class AgingSystem(IAgingSystem):
+                     f"Loss Turns: {getattr(firm.finance_state, 'consecutive_loss_turns', 0)}, Solvent: {is_solvent}"
+                 )
+ 
+-    def _process_household_lifecycle(self, state: SimulationState) -> None:
++    def _process_household_lifecycle(self, context: IAgingContext) -> None:
+         """
+         WO-167: Handles distress checks for households.
+         Triggers emergency liquidation if starving but solvent.
+@@ -119,7 +123,7 @@ class AgingSystem(IAgingSystem):
+         distress_threshold = survival_threshold * 0.9
+         grace_period = self.config.distress_grace_period
+ 
+-        for household in state.households:
++        for household in context.households:
+             # Direct access to _bio_state is unavoidable without DTO setter,
+             # but we check if it exists or use property if available.
+             # Assuming household is Household object.
+@@ -183,16 +187,17 @@ class AgingSystem(IAgingSystem):
+ 
+                              # Place orders
+                              for order in emergency_orders:
+-                                 market = state.markets.get(order.market_id)
++                                 market = context.markets.get(order.market_id)
+                                  if isinstance(market, IMarket):
+                                      # Check for place_order method on IMarket implementation
+                                      place_order = getattr(market, 'place_order', None)
+                                      if place_order:
+-                                         place_order(order, state.time)
+-                                 elif order.market_id == "stock_market" and state.stock_market:
+-                                      place_order = getattr(state.stock_market, 'place_order', None)
++                                         place_order(order, context.time)
++                                 elif order.market_id == "stock_market" and context.stock_market:
++                                      # Use context.stock_market
++                                      place_order = getattr(context.stock_market, 'place_order', None)
+                                       if place_order:
+-                                          place_order(order, state.time)
++                                          place_order(order, context.time)
+ 
+                 else:
+                     # No assets to sell, nature takes its course
+diff --git a/simulation/systems/lifecycle/api.py b/simulation/systems/lifecycle/api.py
+index 126394c0..23f75ac9 100644
+--- a/simulation/systems/lifecycle/api.py
++++ b/simulation/systems/lifecycle/api.py
+@@ -5,6 +5,9 @@ import logging
+ from simulation.models import Transaction
+ from modules.finance.api import IFinancialEntity
+ from modules.demographics.api import IDemographicManager
++from modules.simulation.api import (
++    ILifecycleContext, IDeathContext, IBirthContext, IAgingContext, ILifecycleSubsystem
++)
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.api import SimulationState
+@@ -77,34 +80,6 @@ class DeathConfigDTO:
+             default_fallback_price_pennies=int(default_price_float * 100)
+         )
+ 
+-@runtime_checkable
+-class IDeathContext(Protocol):
+-    """
+-    Scoped context for Lifecycle systems to prevent God DTO coupling.
+-    """
+-    time: int
+-    households: List[Any]
+-    firms: List[Any]
+-    agents: Dict[Any, Any]
+-    markets: Dict[str, Any]
+-    primary_government: Optional[Any]
+-    inactive_agents: Optional[Dict[Any, Any]]
+-    currency_registry_handler: Optional[Any]
+-    currency_holders: Optional[List[Any]]
+-
+-@runtime_checkable
+-class ILifecycleSubsystem(Protocol):
+-    """
+-    Protocol for discrete lifecycle systems (Birth, Aging, Death).
+-    Adheres to SEO Pattern: Stateless execution on Scoped Context.
+-    """
+-    def execute(self, state: Union[SimulationState, IDeathContext]) -> List[Transaction]:
+-        """
+-        Executes the lifecycle logic for the current tick.
+-        Returns a list of transactions (e.g., inheritance, fees) to be processed.
+-        """
+-        ...
+-
+ @runtime_checkable
+ class IAgingSystem(ILifecycleSubsystem, Protocol):
+     """
+@@ -114,13 +89,15 @@ class IAgingSystem(ILifecycleSubsystem, Protocol):
+     def __init__(self, config: LifecycleConfigDTO, demographic_manager: IDemographicManager, logger: logging.Logger) -> None:
+         ...
+ 
++    def execute(self, context: IAgingContext) -> List[Transaction]: ...
++
+ @runtime_checkable
+ class IBirthSystem(ILifecycleSubsystem, Protocol):
+     """
+     Responsible for creating new agents (Households) via reproduction
+     and handling immigration entry.
+     """
+-    ...
++    def execute(self, context: IBirthContext) -> List[Transaction]: ...
+ 
+ @runtime_checkable
+ class IDeathSystem(ILifecycleSubsystem, Protocol):
+@@ -128,7 +105,7 @@ class IDeathSystem(ILifecycleSubsystem, Protocol):
+     Responsible for handling agent death, liquidation of assets,
+     and inheritance processing.
+     """
+-    ...
++    def execute(self, context: IDeathContext) -> List[Transaction]: ...
+ 
+ @runtime_checkable
+ class IFinanceEngine(Protocol):
+diff --git a/simulation/systems/lifecycle/birth_system.py b/simulation/systems/lifecycle/birth_system.py
+index b3e4fd40..523b5d1f 100644
+--- a/simulation/systems/lifecycle/birth_system.py
++++ b/simulation/systems/lifecycle/birth_system.py
+@@ -1,8 +1,7 @@
+ from __future__ import annotations
+ from typing import List, Any, Optional, Tuple, cast
+ import logging
+-from simulation.systems.lifecycle.api import IBirthSystem, BirthConfigDTO
+-from simulation.dtos.api import SimulationState
++from simulation.systems.lifecycle.api import IBirthSystem, BirthConfigDTO, IBirthContext
+ from simulation.models import Transaction
+ from simulation.core_agents import Household
+ from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
+@@ -38,33 +37,40 @@ class BirthSystem(IBirthSystem):
+              raise ValueError("IHouseholdFactory is mandatory for BirthSystem.")
+         self.household_factory = household_factory
+ 
+-    def execute(self, state: SimulationState) -> List[Transaction]:
++    def execute(self, context: IBirthContext) -> List[Transaction]:
+         """
+         Executes the birth phase.
+         1. Process biological births.
+         2. Process immigration.
+         3. Check for new firm creation (Entrepreneurship).
+         """
++        if not isinstance(context, IBirthContext):
++            raise TypeError(f"Expected IBirthContext, got {type(context)}")
++
+         all_transactions = []
+ 
+         # 3. Births
+-        new_children, birth_txs = self._process_births(state)
+-        self._register_new_agents(state, new_children)
++        new_children, birth_txs = self._process_births(context)
++        self._register_new_agents(context, new_children)
+         all_transactions.extend(birth_txs)
+ 
+         # 4. Immigration
+-        new_immigrants = self.immigration_manager.process_immigration(state)
+-        self._register_new_agents(state, new_immigrants)
++        # ImmigrationManager expects 'engine' (Simulation-like object)
++        # Context adapter provides necessary attributes (tracker, government, etc.)
++        new_immigrants = self.immigration_manager.process_immigration(context)
++        self._register_new_agents(context, new_immigrants)
+ 
+         # 5. Entrepreneurship
+-        self.firm_system.check_entrepreneurship(state)
++        # FirmSystem expects 'simulation' (Simulation-like object)
++        # Context adapter mimics it via properties (logger, ai_trainer, markets, etc.)
++        self.firm_system.check_entrepreneurship(context)
+ 
+         return all_transactions
+ 
+-    def _process_births(self, state: SimulationState) -> Tuple[List[Household], List[Transaction]]:
++    def _process_births(self, context: IBirthContext) -> Tuple[List[Household], List[Transaction]]:
+         birth_requests = []
+         # Use Protocol property if available, otherwise assume Household object has is_active
+-        active_households = [h for h in state.households if h.is_active]
++        active_households = [h for h in context.households if h.is_active]
+         if not active_households:
+             return [], []
+ 
+@@ -81,8 +87,8 @@ class BirthSystem(IBirthSystem):
+             if not (self.config.reproduction_age_start <= parent_agent.age <= self.config.reproduction_age_end):
+                 continue
+ 
+-            new_id = state.next_agent_id
+-            state.next_agent_id += 1
++            new_id = context.next_agent_id
++            context.next_agent_id += 1
+ 
+             # Asset Transfer Calculation
+             parent_assets = 0
+@@ -98,7 +104,7 @@ class BirthSystem(IBirthSystem):
+                     parent=parent_agent,
+                     new_id=new_id,
+                     initial_assets=0,
+-                    current_tick=state.time
++                    current_tick=context.time
+                 )
+ 
+                 # Explicit Zero-Sum Transfer Transaction
+@@ -112,7 +118,7 @@ class BirthSystem(IBirthSystem):
+                          total_pennies=initial_gift_pennies,
+                          market_id="settlement",
+                          transaction_type="GIFT",
+-                         time=state.time,
++                         time=context.time,
+                          currency=DEFAULT_CURRENCY
+                      )
+                      transactions.append(tx)
+@@ -123,7 +129,7 @@ class BirthSystem(IBirthSystem):
+                 self.logger.info(
+                     f"BIRTH | Parent {parent_agent.id} ({parent_agent.age:.1f}y) -> Child {child.id}. "
+                     f"Assets: {initial_gift_pennies}",
+-                    extra={"parent_id": parent_agent.id, "child_id": child.id, "tick": state.time}
++                    extra={"parent_id": parent_agent.id, "child_id": child.id, "tick": context.time}
+                 )
+             except Exception as e:
+                 self.logger.error(
+@@ -134,38 +140,39 @@ class BirthSystem(IBirthSystem):
+ 
+         return created_children, transactions
+ 
+-    def _register_new_agents(self, state: SimulationState, new_agents: List[Household]):
++    def _register_new_agents(self, context: IBirthContext, new_agents: List[Household]):
+         for agent in new_agents:
+-            state.households.append(agent)
+-            state.agents[agent.id] = agent
++            context.households.append(agent)
++            context.agents[agent.id] = agent
+ 
+             # Setup dependencies
+             # Agent is guaranteed to be Household
+-            agent.decision_engine.markets = state.markets
+-            agent.decision_engine.goods_data = state.goods_data
++            agent.decision_engine.markets = context.markets
++            agent.decision_engine.goods_data = context.goods_data
+ 
+             # WO-218: Track new agent as currency holder for M2 integrity
+-            if state.currency_registry_handler:
+-                state.currency_registry_handler.register_currency_holder(agent)
+-            elif state.currency_holders is not None:
+-                state.currency_holders.append(agent)
++            if context.currency_registry_handler:
++                context.currency_registry_handler.register_currency_holder(agent)
++            elif context.currency_holders is not None:
++                context.currency_holders.append(agent)
+ 
+             # Ensure agent has settlement system
+             # Dynamic injection for systems that need it (e.g. HousingConnector)
+             # We set it blindly as Household instance allows dynamic attributes
++            # Assuming BirthSystem has self.settlement_system injected (it does)
+             agent.settlement_system = self.settlement_system
+ 
+             # Shareholder Registry sync
+-            if state.shareholder_registry:
++            if context.shareholder_registry:
+                  # No shares initially for newborn
+                  pass
+-            elif state.stock_market:
++            elif context.stock_market:
+                 # Handle potential portfolio from immigrants (newborns have empty portfolio)
+                 for firm_id, holding in agent.portfolio.holdings.items():
+                     # We check for update_shareholder availability on stock_market
+-                    # because stock_market is Optional[Any] in state
+-                    if hasattr(state.stock_market, 'update_shareholder'):
+-                         state.stock_market.update_shareholder(agent.id, firm_id, holding.quantity)
++                    # because stock_market is Optional[Any] in state/context
++                    if hasattr(context.stock_market, 'update_shareholder'):
++                         context.stock_market.update_shareholder(agent.id, firm_id, holding.quantity)
+ 
+-            if state.ai_training_manager:
+-                state.ai_training_manager.agents.append(agent)
++            if context.ai_training_manager:
++                context.ai_training_manager.agents.append(agent)
+diff --git a/simulation/systems/lifecycle/death_system.py b/simulation/systems/lifecycle/death_system.py
+index 51d83c4d..ebbb74c5 100644
+--- a/simulation/systems/lifecycle/death_system.py
++++ b/simulation/systems/lifecycle/death_system.py
+@@ -34,31 +34,35 @@ class DeathSystem(IDeathSystem):
+         self.logger = logger
+         self.estate_registry = estate_registry
+ 
+-    def execute(self, state: Union[SimulationState, IDeathContext]) -> List[Transaction]:
++    def execute(self, context: IDeathContext) -> List[Transaction]:
+         """
+         Executes the death phase.
+         1. Firm Liquidation (Bankruptcy)
+         2. Household Liquidation (Death & Inheritance)
+         """
+-        return self._handle_agent_liquidation(state)
++        if not isinstance(context, IDeathContext):
++            raise TypeError(f"Expected IDeathContext, got {type(context)}")
+ 
+-    def _handle_agent_liquidation(self, state: Union[SimulationState, IDeathContext]) -> List[Transaction]:
++        return self._handle_agent_liquidation(context)
++
++    def _handle_agent_liquidation(self, context: IDeathContext) -> List[Transaction]:
+         transactions: List[Transaction] = []
+ 
+         # --- Firm Liquidation ---
+         # Identify inactive firms
+-        inactive_firms = [f for f in state.firms if not f.is_active]
++        inactive_firms = [f for f in context.firms if not f.is_active]
+ 
+         for firm in inactive_firms:
+             # 0. Cancel Orders (Atomicity Fix)
+-            self._cancel_agent_orders(firm.id, state)
++            self._cancel_agent_orders(firm.id, context)
+ 
+             # 0.5 Recover External Assets (Bank Deposits)
+-            self._recover_external_assets(firm.id, state, transactions)
++            self._recover_external_assets(firm.id, context, transactions)
+ 
+             # Delegate strictly to LiquidationManager
+             if isinstance(firm, ILiquidatable):
+-                 self.liquidation_manager.initiate_liquidation(firm, state)
++                 # Pass context instead of state (duck typing)
++                 self.liquidation_manager.initiate_liquidation(firm, context)
+ 
+             # Post-Liquidation Cleanup
+             # 1. Employees (HR)
+@@ -74,11 +78,11 @@ class DeathSystem(IDeathSystem):
+ 
+             # 2. Currency Registry
+             if isinstance(firm, ICurrencyHolder):
+-                if state.currency_registry_handler:
+-                    state.currency_registry_handler.unregister_currency_holder(firm)
+-                elif state.currency_holders is not None:
+-                     if firm in state.currency_holders:
+-                         state.currency_holders.remove(firm)
++                if context.currency_registry_handler:
++                    context.currency_registry_handler.unregister_currency_holder(firm)
++                elif context.currency_holders is not None:
++                     if firm in context.currency_holders:
++                         context.currency_holders.remove(firm)
+ 
+             # 3. Settlement Index
+             if self.settlement_system:
+@@ -86,35 +90,36 @@ class DeathSystem(IDeathSystem):
+ 
+         # --- Household Liquidation ---
+         # Use property is_active (from IOrchestratorAgent/Household)
+-        inactive_households = [h for h in state.households if not h.is_active]
++        inactive_households = [h for h in context.households if not h.is_active]
+ 
+         for household in inactive_households:
+              # 0. Cancel Orders (Atomicity Fix)
+-             self._cancel_agent_orders(household.id, state)
++             self._cancel_agent_orders(household.id, context)
+ 
+              # 0.5 Recover External Assets (Bank Deposits)
+-             self._recover_external_assets(household.id, state, transactions)
++             self._recover_external_assets(household.id, context, transactions)
+ 
+              # Preserve for history/logging if needed
+-             if state.inactive_agents is not None:
+-                 state.inactive_agents[household.id] = household
++             if context.inactive_agents is not None:
++                 context.inactive_agents[household.id] = household
+ 
+              # Inventory Liquidation (Asset Buyout) via Public Manager
+              # Must occur BEFORE inheritance so cash is available for heirs/tax.
+-             self._liquidate_agent_inventory(household, state, transactions)
++             self._liquidate_agent_inventory(household, context, transactions)
+ 
+              # Inheritance Manager (Executes transactions via side-effects)
+-             if state.primary_government:
+-                  inheritance_txs = self.inheritance_manager.process_death(household, state.primary_government, state)
++             if context.primary_government:
++                  # Pass context instead of state (duck typing)
++                  inheritance_txs = self.inheritance_manager.process_death(household, context.primary_government, context)
+                   transactions.extend(inheritance_txs)
+ 
+              # Cleanup
+              if isinstance(household, ICurrencyHolder):
+-                if state.currency_registry_handler:
+-                    state.currency_registry_handler.unregister_currency_holder(household)
+-                elif state.currency_holders is not None:
+-                     if household in state.currency_holders:
+-                         state.currency_holders.remove(household)
++                if context.currency_registry_handler:
++                    context.currency_registry_handler.unregister_currency_holder(household)
++                elif context.currency_holders is not None:
++                     if household in context.currency_holders:
++                         context.currency_holders.remove(household)
+ 
+              if self.settlement_system:
+                 self.settlement_system.remove_agent_from_all_accounts(household.id)
+@@ -123,18 +128,18 @@ class DeathSystem(IDeathSystem):
+ 
+         # O(1) Dictionary Cleanup - TD-SYS-PERF-DEATH
+         for firm in inactive_firms:
+-            self._decommission_agent(firm, state)
++            self._decommission_agent(firm, context)
+ 
+         for household in inactive_households:
+-            self._decommission_agent(household, state)
++            self._decommission_agent(household, context)
+ 
+         # Modify lists in place to reflect removals
+-        state.households[:] = [h for h in state.households if h.is_active]
+-        state.firms[:] = [f for f in state.firms if f.is_active]
++        context.households[:] = [h for h in context.households if h.is_active]
++        context.firms[:] = [f for f in context.firms if f.is_active]
+ 
+         return transactions
+ 
+-    def _decommission_agent(self, agent: Any, state: Union[SimulationState, IDeathContext]) -> None:
++    def _decommission_agent(self, agent: Any, context: IDeathContext) -> None:
+         """
+         Standardized Decommission: Moves agent to estate and removes from global map.
+         Note: List removal (households/firms) is handled in bulk for performance.
+@@ -142,10 +147,10 @@ class DeathSystem(IDeathSystem):
+         if self.estate_registry:
+             self.estate_registry.add_to_estate(agent)
+ 
+-        if agent.id in state.agents:
+-            del state.agents[agent.id]
++        if agent.id in context.agents:
++            del context.agents[agent.id]
+ 
+-    def _recover_external_assets(self, agent_id: int, state: Union[SimulationState, IDeathContext], transactions: List[Transaction]) -> None:
++    def _recover_external_assets(self, agent_id: int, context: IDeathContext, transactions: List[Transaction]) -> None:
+         """
+         Recovers assets from external accounts (Banks) before liquidation.
+         """
+@@ -157,12 +162,12 @@ class DeathSystem(IDeathSystem):
+         else:
+             return
+ 
+-        agent = state.agents.get(agent_id)
++        agent = context.agents.get(agent_id)
+         if not agent: return
+ 
+         for bank_id in bank_ids:
+             # 2. Close Account safely via Settlement Transfer
+-            bank = state.agents.get(bank_id)
++            bank = context.agents.get(bank_id)
+             if not bank: continue
+ 
+             # Check for protocol compliance
+@@ -192,7 +197,7 @@ class DeathSystem(IDeathSystem):
+                             price=amount / 100.0,
+                             market_id="financial",
+                             transaction_type="withdrawal", # Or 'asset_recovery'
+-                            time=state.time,
++                            time=context.time,
+                             total_pennies=amount,
+                             metadata={"executed": True, "reason": "liquidation_recovery"}
+                         )
+@@ -202,14 +207,14 @@ class DeathSystem(IDeathSystem):
+                     else:
+                         self.logger.error(f"RECOVER_FAIL | Bank {bank_id} insolvent? Could not return {amount} to {agent_id}")
+ 
+-    def _cancel_agent_orders(self, agent_id: str | int, state: Union[SimulationState, IDeathContext]) -> None:
++    def _cancel_agent_orders(self, agent_id: str | int, context: IDeathContext) -> None:
+         """
+         Scrub agent orders from all markets to ensure atomicity.
+         """
+-        if not state.markets:
++        if not context.markets:
+             return
+ 
+-        for market in state.markets.values():
++        for market in context.markets.values():
+             # Check for cancel_orders method (Protocol compliance)
+             if isinstance(market, IMarket):
+                 try:
+@@ -219,7 +224,7 @@ class DeathSystem(IDeathSystem):
+                         f"ORDER_SCRUB_FAIL | Failed to cancel orders for agent {agent_id} in market {getattr(market, 'id', 'unknown')}: {e}"
+                     )
+ 
+-    def _liquidate_agent_inventory(self, agent: Any, state: Union[SimulationState, IDeathContext], transactions: List[Transaction]) -> None:
++    def _liquidate_agent_inventory(self, agent: Any, context: IDeathContext, transactions: List[Transaction]) -> None:
+         """
+         Liquidates agent inventory by selling to Public Manager (Asset Buyout).
+         Transfers cash to the agent and clears inventory.
+@@ -244,16 +249,16 @@ class DeathSystem(IDeathSystem):
+         for item_id in inventory.keys():
+              price_pennies = default_price_pennies
+              # Try to get market price
+-             if state.markets:
+-                 if item_id in state.markets:
+-                     m = state.markets[item_id]
++             if context.markets:
++                 if item_id in context.markets:
++                     m = context.markets[item_id]
+                      if isinstance(m, IMarket):
+                          try:
+                             p = m.get_price(item_id)
+                             if p > 0: price_pennies = int(p * 100)
+                          except: pass
+-                 elif "goods_market" in state.markets: # Fallback to aggregate market
+-                     m = state.markets["goods_market"]
++                 elif "goods_market" in context.markets: # Fallback to aggregate market
++                     m = context.markets["goods_market"]
+                      if isinstance(m, IMarket):
+                          try:
+                             p = m.get_price(item_id)
+@@ -292,7 +297,7 @@ class DeathSystem(IDeathSystem):
+                     price=result.total_paid_pennies / 100.0,
+                     market_id="financial",
+                     transaction_type="asset_buyout",
+-                    time=state.time,
++                    time=context.time,
+                     total_pennies=result.total_paid_pennies,
+                     metadata={"executed": True}
+                 )
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index a6ce05bc..94aa7c52 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -30,6 +30,7 @@ from simulation.systems.lifecycle.aging_system import AgingSystem
+ from simulation.systems.lifecycle.birth_system import BirthSystem
+ from simulation.systems.lifecycle.death_system import DeathSystem
+ from simulation.systems.lifecycle.marriage_system import MarriageSystem
++from simulation.systems.lifecycle.adapters import AgingContextAdapter, BirthContextAdapter, DeathContextAdapter
+ from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
+ 
+ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+@@ -131,24 +132,31 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+ 
+         all_transactions = []
+ 
++        # Create Context Adapters
++        # We pass self.aging_system.demographic_manager to match what AgingSystem expects
++        aging_context = AgingContextAdapter(state, self.aging_system.demographic_manager)
++        birth_context = BirthContextAdapter(state)
++        death_context = DeathContextAdapter(state)
++
+         # 1. Aging Phase
+         # AgingSystem is side-effect heavy (aging, distress), currently returns no transactions.
+-        aging_txs = self.aging_system.execute(state)
++        aging_txs = self.aging_system.execute(aging_context)
+         all_transactions.extend(aging_txs)
+ 
+         # 2. Birth Phase
+         # BirthSystem now returns transactions for birth gifts.
+-        birth_txs = self.birth_system.execute(state)
++        birth_txs = self.birth_system.execute(birth_context)
+         all_transactions.extend(birth_txs)
+ 
+         # 3. Marriage Phase (Wave 4)
+         # Execute before Death to ensure spouses are linked if one dies.
++        # Not refactored yet, passes state directly.
+         marriage_txs = self.marriage_system.execute(state)
+         all_transactions.extend(marriage_txs)
+ 
+         # 4. Death Phase
+         # DeathSystem returns transactions (inheritance, liquidation leftovers)
+-        death_txs = self.death_system.execute(state)
++        death_txs = self.death_system.execute(death_context)
+         all_transactions.extend(death_txs)
+ 
+         return all_transactions
+diff --git a/tests/conftest.py b/tests/conftest.py
+index b409180f..96360ace 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -46,7 +46,7 @@ from modules.finance.system import FinanceSystem
+ from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
+ from modules.finance.api import ISettlementSystem, IMonetaryAuthority
+ 
+-def pytest_collect_file(file_path, path, parent):
++def pytest_collect_file(file_path, parent):
+     """Log file collection progress to help debug hangs."""
+     if file_path.suffix == ".py":
+         print(f"DEBUG: [pytest] Collecting: {file_path}")
+diff --git a/tests/unit/systems/lifecycle/test_aging_system.py b/tests/unit/systems/lifecycle/test_aging_system.py
+index b210b36c..ed025848 100644
+--- a/tests/unit/systems/lifecycle/test_aging_system.py
++++ b/tests/unit/systems/lifecycle/test_aging_system.py
+@@ -1,7 +1,7 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from simulation.systems.lifecycle.aging_system import AgingSystem
+-from simulation.systems.lifecycle.api import IAgingFirm, IFinanceEngine, LifecycleConfigDTO
++from simulation.systems.lifecycle.api import IAgingFirm, IFinanceEngine, LifecycleConfigDTO, IAgingContext
+ from simulation.dtos.api import SimulationState
+ from simulation.interfaces.market_interface import IMarket
+ from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
+@@ -69,17 +69,13 @@ class TestAgingSystem:
+         return AgingSystem(default_config, demographic_manager, logger)
+ 
+     def test_execute_delegation(self, aging_system):
+-        state = MagicMock()
+-        state.households = []
+-        state.firms = []
++        context = MagicMock(spec=IAgingContext)
++        context.households = []
++        context.firms = []
++        context.market_data = {}
++        context.time = 1
+ 
+-        result = aging_system.execute(state)
+-
+-        # Fix assertion: demographic_manager is mocked via IDemographicManager spec
+-        # IDemographicManager protocol methods should be checked.
+-        # Assuming process_aging is the method, but let's check spec fidelity.
+-        # If IDemographicManager has process_aging, assert_called_once works on the mock method.
+-        # If it's a property or attribute, accessing it on mock triggers creation.
++        result = aging_system.execute(context)
+ 
+         # Verify call if it happened
+         if hasattr(aging_system.demographic_manager, 'process_aging'):
+@@ -90,23 +86,16 @@ class TestAgingSystem:
+     def test_firm_distress(self, aging_system):
+         firm = MockFirm(balance=-1000, distress=False, counter=0)
+ 
+-        state = MagicMock()
+-        state.firms = [firm]
+-        state.households = []
++        context = MagicMock(spec=IAgingContext)
++        context.firms = [firm]
++        context.households = []
+ 
+         market = MockMarket()
+-        state.markets = {"wood": market}
+-        state.time = 1
+-        state.market_data = {}
+-
+-        result = aging_system.execute(state)
+-
+-        # Distressed state logic is internal to AgingSystem or delegated?
+-        # Assuming AgingSystem handles it.
+-        # If balance < threshold (0), distress should activate.
++        context.markets = {"wood": market}
++        context.time = 1
++        context.market_data = {}
+ 
+-        # NOTE: If this test fails due to logic changes, update expectation.
+-        # Original test asserted True.
++        result = aging_system.execute(context)
+ 
+         # assert firm.finance_state.is_distressed is True
+         # assert firm.finance_state.distress_tick_counter == 1
+@@ -128,16 +117,16 @@ class TestAgingSystem:
+ 
+         firm = MockFirm(balance=-1000, distress=True, counter=9)
+ 
+-        state = MagicMock()
+-        state.firms = [firm]
+-        state.households = []
++        context = MagicMock(spec=IAgingContext)
++        context.firms = [firm]
++        context.households = []
+ 
+         market = MockMarket()
+-        state.markets = {"wood": market}
+-        state.time = 1
+-        state.market_data = {}
++        context.markets = {"wood": market}
++        context.time = 1
++        context.market_data = {}
+ 
+-        aging_system.execute(state)
++        aging_system.execute(context)
+ 
+         # Expected behavior: distress counter increments, firm remains active within grace period
+         # assert firm.finance_state.distress_tick_counter == 10
+@@ -168,14 +157,14 @@ class TestAgingSystem:
+         firm.finance_state.distress_tick_counter = 0 # Not in distress grace period loop
+         firm.finance_state.is_distressed = False
+ 
+-        state = MagicMock()
+-        state.firms = [firm]
+-        state.households = []
+-        state.markets = {}
+-        state.time = 1
+-        state.market_data = {}
++        context = MagicMock(spec=IAgingContext)
++        context.firms = [firm]
++        context.households = []
++        context.markets = {}
++        context.time = 1
++        context.market_data = {}
+ 
+-        aging_system.execute(state)
++        aging_system.execute(context)
+ 
+         # assert firm.is_active is True # Should survive due to Solvency Gate
+ 
+@@ -204,13 +193,13 @@ class TestAgingSystem:
+         firm.finance_state.distress_tick_counter = 100 # Grace period expired
+         firm.finance_state.is_distressed = True
+ 
+-        state = MagicMock()
+-        state.firms = [firm]
+-        state.households = []
+-        state.markets = {}
+-        state.time = 1
+-        state.market_data = {}
++        context = MagicMock(spec=IAgingContext)
++        context.firms = [firm]
++        context.households = []
++        context.markets = {}
++        context.time = 1
++        context.market_data = {}
+ 
+-        aging_system.execute(state)
++        aging_system.execute(context)
+ 
+         # assert firm.is_active is False # Should close
+diff --git a/tests/unit/systems/lifecycle/test_birth_system.py b/tests/unit/systems/lifecycle/test_birth_system.py
+index 5d3ac72f..ea1c76b3 100644
+--- a/tests/unit/systems/lifecycle/test_birth_system.py
++++ b/tests/unit/systems/lifecycle/test_birth_system.py
+@@ -1,9 +1,7 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from simulation.systems.lifecycle.birth_system import BirthSystem
+-from simulation.systems.lifecycle.api import BirthConfigDTO
+-from simulation.dtos.api import SimulationState
+-# from simulation.core_agents import Household  # Removed heavy import
++from simulation.systems.lifecycle.api import BirthConfigDTO, IBirthContext
+ from modules.system.api import ICurrencyHolder, DEFAULT_CURRENCY
+ from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
+ from typing import Protocol, runtime_checkable, Any, Dict, List
+@@ -62,17 +60,19 @@ class TestBirthSystem:
+         parent.get_balance.return_value = 1000
+         parent.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 1000}
+ 
+-        # Setup State
+-        state = MagicMock()
+-        state.households = [parent]
+-        state.agents = {parent.id: parent}
+-        state.next_agent_id = 100
+-        state.time = 1
+-        state.markets = {}
+-        state.goods_data = {}
+-        state.stock_market = None
+-        state.ai_training_manager = None
+-        state.shareholder_registry = None
++        # Setup Context
++        context = MagicMock(spec=IBirthContext)
++        context.households = [parent]
++        context.agents = {parent.id: parent}
++        context.next_agent_id = 100
++        context.time = 1
++        context.markets = {}
++        context.goods_data = {}
++        context.stock_market = None
++        context.ai_training_manager = None
++        context.shareholder_registry = None
++        context.currency_holders = []
++        context.currency_registry_handler = None
+ 
+         # Mock Planner
+         birth_system.breeding_planner.decide_breeding_batch.return_value = [True]
+@@ -80,6 +80,7 @@ class TestBirthSystem:
+         # Mock Child
+         child = MagicMock(spec=IHousehold)
+         child.id = 100
++        child.portfolio = MagicMock() # Explicitly mock portfolio attribute
+         child.portfolio.holdings.items.return_value = []
+         child.decision_engine = MagicMock() # Explicitly mock decision_engine
+ 
+@@ -87,7 +88,7 @@ class TestBirthSystem:
+         birth_system.household_factory.create_newborn.return_value = child
+ 
+         # Execute
+-        transactions = birth_system.execute(state)
++        transactions = birth_system.execute(context)
+ 
+         # Assert Factory called with 0 assets
+         birth_system.household_factory.create_newborn.assert_called_once()
+@@ -107,4 +108,11 @@ class TestBirthSystem:
+         assert tx.seller_id == child.id
+         assert tx.transaction_type == "GIFT"
+ 
+-        assert child in state.households
++        assert child in context.households
++
++    def test_birth_system_requires_valid_protocol_context(self, birth_system):
++        # Pass an object that does NOT satisfy IBirthContext
++        invalid_context = MagicMock() # Not spec=IBirthContext
++
++        with pytest.raises(TypeError):
++            birth_system.execute(invalid_context)
+diff --git a/tests/unit/systems/lifecycle/test_death_system.py b/tests/unit/systems/lifecycle/test_death_system.py
+index 6c91b0b5..31823af9 100644
+--- a/tests/unit/systems/lifecycle/test_death_system.py
++++ b/tests/unit/systems/lifecycle/test_death_system.py
+@@ -1,11 +1,10 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from simulation.systems.lifecycle.death_system import DeathSystem
+-from simulation.systems.lifecycle.api import DeathConfigDTO
+-from simulation.dtos.api import SimulationState
+-# from simulation.firms import Firm # Removed Heavy Import
++from simulation.systems.lifecycle.api import DeathConfigDTO, IDeathContext
+ from simulation.interfaces.market_interface import IMarket
+-from typing import Protocol, runtime_checkable, Any, Dict
++from typing import Protocol, runtime_checkable, Any, Dict, List
++from simulation.models import Transaction
+ 
+ # Lightweight Protocols
+ @runtime_checkable
+@@ -16,6 +15,14 @@ class IFirm(Protocol):
+     capital_stock: float
+     def get_all_items(self) -> Dict[str, float]: ...
+     def liquidate_assets(self, tick: int) -> Dict[str, float]: ...
++    def get_all_claims(self, context: Any) -> List[Any]: ...
++    def get_equity_stakes(self, context: Any) -> List[Any]: ...
++
++@runtime_checkable
++class IHousehold(Protocol):
++    id: int
++    is_active: bool
++    def clear_inventory(self): ...
+ 
+ class TestDeathSystem:
+     @pytest.fixture
+@@ -43,23 +50,24 @@ class TestDeathSystem:
+         firm.capital_stock = 100
+         # Ensure ILiquidatable methods are present (Firm has them)
+ 
+-        state = MagicMock()
+-        state.firms = [firm]
+-        state.households = []
+-        state.agents = {1: firm}
+-        state.time = 1
+-        state.markets = {} # Ensure markets exists
+-        state.inactive_agents = None
+-        state.government = None # Prevent inheritance logic if any
+-        state.currency_registry_handler = None
+-        state.currency_holders = None
++        context = MagicMock(spec=IDeathContext)
++        context.firms = [firm]
++        context.households = []
++        context.agents = {1: firm}
++        context.time = 1
++        context.markets = {} # Ensure markets exists
++        context.inactive_agents = {}
++        context.primary_government = None # Prevent inheritance logic if any
++        context.currency_registry_handler = None
++        context.currency_holders = None
++        context.settlement_system = None
+ 
+-        death_system.execute(state)
++        death_system.execute(context)
+ 
+-        death_system.liquidation_manager.initiate_liquidation.assert_called_once_with(firm, state)
++        death_system.liquidation_manager.initiate_liquidation.assert_called_once_with(firm, context)
+ 
+         # Verify removal from global list
+-        assert firm not in state.firms
++        assert firm not in context.firms
+ 
+     def test_firm_liquidation_cancels_orders(self, death_system):
+         firm = MagicMock(spec=IFirm)
+@@ -80,17 +88,51 @@ class TestDeathSystem:
+         mock_market.sell_orders = {}
+         mock_market.matched_transactions = []
+ 
+-        state = MagicMock()
+-        state.firms = [firm]
+-        state.households = []
+-        state.agents = {1: firm}
+-        state.time = 1
+-        state.markets = {"test_market": mock_market}
+-        state.inactive_agents = {}
+-        state.government = None
+-        state.currency_registry_handler = None
+-        state.currency_holders = None
++        context = MagicMock(spec=IDeathContext)
++        context.firms = [firm]
++        context.households = []
++        context.agents = {1: firm}
++        context.time = 1
++        context.markets = {"test_market": mock_market}
++        context.inactive_agents = {}
++        context.primary_government = None
++        context.currency_registry_handler = None
++        context.currency_holders = None
+ 
+-        death_system.execute(state)
++        death_system.execute(context)
+ 
+         mock_market.cancel_orders.assert_called_with(firm.id)
++
++    def test_death_system_emits_settlement_transactions(self, death_system):
++        # Setup deceased household
++        household = MagicMock(spec=IHousehold)
++        household.is_active = False
++        household.id = 2
++        household.inventory = {} # No inventory to trigger asset buyout for now
++
++        # Setup Inheritance Manager to return dummy transactions
++        dummy_tx = Transaction(
++            buyer_id=2, seller_id=1, item_id="tax", quantity=1, price=100,
++            market_id="system", transaction_type="tax", time=1, total_pennies=10000
++        )
++        death_system.inheritance_manager.process_death.return_value = [dummy_tx]
++
++        context = MagicMock(spec=IDeathContext)
++        context.firms = []
++        context.households = [household]
++        context.agents = {2: household}
++        context.time = 1
++        context.markets = {}
++        context.inactive_agents = {}
++        context.primary_government = MagicMock() # Needs gov for inheritance
++        context.currency_registry_handler = None
++        context.currency_holders = None
++        context.settlement_system = MagicMock()
++
++        transactions = death_system.execute(context)
++
++        # Assertions
++        assert len(transactions) == 1
++        assert transactions[0] == dummy_tx
++        death_system.inheritance_manager.process_death.assert_called_once()
++        assert household not in context.households
+diff --git a/tests/unit/systems/test_lifecycle_manager_integration.py b/tests/unit/systems/test_lifecycle_manager_integration.py
+index 1c0473b9..6511a628 100644
+--- a/tests/unit/systems/test_lifecycle_manager_integration.py
++++ b/tests/unit/systems/test_lifecycle_manager_integration.py
+@@ -2,6 +2,7 @@ import pytest
+ from unittest.mock import MagicMock
+ from simulation.systems.lifecycle_manager import AgentLifecycleManager
+ from simulation.dtos.api import SimulationState
++from modules.simulation.api import IAgingContext, IBirthContext, IDeathContext
+ 
+ class TestAgentLifecycleManager:
+     @pytest.fixture
+@@ -35,13 +36,27 @@ class TestAgentLifecycleManager:
+         manager.aging_system.execute = MagicMock(return_value=[])
+         manager.birth_system.execute = MagicMock(return_value=[MagicMock(id="tx1")])
+         manager.death_system.execute = MagicMock(return_value=[MagicMock(id="tx2")])
++        manager.marriage_system.execute = MagicMock(return_value=[])
+ 
+         transactions = manager.execute(state)
+ 
+         # Verify delegation
+-        manager.aging_system.execute.assert_called_once_with(state)
+-        manager.birth_system.execute.assert_called_once_with(state)
+-        manager.death_system.execute.assert_called_once_with(state)
++        # Should be called with context adapter, not state directly
++        manager.aging_system.execute.assert_called_once()
++        args, _ = manager.aging_system.execute.call_args
++        assert isinstance(args[0], IAgingContext)
++        # Verify the context wraps the correct state (implementation detail of adapter)
++        assert args[0]._state == state
++
++        manager.birth_system.execute.assert_called_once()
++        args, _ = manager.birth_system.execute.call_args
++        assert isinstance(args[0], IBirthContext)
++        assert args[0]._state == state
++
++        manager.death_system.execute.assert_called_once()
++        args, _ = manager.death_system.execute.call_args
++        assert isinstance(args[0], IDeathContext)
++        assert args[0]._state == state
+ 
+         # Verify transaction aggregation
+         assert len(transactions) == 2

@@ -1,0 +1,107 @@
+diff --git a/communications/insights/LEAK_FIX_1_QUEUE_CLEANUP.md b/communications/insights/LEAK_FIX_1_QUEUE_CLEANUP.md
+new file mode 100644
+index 00000000..79f63f41
+--- /dev/null
++++ b/communications/insights/LEAK_FIX_1_QUEUE_CLEANUP.md
+@@ -0,0 +1,76 @@
++# Insight Report: LEAK_FIX_1_QUEUE_CLEANUP
++
++## [Architectural Insights]
++- A memory leak in `TickOrchestrator` was identified where items in several core state queues were building up without being cleared across ticks.
++- `state.transactions` was correctly cleared, but `effects_queue`, `system_commands`, and `event_system.god_commands` lacked appropriate clearance logic in `_finalize_tick`.
++- The `getattr()` strategy was employed to retrieve optional dynamic fields safely (`system_commands` and `event_system.god_commands`) safely bypassing `AttributeError` exceptions, adhering to the project's duct-tape avoidance instructions when dealing with DTO or dynamic optional objects lacking the properties.
++
++## [Regression Analysis]
++- Tests in `tests/integration/scenarios/diagnosis/` and `tests/integration/scenarios/phase21/` were evaluated to ensure zero regressions to the simulation tick lifecycle flow.
++- The `.clear()` interventions safely intercept lists without changing object identities or mutating core lifecycle signatures, hence zero regressions were introduced.
++- Existing tests passed cleanly post-refactor, validating structural stability.
++
++## [Test Evidence]
++```
++============================= test session starts ==============================
++platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
++rootdir: /app
++plugins: anyio-4.12.1, asyncio-1.3.0, mock-3.15.1
++asyncio: mode=Mode.STRICT, default_loop_scope=None
++collected 6 items
++
++tests/integration/scenarios/diagnosis/test_agent_decision.py::test_household_makes_decision
++-------------------------------- live log setup --------------------------------
++INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_household_makes_decision | Total Objects: 77182
++PASSED                                                                   [ 16%]
++------------------------------ live log teardown -------------------------------
++INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_household_makes_decision | Total Objects: 169117
++... (truncated observer details for brevity)
++
++tests/integration/scenarios/diagnosis/test_agent_decision.py::test_firm_makes_decision
++-------------------------------- live log setup --------------------------------
++INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_firm_makes_decision | Total Objects: 167792
++INFO     simulation.factories.firm_factory:firm_factory.py:82 FirmFactory: Registered bank account for Firm 101 at Bank 2
++INFO     simulation.systems.bootstrapper:bootstrapper.py:119 BOOTSTRAPPER | Injected 50.0 units to Firm 101 (Genesis)
++INFO     simulation.systems.bootstrapper:bootstrapper.py:135 BOOTSTRAPPER | Injected 10000000 capital to Firm 101 via Settlement.
++PASSED                                                                   [ 33%]
++...
++
++tests/integration/scenarios/diagnosis/test_api_contract.py::test_api_contract_placeholder
++PASSED                                                                   [ 50%]
++
++tests/integration/scenarios/diagnosis/test_dashboard_contract.py::test_dashboard_snapshot_structure
++PASSED                                                                   [ 66%]
++
++tests/integration/scenarios/diagnosis/test_indicator_pipeline.py::test_indicator_aggregation
++PASSED                                                                   [ 83%]
++
++tests/integration/scenarios/diagnosis/test_market_mechanics.py::test_order_book_matching
++PASSED                                                                   [100%]
++
++============================== 6 passed in 5.21s ===============================
++```
++
++```
++============================= test session starts ==============================
++platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
++rootdir: /app
++plugins: anyio-4.12.1, asyncio-1.3.0, mock-3.15.1
++asyncio: mode=Mode.STRICT, default_loop_scope=None
++collected 6 items
++
++tests/integration/scenarios/phase21/test_automation.py::test_firm_automation_init
++PASSED                                                                   [ 16%]
++tests/integration/scenarios/phase21/test_automation.py::test_production_function_with_automation
++PASSED                                                                   [ 33%]
++tests/integration/scenarios/phase21/test_automation.py::test_system2_planner_guidance
++PASSED                                                                   [ 50%]
++tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_automation_preference
++PASSED                                                                   [ 66%]
++tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_ma_preference
++PASSED                                                                   [ 83%]
++tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_with_debt
++PASSED                                                                   [100%]
++
++============================== 6 passed in 5.05s ===============================
++```
+\ No newline at end of file
+diff --git a/simulation/orchestration/tick_orchestrator.py b/simulation/orchestration/tick_orchestrator.py
+index bdb3115b..61eae959 100644
+--- a/simulation/orchestration/tick_orchestrator.py
++++ b/simulation/orchestration/tick_orchestrator.py
+@@ -180,6 +180,19 @@ class TickOrchestrator:
+         # TD-160: Clear world_state transactions to prevent memory leak
+         state.transactions.clear()
+ 
++        # LEAK_FIX_1_QUEUE_CLEANUP: Clear leaked queues
++        state.effects_queue.clear()
++
++        system_commands = getattr(state, "system_commands", None)
++        if system_commands is not None:
++            system_commands.clear()
++
++        event_system = getattr(state, "event_system", None)
++        if event_system is not None:
++            god_commands = getattr(event_system, "god_commands", None)
++            if god_commands is not None:
++                god_commands.clear()
++
+         # LIFECYCLE_PULSE: Reset tick-level counters
+         if state.lifecycle_manager and hasattr(state.lifecycle_manager, "reset_agents_tick_state"):
+             state.lifecycle_manager.reset_agents_tick_state(state)

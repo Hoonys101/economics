@@ -1,0 +1,278 @@
+diff --git a/_internal/registry/commands/dispatchers.py b/_internal/registry/commands/dispatchers.py
+index fdbd7d8f..46711f39 100644
+--- a/_internal/registry/commands/dispatchers.py
++++ b/_internal/registry/commands/dispatchers.py
+@@ -59,22 +59,21 @@ class GeminiDispatcher(ICommand):
+             }
+             output_path = mapping.get(mission.worker)
+ 
+-        # from _internal.scripts.core.context_injector.service import ContextInjectorService
+-        # from modules.tools.context_injector.api import InjectionRequestDTO
++        from _internal.scripts.core.context_injector.service import ContextInjectorService
++        from modules.tools.context_injector.api import InjectionRequestDTO
+         
+-        # injector = ContextInjectorService()
++        injector = ContextInjectorService()
+         existing_context = mission.context_files or []
+         
+-        # req = InjectionRequestDTO(
+-        #     target_files=existing_context,
+-        #     include_tests=True,
+-        #     include_docs=True,
+-        #     max_dependency_depth=1
+-        # )
++        req = InjectionRequestDTO(
++            target_files=existing_context,
++            include_tests=True,
++            include_docs=True,
++            max_dependency_depth=1
++        )
+         
+-        # injection_result = injector.analyze_context(req)
+-        # final_context = [node.file_path for node in injection_result.nodes]
+-        final_context = existing_context or []
++        injection_result = injector.analyze_context(req)
++        final_context = [node.file_path for node in injection_result.nodes]
+ 
+         cmd = [sys.executable, str(ctx.base_dir / "_internal" / "scripts" / "gemini_worker.py"), mission.worker, instruction]
+         if final_context:
+@@ -130,10 +129,10 @@ class JulesDispatcher(ICommand):
+             return CommandResult(success=False, message=msg)
+ 
+         # --- UPS-6.0: Stub-First Context Injection ---
+-        # from _internal.scripts.core.context_injector.service import ContextInjectorService
+-        # from modules.tools.context_injector.api import InjectionRequestDTO
++        from _internal.scripts.core.context_injector.service import ContextInjectorService
++        from modules.tools.context_injector.api import InjectionRequestDTO
+ 
+-        # injector = ContextInjectorService()
++        injector = ContextInjectorService()
+         existing_context = mission.context_files or []
+         
+         # If the mission points to a file that contains instructions/spec, include it
+@@ -141,16 +140,15 @@ class JulesDispatcher(ICommand):
+         if mission.file_path:
+             targets.append(mission.file_path)
+ 
+-        # req = InjectionRequestDTO(
+-        #     target_files=targets,
+-        #     include_tests=True,
+-        #     include_docs=True,
+-        #     max_dependency_depth=1
+-        # )
++        req = InjectionRequestDTO(
++            target_files=targets,
++            include_tests=True,
++            include_docs=True,
++            max_dependency_depth=1
++        )
+         
+-        # injection_result = injector.analyze_context(req)
+-        # final_context = [node.file_path for node in injection_result.nodes]
+-        final_context = targets
++        injection_result = injector.analyze_context(req)
++        final_context = [node.file_path for node in injection_result.nodes]
+         
+         # We need to communicate to jules_bridge that these files should be attached.
+         # jules_bridge currently doesn't take a context list explicitly in its CLI args,
+diff --git a/communications/insights/WO-WAVE6-RESTORATION-SPEC.md b/communications/insights/WO-WAVE6-RESTORATION-SPEC.md
+new file mode 100644
+index 00000000..6fe64e87
+--- /dev/null
++++ b/communications/insights/WO-WAVE6-RESTORATION-SPEC.md
+@@ -0,0 +1,43 @@
++# WO-WAVE6-RESTORATION-SPEC: Architectural Insights & Regression Analysis
++
++## 1. Architectural Insights
++
++### Tooling Restoration (ContextInjectorService)
++The restoration of `ContextInjectorService` in `dispatchers.py` was implemented using a lazy import strategy (inside the `execute` method). This was necessary to resolve a circular dependency between `registry.api` and `context_injector.service`. This pattern ensures that the heavyweight dependency injection machinery is only loaded when a mission is actually dispatched, improving startup time for other commands and preventing import loops.
++
++### SSoT Enforcement (Penny Standard)
++The enforcement of the "Penny Standard" Single Source of Truth (SSoT) required significant updates to `SettlementSystem` and `TaxationSystem`.
++- **SettlementSystem**: Now constructs `Transaction` objects where `price` is strictly a display value (Dollars) and `total_pennies` is the SSoT. This aligns with the `Transaction` model's `__post_init__` logic.
++- **TaxationSystem**: Was previously relying on `int(quantity * price)` which, due to the Dollar/Penny ambiguity in `price`, was calculating tax on 1% of the actual value (treating Dollars as Pennies). By switching to `transaction.total_pennies`, the tax calculation is now mathematically correct and robust.
++
++### Default Transfer Handler
++The `DefaultTransferHandler` was introduced to capture generic `transfer` transactions. This closes a gap where system-level transfers (e.g., grants, minting) were not being processed by the `TransactionProcessor` pipeline, potentially missing audit logs or side-effects.
++
++## 2. Regression Analysis
++
++### Broken Tests & Fixes
++Several tests failed due to the SSoT enforcement, revealing that they were relying on the previous incorrect behavior or ambiguous data models.
++
++1.  **`tests/unit/systems/test_settlement_system.py::test_transfer_success`**
++    -   **Issue**: Expected `tx.quantity` to match the transfer amount (20).
++    -   **Fix**: Updated expectation to `tx.quantity == 1.0` and `tx.total_pennies == 20`, reflecting the new Transfer schema.
++
++2.  **`tests/unit/test_transaction_integrity.py::test_settlement_system_record_total_pennies`**
++    -   **Issue**: Expected `tx.quantity` to be 100.
++    -   **Fix**: Updated to expect `tx.quantity == 1.0` and `tx.price == 1.0` (100 pennies = $1.00).
++
++3.  **`tests/system/test_engine.py::TestSimulation::test_process_transactions_labor_trade`**
++    -   **Issue**: Test expected `tax_pennies = 2` (0.1% effective rate) on a 2000 penny transaction. This was due to the bug where tax was calculated on the Dollar value (20) treated as pennies.
++    -   **Fix**: Updated expectation to `tax_pennies = 200` (10% of 2000 pennies), reflecting the correct tax calculation.
++
++4.  **`tests/unit/test_tax_incidence.py` (Household & Firm Payer Scenarios)**
++    -   **Issue**: Tests hardcoded an expected tax of `1625` pennies on a `1,000,000` penny transaction. This `1625` was derived from calculating progressive tax on `10,000` (the Dollar value).
++    -   **Fix**: Updated expectation to `199,625` pennies, which is the correct progressive tax on `1,000,000` pennies. This confirms the fix in `TaxationSystem` is working correctly.
++
++## 3. Test Evidence
++
++The entire test suite passed after applying the fixes.
++
++```
++================= 1033 passed, 11 skipped, 1 warning in 10.33s =================
++```
+diff --git a/modules/government/taxation/system.py b/modules/government/taxation/system.py
+index d77ae8c8..ced17dde 100644
+--- a/modules/government/taxation/system.py
++++ b/modules/government/taxation/system.py
+@@ -129,7 +129,7 @@ class TaxationSystem:
+         Does NOT execute any transfer.
+         """
+         intents: List[TaxIntent] = []
+-        trade_value = int(transaction.quantity * transaction.price)
++        trade_value = transaction.total_pennies
+ 
+         # 1. Sales Tax (Goods)
+         if transaction.transaction_type == "goods":
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 9222623f..a45dc4bc 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -321,6 +321,8 @@ class SimulationInitializer(SimulationInitializerInterface):
+ 
+         sim.world_state.public_manager = sim.public_manager
+         sim.transaction_processor = TransactionProcessor(config_module=self.config)
++        from simulation.systems.handlers.transfer_handler import DefaultTransferHandler
++        sim.transaction_processor.register_handler('transfer', DefaultTransferHandler())
+         sim.transaction_processor.register_handler('goods', GoodsTransactionHandler())
+         sim.transaction_processor.register_handler('labor', LaborTransactionHandler())
+         sim.transaction_processor.register_handler('HIRE', LaborTransactionHandler()) # Phase 4.1: Major-Matching
+diff --git a/simulation/systems/handlers/transfer_handler.py b/simulation/systems/handlers/transfer_handler.py
+new file mode 100644
+index 00000000..c44b857a
+--- /dev/null
++++ b/simulation/systems/handlers/transfer_handler.py
+@@ -0,0 +1,14 @@
++from simulation.systems.api import ITransactionHandler, TransactionContext
++from simulation.models import Transaction
++from typing import Any
++
++class DefaultTransferHandler(ITransactionHandler):
++    """
++    Handles generic 'transfer' transactions generated by SettlementSystem.
++    These transactions are already financially settled; this handler
++    serves strictly as a pass-through to ensure the MonetaryLedger
++    can record the event for M2 Audits and tracking.
++    """
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
++        # Transaction logic is already executed. Acknowledge for ledger.
++        return True
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index b9ebb855..934d68f0 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -609,9 +609,9 @@ class SettlementSystem(IMonetaryAuthority):
+             buyer_id=buyer_id,
+             seller_id=seller_id,
+             item_id="currency",
+-            quantity=amount,
+-            price=1,
+-            total_pennies=amount,
++            quantity=1.0, # Treat transfer as 1 unit of currency transfer
++            price=amount / 100.0, # Display price in dollars
++            total_pennies=amount, # SSoT
+             market_id="settlement",
+             transaction_type="transfer",
+             time=tick,
+diff --git a/tests/system/test_engine.py b/tests/system/test_engine.py
+index 0479e5ef..c25146fb 100644
+--- a/tests/system/test_engine.py
++++ b/tests/system/test_engine.py
+@@ -498,9 +498,8 @@ class TestSimulation:
+ 
+         # Assets include tax considerations
+         # Note: Government uses FiscalPolicyManager which applies Progressive Tax Brackets defined in config.
+-        # However, in this test environment with mocked config, the effective tax calculation yields 2 pennies.
+-        # (Likely due to FLAT tax mode interaction or survival threshold offset).
+-        tax_pennies = 2
++        # However, in this test environment with mocked config (FLAT TAX 10%), the effective tax calculation yields 200 pennies.
++        tax_pennies = 200
+         
+         assert buyer_firm.get_balance(DEFAULT_CURRENCY) == initial_buyer_assets - trade_value_pennies
+         # Household net income: 2000 - tax (e.g. 125)
+diff --git a/tests/unit/systems/test_settlement_system.py b/tests/unit/systems/test_settlement_system.py
+index 6b1c4767..9fe4ce99 100644
+--- a/tests/unit/systems/test_settlement_system.py
++++ b/tests/unit/systems/test_settlement_system.py
+@@ -193,7 +193,8 @@ def test_transfer_success(settlement_system):
+     tx = settlement_system.transfer(sender, receiver, 20, "Test Transfer", tick=10)
+ 
+     assert tx is not None
+-    assert tx.quantity == 20
++    assert tx.quantity == 1.0
++    assert tx.total_pennies == 20
+     assert settlement_system.get_balance(sender.id) == 80
+     assert settlement_system.get_balance(receiver.id) == 70
+     assert tx.time == 10
+diff --git a/tests/unit/test_tax_incidence.py b/tests/unit/test_tax_incidence.py
+index 01c03cb3..49cdeb2f 100644
+--- a/tests/unit/test_tax_incidence.py
++++ b/tests/unit/test_tax_incidence.py
+@@ -183,12 +183,13 @@ class TestTaxIncidence(unittest.TestCase):
+         
+         # Based on current system behavior:
+         # Transaction price is 10000.0 (Dollars).
+-        # Tax seems to be calculated/applied as 1625 PENNIES (based on actual test output).
+-        tax_pennies = 1625
++        # Tax is now calculated on the full penny amount (1,000,000).
++        # Expected Tax: 199,625 pennies.
++        tax_pennies = 199625
+ 
+-        # Household: Initial 100,000 + Wage 1,000,000 - Tax 1625 = 1,098,375
++        # Household: Initial 100,000 + Wage 1,000,000 - Tax 199,625 = 900,375
+         # Firm: Initial 5,000,000 - Wage 1,000,000 = 4,000,000
+-        self.assertEqual(sim.settlement_system.get_balance(h.id), 1098375)
++        self.assertEqual(sim.settlement_system.get_balance(h.id), 900375)
+         self.assertEqual(sim.settlement_system.get_balance(f.id), 4000000)
+         self.assertEqual(sim.settlement_system.get_balance(sim.government.id), tax_pennies)
+         print("✓ Household Payer (Withholding): Agent Assets Correct")
+@@ -215,13 +216,13 @@ class TestTaxIncidence(unittest.TestCase):
+         )
+         sim._process_transactions([tx])
+         
+-        # Tax Calculation seems to result in 1625 pennies.
+-        tax_pennies = 1625
++        # Tax Calculation results in 199,625 pennies.
++        tax_pennies = 199625
+ 
+         # Household: Initial 100,000 + Wage 1,000,000 = 1,100,000 (No tax withheld)
+-        # Firm: Initial 5,000,000 - Wage 1,000,000 - Tax 1625 = 3,998,375
++        # Firm: Initial 5,000,000 - Wage 1,000,000 - Tax 199,625 = 3,800,375
+         self.assertEqual(sim.settlement_system.get_balance(h.id), 1100000)
+-        self.assertEqual(sim.settlement_system.get_balance(f.id), 3998375)
++        self.assertEqual(sim.settlement_system.get_balance(f.id), 3800375)
+         self.assertEqual(sim.settlement_system.get_balance(sim.government.id), tax_pennies)
+         print("✓ Firm Payer (Extra Tax): Agent Assets Correct")
+ 
+diff --git a/tests/unit/test_transaction_integrity.py b/tests/unit/test_transaction_integrity.py
+index afead76a..001b4b40 100644
+--- a/tests/unit/test_transaction_integrity.py
++++ b/tests/unit/test_transaction_integrity.py
+@@ -77,9 +77,9 @@ class TestTransactionIntegrity:
+ 
+         assert tx is not None
+         assert getattr(tx, 'total_pennies', 0) == 100
+-        assert tx.quantity == 100
+-        # If amount is 100 pennies, and quantity is 100 (pennies?), then price per unit (penny) is 0.01 dollars
++        assert tx.quantity == 1.0
++        # If amount is 100 pennies, and quantity is 1.0, then price per unit is 1.00 dollar
+         # total_pennies 100 = 1.00 dollar.
+-        # quantity 100.
+-        # price * quantity = 0.01 * 100 = 1.00. Correct.
+-        assert tx.price == 0.01
++        # quantity 1.0.
++        # price * quantity = 1.00 * 1.0 = 1.00. Correct.
++        assert tx.price == 1.0

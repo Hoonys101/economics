@@ -1,0 +1,434 @@
+diff --git a/communications/insights/phase41_test_dto_hygiene_impl.md b/communications/insights/phase41_test_dto_hygiene_impl.md
+new file mode 100644
+index 00000000..ead7d931
+--- /dev/null
++++ b/communications/insights/phase41_test_dto_hygiene_impl.md
+@@ -0,0 +1,31 @@
++# Phase 4.1: DTO Test Hygiene Implementation Report
++
++## Architectural Insights
++1.  **DTO Drift Identified**: `MarketContextDTO` (modules/system/api.py) was missing fields `benchmark_rates` and `fiscal_policy` used by consumers (`Firm.generate_transactions`, `FinanceEngine`).
++2.  **SimulationState Gaps**: `SimulationState` DTO (simulation/dtos/api.py) was missing `public_manager`, leading to tests inventing attributes on mocks (Mock Drift) and potential runtime `AttributeError` if accessed dynamically.
++3.  **Strict Mocking Exposed Hidden Bugs**: Enforcing `spec=SimulationState` in `TransactionProcessor` tests revealed that the DTO definition was incomplete compared to actual usage.
++4.  **Configuration Isolation Issues**: `tests/system/test_labor_config_migration.py` failed because it relied on `yaml` loading in an environment where `yaml` is mocked to return empty data. Fixed by injecting configuration override via fixture.
++5.  **Test Hygiene**: `TestSettlementPurity` was failing because it mocked `fs.ledger` (masking the real `BankRegistry`) but didn't mock `fs.bank_registry` access in `process_loan_application`. Fixed by mocking the registry.
++
++## Regression Analysis
++*   **Test Failures in `FinanceEngine`**: Refactoring `MarketContextDTO` to a dataclass caused `AttributeError: object has no attribute 'get'` in legacy code using it as a dictionary.
++    *   **Fix**: Updated `FinanceEngine` and `Firm` to use dot notation (`market_context.exchange_rates`) and updated `MarketContextDTO` to include required fields with defaults.
++*   **Test Failures in `test_labor_config_migration.py`**: The test suite environment mocks `yaml`, preventing `config.LABOR_MARKET` from loading.
++    *   **Fix**: Added a fixture to explicitly populate `config.LABOR_MARKET` for the test.
++
++## Test Evidence
++```
++=========================== short test summary info ============================
++SKIPPED [1] tests/integration/test_server_integration.py:16: websockets is mocked
++SKIPPED [1] tests/security/test_god_mode_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_websocket_auth.py:13: websockets is mocked
++SKIPPED [1] tests/system/test_server_auth.py:11: websockets is mocked, skipping server auth tests
++SKIPPED [1] tests/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/test_ws.py:11: fastapi is mocked
++SKIPPED [1] tests/market/test_dto_purity.py:26: Pydantic is mocked
++SKIPPED [1] tests/market/test_dto_purity.py:54: Pydantic is mocked
++SKIPPED [1] tests/modules/system/test_global_registry.py:101: Pydantic is mocked
++SKIPPED [1] tests/modules/system/test_global_registry.py:132: Pydantic is mocked
++================= 982 passed, 11 skipped, 2 warnings in 8.71s ==================
++```
+diff --git a/modules/system/api.py b/modules/system/api.py
+index 7c98d3f1..8cabd8fe 100644
+--- a/modules/system/api.py
++++ b/modules/system/api.py
+@@ -42,11 +42,14 @@ class MarketContextDTO:
+     Context object passed to agents for making decisions.
+     Contains strictly external market data (prices, rates, signals).
+     """
+-    market_data: Dict[str, Any]
+-    market_signals: Dict[str, int]
+-    tick: int
++    market_data: Dict[str, Any] = field(default_factory=dict)
++    market_signals: Dict[str, int] = field(default_factory=dict)
++    tick: int = 0
+     # Represents currency exchange rates relative to base currency
+     exchange_rates: Optional[Dict[str, float]] = None
++    # Added for DTO Hygiene
++    benchmark_rates: Dict[str, float] = field(default_factory=dict)
++    fiscal_policy: Optional[Any] = None
+ 
+ @dataclass(frozen=True)
+ class MarketSignalDTO:
+diff --git a/simulation/components/engines/finance_engine.py b/simulation/components/engines/finance_engine.py
+index da5f22a0..26483a21 100644
+--- a/simulation/components/engines/finance_engine.py
++++ b/simulation/components/engines/finance_engine.py
+@@ -214,7 +214,7 @@ class FinanceEngine(IFinanceEngine):
+     ) -> List[Transaction]:
+         """Internal helper for dividends and bailout repayment."""
+         transactions = []
+-        exchange_rates = context.market_context.get('exchange_rates', {})
++        exchange_rates = context.market_context.exchange_rates or {}
+         gov_id = context.government_id
+         registry = context.shareholder_registry
+ 
+@@ -327,7 +327,7 @@ class FinanceEngine(IFinanceEngine):
+         """
+         Calculates firm valuation in pennies.
+         """
+-        exchange_rates = context.market_context.get('exchange_rates', {}) if context else {DEFAULT_CURRENCY: 1.0}
++        exchange_rates = (context.market_context.exchange_rates or {}) if context else {DEFAULT_CURRENCY: 1.0}
+ 
+         def convert(amt: int, cur: str) -> int:
+             rate = exchange_rates.get(cur, 1.0) if cur != DEFAULT_CURRENCY else 1.0
+diff --git a/simulation/dtos/api.py b/simulation/dtos/api.py
+index c2300916..5673bead 100644
+--- a/simulation/dtos/api.py
++++ b/simulation/dtos/api.py
+@@ -302,6 +302,7 @@ class SimulationState:
+     # Injection
+     injectable_sensory_dto: Optional[Any] = None # GovernmentStateDTO
+     currency_registry_handler: Optional[Any] = None # WorldState injection for strict registry
++    public_manager: Optional[Any] = None # PublicManager (Added for TransactionProcessor)
+ 
+     def register_currency_holder(self, holder: Any) -> None:
+         if self.currency_registry_handler:
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 4cb69ea1..4e4f7b13 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -846,10 +846,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+ 
+     def _adjust_marketing_budget(self, market_context: MarketContextDTO = None) -> None:
+         if market_context is None:
+-            market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}, "benchmark_rates": {}}
++            market_context = MarketContextDTO(exchange_rates={DEFAULT_CURRENCY: 1.0}, benchmark_rates={})
+ 
+         # Calculate primary revenue for budget adjustment
+-        exchange_rates = market_context['exchange_rates']
++        exchange_rates = market_context.exchange_rates or {}
+         total_revenue = 0.0
+         for cur, amount in self.finance_state.revenue_this_turn.items():
+              rate = exchange_rates.get(cur, 1.0) if cur != DEFAULT_CURRENCY else 1.0
+@@ -1384,7 +1384,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+     def _build_payroll_context(self, current_time: int, government: Optional[Any], market_context: MarketContextDTO) -> HRPayrollContextDTO:
+         tax_policy = None
+         # Extract from market_context if available (FiscalContext)
+-        fiscal_policy = market_context.get("fiscal_policy")
++        fiscal_policy = market_context.fiscal_policy
+         income_tax_rate = fiscal_policy.income_tax_rate if fiscal_policy else 0.0 # Default
+         survival_cost = DEFAULT_SURVIVAL_COST # Default
+ 
+@@ -1397,7 +1397,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         )
+ 
+         return HRPayrollContextDTO(
+-            exchange_rates=market_context.get("exchange_rates", {DEFAULT_CURRENCY: 1.0}),
++            exchange_rates=market_context.exchange_rates or {DEFAULT_CURRENCY: 1.0},
+             tax_policy=tax_policy,
+             current_time=current_time,
+             firm_id=self.id,
+@@ -1617,7 +1617,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         gov_id = government.id if government else None
+ 
+         # Extract dynamic tax rates from MarketContext
+-        fiscal_policy = market_context.get("fiscal_policy")
++        fiscal_policy = market_context.fiscal_policy
+         corporate_tax_rate = fiscal_policy.corporate_tax_rate if fiscal_policy else DEFAULT_CORPORATE_TAX_RATE
+ 
+         tax_rates = {"income_tax": corporate_tax_rate}
+diff --git a/simulation/metrics/economic_tracker.py b/simulation/metrics/economic_tracker.py
+index 09046291..523eb2a0 100644
+--- a/simulation/metrics/economic_tracker.py
++++ b/simulation/metrics/economic_tracker.py
+@@ -88,10 +88,10 @@ class EconomicIndicatorTracker:
+         """
+         exchange_rates = self.exchange_engine.get_all_rates()
+         # Initial empty benchmark rates as placeholders
+-        return {
+-            "exchange_rates": exchange_rates,
+-            "benchmark_rates": {}
+-        }
++        return MarketContextDTO(
++            exchange_rates=exchange_rates,
++            benchmark_rates={}
++        )
+ 
+     def _calculate_total_wallet_value(self, wallet_dict: Dict[CurrencyCode, float]) -> float:
+         """
+diff --git a/simulation/orchestration/phases/firm_operations.py b/simulation/orchestration/phases/firm_operations.py
+index 464a7daf..f903e136 100644
+--- a/simulation/orchestration/phases/firm_operations.py
++++ b/simulation/orchestration/phases/firm_operations.py
+@@ -4,6 +4,7 @@ import logging
+ 
+ from simulation.orchestration.api import IPhaseStrategy
+ from simulation.dtos.api import SimulationState
++from modules.system.api import MarketContextDTO
+ 
+ if TYPE_CHECKING:
+     from simulation.world_state import WorldState
+@@ -30,10 +31,10 @@ class Phase_FirmProductionAndSalaries(IPhaseStrategy):
+         # Fallback if no tracker
+         if not market_context:
+              from modules.system.api import DEFAULT_CURRENCY
+-             market_context = {
+-                 "exchange_rates": {DEFAULT_CURRENCY: 1.0},
+-                 "benchmark_rates": {}
+-             }
++             market_context = MarketContextDTO(
++                 exchange_rates={DEFAULT_CURRENCY: 1.0},
++                 benchmark_rates={}
++             )
+ 
+         for firm in state.firms:
+              if firm.is_active:
+diff --git a/tests/system/test_labor_config_migration.py b/tests/system/test_labor_config_migration.py
+index ed31ce81..0edd8abf 100644
+--- a/tests/system/test_labor_config_migration.py
++++ b/tests/system/test_labor_config_migration.py
+@@ -6,6 +6,27 @@ from simulation.firms import Firm
+ 
+ class TestLaborConfigMigration:
+ 
++    @pytest.fixture(autouse=True)
++    def setup_config(self):
++        if not hasattr(config, "LABOR_MARKET"):
++            config.LABOR_MARKET = {
++                "majors": ["GENERAL", "AGRICULTURE", "MANUFACTURING", "SERVICES", "TECHNOLOGY"],
++                "compatibility": {
++                    "PERFECT": 1.2,
++                    "PARTIAL": 1.0,
++                    "MISMATCH": 0.8,
++                    "GENERAL_PENALTY": 1.0
++                },
++                "sector_map": {
++                    "FOOD": "AGRICULTURE",
++                    "GOODS": "MANUFACTURING",
++                    "SERVICE": "SERVICES",
++                    "MATERIAL": "MANUFACTURING",
++                    "LUXURY": "SERVICES",
++                    "TECH": "TECHNOLOGY"
++                }
++            }
++
+     def test_household_majors_assigned(self):
+         """Verify that all households are assigned a valid major from the configuration."""
+         sim = create_simulation()
+diff --git a/tests/unit/components/test_engines.py b/tests/unit/components/test_engines.py
+index ac253b66..2696c94e 100644
+--- a/tests/unit/components/test_engines.py
++++ b/tests/unit/components/test_engines.py
+@@ -10,7 +10,7 @@ from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingCon
+ from simulation.dtos.context_dtos import FinancialTransactionContext
+ from modules.simulation.dtos.api import FirmConfigDTO
+ from simulation.models import Transaction, Order
+-from modules.system.api import DEFAULT_CURRENCY
++from modules.system.api import DEFAULT_CURRENCY, MarketContextDTO
+ from modules.firm.api import FirmSnapshotDTO, ProductionInputDTO, ProductionResultDTO, FinanceStateDTO, HRStateDTO, SalesStateDTO, ProductionStateDTO
+ 
+ class TestHREngine:
+@@ -155,7 +155,7 @@ class TestFinanceEngine:
+         context = FinancialTransactionContext(
+             government_id=999,
+             tax_rates={},
+-            market_context={"exchange_rates": {DEFAULT_CURRENCY: 1.0}},
++            market_context=MarketContextDTO(exchange_rates={DEFAULT_CURRENCY: 1.0}, benchmark_rates={}),
+             shareholder_registry=None
+         )
+ 
+diff --git a/tests/unit/modules/finance/test_settlement_purity.py b/tests/unit/modules/finance/test_settlement_purity.py
+index 24ec3c16..146b0193 100644
+--- a/tests/unit/modules/finance/test_settlement_purity.py
++++ b/tests/unit/modules/finance/test_settlement_purity.py
+@@ -89,6 +89,13 @@ class TestSettlementPurity:
+         }
+         fs.ledger.banks[mock_bank.id].loans = {"LOAN_1": mock_loan_state}
+ 
++        # Mock bank_registry to return the loan (Since process_loan_application queries registry)
++        fs.bank_registry = MagicMock()
++        fs.bank_registry.get_loan.return_value = mock_loan_state
++        # Also need get_all_banks for fallback logic if needed, but lender_id is in profile/app
++        # But wait, app_dto.lender_id is set from profile.
++        # process_loan_application uses app_dto.lender_id.
++
+         fs.loan_booking_engine.grant_loan.return_value = result
+ 
+         # Execute
+diff --git a/tests/unit/test_firm_profit.py b/tests/unit/test_firm_profit.py
+index 27f2be09..2fba565c 100644
+--- a/tests/unit/test_firm_profit.py
++++ b/tests/unit/test_firm_profit.py
+@@ -6,7 +6,7 @@ from simulation.firms import Firm
+ from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+ from tests.utils.factories import create_firm_config_dto
+ from modules.simulation.api import AgentCoreConfigDTO
+-from modules.system.api import DEFAULT_CURRENCY
++from modules.system.api import DEFAULT_CURRENCY, MarketContextDTO
+ 
+ @pytest.fixture
+ def mock_firm():
+@@ -54,7 +54,7 @@ def test_firm_profit_history_update(mock_firm):
+     market_data = {}
+     shareholder_registry = Mock()
+     shareholder_registry.get_shareholders_of_firm.return_value = []
+-    market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}}
++    market_context = MarketContextDTO(exchange_rates={DEFAULT_CURRENCY: 1.0}, benchmark_rates={})
+     current_time = 1
+ 
+     # Tick 1: Profit 10
+@@ -110,7 +110,7 @@ def test_firm_revenue_expenses_reset(mock_firm):
+     market_data = {}
+     shareholder_registry = Mock()
+     shareholder_registry.get_shareholders_of_firm.return_value = []
+-    market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}}
++    market_context = MarketContextDTO(exchange_rates={DEFAULT_CURRENCY: 1.0}, benchmark_rates={})
+ 
+     mock_firm.generate_transactions(government, market_data, shareholder_registry, 1, market_context)
+ 
+diff --git a/tests/unit/test_firms.py b/tests/unit/test_firms.py
+index 58f39ec0..718626cf 100644
+--- a/tests/unit/test_firms.py
++++ b/tests/unit/test_firms.py
+@@ -2,7 +2,7 @@ import pytest
+ from unittest.mock import Mock, MagicMock
+ import math
+ from simulation.firms import Firm
+-from modules.system.api import DEFAULT_CURRENCY
++from modules.system.api import DEFAULT_CURRENCY, MarketContextDTO
+ from simulation.components.state.firm_state_models import FinanceState, SalesState
+ from tests.utils.factories import create_firm, create_firm_config_dto
+ 
+@@ -206,7 +206,7 @@ class TestFirmSales:
+         firm.finance_state.last_revenue_pennies = 100 # pennies
+ 
+         # Need context with exchange rates
+-        context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}}
++        context = MarketContextDTO(exchange_rates={DEFAULT_CURRENCY: 1.0}, benchmark_rates={})
+ 
+         firm._adjust_marketing_budget(context)
+ 
+diff --git a/tests/unit/test_transaction_processor.py b/tests/unit/test_transaction_processor.py
+index 0efebe61..b38f141e 100644
+--- a/tests/unit/test_transaction_processor.py
++++ b/tests/unit/test_transaction_processor.py
+@@ -4,6 +4,7 @@ from simulation.systems.transaction_processor import TransactionProcessor
+ from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
+ from simulation.models import Transaction
+ from modules.finance.api import IFinancialAgent
++from simulation.dtos.api import SimulationState
+ 
+ def test_transaction_processor_dispatch_to_handler():
+     # Setup
+@@ -16,7 +17,7 @@ def test_transaction_processor_dispatch_to_handler():
+     tp.register_handler("test_type", handler)
+ 
+     # Setup State
+-    state = MagicMock()
++    state = MagicMock(spec=SimulationState)
+     state.agents = {1: MagicMock(), 2: MagicMock()}
+     state.transactions = [
+         Transaction(
+@@ -24,7 +25,20 @@ def test_transaction_processor_dispatch_to_handler():
+             market_id="m", transaction_type="test_type", time=0
+         , total_pennies=1000)
+     ]
+-    state.taxation_system = MagicMock() # Ensure context building works
++    state.taxation_system = MagicMock()
++    state.public_manager = None
++    state.bank = MagicMock()
++    state.central_bank = MagicMock()
++    state.settlement_system = MagicMock()
++    state.primary_government = MagicMock()
++    state.stock_market = MagicMock()
++    state.real_estate_units = []
++    state.market_data = {}
++    state.logger = MagicMock()
++    state.time = 0
++    state.inactive_agents = {}
++    state.shareholder_registry = MagicMock()
++    state.effects_queue = []
+ 
+     # Execute
+     tp.execute(state)
+@@ -41,7 +55,7 @@ def test_transaction_processor_ignores_credit_creation():
+     config = MagicMock()
+     tp = TransactionProcessor(config_module=config)
+ 
+-    state = MagicMock()
++    state = MagicMock(spec=SimulationState)
+     state.transactions = [
+         Transaction(
+             buyer_id=1, seller_id=2, item_id="credit", price=10, quantity=1,
+@@ -49,6 +63,19 @@ def test_transaction_processor_ignores_credit_creation():
+         , total_pennies=1000)
+     ]
+     state.agents = {1: MagicMock(), 2: MagicMock()}
++    state.public_manager = None
++    state.bank = MagicMock()
++    state.central_bank = MagicMock()
++    state.settlement_system = MagicMock()
++    state.primary_government = MagicMock()
++    state.stock_market = MagicMock()
++    state.real_estate_units = []
++    state.market_data = {}
++    state.logger = MagicMock()
++    state.time = 0
++    state.inactive_agents = {}
++    state.shareholder_registry = MagicMock()
++    state.effects_queue = []
+ 
+     # No handler registered
+     # Execute
+@@ -104,9 +131,23 @@ def test_public_manager_routing():
+     pm_handler = MagicMock()
+     tp.register_public_manager_handler(pm_handler)
+ 
+-    state = MagicMock()
++    state = MagicMock(spec=SimulationState)
+     state.public_manager = MagicMock() # Ensure PM exists
+ 
++    # Fill required fields
++    state.bank = MagicMock()
++    state.central_bank = MagicMock()
++    state.settlement_system = MagicMock()
++    state.primary_government = MagicMock()
++    state.stock_market = MagicMock()
++    state.real_estate_units = []
++    state.market_data = {}
++    state.logger = MagicMock()
++    state.time = 0
++    state.inactive_agents = {}
++    state.shareholder_registry = MagicMock()
++    state.effects_queue = []
++
+     # Transaction with PM as seller
+     tx = Transaction(
+         buyer_id=1, seller_id="PUBLIC_MANAGER", item_id="item", price=10, quantity=1,
+@@ -126,7 +167,7 @@ def test_transaction_processor_dispatches_housing():
+     housing_handler = MagicMock()
+     tp.register_handler("housing", housing_handler)
+ 
+-    state = MagicMock()
++    state = MagicMock(spec=SimulationState)
+     state.transactions = [
+         Transaction(
+             buyer_id=1, seller_id=2, item_id="unit_1", price=100, quantity=1,
+@@ -135,6 +176,19 @@ def test_transaction_processor_dispatches_housing():
+     ]
+     state.agents = {1: MagicMock(), 2: MagicMock()}
+     state.taxation_system = MagicMock()
++    state.public_manager = None
++    state.bank = MagicMock()
++    state.central_bank = MagicMock()
++    state.settlement_system = MagicMock()
++    state.primary_government = MagicMock()
++    state.stock_market = MagicMock()
++    state.real_estate_units = []
++    state.market_data = {}
++    state.logger = MagicMock()
++    state.time = 0
++    state.inactive_agents = {}
++    state.shareholder_registry = MagicMock()
++    state.effects_queue = []
+ 
+     tp.execute(state)
+ 

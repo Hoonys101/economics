@@ -1,0 +1,463 @@
+diff --git a/communications/insights/MARKET_POLICY_INTEGRATION_IMPL.md b/communications/insights/MARKET_POLICY_INTEGRATION_IMPL.md
+new file mode 100644
+index 00000000..62f884b8
+--- /dev/null
++++ b/communications/insights/MARKET_POLICY_INTEGRATION_IMPL.md
+@@ -0,0 +1,29 @@
++# Market Policy Integration Implementation Report
++
++## 1. Architectural Insights
++*   **Dual-Layer Validation:** To maintain backward compatibility with the existing `DynamicCircuitBreaker` (which handles volatility and temporal relaxation), the `OrderBookMarket` now employs a dual-layer validation strategy.
++    1.  **Policy Layer (`PriceLimitEnforcer`):** Strictly enforces configured static/dynamic limits (Penny Standard). This is the new authority.
++    2.  **Circuit Breaker Layer (`DynamicCircuitBreaker`):** Legacy layer handling volatility-based checks. This is retained as a fallback/secondary check to ensure existing market stability logic is preserved until fully refactored.
++*   **Dependency Injection:** `PriceLimitEnforcer` is injected into `OrderBookMarket` via `SimulationInitializer`. This aligns with the "Dependency Injection" pattern and makes testing easier by allowing mock enforcers.
++*   **Configuration:** Market safety policies are now externalized in `config/market_safety.json`, allowing per-market tuning without code changes.
++
++## 2. Regression Analysis
++*   **Impact:** The `OrderBookMarket` constructor signature changed to accept an optional `enforcer`.
++*   **Mitigation:** The constructor defaults `enforcer` to `None`. If `None`, it instantiates a default disabled `PriceLimitEnforcer`. This ensures that all legacy tests (hundreds of them) instantiating `OrderBookMarket` without the new argument continue to function without modification.
++*   **Fixed Regression:** Initial implementation removed the `circuit_breaker` check from `place_order`. This caused `tests/unit/test_market_relaxation.py` to fail because it relied on the circuit breaker's logic. The fix was to restore the `circuit_breaker` check as a secondary step after the `enforcer` check.
++
++## 3. Test Evidence
++All tests passed, including new policy tests and existing regression tests.
++
++```text
++tests/unit/test_market_relaxation.py::TestOrderBookMarketIntegration::test_place_order_delegates_to_circuit_breaker
++-------------------------------- live log call ---------------------------------
++INFO     Market_test_market:order_book_market.py:114 OrderBookMarket test_market initialized.
++WARNING  Market_test_market:order_book_market.py:225 CIRCUIT_BREAKER | Order rejected. Price 120.00 out of bounds [85.00, 115.00]
++PASSED                                                                   [100%]
++```
++
++Full suite summary (partial):
++```text
++============ 1080 passed, 11 skipped, 1 warning in 23.77s ============
++```
+diff --git a/config/market_safety.json b/config/market_safety.json
+index fb54211b..294119cd 100644
+--- a/config/market_safety.json
++++ b/config/market_safety.json
+@@ -1,13 +1,20 @@
+ {
+-  "security_market": {
+-    "is_enabled": true,
+-    "mode": "DYNAMIC",
+-    "base_limit": 0.30
+-  },
+-  "basic_food": {
+-    "is_enabled": false,
+-    "mode": "STATIC",
+-    "static_ceiling": 1000,
+-    "static_floor": 10
+-  }
++    "default": {
++        "id": "default",
++        "is_enabled": true,
++        "mode": "DYNAMIC",
++        "base_limit": 0.30
++    },
++    "housing": {
++        "id": "housing",
++        "is_enabled": true,
++        "mode": "DYNAMIC",
++        "base_limit": 0.50
++    },
++    "security_market": {
++        "id": "security_market",
++        "is_enabled": true,
++        "mode": "DYNAMIC",
++        "base_limit": 0.10
++    }
+ }
+diff --git a/modules/market/safety/__init__.py b/modules/market/safety/__init__.py
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/modules/market/safety/price_limit.py b/modules/market/safety/price_limit.py
+new file mode 100644
+index 00000000..6e67dae2
+--- /dev/null
++++ b/modules/market/safety/price_limit.py
+@@ -0,0 +1,80 @@
++from typing import Optional
++from modules.market.api import IPriceLimitEnforcer, CanonicalOrderDTO
++from modules.market.safety_dtos import PriceLimitConfigDTO, ValidationResultDTO
++
++class PriceLimitEnforcer(IPriceLimitEnforcer):
++    """
++    Stateless enforcer for price limits, strictly adhering to the Penny Standard (int).
++    Validates orders against reference prices and configured limits.
++    """
++    def __init__(self, config: PriceLimitConfigDTO):
++        self.config = config
++        self.reference_price: int = 0
++
++    def validate_order(self, order: CanonicalOrderDTO) -> ValidationResultDTO:
++        """
++        Validates an order's price against active boundaries.
++        MUST remain strictly idempotent and side-effect free (SRP).
++        """
++        if not self.config.is_enabled:
++            return ValidationResultDTO(is_valid=True)
++
++        price = order.price_pennies
++
++        # STATIC Check
++        if self.config.mode == 'STATIC':
++            if self.config.static_ceiling is not None and price > self.config.static_ceiling:
++                return ValidationResultDTO(
++                    is_valid=False,
++                    reason=f"Price {price} exceeds static ceiling {self.config.static_ceiling}"
++                )
++            if self.config.static_floor is not None and price < self.config.static_floor:
++                return ValidationResultDTO(
++                    is_valid=False,
++                    reason=f"Price {price} below static floor {self.config.static_floor}"
++                )
++            return ValidationResultDTO(is_valid=True)
++
++        # DYNAMIC Check
++        if self.config.mode == 'DYNAMIC':
++            # Handle Discovery Phase (No Reference Price)
++            if self.reference_price <= 0:
++                # If we have static backstops, we can check them even in dynamic mode
++                # But spec implies mode switch. Let's stick to simple logic:
++                # If ref price is 0, we can't calculate dynamic bounds. Allow discovery.
++                return ValidationResultDTO(is_valid=True, reason="Discovery Phase")
++
++            # Calculate bounds in pennies using integer math
++            # base_limit is float (e.g. 0.30).
++            # We use int() truncation for safety.
++            delta = int(self.reference_price * self.config.base_limit)
++            upper = self.reference_price + delta
++            lower = max(0, self.reference_price - delta)
++
++            if price > upper:
++                return ValidationResultDTO(
++                    is_valid=False,
++                    reason=f"Price {price} exceeds dynamic ceiling {upper} (Ref: {self.reference_price})"
++                )
++            if price < lower:
++                 return ValidationResultDTO(
++                     is_valid=False,
++                     reason=f"Price {price} below dynamic floor {lower} (Ref: {self.reference_price})"
++                 )
++
++            return ValidationResultDTO(is_valid=True)
++
++        # Default Safe
++        return ValidationResultDTO(is_valid=True)
++
++    def set_reference_price(self, price: int) -> None:
++        """
++        Sets the reference anchor price used for dynamic boundary calculations.
++        """
++        self.reference_price = price
++
++    def update_config(self, config: PriceLimitConfigDTO) -> None:
++        """
++        Updates the enforcer's active configuration limits.
++        """
++        self.config = config
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 519c062a..a27dd748 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -24,6 +24,8 @@ from simulation.loan_market import LoanMarket
+ from simulation.markets.order_book_market import OrderBookMarket
+ from simulation.markets.circuit_breaker import DynamicCircuitBreaker
+ from simulation.markets.stock_market import StockMarket
++from modules.market.safety.price_limit import PriceLimitEnforcer
++from modules.market.safety_dtos import PriceLimitConfigDTO
+ from simulation.metrics.economic_tracker import EconomicIndicatorTracker
+ from simulation.metrics.inequality_tracker import InequalityTracker
+ from simulation.metrics.stock_tracker import StockMarketTracker, PersonalityStatisticsTracker
+@@ -283,15 +285,20 @@ class SimulationInitializer(SimulationInitializerInterface):
+         """
+         sim.real_estate_units = [RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE, rent_price=self.config.INITIAL_RENT_PRICE) for i in range(self.config.NUM_HOUSING_UNITS)]
+ 
++        # Load Market Safety Configs
++        safety_configs = self._load_market_safety_config()
++
+         sim.markets = {}
+         for good_name in self.config.GOODS:
+              cb = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
+-             sim.markets[good_name] = OrderBookMarket(market_id=good_name, config_module=self.config, circuit_breaker=cb)
++             enforcer = self._create_enforcer(good_name, safety_configs)
++             sim.markets[good_name] = OrderBookMarket(market_id=good_name, config_module=self.config, circuit_breaker=cb, enforcer=enforcer)
+ 
+         sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
+ 
+         cb_sec = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
+-        sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config, circuit_breaker=cb_sec)
++        sec_enforcer = self._create_enforcer('security_market', safety_configs)
++        sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config, circuit_breaker=cb_sec, enforcer=sec_enforcer)
+ 
+         if sim.central_bank:
+              sim.central_bank.set_bond_market(sim.markets['security_market'])
+@@ -309,7 +316,8 @@ class SimulationInitializer(SimulationInitializerInterface):
+             sim.stock_tracker = None
+ 
+         cb_housing = DynamicCircuitBreaker(config_module=self.config, logger=self.logger)
+-        sim.markets['housing'] = OrderBookMarket(market_id='housing', config_module=self.config, circuit_breaker=cb_housing)
++        housing_enforcer = self._create_enforcer('housing', safety_configs)
++        sim.markets['housing'] = OrderBookMarket(market_id='housing', config_module=self.config, circuit_breaker=cb_housing, enforcer=housing_enforcer)
+ 
+         sim.inequality_tracker = InequalityTracker(config_module=self.config)
+         sim.personality_tracker = PersonalityStatisticsTracker(config_module=self.config)
+@@ -542,3 +550,35 @@ class SimulationInitializer(SimulationInitializerInterface):
+         
+         if hasattr(sim.settlement_system, 'set_panic_recorder'):
+              sim.settlement_system.set_panic_recorder(sim.world_state)
++
++    def _load_market_safety_config(self) -> Dict[str, PriceLimitConfigDTO]:
++        """Loads market safety configuration from JSON."""
++        config_path = "config/market_safety.json"
++        configs = {}
++        try:
++            if os.path.exists(config_path):
++                with open(config_path, 'r') as f:
++                    data = json.load(f)
++                    for key, val in data.items():
++                        configs[key] = PriceLimitConfigDTO(
++                            id=val.get('id', key),
++                            is_enabled=val.get('is_enabled', True),
++                            mode=val.get('mode', 'DYNAMIC'),
++                            base_limit=val.get('base_limit', 0.30),
++                            static_ceiling=val.get('static_ceiling'),
++                            static_floor=val.get('static_floor')
++                        )
++            else:
++                self.logger.warning(f"Market safety config not found at {config_path}. Using defaults.")
++        except Exception as e:
++            self.logger.warning(f"Failed to load market safety config: {e}. Using defaults.")
++
++        return configs
++
++    def _create_enforcer(self, market_id: str, configs: Dict[str, PriceLimitConfigDTO]) -> PriceLimitEnforcer:
++        """Creates a PriceLimitEnforcer for the given market."""
++        config = configs.get(market_id, configs.get("default"))
++        if not config:
++            # Fallback if no default in json
++            config = PriceLimitConfigDTO(id=f"{market_id}_safety", is_enabled=True, mode='DYNAMIC')
++        return PriceLimitEnforcer(config)
+diff --git a/simulation/markets/order_book_market.py b/simulation/markets/order_book_market.py
+index 7a395b1c..7f7d68d5 100644
+--- a/simulation/markets/order_book_market.py
++++ b/simulation/markets/order_book_market.py
+@@ -6,9 +6,11 @@ from dataclasses import dataclass
+ 
+ from simulation.models import Order, Transaction
+ from simulation.core_markets import Market
+-from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, ICircuitBreaker
++from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema, ICircuitBreaker, IPriceLimitEnforcer
+ from simulation.markets.matching_engine import OrderBookMatchingEngine
+ from simulation.markets.circuit_breaker import DynamicCircuitBreaker
++from modules.market.safety.price_limit import PriceLimitEnforcer
++from modules.market.safety_dtos import PriceLimitConfigDTO
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -65,7 +67,7 @@ class OrderBookMarket(Market):
+     매수/매도 주문을 접수하고, 가격 우선 및 시간 우선 원칙에 따라 주문을 매칭하여 거래를 체결합니다.
+     """
+ 
+-    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, circuit_breaker: Optional[ICircuitBreaker] = None):
++    def __init__(self, market_id: str, config_module: Any = None, logger: Optional[logging.Logger] = None, circuit_breaker: Optional[ICircuitBreaker] = None, enforcer: Optional[IPriceLimitEnforcer] = None):
+         """OrderBookMarket을 초기화합니다.
+ 
+         Args:
+@@ -73,6 +75,7 @@ class OrderBookMarket(Market):
+             config_module (Any, optional): 시뮬레이션 설정 모듈.
+             logger (logging.Logger, optional): 로깅을 위한 Logger 인스턴스. 기본값은 None.
+             circuit_breaker (ICircuitBreaker, optional): 주입된 서킷 브레이커 인스턴스.
++            enforcer (IPriceLimitEnforcer, optional): 주입된 가격 제한 집행기.
+         """
+         super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
+         self.id = market_id
+@@ -96,6 +99,15 @@ class OrderBookMarket(Market):
+         # WO-136: Dynamic Circuit Breakers (Modular)
+         self.circuit_breaker = circuit_breaker or DynamicCircuitBreaker(config_module, self.logger)
+ 
++        # WO-IMPL-MARKET-POLICY: Price Limit Enforcer
++        if enforcer:
++            self.enforcer = enforcer
++        else:
++            # Default permissive enforcer if none provided (e.g. legacy tests)
++            # Create a disabled config
++            default_config = PriceLimitConfigDTO(id=f"{market_id}_safety", is_enabled=False, mode='STATIC')
++            self.enforcer = PriceLimitEnforcer(default_config)
++
+         # Phase 10: Stateless Matching Engine
+         self.matching_engine = OrderBookMatchingEngine()
+ 
+@@ -179,30 +191,49 @@ class OrderBookMarket(Market):
+ 
+     def place_order(self, order_dto: CanonicalOrderDTO, current_time: int):
+         """시장에 주문을 제출합니다. 매칭은 별도의 메서드로 처리됩니다.
+-        WO-136: Checks dynamic circuit breakers before accepting.
++        WO-IMPL-MARKET-POLICY: Checks PriceLimitEnforcer before accepting.
+ 
+         Args:
+             order_dto (CanonicalOrderDTO): 제출할 주문 객체.
+             current_time (int): 현재 시뮬레이션 틱 (시간) 입니다.
+         """
+-        # WO-136: Circuit Breaker Check
+-        last_trade_tick = self.last_trade_ticks.get(order_dto.item_id, -1)
+-        min_price, max_price = self.circuit_breaker.get_dynamic_price_bounds(order_dto.item_id, current_time, last_trade_tick)
+-        if order_dto.price_limit < min_price or order_dto.price_limit > max_price:
+-            # Check if bounds are active (max_price < inf)
+-            if max_price < float('inf'):
+-                self.logger.warning(
+-                    f"CIRCUIT_BREAKER | Order rejected. Price {order_dto.price_limit:.2f} out of bounds [{min_price:.2f}, {max_price:.2f}]",
+-                    extra={
+-                        "tick": current_time,
+-                        "market_id": self.id,
+-                        "agent_id": order_dto.agent_id,
+-                        "item_id": order_dto.item_id,
+-                        "price": order_dto.price_limit,
+-                        "bounds": (min_price, max_price)
+-                    }
+-                )
+-                return # Reject order
++        # 1. Validate order via injected enforcer
++        validation_result = self.enforcer.validate_order(order_dto)
++
++        # 2. Handle Rejection
++        if not validation_result.is_valid:
++            self.logger.warning(
++                f"SAFETY_POLICY | Order rejected: {validation_result.reason}",
++                extra={
++                    "tick": current_time,
++                    "market_id": self.id,
++                    "agent_id": order_dto.agent_id,
++                    "item_id": order_dto.item_id,
++                    "price_pennies": order_dto.price_pennies,
++                    "reason": validation_result.reason
++                }
++            )
++            return # Drop order immediately
++
++        # 3. Legacy Circuit Breaker Check (Maintain backward compatibility for volatility/relaxation)
++        if self.circuit_breaker:
++             last_trade_tick = self.last_trade_ticks.get(order_dto.item_id, -1)
++             min_price, max_price = self.circuit_breaker.get_dynamic_price_bounds(order_dto.item_id, current_time, last_trade_tick)
++             if order_dto.price_limit < min_price or order_dto.price_limit > max_price:
++                 # Check if bounds are active (max_price < inf)
++                 if max_price < float('inf'):
++                     self.logger.warning(
++                         f"CIRCUIT_BREAKER | Order rejected. Price {order_dto.price_limit:.2f} out of bounds [{min_price:.2f}, {max_price:.2f}]",
++                         extra={
++                             "tick": current_time,
++                             "market_id": self.id,
++                             "agent_id": order_dto.agent_id,
++                             "item_id": order_dto.item_id,
++                             "price": order_dto.price_limit,
++                             "bounds": (min_price, max_price)
++                         }
++                     )
++                     return # Reject order
+ 
+         # Convert to mutable MarketOrder
+         order = MarketOrder.from_dto(order_dto)
+@@ -425,3 +456,10 @@ class OrderBookMarket(Market):
+                 dto = order.to_dto(self.id)
+                 snapshot.append(OrderTelemetrySchema.from_canonical(dto))
+         return snapshot
++
++    def set_reference_price(self, price: int) -> None:
++        """
++        Updates the enforcer's reference price.
++        Called by TickOrchestrator or Market orchestrator.
++        """
++        self.enforcer.set_reference_price(price)
+diff --git a/tests/market/test_safety_policy.py b/tests/market/test_safety_policy.py
+new file mode 100644
+index 00000000..01fe1ec2
+--- /dev/null
++++ b/tests/market/test_safety_policy.py
+@@ -0,0 +1,85 @@
++import pytest
++from unittest.mock import MagicMock
++from modules.market.api import CanonicalOrderDTO
++from modules.market.safety_dtos import PriceLimitConfigDTO, ValidationResultDTO
++from modules.market.safety.price_limit import PriceLimitEnforcer
++from simulation.markets.order_book_market import OrderBookMarket
++
++class TestPriceLimitEnforcer:
++    def test_disabled_allows_all(self):
++        config = PriceLimitConfigDTO(id="test", is_enabled=False, mode="STATIC", static_ceiling=100)
++        enforcer = PriceLimitEnforcer(config)
++        order = CanonicalOrderDTO(agent_id=1, side="BUY", item_id="apple", quantity=1, price_pennies=9999, market_id="m")
++        result = enforcer.validate_order(order)
++        assert result.is_valid
++
++    def test_static_limits(self):
++        config = PriceLimitConfigDTO(id="test", is_enabled=True, mode="STATIC", static_ceiling=200, static_floor=100)
++        enforcer = PriceLimitEnforcer(config)
++
++        # Valid
++        assert enforcer.validate_order(CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=150, market_id="m")).is_valid
++
++        # Invalid High
++        res_high = enforcer.validate_order(CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=201, market_id="m"))
++        assert not res_high.is_valid
++        assert "exceeds static ceiling" in res_high.reason
++
++        # Invalid Low
++        res_low = enforcer.validate_order(CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=99, market_id="m"))
++        assert not res_low.is_valid
++        assert "below static floor" in res_low.reason
++
++    def test_dynamic_limits(self):
++        # Base limit 0.10 (10%)
++        config = PriceLimitConfigDTO(id="test", is_enabled=True, mode="DYNAMIC", base_limit=0.10)
++        enforcer = PriceLimitEnforcer(config)
++        enforcer.set_reference_price(1000) # 1000 pennies
++
++        # Bounds: 900 to 1100
++        # Valid
++        assert enforcer.validate_order(CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=1000, market_id="m")).is_valid
++        assert enforcer.validate_order(CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=1100, market_id="m")).is_valid
++        assert enforcer.validate_order(CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=900, market_id="m")).is_valid
++
++        # Invalid
++        assert not enforcer.validate_order(CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=1101, market_id="m")).is_valid
++        assert not enforcer.validate_order(CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=899, market_id="m")).is_valid
++
++    def test_dynamic_discovery_phase(self):
++        config = PriceLimitConfigDTO(id="test", is_enabled=True, mode="DYNAMIC", base_limit=0.10)
++        enforcer = PriceLimitEnforcer(config)
++        # Ref price is 0 by default
++        assert enforcer.validate_order(CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=99999, market_id="m")).is_valid
++
++
++class TestOrderBookMarketSafetyIntegration:
++    def test_market_rejects_invalid_order(self):
++        # Setup Enforcer that always rejects
++        mock_enforcer = MagicMock()
++        mock_enforcer.validate_order.return_value = ValidationResultDTO(is_valid=False, reason="Mock Reject")
++
++        market = OrderBookMarket("test_market", enforcer=mock_enforcer)
++
++        order = CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=100, market_id="test_market")
++        market.place_order(order, current_time=1)
++
++        # Check order not added
++        # OrderBookMarket.buy_orders returns CanonicalOrderDTOs, not internal list.
++        # But we can check emptiness
++        assert len(market.buy_orders.get("a", [])) == 0
++        # Check validate called
++        mock_enforcer.validate_order.assert_called_once()
++
++    def test_market_accepts_valid_order(self):
++        # Setup Enforcer that always accepts
++        mock_enforcer = MagicMock()
++        mock_enforcer.validate_order.return_value = ValidationResultDTO(is_valid=True)
++
++        market = OrderBookMarket("test_market", enforcer=mock_enforcer)
++
++        order = CanonicalOrderDTO(agent_id=1, side="BUY", item_id="a", quantity=1, price_pennies=100, market_id="test_market")
++        market.place_order(order, current_time=1)
++
++        # Check order added
++        assert len(market.buy_orders.get("a", [])) == 1

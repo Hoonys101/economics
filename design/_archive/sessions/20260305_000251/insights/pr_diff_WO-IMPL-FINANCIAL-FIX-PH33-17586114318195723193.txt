@@ -1,0 +1,811 @@
+diff --git a/communications/insights/WO-IMPL-FINANCIAL-FIX-PH33.md b/communications/insights/WO-IMPL-FINANCIAL-FIX-PH33.md
+new file mode 100644
+index 00000000..2d05e4d8
+--- /dev/null
++++ b/communications/insights/WO-IMPL-FINANCIAL-FIX-PH33.md
+@@ -0,0 +1,51 @@
++# WO-IMPL-FINANCIAL-FIX-PH33: Financial Integrity & M2 SSoT Implementation Report
++
++## 1. [Architectural Insights]
++
++### Decoupling of M2 Tracking
++The legacy implementation of M2 tracking was fragmented:
++-   **Old Approach:** `TickOrchestrator` relied on `WorldState.calculate_total_money` (iterating all agents) and `Government.get_monetary_delta` (analyzing transaction logs) to estimate M2 drift. This created a split-brain problem where the "Expected" M2 was derived from Government logic, while "Actual" M2 was derived from agent iteration.
++-   **New Approach:** `MonetaryLedger` (located in `modules/finance/kernel/ledger.py`) is now the strict Single Source of Truth (SSoT) for M2. It tracks `expected_m2` via explicit calls to `record_monetary_expansion` and `record_monetary_contraction`. `SettlementSystem` delegates M2 calculation to `get_total_m2_pennies`, unifying the logic.
++
++### System Coupling Improvements
++-   **TickOrchestrator**: No longer depends on `Government` internal state (`get_monetary_delta`). It simply queries `MonetaryLedger` for current vs expected M2.
++-   **WorldState**: `calculate_total_money` no longer performs an O(N) iteration over all agents for M2 calculation. It delegates to `MonetaryLedger`. (Note: Debt calculation currently retains legacy iteration until fully migrated).
++-   **SettlementSystem**: Now explicitly records M2 impacting events (Mint/Burn), ensuring the Ledger is always in sync with the physical money movement.
++
++## 2. [Regression Analysis]
++
++During implementation, several tests failed due to **Mock Drift** and **Protocol Violations**:
++
++### Failure 1: `tests/integration/test_lifecycle_cycle.py`
++-   **Issue:** `test_lifecycle_transactions_processed_in_next_tick_strong_verify` failed with `TypeError: '>' not supported between instances of 'MagicMock' and 'int'`.
++-   **Cause:** The test mocked `WorldState` but did not configure the `monetary_ledger` mock. The updated `TickOrchestrator._finalize_tick` accessed `monetary_ledger.get_expected_m2_pennies()`, which returned a `MagicMock`, causing comparison failure against `int`.
++-   **Fix:** Updated the test setup to explicitly mock `get_total_m2_pennies` and `get_expected_m2_pennies` to return integer values (1000).
++
++### Failure 2: `tests/unit/test_protocol_lockdown.py`
++-   **Issue:** `test_settlement_system_protocol_compliance` failed with `AssertionError`.
++-   **Cause:** The `MockSettlementSystem` class used in unit tests did not implement the new methods added to `ISettlementSystem` protocol (`get_total_m2_pennies`, `get_total_circulating_cash`, `set_monetary_ledger`).
++-   **Fix:** Added the missing methods to `MockSettlementSystem` to satisfy the updated protocol.
++
++### Logic Gap Fixes (Post-Review)
++-   **M2 Leak (Bond Issuance):** `FinanceSystem.issue_treasury_bonds` was updated to explicitly record M2 expansion when system agents (CB/Bank Reserves) purchase bonds from the Government (which is part of M2), preventing a divergence between Actual and Expected M2. This check now explicitly verifies the buyer is a System Agent to prevent future bugs if Households purchase bonds.
++-   **Legacy Fallback Drift:** `WorldState._legacy_calculate_total_money` was updated to exclude `ID_ESCROW` and `ID_PUBLIC_MANAGER` to align with the new `SettlementSystem` logic.
++-   **M2 Leak (Estate Agents):** `SettlementSystem.get_total_circulating_cash` was updated to include cash held by `EstateRegistry` agents, preventing M2 drift when agents are liquidated.
++
++### Legacy Method Support
++-   **Saga Compatibility:** `IMonetaryLedger` retains `record_credit_expansion` and `record_credit_destruction` as wrappers around the new API to prevent breaking legacy `SagaHandler` calls, although `SagaHandler` itself was also updated to use the new API for consistency.
++
++## 3. [Test Evidence]
++
++Full test suite execution passed successfully (1060 passed, 11 skipped).
++
++```text
++tests/unit/test_monetary_ledger_repayment.py::TestMonetaryLedgerRepayment::test_interest_is_not_destroyed PASSED [ 91%]
++tests/unit/test_phase1_refactor.py::TestPhase1DecisionRefactor::test_execute_flow PASSED [ 91%]
++tests/unit/test_phase1_refactor.py::TestPhase1DecisionRefactor::test_dispatch_logic PASSED [ 92%]
++...
++tests/unit/test_protocol_lockdown.py::test_settlement_system_protocol_compliance PASSED [ 92%]
++...
++tests/integration/test_lifecycle_cycle.py::TestLifecycleCycle::test_lifecycle_transactions_processed_in_next_tick_strong_verify PASSED [ 90%]
++...
++================= 1060 passed, 11 skipped, 1 warning in 14.12s =================
++```
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 9259e2bc..b21ad566 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -414,12 +414,55 @@ class IAccountRegistry(Protocol):
+         """Removes an agent from all bank account indices."""
+         ...
+ 
++@runtime_checkable
++class IMonetaryLedger(Protocol):
++    """
++    Single Source of Truth (SSoT) for M2 Money Supply tracking.
++    Records all authorized monetary expansions and contractions.
++    """
++    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """Calculates total M2 = Circulating Cash + Total Deposits."""
++        ...
++
++    def get_expected_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """Returns the authorized baseline money supply including all expansions."""
++        ...
++
++    def record_monetary_expansion(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """Records authorized money creation (e.g., Central Bank OMO, Bank Loans)."""
++        ...
++
++    def record_monetary_contraction(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """Records authorized money destruction (e.g., Loan Repayments, Central Bank QT)."""
++        ...
++
++    def set_expected_m2(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """Sets the baseline M2 (e.g. at genesis)."""
++        ...
++
++    # Legacy Compatibility (Saga)
++    def record_credit_expansion(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None: ...
++    def record_credit_destruction(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None: ...
++
++
+ @runtime_checkable
+ class ISettlementSystem(IAccountRegistry, Protocol):
+     """
+     The transactional kernel for all financial operations.
+     Responsible for ATOMIC, ZERO-SUM transfers between entities.
+     """
++    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """Calculates total M2 = Circulating Cash + Total Deposits."""
++        ...
++
++    def get_total_circulating_cash(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """Returns total physical cash held by non-system agents (M0 outside bank reserves)."""
++        ...
++
++    def set_monetary_ledger(self, ledger: IMonetaryLedger) -> None:
++        """Injects the Monetary Ledger for tracking expansions/contractions."""
++        ...
++
+     def transfer(
+         self,
+         debit_agent: IFinancialEntity,
+diff --git a/modules/finance/kernel/api.py b/modules/finance/kernel/api.py
+index 2275098d..2aae3301 100644
+--- a/modules/finance/kernel/api.py
++++ b/modules/finance/kernel/api.py
+@@ -4,7 +4,7 @@ from uuid import UUID
+ from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, IHousingTransactionSagaHandler
+ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
+ from simulation.finance.api import ITransaction
+-from modules.finance.api import IFinancialAgent
++from modules.finance.api import IFinancialAgent, IMonetaryLedger
+ 
+ # --- 1. Saga Orchestration ---
+ 
+@@ -38,27 +38,7 @@ class ISagaOrchestrator(Protocol):
+ 
+ 
+ # --- 2. Monetary Policy Ledger ---
+-
+-class IMonetaryLedger(Protocol):
+-    """
+-    An observational service that records events impacting the money supply (M2)
+-    which are not direct mint/burn actions by the Central Bank.
+-    e.g., fractional reserve banking via mortgage disbursal.
+-    """
+-
+-    def record_credit_expansion(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None:
+-        """
+-        Records that new credit has been extended, increasing the money supply.
+-        This creates an observational Transaction record, it does not move funds.
+-        """
+-        ...
+-
+-    def record_credit_destruction(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None:
+-        """
+-        Records that credit has been paid back or rolled back, decreasing the money supply.
+-        This creates an observational Transaction record.
+-        """
+-        ...
++# Unified in modules.finance.api
+ 
+ 
+ # --- 3. Refactored Settlement System ---
+diff --git a/modules/finance/kernel/ledger.py b/modules/finance/kernel/ledger.py
+index 493ec5bb..8d16d90d 100644
+--- a/modules/finance/kernel/ledger.py
++++ b/modules/finance/kernel/ledger.py
+@@ -1,7 +1,9 @@
+-from typing import List, Any
++from typing import List, Any, Optional
+ from uuid import UUID
+ from simulation.models import Transaction
+ from modules.finance.kernel.api import IMonetaryLedger
++from modules.finance.api import ISettlementSystem
++from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
+ import logging
+ 
+ logger = logging.getLogger(__name__)
+@@ -10,68 +12,90 @@ class MonetaryLedger(IMonetaryLedger):
+     """
+     Implementation of IMonetaryLedger.
+     Records observational transactions for credit expansion and destruction.
++    Acts as the Single Source of Truth (SSoT) for M2 Money Supply tracking.
+     """
+ 
+-    def __init__(self, transaction_log: List[Transaction], time_provider: Any):
++    def __init__(self, transaction_log: List[Transaction], time_provider: Any, settlement_system: Optional[ISettlementSystem] = None):
+         """
+         Args:
+             transaction_log: The central simulation transaction log list (modified in-place).
+             time_provider: An object with a .time attribute (e.g. SimulationState).
++            settlement_system: The settlement system to query for actual M2.
+         """
+         self.transaction_log = transaction_log
+         self.time_provider = time_provider
++        self.settlement_system = settlement_system
++        self.expected_m2_pennies = 0
+ 
+     @property
+     def _current_tick(self) -> int:
+         return self.time_provider.time if hasattr(self.time_provider, 'time') else 0
+ 
+-    def record_credit_expansion(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None:
+-        """
+-        Records that new credit has been extended (M2 Expansion).
+-        Convention: buyer_id=-1 (System/Mint), seller_id=-1 (Recipient/Market).
+-        Note: Original saga handler used buyer_id=Bank.id. If strict analysis requires Bank ID,
+-        we might need to update this, but for M2 Delta tracking, usually the type/market matters.
+-        """
++    def set_expected_m2(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self.expected_m2_pennies = amount_pennies
++        logger.info(f"MONETARY_LEDGER | Baseline M2 set to: {amount_pennies}")
++
++    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        if self.settlement_system:
++            return self.settlement_system.get_total_m2_pennies(currency)
++        return 0
++
++    def get_expected_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        return self.expected_m2_pennies
++
++    def record_monetary_expansion(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self.expected_m2_pennies += amount_pennies
++
+         tx = Transaction(
+             buyer_id=-1,
+             seller_id=-1,
+-            item_id=f"credit_expansion_{saga_id}",
++            item_id=f"monetary_expansion_{self._current_tick}",
+             quantity=1.0,
+-            price=amount,
++            price=amount_pennies / 100.0,
+             market_id="monetary_policy",
+-            transaction_type="credit_creation",
++            transaction_type="monetary_expansion",
+             time=self._current_tick,
+             metadata={
+-                "saga_id": str(saga_id),
+-                "loan_id": str(loan_id),
+-                "reason": reason,
+-                "executed": True,
+-                "is_monetary_expansion": True # Explicit tag
+-            }
+-        , total_pennies=int(amount * 1.0 * 100))
++                "source": source,
++                "currency": currency,
++                "is_monetary_expansion": True
++            },
++            total_pennies=amount_pennies
++        )
+         self.transaction_log.append(tx)
+-        logger.debug(f"MONETARY_LEDGER | Credit Expansion: {amount:.2f} (Saga: {saga_id})")
++        logger.info(f"MONETARY_LEDGER | M2 Expansion: +{amount_pennies} ({source}) | New Expected M2: {self.expected_m2_pennies}")
++
++    def record_monetary_contraction(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self.expected_m2_pennies -= amount_pennies
+ 
+-    def record_credit_destruction(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None:
+-        """
+-        Records that credit has been destroyed (M2 Contraction).
+-        """
+         tx = Transaction(
+             buyer_id=-1,
+             seller_id=-1,
+-            item_id=f"credit_destruction_{saga_id}",
++            item_id=f"monetary_contraction_{self._current_tick}",
+             quantity=1.0,
+-            price=amount,
++            price=amount_pennies / 100.0,
+             market_id="monetary_policy",
+-            transaction_type="credit_destruction",
++            transaction_type="monetary_contraction",
+             time=self._current_tick,
+             metadata={
+-                "saga_id": str(saga_id),
+-                "loan_id": str(loan_id),
+-                "reason": reason,
+-                "executed": True,
+-                "is_monetary_destruction": True # Explicit tag
+-            }
+-        , total_pennies=int(amount * 1.0 * 100))
++                "source": source,
++                "currency": currency,
++                "is_monetary_destruction": True
++            },
++            total_pennies=amount_pennies
++        )
+         self.transaction_log.append(tx)
+-        logger.debug(f"MONETARY_LEDGER | Credit Destruction: {amount:.2f} (Saga: {saga_id})")
++        logger.info(f"MONETARY_LEDGER | M2 Contraction: -{amount_pennies} ({source}) | New Expected M2: {self.expected_m2_pennies}")
++
++    # Legacy wrappers
++    def record_credit_expansion(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None:
++        # Convert float amount to pennies
++        amount_pennies = int(amount * 100)
++        source = f"saga_{saga_id}_loan_{loan_id}_{reason}"
++        self.record_monetary_expansion(amount_pennies, source)
++
++    def record_credit_destruction(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None:
++        # Convert float amount to pennies
++        amount_pennies = int(amount * 100)
++        source = f"saga_{saga_id}_loan_{loan_id}_{reason}"
++        self.record_monetary_contraction(amount_pennies, source)
+diff --git a/modules/finance/saga_handler.py b/modules/finance/saga_handler.py
+index 04d61b33..6ec94892 100644
+--- a/modules/finance/saga_handler.py
++++ b/modules/finance/saga_handler.py
+@@ -250,11 +250,10 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         if success:
+              # TD-030: M2 Integrity - Record Authorized Expansion for Mortgage Disbursal
+              if principal > 0 and self.monetary_ledger:
+-                 self.monetary_ledger.record_credit_expansion(
+-                     amount=principal,
+-                     saga_id=saga.saga_id,
+-                     loan_id=saga.mortgage_approval.loan_id,
+-                     reason="mortgage_disbursal"
++                 self.monetary_ledger.record_monetary_expansion(
++                     amount_pennies=principal_pennies,
++                     source=f"saga_{saga.saga_id}_loan_{saga.mortgage_approval.loan_id}_mortgage_disbursal",
++                     currency=DEFAULT_CURRENCY
+                  )
+              elif principal > 0:
+                  # Fallback / Warning: Monetary Ledger missing
+@@ -326,11 +325,10 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+ 
+         # TD-030: M2 Integrity - Record Destruction
+         if principal > 0 and self.monetary_ledger:
+-             self.monetary_ledger.record_credit_destruction(
+-                 amount=principal,
+-                 saga_id=saga.saga_id,
+-                 loan_id=saga.mortgage_approval.loan_id,
+-                 reason="mortgage_rollback"
++             self.monetary_ledger.record_monetary_contraction(
++                 amount_pennies=principal_pennies,
++                 source=f"saga_{saga.saga_id}_loan_{saga.mortgage_approval.loan_id}_mortgage_rollback",
++                 currency=DEFAULT_CURRENCY
+              )
+         elif principal > 0:
+              logger.warning(f"SAGA_M2_LEAK | MonetaryLedger missing. Credit destruction of {principal} not recorded for saga {saga.saga_id}.")
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index 11eb0870..a9eaa6ac 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -4,7 +4,7 @@ import uuid
+ from modules.finance.api import (
+     IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialAgent, IFinancialFirm,
+     InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanDTO,
+-    IConfig, IBank, IGovernmentFinance, IMonetaryAuthority, IBankRegistry
++    IConfig, IBank, IGovernmentFinance, IMonetaryAuthority, IBankRegistry, IMonetaryLedger
+ )
+ from modules.finance.domain import AltmanZScoreCalculator
+ from modules.analysis.fiscal_monitor import FiscalMonitor
+@@ -40,13 +40,14 @@ class FinanceSystem(IFinanceSystem):
+     MIGRATION: Uses integer pennies.
+     """
+ 
+-    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None, bank_registry: Optional[IBankRegistry] = None, monetary_authority: Optional[Any] = None):
++    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None, bank_registry: Optional[IBankRegistry] = None, monetary_authority: Optional[Any] = None, monetary_ledger: Optional[IMonetaryLedger] = None):
+         self.government = government
+         self.central_bank = central_bank
+         self.bank = bank
+         self.config_module = config_module
+         self.settlement_system = settlement_system
+         self.monetary_authority = monetary_authority
++        self.monetary_ledger = monetary_ledger
+ 
+         self.fiscal_monitor = FiscalMonitor()
+ 
+@@ -178,6 +179,10 @@ class FinanceSystem(IFinanceSystem):
+              self.settlement_system.register_account(lender_id, borrower_id)
+ 
+         # loan_state is already LoanDTO (LoanStateDTO alias)
++        # SSoT Update: Record Expansion
++        if self.monetary_ledger:
++            self.monetary_ledger.record_monetary_expansion(amount, source=f"loan_{loan_id}", currency=DEFAULT_CURRENCY)
++
+         return loan_state, result.generated_transactions
+ 
+     def get_customer_balance(self, bank_id: AgentID, customer_id: AgentID) -> int:
+@@ -217,6 +222,11 @@ class FinanceSystem(IFinanceSystem):
+                 loan.remaining_principal_pennies -= applied
+                 if loan.remaining_principal_pennies <= 0:
+                      loan.remaining_principal_pennies = 0
++
++                # SSoT Update: Record Contraction
++                if self.monetary_ledger and applied > 0:
++                    self.monetary_ledger.record_monetary_contraction(applied, source=f"repayment_{loan_id}", currency=DEFAULT_CURRENCY)
++
+                 return applied
+         return 0
+ 
+@@ -240,6 +250,10 @@ class FinanceSystem(IFinanceSystem):
+             remaining -= applied
+             total_applied += applied
+ 
++            # SSoT Update: Record Contraction
++            if self.monetary_ledger and applied > 0:
++                self.monetary_ledger.record_monetary_contraction(applied, source=f"repayment_{loan.loan_id}", currency=DEFAULT_CURRENCY)
++
+         return total_applied
+ 
+     # --- IFinanceSystem Implementation ---
+@@ -388,6 +402,21 @@ class FinanceSystem(IFinanceSystem):
+             if not success:
+                 logger.warning(f"BOND_ISSUANCE_FAILED | Settlement transfer failed for amount {amount}. Buyer: {buyer_id}")
+                 return [], []
++
++            # SSoT Update: Record Expansion if Buyer is System Agent (CB/Bank Reserves)
++            # Government (Seller) IS in M2 in this simulation configuration.
++            # Bank Reserves and Central Bank are OUT of M2.
++            # Money moves from Non-M2 to M2 -> Expansion.
++            # Added explicit check to prevent M2 divergence if Households/Firms buy bonds in future.
++            is_system_buyer = hasattr(buyer_agent, 'id') and buyer_agent.id in {self.bank.id, self.central_bank.id}
++
++            if self.monetary_ledger and is_system_buyer:
++                self.monetary_ledger.record_monetary_expansion(
++                    amount_pennies=amount,
++                    source=f"bond_issuance_{bond_id}",
++                    currency=DEFAULT_CURRENCY
++                )
++
+         else:
+              logger.warning("BOND_ISSUANCE_WARNING | No SettlementSystem attached. Wallet updates skipped.")
+ 
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 7150d7f4..f7b0b13b 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -158,7 +158,8 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.telemetry_collector = TelemetryCollector(sim.world_state.global_registry)
+         sim.world_state.telemetry_collector = sim.telemetry_collector
+         sim.world_state.global_registry.set('system.telemetry_collector', sim.telemetry_collector, origin=OriginType.SYSTEM)
+-        sim.monetary_ledger = MonetaryLedger(sim.world_state.transactions, sim)
++        sim.monetary_ledger = MonetaryLedger(sim.world_state.transactions, sim, settlement_system=settlement_system)
++        sim.settlement_system.set_monetary_ledger(sim.monetary_ledger)
+         sim.saga_orchestrator = SagaOrchestrator(monetary_ledger=sim.monetary_ledger, agent_registry=agent_registry)
+         sim.world_state.monetary_ledger = sim.monetary_ledger
+         sim.world_state.saga_orchestrator = sim.saga_orchestrator
+@@ -263,7 +264,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         # Wire Settlement System to LLR (Wave 5 Stabilization)
+         sim.settlement_system.set_monetary_authority(sim.central_bank_system)
+ 
+-        sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system, monetary_authority=sim.central_bank_system)
++        sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system, monetary_authority=sim.central_bank_system, monetary_ledger=sim.monetary_ledger)
+         sim.government.finance_system = sim.finance_system
+         sim.bank.set_finance_system(sim.finance_system)
+ 
+@@ -487,6 +488,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.world_state.central_bank = sim.central_bank
+         supply_dto = sim.world_state.calculate_total_money()
+         sim.world_state.baseline_money_supply = int(supply_dto.total_m2_pennies)
++        sim.monetary_ledger.set_expected_m2(sim.world_state.baseline_money_supply)
+         self.logger.info(f'Initial baseline money supply established: {sim.world_state.baseline_money_supply}')
+ 
+         Bootstrapper.force_assign_workers(sim.firms, sim.households)
+diff --git a/simulation/orchestration/tick_orchestrator.py b/simulation/orchestration/tick_orchestrator.py
+index 1158e51a..fbf3687d 100644
+--- a/simulation/orchestration/tick_orchestrator.py
++++ b/simulation/orchestration/tick_orchestrator.py
+@@ -240,25 +240,22 @@ class TickOrchestrator:
+         # Money Supply Verification (Post-Tick) & M2 Leak Calculation
+         m2_leak_delta = 0.0
+         if state.time >= 1:
+-            # WO-220: Repair Currency Holders Sync
+-            # Rebuilds state.currency_holders from state.agents to ensure M2 integrity.
+-            # TD-030: Removed _rebuild_currency_holders to enforce StrictCurrencyRegistry.
+-            # LifecycleManager is now responsible for maintaining this list incrementally.
+-            # self._rebuild_currency_holders(state)
+-
+-            total_hh = sum(h.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) for h in state.households)
+-            total_firm = sum(f.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) for f in state.firms)
+-            gov_assets = state.government.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0)
+-            cb_assets = state.central_bank.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) if state.central_bank else 0.0
+-            bank_assets = state.bank.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) if state.bank else 0.0
+-
+-            state.logger.debug(f"M2_BREAKDOWN | HH: {total_hh}, Firms: {total_firm}, Gov: {gov_assets}, CB: {cb_assets}, Bank: {bank_assets}")
+-
+-            supply_dto = state.calculate_total_money()
+-            current_money = int(supply_dto.total_m2_pennies)
+-            expected_money = int(state.baseline_money_supply)
+-            if hasattr(state.government, "get_monetary_delta"):
+-                expected_money += int(state.government.get_monetary_delta(DEFAULT_CURRENCY))
++            # SSoT M2 Check via MonetaryLedger
++            current_money = 0
++            expected_money = 0
++
++            if state.monetary_ledger:
++                current_money = state.monetary_ledger.get_total_m2_pennies(DEFAULT_CURRENCY)
++                expected_money = state.monetary_ledger.get_expected_m2_pennies(DEFAULT_CURRENCY)
++                # Update baseline for next tick (though ledger tracks it continuously now)
++                state.baseline_money_supply = expected_money
++            else:
++                # Fallback to legacy calculation
++                supply_dto = state.calculate_total_money()
++                current_money = int(supply_dto.total_m2_pennies)
++                expected_money = int(state.baseline_money_supply)
++                if hasattr(state.government, "get_monetary_delta"):
++                    expected_money += int(state.government.get_monetary_delta(DEFAULT_CURRENCY))
+ 
+             m2_leak_delta = current_money - expected_money
+ 
+@@ -273,12 +270,6 @@ class TickOrchestrator:
+             else:
+                  state.logger.info(msg, extra=extra_data)
+ 
+-            # Update baseline for next tick to accumulate authorized changes
+-            # This ensures 'Expected' follows the authorized expansion path
+-            if hasattr(state.government, "get_monetary_delta"):
+-                authorized_delta = int(state.government.get_monetary_delta(DEFAULT_CURRENCY))
+-                state.baseline_money_supply += authorized_delta
+-
+             # Track Economics
+             if state.tracker:
+                 # Calculate Monetary Base (M0) for tracking
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index e11222d6..8b730de2 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -7,11 +7,12 @@ from modules.finance.api import (
+     IFinancialAgent, IFinancialEntity, IBank, InsufficientFundsError,
+     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
+     IMonetaryAuthority, IEconomicMetricsService, IPanicRecorder, ICentralBank,
+-    FXMatchDTO, IAccountRegistry, FloatIncursionError, ZeroSumViolationError
++    FXMatchDTO, IAccountRegistry, FloatIncursionError, ZeroSumViolationError,
++    IMonetaryLedger
+ )
+ from modules.finance.registry.account_registry import AccountRegistry
+ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry, ISystemFinancialAgent
+-from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER
++from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW
+ from modules.market.housing_planner_api import MortgageApplicationDTO
+ from simulation.models import Transaction
+ from modules.simulation.api import IAgent
+@@ -53,6 +54,7 @@ class SettlementSystem(IMonetaryAuthority):
+         self.estate_registry = estate_registry # Graveyard for dead agents
+         self.panic_recorder: Optional[IPanicRecorder] = None # Injected by SimulationInitializer
+         self.monetary_authority: Optional[ICentralBank] = None # Added for LLR Linkage
++        self.monetary_ledger: Optional[IMonetaryLedger] = None # WO-IMPL-FINANCIAL-FIX-PH33
+ 
+         # Ledger Engine (Initialized lazily)
+         self._transaction_engine: Optional[LedgerEngine] = None
+@@ -60,6 +62,9 @@ class SettlementSystem(IMonetaryAuthority):
+         # TD-INT-STRESS-SCALE: Account Registry for Bank Run Simulation
+         self.account_registry = account_registry or AccountRegistry()
+ 
++    def set_monetary_ledger(self, ledger: IMonetaryLedger) -> None:
++        self.monetary_ledger = ledger
++
+     def set_monetary_authority(self, authority: ICentralBank) -> None:
+         """Sets the monetary authority (Central Bank System) for LLR operations."""
+         self.monetary_authority = authority
+@@ -176,6 +181,67 @@ class SettlementSystem(IMonetaryAuthority):
+         self.logger.debug(f"get_balance: Agent {agent_id} not found or Registry not linked or Agent not IFinancialAgent.")
+         return 0
+ 
++    def get_total_circulating_cash(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """
++        Returns total physical cash held by non-bank agents (M0 outside bank reserves).
++        Includes Estate Agents to prevent M2 Leak upon death.
++        """
++        total_cash = 0
++
++        # 1. Active Agents
++        if self.agent_registry:
++            agents = self.agent_registry.get_all_financial_agents()
++            system_ids = {str(ID_CENTRAL_BANK), str(ID_SYSTEM), str(ID_ESCROW), str(ID_PUBLIC_MANAGER)}
++
++            for agent in agents:
++                # Skip System Agents
++                if str(agent.id) in system_ids:
++                    continue
++
++                # Skip Commercial Banks (Reserves)
++                if isinstance(agent, IBank):
++                    continue
++
++                balance = 0
++                if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
++                    balance = agent.balance_pennies
++                elif isinstance(agent, IFinancialAgent):
++                    balance = agent.get_balance(currency)
++                elif isinstance(agent, ICurrencyHolder):
++                     assets = agent.get_assets_by_currency()
++                     balance = assets.get(currency, 0)
++
++                if balance > 0:
++                    total_cash += balance
++
++        # 2. Estate Agents (Liquidation Holding)
++        if self.estate_registry:
++            for agent in self.estate_registry.get_all_estate_agents():
++                balance = 0
++                if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
++                    balance = agent.balance_pennies
++                elif isinstance(agent, IFinancialAgent):
++                    balance = agent.get_balance(currency)
++
++                if balance > 0:
++                    total_cash += balance
++
++        return total_cash
++
++    def get_total_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """Calculates total M2 = Circulating Cash + Total Deposits."""
++        if not self.agent_registry: return 0
++
++        circulating_cash = self.get_total_circulating_cash(currency)
++
++        total_deposits = 0
++        agents = self.agent_registry.get_all_financial_agents()
++        for agent in agents:
++            if isinstance(agent, IBank):
++                total_deposits += agent.get_total_deposits()
++
++        return circulating_cash + total_deposits
++
+     def get_assets_by_currency(self) -> Dict[str, int]:
+         """
+         Implements ICurrencyHolder for M2 verification.
+@@ -574,6 +640,11 @@ class SettlementSystem(IMonetaryAuthority):
+                 )
+                 tx = self._create_transaction_record(source_authority.id, destination.id, amount, reason, tick)
+                 tx.transaction_type = "money_creation"
++
++                # SSoT Update: Record Expansion
++                if self.monetary_ledger:
++                    self.monetary_ledger.record_monetary_expansion(amount, source=reason, currency=currency)
++
+                 return tx
+             except Exception as e:
+                 self.logger.error(f"MINT_FAIL | {e}")
+@@ -611,6 +682,11 @@ class SettlementSystem(IMonetaryAuthority):
+                 )
+                 tx = self._create_transaction_record(source.id, sink_authority.id, amount, reason, tick)
+                 tx.transaction_type = "money_destruction"
++
++                # SSoT Update: Record Contraction
++                if self.monetary_ledger:
++                    self.monetary_ledger.record_monetary_contraction(amount, source=reason, currency=currency)
++
+                 return tx
+             except Exception as e:
+                 self.logger.error(f"BURN_FAIL | {e}")
+@@ -646,13 +722,17 @@ class SettlementSystem(IMonetaryAuthority):
+         target_agent = self.agent_registry.get_agent(target_agent_id)
+         if not target_agent: return False
+ 
++        # Pass DEFAULT_CURRENCY explicitly if not provided (though mint_and_distribute assumes default)
++        # create_and_transfer signature: (..., currency=DEFAULT_CURRENCY)
+         tx = self.create_and_transfer(
+             source_authority=central_bank,
+             destination=target_agent,
+             amount=amount,
+             reason=reason,
+-            tick=tick
++            tick=tick,
++            currency=DEFAULT_CURRENCY
+         )
++
+         return tx is not None
+ 
+     def _emit_zero_sum_check(self, debit_agent_id: AgentID, credit_agent_id: AgentID, amount: int) -> None:
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index 8f9f5e7b..ef0e0833 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -44,7 +44,7 @@ if TYPE_CHECKING:
+     from simulation.dtos.scenario import StressScenarioConfig
+     from modules.government.politics_system import PoliticsSystem
+ from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry, DEFAULT_CURRENCY # Added for Phase 33
+-from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM
++from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW
+ from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
+ from modules.finance.api import IShareholderRegistry
+ from modules.simulation.api import AgentID, IEstateRegistry
+@@ -186,16 +186,21 @@ class WorldState:
+     def calculate_total_money(self) -> MoneySupplyDTO:
+         """
+         Calculates M2 (Total Money Supply) and System Debt.
+-        M2 = Sum(max(0, balance)) for all agents (including System Agents).
++        M2 is delegated to the Unified Monetary Ledger (SSoT).
+         SystemDebt = Sum(abs(balance)) where balance < 0.
+         Returns: MoneySupplyDTO with strict penny values.
+         """
+         total_m2_pennies = 0
+         system_debt_pennies = 0
+ 
++        # M2 from SSoT
++        if self.monetary_ledger:
++            total_m2_pennies = self.monetary_ledger.get_total_m2_pennies(DEFAULT_CURRENCY)
++
++        # Calculate System Debt (Legacy Iteration)
+         # Helper to process an agent
+-        def process_agent(agent):
+-            nonlocal total_m2_pennies, system_debt_pennies
++        def process_debt(agent):
++            nonlocal system_debt_pennies
+             # Check if agent holds currency
+             if not hasattr(agent, 'get_assets_by_currency'):
+                 return
+@@ -204,13 +209,10 @@ class WorldState:
+             assets_dict = agent.get_assets_by_currency()
+             val = int(assets_dict.get(DEFAULT_CURRENCY, 0))
+             
+-            if val >= 0:
+-                total_m2_pennies += val
+-            else:
++            if val < 0:
+                 system_debt_pennies += abs(val)
+ 
+         # 1. Active Agents in Registry
+-        # Use self.agents as the primary source of truth to avoid missing agents
+         system_agent_ids = {ID_CENTRAL_BANK, ID_SYSTEM, getattr(self.bank, 'id', -999) if self.bank else -999}
+         
+         for agent in self.agents.values():
+@@ -218,16 +220,22 @@ class WorldState:
+             if hasattr(agent, 'is_active') and not agent.is_active:
+                 continue
+             
+-            # Exclude System Agents from M2 (Double-counting guard)
++            # Exclude System Agents from Debt check if needed (System Debt usually implies Gov Debt, but here it sums private debt?)
++            # "system_debt_pennies" usually means "Total Debt in the System".
+             if hasattr(agent, 'id') and agent.id in system_agent_ids:
+                 continue
+                 
+-            process_agent(agent)
++            process_debt(agent)
+ 
+-        # 2. Estate Agents (Always Inactive, but holding funds)
++        # 2. Estate Agents
+         if self.estate_registry:
+             for agent in self.estate_registry.get_all_estate_agents():
+-                process_agent(agent)
++                process_debt(agent)
++
++        # Fallback if Ledger missing (should not happen in initialized sim)
++        if not self.monetary_ledger:
++             # Re-run full calculation if ledger missing
++             return self._legacy_calculate_total_money()
+ 
+         return MoneySupplyDTO(
+             total_m2_pennies=total_m2_pennies,
+@@ -235,6 +243,36 @@ class WorldState:
+             currency=DEFAULT_CURRENCY
+         )
+ 
++    def _legacy_calculate_total_money(self) -> MoneySupplyDTO:
++        # Fallback logic mirroring original implementation
++        total_m2_pennies = 0
++        system_debt_pennies = 0
++
++        def process_agent(agent):
++            nonlocal total_m2_pennies, system_debt_pennies
++            if not hasattr(agent, 'get_assets_by_currency'): return
++            val = int(agent.get_assets_by_currency().get(DEFAULT_CURRENCY, 0))
++            if val >= 0: total_m2_pennies += val
++            else: system_debt_pennies += abs(val)
++
++        system_agent_ids = {
++            ID_CENTRAL_BANK,
++            ID_SYSTEM,
++            ID_ESCROW,
++            ID_PUBLIC_MANAGER,
++            getattr(self.bank, 'id', -999) if self.bank else -999
++        }
++        for agent in self.agents.values():
++            if hasattr(agent, 'is_active') and not agent.is_active: continue
++            if hasattr(agent, 'id') and agent.id in system_agent_ids: continue
++            process_agent(agent)
++
++        if self.estate_registry:
++            for agent in self.estate_registry.get_all_estate_agents():
++                process_agent(agent)
++
++        return MoneySupplyDTO(total_m2_pennies, system_debt_pennies, DEFAULT_CURRENCY)
++
+     def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = "USD") -> float:
+         """
+         Provides a single float value for total system money for backward compatibility
+diff --git a/tests/integration/test_lifecycle_cycle.py b/tests/integration/test_lifecycle_cycle.py
+index 589f0bd9..ac9fc3cc 100644
+--- a/tests/integration/test_lifecycle_cycle.py
++++ b/tests/integration/test_lifecycle_cycle.py
+@@ -60,6 +60,8 @@ class TestLifecycleCycle:
+         state.stress_scenario_config = None
+         state.saga_orchestrator = MagicMock()
+         state.monetary_ledger = MagicMock()
++        state.monetary_ledger.get_total_m2_pennies.return_value = 1000
++        state.monetary_ledger.get_expected_m2_pennies.return_value = 1000
+         state.shareholder_registry = MagicMock()
+         state.global_registry = MagicMock()
+         state.inequality_tracker = MagicMock()
+diff --git a/tests/unit/test_protocol_lockdown.py b/tests/unit/test_protocol_lockdown.py
+index ec83fbc8..97b91b73 100644
+--- a/tests/unit/test_protocol_lockdown.py
++++ b/tests/unit/test_protocol_lockdown.py
+@@ -2,6 +2,7 @@ import pytest
+ from typing import Protocol, runtime_checkable
+ from modules.finance.api import IFinancialEntity, ISettlementSystem, IBankService
+ from modules.finance.transaction.api import ITransactionExecutor, ITransactionValidator
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ class MockFinancialEntity:
+     """Correct implementation of IFinancialEntity"""
+@@ -42,6 +43,10 @@ class MockSettlementSystem:
+     def audit_total_m2(self, expected_total=None): # Added missing method
+         return True
+ 
++    def get_total_m2_pennies(self, currency=DEFAULT_CURRENCY) -> int: return 0
++    def get_total_circulating_cash(self, currency=DEFAULT_CURRENCY) -> int: return 0
++    def set_monetary_ledger(self, ledger): pass
++
+     def get_account_holders(self, bank_id):
+         return []
+     def get_agent_banks(self, agent_id):

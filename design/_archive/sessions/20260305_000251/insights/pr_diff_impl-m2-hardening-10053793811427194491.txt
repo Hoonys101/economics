@@ -1,0 +1,475 @@
+diff --git a/communications/insights/IMPL_M2_HARDENING.md b/communications/insights/IMPL_M2_HARDENING.md
+new file mode 100644
+index 00000000..2e57aa21
+--- /dev/null
++++ b/communications/insights/IMPL_M2_HARDENING.md
+@@ -0,0 +1,44 @@
++# Insight Report: Spec M2 Hardening & CommandBatchDTO
++
++## Architectural Insights
++
++### 1. Unified Command Pipeline via `CommandBatchDTO`
++The `CommandBatchDTO` has been successfully refactored to serve as the unified container for all simulation inputs and side-effects for a given tick.
++-   **Old Architecture**: Fragmented inputs (`god_commands` vs `system_commands`) and weakly-typed side-effects (`effects_queue: List[Dict]`).
++-   **New Architecture**: `CommandBatchDTO` encapsulates:
++    -   `transfers`: Typed `FinancialTransferDTO` list.
++    -   `mutations`: Typed `SystemLedgerMutationDTO` list.
++    -   `god_commands`: List of external overrides.
++    -   `system_commands`: List of policy adjustments.
++-   **Benefit**: This enforces a single entry point for state mutation, making the simulation deterministic and replayable.
++
++### 2. Strict Integer Enforcement (Float Incursion Defense)
++To resolve `TD-FIN-FLOAT-INCURSION`, the new DTOs (`FinancialTransferDTO`, `SystemLedgerMutationDTO`) utilize `__post_init__` validation to raise `TypeError` immediately if a float is passed.
++-   **Impact**: Prevents "dust" errors and non-deterministic floating-point math from corrupting the ledger.
++-   **Test Evidence**: `test_execute_batch_transfer_float_failure` passes, confirming that even if legacy code attempts to pass floats, the DTO layer will reject it before execution.
++
++### 3. Protocol Segregation & Monetary Authority
++A critical insight during implementation was the separation between `ISettlementSystem` (Standard P2P transfers) and `IMonetaryAuthority` (Mint/Burn capabilities).
++-   `SettlementSystem` implements both.
++-   `MonetaryLedger` depends on `ISettlementSystem` for recording but requires `IMonetaryAuthority` capabilities to execute mutations (Mint/Burn).
++-   **Solution**: The `MonetaryLedger.execute_batch` method performs a runtime check (`isinstance(sys, IMonetaryAuthority)`) before calling mint/burn methods. This maintains strict type safety while allowing the system to use the capability if available.
++
++## Regression Analysis
++
++### 1. Test Failures & Fixes
++-   **Issue**: `AttributeError: Mock object has no attribute 'mint_and_distribute'`.
++-   **Cause**: Unit tests mocked `ISettlementSystem`, but the code under test called `mint_and_distribute`, which is defined in the extended `IMonetaryAuthority` protocol.
++-   **Fix**: Updated test fixtures to use `MagicMock(spec=IMonetaryAuthority)`.
++-   **Issue**: `test_execute_batch_agent_not_found` did not raise `SettlementFailError`.
++-   **Cause**: `MonetaryLedger._resolve_agent` has a fallback chain. It tried `time_provider.get_agent(id)`. Since `time_provider` was a `MagicMock` without a spec, `get_agent(id)` returned a new Mock object (truthy), so the code thought the agent existed.
++-   **Fix**: Explicitly removed `get_agent` from the `mock_time_provider` in the test setup (`del tp.get_agent`).
++
++## Test Evidence
++
++```text
++tests/modules/finance/test_ledger_batch.py::TestMonetaryLedgerBatchExecution::test_execute_batch_transfer_success PASSED [ 20%]
++tests/modules/finance/test_ledger_batch.py::TestMonetaryLedgerBatchExecution::test_execute_batch_transfer_float_failure PASSED [ 40%]
++tests/modules/finance/test_ledger_batch.py::TestMonetaryLedgerBatchExecution::test_execute_batch_mint_success PASSED [ 60%]
++tests/modules/finance/test_ledger_batch.py::TestMonetaryLedgerBatchExecution::test_execute_batch_burn_success PASSED [ 80%]
++tests/modules/finance/test_ledger_batch.py::TestMonetaryLedgerBatchExecution::test_execute_batch_agent_not_found PASSED [100%]
++```
+diff --git a/modules/finance/kernel/ledger.py b/modules/finance/kernel/ledger.py
+index a0035497..e3faad03 100644
+--- a/modules/finance/kernel/ledger.py
++++ b/modules/finance/kernel/ledger.py
+@@ -1,13 +1,21 @@
+-from typing import List, Any, Optional, Dict
++from typing import List, Any, Optional, Dict, TYPE_CHECKING
+ from uuid import UUID
+ from simulation.models import Transaction
+ from modules.finance.kernel.api import IMonetaryLedger
+-from modules.finance.api import ISettlementSystem
+-from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
++from modules.finance.api import ISettlementSystem, IFinancialAgent, IMonetaryAuthority
++from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, AgentID
++from modules.system.constants import ID_CENTRAL_BANK
+ import logging
+ 
++if TYPE_CHECKING:
++    from simulation.dtos.api import CommandBatchDTO
++
+ logger = logging.getLogger(__name__)
+ 
++class SettlementFailError(Exception):
++    """Raised when a batch settlement operation fails."""
++    pass
++
+ class MonetaryLedger(IMonetaryLedger):
+     """
+     Implementation of IMonetaryLedger.
+@@ -123,3 +131,111 @@ class MonetaryLedger(IMonetaryLedger):
+         amount_pennies = int(amount * 100)
+         source = f"saga_{saga_id}_loan_{loan_id}_{reason}"
+         self.record_monetary_contraction(amount_pennies, source)
++
++    def execute_batch(self, batch: 'CommandBatchDTO') -> None:
++        """
++        Executes a batch of financial commands.
++        Enforces strict Zero-Sum constraints and type safety.
++        """
++        if not self.settlement_system:
++            raise SettlementFailError("SettlementSystem not injected into MonetaryLedger.")
++
++        # 1. Process Transfers (P2P)
++        for transfer_dto in batch.transfers:
++            if not isinstance(transfer_dto.amount_pennies, int):
++                raise TypeError(f"Float Incursion in transfer amount: {transfer_dto.amount_pennies}")
++
++            source_agent = self._resolve_agent(transfer_dto.source_id)
++            target_agent = self._resolve_agent(transfer_dto.target_id)
++
++            if not source_agent or not target_agent:
++                logger.error(f"EXECUTE_BATCH_FAIL | Agent lookup failed. Source: {transfer_dto.source_id}, Target: {transfer_dto.target_id}")
++                raise SettlementFailError(f"Agent lookup failed for transfer from {transfer_dto.source_id} to {transfer_dto.target_id}")
++
++            tx = self.settlement_system.transfer(
++                debit_agent=source_agent,
++                credit_agent=target_agent,
++                amount=transfer_dto.amount_pennies,
++                memo=transfer_dto.reason,
++                tick=batch.tick,
++                currency=transfer_dto.currency
++            )
++
++            if not tx:
++                raise SettlementFailError(f"Transfer failed from {transfer_dto.source_id} to {transfer_dto.target_id}")
++
++        # 2. Process Mutations (System Mint/Burn)
++        for mutation_dto in batch.mutations:
++            if not isinstance(mutation_dto.amount_pennies, int):
++                raise TypeError(f"Float Incursion in mutation amount: {mutation_dto.amount_pennies}")
++
++            # Check if Settlement System supports monetary authority operations
++            # We check for the method presence or type to be safe
++            if not isinstance(self.settlement_system, IMonetaryAuthority):
++                 # Fallback: check if method exists (duck typing for mocks/non-strict scenarios)
++                 if not hasattr(self.settlement_system, 'mint_and_distribute'):
++                     raise SettlementFailError("SettlementSystem does not support Monetary Authority operations (mint/burn).")
++
++            # Cast for type safety in IDEs
++            monetary_authority: IMonetaryAuthority = self.settlement_system # type: ignore
++
++            if mutation_dto.amount_pennies > 0:
++                # Minting (M2 Expansion)
++                success = monetary_authority.mint_and_distribute(
++                    target_agent_id=mutation_dto.target_id,
++                    amount=mutation_dto.amount_pennies,
++                    tick=batch.tick,
++                    reason=mutation_dto.reason
++                )
++                if not success:
++                    raise SettlementFailError(f"Minting failed for target {mutation_dto.target_id}")
++
++            elif mutation_dto.amount_pennies < 0:
++                # Burning (M2 Contraction)
++                target_agent = self._resolve_agent(mutation_dto.target_id)
++                central_bank = self._resolve_agent(ID_CENTRAL_BANK) # Sink
++
++                if not target_agent:
++                    raise SettlementFailError(f"Burn target agent {mutation_dto.target_id} not found.")
++                if not central_bank:
++                    raise SettlementFailError(f"Central Bank (Sink) not found for burn operation.")
++
++                burn_amount = abs(mutation_dto.amount_pennies)
++                tx = monetary_authority.transfer_and_destroy(
++                    source=target_agent,
++                    sink_authority=central_bank,
++                    amount=burn_amount,
++                    reason=mutation_dto.reason,
++                    tick=batch.tick,
++                    currency=mutation_dto.currency
++                )
++                if not tx:
++                    raise SettlementFailError(f"Burn failed from {mutation_dto.target_id}")
++
++    def _resolve_agent(self, agent_id: AgentID) -> Optional[IFinancialAgent]:
++        """
++        Helper to resolve an Agent ID to an IFinancialAgent object.
++        Tries SettlementSystem's registry first, then fallback to time_provider's agent list.
++        """
++        # 1. Try SettlementSystem's internal registry (if exposed or accessible)
++        # Note: ISettlementSystem inherits IAccountRegistry, but we need IAgentRegistry access.
++        # Ideally, SettlementSystem implementation has `agent_registry`.
++        if hasattr(self.settlement_system, 'agent_registry') and self.settlement_system.agent_registry:
++            agent = self.settlement_system.agent_registry.get_agent(agent_id)
++            if agent:
++                return agent
++
++        # 2. Fallback to Time Provider (SimulationState) if it has agent storage
++        if hasattr(self.time_provider, 'agents'):
++            # SimulationState.agents is Dict[AgentID, Any]
++            agent = self.time_provider.agents.get(agent_id)
++            if agent:
++                return agent
++
++        # 3. Fallback: Check if time_provider IS the registry (WorldState)
++        if hasattr(self.time_provider, 'get_agent'):
++             agent = self.time_provider.get_agent(agent_id)
++             if agent:
++                 return agent
++
++        return None
+diff --git a/modules/system/api.py b/modules/system/api.py
+index f89d2344..af5f284d 100644
+--- a/modules/system/api.py
++++ b/modules/system/api.py
+@@ -1,12 +1,12 @@
+ from __future__ import annotations
+ from abc import ABC, abstractmethod
+-from typing import Any, Dict, List, Optional, Protocol, Union, runtime_checkable, TYPE_CHECKING, TypedDict
++from typing import Any, Dict, List, Optional, Protocol, Union, runtime_checkable, TYPE_CHECKING, TypedDict, Sequence
+ from dataclasses import dataclass, field
+ from enum import IntEnum, auto
+ from pydantic import BaseModel, Field
+ 
+ if TYPE_CHECKING:
+-    from modules.simulation.dtos.api import MoneySupplyDTO
++    from modules.simulation.dtos.api import MoneySupplyDTO, CommandBatchDTO
+     from modules.simulation.api import EconomicIndicatorsDTO
+ 
+ # Define Currency Code (Usually String "USD")
+diff --git a/modules/system/command_pipeline/api.py b/modules/system/command_pipeline/api.py
+index 2a0dd8db..362332e9 100644
+--- a/modules/system/command_pipeline/api.py
++++ b/modules/system/command_pipeline/api.py
+@@ -4,12 +4,7 @@ from dataclasses import dataclass, field
+ from simulation.dtos.commands import GodCommandDTO
+ from modules.governance.api import SystemCommand
+ from modules.governance.cockpit.api import CockpitCommand
+-
+-@dataclass
+-class CommandBatchDTO:
+-    tick: int
+-    god_commands: List[GodCommandDTO] = field(default_factory=list)
+-    system_commands: List[SystemCommand] = field(default_factory=list)
++from simulation.dtos.api import CommandBatchDTO
+ 
+ @runtime_checkable
+ class ICommandIngressService(Protocol):
+diff --git a/simulation/dtos/api.py b/simulation/dtos/api.py
+index 5614b5a1..dddc3d8a 100644
+--- a/simulation/dtos/api.py
++++ b/simulation/dtos/api.py
+@@ -7,13 +7,74 @@ from simulation.models import Order
+ from simulation.dtos.decision_dtos import DecisionOutputDTO
+ from modules.finance.api import IFinancialAgent
+ from modules.simulation.api import AgentID
+-from modules.system.command_pipeline.api import CommandBatchDTO
++from modules.system.api import AgentID, CurrencyCode, DEFAULT_CURRENCY
++from simulation.dtos.commands import GodCommandDTO
++
++if TYPE_CHECKING:
++    from simulation.core_agents import Household
++    from simulation.firms import Firm
++    from simulation.dtos.scenario import StressScenarioConfig
++    from modules.household.dtos import HouseholdStateDTO
++    from modules.finance.kernel.api import IMonetaryLedger
++    from modules.government.politics_system import PoliticsSystem
++    from modules.governance.api import SystemCommand
+ 
+ # Renamed to enforce explicit usage of CanonicalOrderDTO vs Legacy Order
+ LegacySimulationOrder = Order
+ # Deprecated alias kept for backward compatibility until all consumers are updated
+ OrderDTO = Order
+ 
++@dataclass(frozen=True)
++class FinancialTransferDTO:
++    """Represents a strictly balanced peer-to-peer transfer."""
++    source_id: AgentID
++    target_id: AgentID
++    amount_pennies: int
++    currency: CurrencyCode = DEFAULT_CURRENCY
++    reason: str = "general_transfer"
++
++    def __post_init__(self):
++        if not isinstance(self.amount_pennies, int):
++            raise TypeError(f"Float Incursion Detected: amount_pennies must be int, got {type(self.amount_pennies)}")
++        if self.amount_pennies < 0:
++            raise ValueError("Transfer amount cannot be negative.")
++
++@dataclass(frozen=True)
++class SystemLedgerMutationDTO:
++    """Represents an M2-altering operation (Mint/Burn) that must offset against System Debt."""
++    target_id: AgentID
++    amount_pennies: int  # Positive for Mint, Negative for Burn
++    currency: CurrencyCode = DEFAULT_CURRENCY
++    reason: str = "system_operation"
++
++    def __post_init__(self):
++        if not isinstance(self.amount_pennies, int):
++            raise TypeError(f"Float Incursion Detected: amount_pennies must be int, got {type(self.amount_pennies)}")
++
++@dataclass
++class CommandBatchDTO:
++    """
++    Replaces the legacy Dict[str, Any] effects_queue.
++    Encapsulates all state mutations for a given tick.
++    """
++    tick: int
++    transfers: List[FinancialTransferDTO] = field(default_factory=list)
++    mutations: List[SystemLedgerMutationDTO] = field(default_factory=list)
++    god_commands: List[GodCommandDTO] = field(default_factory=list)
++    system_commands: List['SystemCommand'] = field(default_factory=list)
++
++    def validate_pre_execution(self) -> None:
++        """
++        Structural validation only.
++        Zero-Sum enforcement occurs at the IMonetaryLedger level.
++        """
++        for t in self.transfers:
++            if not isinstance(t.amount_pennies, int):
++                raise TypeError("Float Incursion in transfers.")
++        for m in self.mutations:
++            if not isinstance(m.amount_pennies, int):
++                raise TypeError("Float Incursion in mutations.")
++
+ @dataclass(frozen=True)
+ class DepartmentContextDTO:
+     """Module B: Context for firm-department orchestration."""
+@@ -37,15 +98,6 @@ class MockFactoryDTO:
+     mock_id: str
+     behavior_config: Dict[str, Any]
+ 
+-
+-if TYPE_CHECKING:
+-    from simulation.core_agents import Household
+-    from simulation.firms import Firm
+-    from simulation.dtos.scenario import StressScenarioConfig
+-    from modules.household.dtos import HouseholdStateDTO
+-    from modules.finance.kernel.api import IMonetaryLedger
+-    from modules.government.politics_system import PoliticsSystem
+-
+ @dataclass
+ class TransactionData:
+     run_id: int
+diff --git a/tests/modules/finance/test_ledger_batch.py b/tests/modules/finance/test_ledger_batch.py
+new file mode 100644
+index 00000000..a05e55f9
+--- /dev/null
++++ b/tests/modules/finance/test_ledger_batch.py
+@@ -0,0 +1,145 @@
++import pytest
++from unittest.mock import MagicMock, Mock
++from modules.finance.kernel.ledger import MonetaryLedger, SettlementFailError
++from modules.finance.api import ISettlementSystem, IFinancialAgent, IMonetaryAuthority
++from simulation.dtos.api import CommandBatchDTO, FinancialTransferDTO, SystemLedgerMutationDTO
++from modules.system.api import DEFAULT_CURRENCY
++from modules.system.constants import ID_CENTRAL_BANK
++
++class TestMonetaryLedgerBatchExecution:
++
++    @pytest.fixture
++    def mock_settlement(self):
++        # Use IMonetaryAuthority to allow mint_and_distribute / transfer_and_destroy
++        mock = MagicMock(spec=IMonetaryAuthority)
++        # Mock agent_registry since it's accessed via hasattr in implementation
++        mock.agent_registry = MagicMock()
++        return mock
++
++    @pytest.fixture
++    def mock_time_provider(self):
++        tp = MagicMock()
++        tp.time = 100
++        # Mock agents dict fallback
++        tp.agents = {}
++        # Ensure get_agent doesn't exist or returns None to prevent accidental fallback resolution
++        del tp.get_agent
++        return tp
++
++    @pytest.fixture
++    def ledger(self, mock_settlement, mock_time_provider):
++        return MonetaryLedger(
++            transaction_log=[],
++            time_provider=mock_time_provider,
++            settlement_system=mock_settlement
++        )
++
++    def test_execute_batch_transfer_success(self, ledger, mock_settlement, mock_time_provider):
++        # Setup Agents
++        agent_a = MagicMock(spec=IFinancialAgent)
++        agent_b = MagicMock(spec=IFinancialAgent)
++
++        # Setup Registry Resolution
++        mock_registry = mock_settlement.agent_registry
++        mock_registry.get_agent.side_effect = lambda id: {1: agent_a, 2: agent_b}.get(id)
++
++        # Setup Batch
++        transfer = FinancialTransferDTO(
++            source_id=1,
++            target_id=2,
++            amount_pennies=1000,
++            currency=DEFAULT_CURRENCY,
++            reason="test_transfer"
++        )
++        batch = CommandBatchDTO(tick=100, transfers=[transfer])
++
++        # Mock successful transfer
++        mock_settlement.transfer.return_value = True
++
++        # Execute
++        ledger.execute_batch(batch)
++
++        # Verify
++        mock_settlement.transfer.assert_called_once_with(
++            debit_agent=agent_a,
++            credit_agent=agent_b,
++            amount=1000,
++            memo="test_transfer",
++            tick=100,
++            currency=DEFAULT_CURRENCY
++        )
++
++    def test_execute_batch_transfer_float_failure(self, ledger):
++        # Should fail at DTO construction
++        try:
++            FinancialTransferDTO(1, 2, 100.5)
++            assert False, "Should have raised TypeError"
++        except TypeError:
++            pass
++
++    def test_execute_batch_mint_success(self, ledger, mock_settlement):
++        # Setup Batch
++        mutation = SystemLedgerMutationDTO(
++            target_id=3,
++            amount_pennies=5000,
++            reason="stimulus"
++        )
++        batch = CommandBatchDTO(tick=100, mutations=[mutation])
++
++        # Mock success
++        mock_settlement.mint_and_distribute.return_value = True
++
++        # Execute
++        ledger.execute_batch(batch)
++
++        # Verify (ID passed directly)
++        mock_settlement.mint_and_distribute.assert_called_once_with(
++            target_agent_id=3,
++            amount=5000,
++            tick=100,
++            reason="stimulus"
++        )
++
++    def test_execute_batch_burn_success(self, ledger, mock_settlement):
++        # Setup Agents
++        agent_target = MagicMock(spec=IFinancialAgent)
++        central_bank = MagicMock(spec=IFinancialAgent)
++
++        # Setup Registry
++        mock_registry = mock_settlement.agent_registry
++        mock_registry.get_agent.side_effect = lambda id: {4: agent_target, ID_CENTRAL_BANK: central_bank}.get(id)
++
++        # Setup Batch
++        mutation = SystemLedgerMutationDTO(
++            target_id=4,
++            amount_pennies=-2000,
++            reason="tax_burn"
++        )
++        batch = CommandBatchDTO(tick=100, mutations=[mutation])
++
++        # Mock success
++        mock_settlement.transfer_and_destroy.return_value = True
++
++        # Execute
++        ledger.execute_batch(batch)
++
++        # Verify
++        mock_settlement.transfer_and_destroy.assert_called_once_with(
++            source=agent_target,
++            sink_authority=central_bank,
++            amount=2000, # Absolute value
++            reason="tax_burn",
++            tick=100,
++            currency=DEFAULT_CURRENCY
++        )
++
++    def test_execute_batch_agent_not_found(self, ledger, mock_settlement):
++        # Setup Registry to return None
++        mock_registry = mock_settlement.agent_registry
++        mock_registry.get_agent.return_value = None
++
++        transfer = FinancialTransferDTO(1, 2, 100)
++        batch = CommandBatchDTO(tick=100, transfers=[transfer])
++
++        with pytest.raises(SettlementFailError, match="Agent lookup failed"):
++            ledger.execute_batch(batch)

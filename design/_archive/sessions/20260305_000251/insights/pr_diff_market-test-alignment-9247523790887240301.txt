@@ -1,0 +1,238 @@
+diff --git a/communications/insights/WO-FIX-MARKET-TESTS.md b/communications/insights/WO-FIX-MARKET-TESTS.md
+new file mode 100644
+index 00000000..a841cfa5
+--- /dev/null
++++ b/communications/insights/WO-FIX-MARKET-TESTS.md
+@@ -0,0 +1,64 @@
++# Insight Report: Market API Test Alignment (WO-FIX-MARKET-TESTS)
++
++## 1. Architectural Insights
++The recent refactoring of market systems introduced a stricter separation of concerns between "Market Halt" logic (`IIndexCircuitBreaker`) and "Price Limit" logic (`IPriceLimitEnforcer`). Legacy `OrderBookMarket` tests were conflating these two concepts, attempting to use the `circuit_breaker` argument for price boundary enforcement.
++
++Key architectural shifts observed and aligned:
++- **Separation of Safety Concerns**: `OrderBookMarket` now distinctly accepts `circuit_breaker` (for market-wide halts) and `enforcer` (for per-order price validation).
++- **Config DTO Purity**: `StockMarket` and `OrderBookMarket` constructors now reject raw `config_module` objects in favor of typed DTOs (`StockMarketConfigDTO`, `MarketConfigDTO`), enforcing type safety and preventing configuration drift.
++- **Dependency Injection**: The legacy `DynamicCircuitBreaker` (which implemented dynamic price limits) is no longer automatically instantiated by `OrderBookMarket`. Tests requiring this specific legacy behavior must now explicitly instantiate and inject it as the `enforcer`.
++
++## 2. Regression Analysis
++Multiple `TypeError` and `AttributeError` regressions were identified in the test suite due to signature mismatches:
++1.  **Argument Renaming**: `OrderBookMarket` constructor changed `index_circuit_breaker` -> `circuit_breaker`. Tests using the old name failed with `TypeError`.
++2.  **Config Injection**: `StockMarket` removed `config_module` support. Tests passing a mock config object failed.
++3.  **Mock Attribute Drift**: `test_circuit_breaker_legacy.py` attempted to call `update_price_history` on a mock `IIndexCircuitBreaker`. This method does not exist on the Halt-focused interface. The test was refactored to correctly inject a `DynamicCircuitBreaker` as the `enforcer` to verify legacy price limit logic.
++
++All identified regressions have been resolved by aligning test instantiations with the current API signatures.
++
++## 3. Test Evidence
++
++### 3.1. `tests/unit/test_markets_v2.py`
++```
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_initialization PASSED [  5%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_place_buy_order_adds_and_sorts PASSED [ 10%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_place_sell_order_adds_and_sorts PASSED [ 15%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_place_order_unknown_type_logs_warning PASSED [ 21%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_match_orders_full_fill PASSED [ 26%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_match_orders_partial_fill_buy_order PASSED [ 31%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_match_orders_partial_fill_sell_order PASSED [ 36%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_match_orders_no_match_price PASSED [ 42%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_match_orders_multiple_matches PASSED [ 47%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_match_orders_different_items PASSED [ 52%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_match_orders_empty_books PASSED [ 57%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_match_orders_transaction_type_goods PASSED [ 63%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_match_orders_transaction_type_labor PASSED [ 68%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_get_best_ask_empty PASSED [ 73%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_get_best_ask_non_empty PASSED [ 78%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_get_best_bid_empty PASSED [ 84%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_get_best_bid_non_empty PASSED [ 89%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_get_order_book_status_empty PASSED [ 94%]
++tests/unit/test_markets_v2.py::TestOrderBookMarket::test_get_order_book_status_non_empty PASSED [100%]
++======================== 19 passed, 1 warning in 0.48s =========================
++```
++
++### 3.2. `tests/integration/test_shareholder_registry.py`
++```
++tests/integration/test_shareholder_registry.py::test_registry_basic_operations PASSED [ 50%]
++tests/integration/test_shareholder_registry.py::test_stock_market_integration PASSED [100%]
++======================== 2 passed, 1 warning in 0.33s =========================
++```
++
++### 3.3. `tests/unit/markets/` (Selected Relevant Tests)
++```
++tests/unit/markets/test_circuit_breaker_legacy.py::TestDynamicCircuitBreaker::test_bounds_calculation_without_history PASSED [ 11%]
++tests/unit/markets/test_circuit_breaker_legacy.py::TestDynamicCircuitBreaker::test_bounds_calculation_with_history PASSED [ 12%]
++tests/unit/markets/test_circuit_breaker_legacy.py::TestDynamicCircuitBreaker::test_no_temporal_relaxation PASSED [ 13%]
++tests/unit/markets/test_circuit_breaker_legacy.py::TestOrderBookMarketIntegration::test_place_order_delegates_to_circuit_breaker PASSED [ 15%]
++tests/unit/markets/test_market_halt.py::TestMarketHalt::test_order_book_market_halts PASSED [ 51%]
++tests/unit/markets/test_market_halt.py::TestMarketHalt::test_stock_market_halts PASSED [ 53%]
++tests/unit/markets/test_market_halt.py::TestMarketHalt::test_order_book_market_resumes PASSED [ 55%]
++tests/unit/markets/test_stock_market_cancellation.py::TestStockMarketCancellation::test_cancel_orders_removes_agent_orders PASSED [ 98%]
++tests/unit/markets/test_stock_market_cancellation.py::TestStockMarketCancellation::test_cancel_orders_mixed_int_str_id PASSED [100%]
++======================== 58 passed, 1 warning in 0.78s =========================
++```
+diff --git a/tests/integration/test_shareholder_registry.py b/tests/integration/test_shareholder_registry.py
+index 7c162510..18699917 100644
+--- a/tests/integration/test_shareholder_registry.py
++++ b/tests/integration/test_shareholder_registry.py
+@@ -1,8 +1,6 @@
+ from modules.finance.shareholder_registry import ShareholderRegistry
+ from simulation.markets.stock_market import StockMarket
+-
+-class MockConfig:
+-    STOCK_BOOK_VALUE_MULTIPLIER = 1.0
++from modules.market.api import StockMarketConfigDTO
+ 
+ def test_registry_basic_operations():
+     registry = ShareholderRegistry()
+@@ -36,7 +34,7 @@ def test_registry_basic_operations():
+ 
+ def test_stock_market_integration():
+     registry = ShareholderRegistry()
+-    market = StockMarket(config_module=MockConfig(), shareholder_registry=registry)
++    market = StockMarket(config_dto=StockMarketConfigDTO(book_value_multiplier=1.0), shareholder_registry=registry)
+ 
+     # Initial state
+     market.update_shareholder(agent_id=201, firm_id=2, quantity=500.0)
+diff --git a/tests/unit/markets/test_circuit_breaker_legacy.py b/tests/unit/markets/test_circuit_breaker_legacy.py
+index d37590ea..41a35cbb 100644
+--- a/tests/unit/markets/test_circuit_breaker_legacy.py
++++ b/tests/unit/markets/test_circuit_breaker_legacy.py
+@@ -67,15 +67,19 @@ class TestOrderBookMarketIntegration:
+         return config
+ 
+     def test_place_order_delegates_to_circuit_breaker(self, config):
+-        mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+-        mock_breaker.check_market_health.return_value = True
+-        mock_breaker.is_active.return_value = False
+-        market = OrderBookMarket("test_market", config_module=config, index_circuit_breaker=mock_breaker)
+-        # Note: OrderBookMarket creates its own DynamicCircuitBreaker if not provided
++        # 1. Setup Halt Breaker (Index Circuit Breaker)
++        mock_halt_breaker = MagicMock(spec=IIndexCircuitBreaker)
++        mock_halt_breaker.check_market_health.return_value = True
++        mock_halt_breaker.is_active.return_value = False
+ 
+-        # Manually populate history in the internal circuit breaker
++        # 2. Setup Dynamic Breaker (Legacy) - Injected as Enforcer
++        dynamic_breaker = DynamicCircuitBreaker(config_module=config)
++
++        market = OrderBookMarket("test_market", circuit_breaker=mock_halt_breaker, enforcer=dynamic_breaker)
++
++        # Manually populate history in the injected dynamic breaker (enforcer)
+         for _ in range(10):
+-            market.circuit_breaker.update_price_history("item1", 100.0)
++            dynamic_breaker.update_price_history("item1", 100.0)
+ 
+         # Try place order out of bounds (bounds are [85, 115])
+         order = CanonicalOrderDTO(
+@@ -90,7 +94,7 @@ class TestOrderBookMarketIntegration:
+ 
+         # Should reject (log warning) and not add to orders
+         market.place_order(order, 100)
+-        assert len(market._buy_orders.get("item1", [])) == 0
++        assert len(market.buy_orders.get("item1", [])) == 0
+ 
+         # Try place order within bounds
+         order_valid = CanonicalOrderDTO(
+@@ -103,4 +107,4 @@ class TestOrderBookMarketIntegration:
+             price_limit=100.0
+         )
+         market.place_order(order_valid, 100)
+-        assert len(market._buy_orders.get("item1", [])) == 1
++        assert len(market.buy_orders.get("item1", [])) == 1
+diff --git a/tests/unit/markets/test_market_halt.py b/tests/unit/markets/test_market_halt.py
+index e9b59d31..4312dbd6 100644
+--- a/tests/unit/markets/test_market_halt.py
++++ b/tests/unit/markets/test_market_halt.py
+@@ -2,7 +2,7 @@ import pytest
+ from unittest.mock import MagicMock
+ from simulation.markets.order_book_market import OrderBookMarket
+ from simulation.markets.stock_market import StockMarket
+-from modules.market.api import IIndexCircuitBreaker, CanonicalOrderDTO, MatchingResultDTO
++from modules.market.api import IIndexCircuitBreaker, CanonicalOrderDTO, MatchingResultDTO, StockMarketConfigDTO
+ 
+ class TestMarketHalt:
+     @pytest.fixture
+@@ -12,7 +12,7 @@ class TestMarketHalt:
+         return breaker
+ 
+     def test_order_book_market_halts(self, mock_breaker):
+-        market = OrderBookMarket("test_market", index_circuit_breaker=mock_breaker)
++        market = OrderBookMarket("test_market", circuit_breaker=mock_breaker)
+         # Add order to verify it DOES NOT reach matching
+         order = CanonicalOrderDTO("agent1", "BUY", "item1", 1.0, 100, "test_market")
+         market.place_order(order, 100)
+@@ -26,8 +26,8 @@ class TestMarketHalt:
+ 
+     def test_stock_market_halts(self, mock_breaker):
+         registry = MagicMock()
+-        config = MagicMock()
+-        market = StockMarket(config_module=config, shareholder_registry=registry, index_circuit_breaker=mock_breaker)
++        config_dto = StockMarketConfigDTO()
++        market = StockMarket(config_dto=config_dto, shareholder_registry=registry, index_circuit_breaker=mock_breaker)
+         transactions = market.match_orders(100)
+         assert transactions == []
+         mock_breaker.is_active.assert_called()
+@@ -35,7 +35,7 @@ class TestMarketHalt:
+     def test_order_book_market_resumes(self):
+         mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+         mock_breaker.is_active.return_value = False
+-        market = OrderBookMarket("test_market", index_circuit_breaker=mock_breaker)
++        market = OrderBookMarket("test_market", circuit_breaker=mock_breaker)
+ 
+         # Place an order so we expect matching to run
+         order = CanonicalOrderDTO("agent1", "BUY", "item1", 1.0, 100, "test_market")
+diff --git a/tests/unit/markets/test_stock_market_cancellation.py b/tests/unit/markets/test_stock_market_cancellation.py
+index 2f18ff37..d84885ed 100644
+--- a/tests/unit/markets/test_stock_market_cancellation.py
++++ b/tests/unit/markets/test_stock_market_cancellation.py
+@@ -1,20 +1,18 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from simulation.markets.stock_market import StockMarket
+-from modules.market.api import CanonicalOrderDTO, IIndexCircuitBreaker
++from modules.market.api import CanonicalOrderDTO, IIndexCircuitBreaker, StockMarketConfigDTO
+ 
+ class TestStockMarketCancellation:
+ 
+     @pytest.fixture
+     def market(self):
+         shareholder_registry = MagicMock()
+-        config = MagicMock()
+-        config.STOCK_PRICE_LIMIT_RATE = 0.1
+-        config.STOCK_BOOK_VALUE_MULTIPLIER = 1.0
++        config_dto = StockMarketConfigDTO(price_limit_rate=0.1, book_value_multiplier=1.0)
+         mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+         mock_breaker.check_market_health.return_value = True
+         mock_breaker.is_active.return_value = False
+-        return StockMarket(config_module=config, shareholder_registry=shareholder_registry, logger=MagicMock(), index_circuit_breaker=mock_breaker)
++        return StockMarket(config_dto=config_dto, shareholder_registry=shareholder_registry, logger=MagicMock(), index_circuit_breaker=mock_breaker)
+ 
+     def test_cancel_orders_removes_agent_orders(self, market):
+         # Setup orders
+diff --git a/tests/unit/test_markets_v2.py b/tests/unit/test_markets_v2.py
+index a71654f2..5b0de9be 100644
+--- a/tests/unit/test_markets_v2.py
++++ b/tests/unit/test_markets_v2.py
+@@ -16,21 +16,21 @@ def goods_market_instance():
+     mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+     mock_breaker.check_market_health.return_value = True
+     mock_breaker.is_active.return_value = False
+-    return OrderBookMarket(market_id='goods_market', index_circuit_breaker=mock_breaker)
++    return OrderBookMarket(market_id='goods_market', circuit_breaker=mock_breaker)
+ 
+ @pytest.fixture
+ def labor_market_instance(mock_logger):
+     mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+     mock_breaker.check_market_health.return_value = True
+     mock_breaker.is_active.return_value = False
+-    return OrderBookMarket(market_id='labor_market', logger=mock_logger, index_circuit_breaker=mock_breaker)
++    return OrderBookMarket(market_id='labor_market', logger=mock_logger, circuit_breaker=mock_breaker)
+ 
+ @pytest.fixture
+ def order_book_market_instance():
+     mock_breaker = MagicMock(spec=IIndexCircuitBreaker)
+     mock_breaker.check_market_health.return_value = True
+     mock_breaker.is_active.return_value = False
+-    return OrderBookMarket(market_id='test_market', index_circuit_breaker=mock_breaker)
++    return OrderBookMarket(market_id='test_market', circuit_breaker=mock_breaker)
+ 
+ @pytest.fixture
+ def sample_buy_order():

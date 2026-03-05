@@ -1,0 +1,217 @@
+diff --git a/communications/insights/WO-IMPL-SYSTEM-DEBT.md b/communications/insights/WO-IMPL-SYSTEM-DEBT.md
+new file mode 100644
+index 00000000..bc5105ab
+--- /dev/null
++++ b/communications/insights/WO-IMPL-SYSTEM-DEBT.md
+@@ -0,0 +1,48 @@
++# Implementation Report: System Debt Calculation Registry (WO-IMPL-SYSTEM-DEBT)
++
++## 1. Architectural Insights
++- **Dual Implementation Discovery**: The codebase contains two distinct `MonetaryLedger` implementations: `modules/finance/kernel/ledger.py` (inheriting `IMonetaryLedger`) and `modules/government/components/monetary_ledger.py` (legacy/standalone).
++- **Protocol Enforcement**: Updated `IMonetaryLedger` Protocol in `modules/finance/api.py` to enforce `get_system_debt_pennies`, `record_system_debt_increase`, and `record_system_debt_decrease`.
++- **Synchronization**: Updated both implementations to ensure system debt tracking is consistent regardless of which ledger component is injected (resolving integration test regression risks).
++- **Delegation Pattern**: `WorldState.calculate_total_money` now correctly delegates debt calculation to the injected ledger, removing the hardcoded `0` and enabling real-time debt tracking without O(N) iteration.
++
++## 2. Regression Analysis
++- **Existing Tests**:
++  - `tests/unit/systems/test_m2_integrity.py` uses `spec=IMonetaryLedger`. By updating the Protocol source, the mock spec was automatically aligned. No failures occurred as the test does not call the new methods.
++  - `tests/integration/test_m2_integrity.py` uses `modules/government/components/monetary_ledger.py`. Because I updated this legacy component to implement the new methods, the integration test continues to pass and is now forward-compatible with the new debt logic.
++- **New Coverage**: Added `tests/unit/finance/test_monetary_ledger_debt.py` to verify:
++  - Initial zero state.
++  - Increment/Decrement logic.
++  - Underflow protection (floor at 0).
++  - Multi-currency support.
++
++## 3. Test Evidence
++
++### New Unit Test (Debt Tracking)
++```
++tests/unit/finance/test_monetary_ledger_debt.py::TestMonetaryLedgerDebt::test_initial_debt_is_zero PASSED [ 20%]
++tests/unit/finance/test_monetary_ledger_debt.py::TestMonetaryLedgerDebt::test_record_system_debt_increase PASSED [ 40%]
++tests/unit/finance/test_monetary_ledger_debt.py::TestMonetaryLedgerDebt::test_record_system_debt_decrease PASSED [ 60%]
++tests/unit/finance/test_monetary_ledger_debt.py::TestMonetaryLedgerDebt::test_system_debt_underflow_protection
++-------------------------------- live log call ---------------------------------
++WARNING  modules.finance.kernel.ledger:ledger.py:62 SYSTEM_DEBT_UNDERFLOW | Attempted to decrease debt below zero via test_source. Resetting to 0.
++PASSED                                                                   [ 80%]
++tests/unit/finance/test_monetary_ledger_debt.py::TestMonetaryLedgerDebt::test_multiple_currencies PASSED [100%]
++```
++
++### Integration Test (M2 Integrity)
++```
++tests/integration/test_m2_integrity.py::TestM2Integrity::test_credit_creation_expansion PASSED [ 33%]
++tests/integration/test_m2_integrity.py::TestM2Integrity::test_credit_destruction_contraction PASSED [ 66%]
++tests/integration/test_m2_integrity.py::TestM2Integrity::test_internal_transfers_are_neutral PASSED [100%]
++```
++
++### Legacy Unit Test (Mock Compatibility)
++```
++tests/unit/systems/test_m2_integrity.py::test_transfer_m2_to_m2_no_expansion PASSED [ 16%]
++tests/unit/systems/test_m2_integrity.py::test_transfer_non_m2_to_m2_expansion PASSED [ 33%]
++tests/unit/systems/test_m2_integrity.py::test_transfer_m2_to_non_m2_contraction PASSED [ 50%]
++tests/unit/systems/test_m2_integrity.py::test_transfer_non_m2_to_non_m2_no_effect PASSED [ 66%]
++tests/unit/systems/test_m2_integrity.py::test_transaction_processor_ignores_money_creation PASSED [ 83%]
++tests/unit/systems/test_m2_integrity.py::test_money_creation_metadata_executed PASSED [100%]
++```
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 61b3b3b6..98411e67 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -440,6 +440,27 @@ class IMonetaryLedger(Protocol):
+         """Sets the baseline M2 (e.g. at genesis)."""
+         ...
+ 
++    def get_system_debt_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """
++        Returns the total accumulated system debt.
++        Resolves the O(N) aggregation bottleneck by returning a running total.
++        """
++        ...
++
++    def record_system_debt_increase(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """
++        Records an increase in system debt.
++        Triggered when system agents (e.g., PublicManager, Government) utilize overdrafts or issue bonds.
++        """
++        ...
++
++    def record_system_debt_decrease(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """
++        Records a decrease in system debt.
++        Triggered when system debt is repaid or reconciled.
++        """
++        ...
++
+     # Legacy Compatibility (Saga)
+     def record_credit_expansion(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None: ...
+     def record_credit_destruction(self, amount: float, saga_id: UUID, loan_id: Any, reason: str) -> None: ...
+diff --git a/modules/finance/kernel/ledger.py b/modules/finance/kernel/ledger.py
+index 896d807d..a0035497 100644
+--- a/modules/finance/kernel/ledger.py
++++ b/modules/finance/kernel/ledger.py
+@@ -1,4 +1,4 @@
+-from typing import List, Any, Optional
++from typing import List, Any, Optional, Dict
+ from uuid import UUID
+ from simulation.models import Transaction
+ from modules.finance.kernel.api import IMonetaryLedger
+@@ -26,6 +26,7 @@ class MonetaryLedger(IMonetaryLedger):
+         self.time_provider = time_provider
+         self.settlement_system = settlement_system
+         self.expected_m2_pennies = 0
++        self.total_system_debt: Dict[CurrencyCode, int] = {}
+ 
+     @property
+     def _current_tick(self) -> int:
+@@ -43,6 +44,25 @@ class MonetaryLedger(IMonetaryLedger):
+     def get_expected_m2_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+         return self.expected_m2_pennies
+ 
++    def get_system_debt_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        return self.total_system_debt.get(currency, 0)
++
++    def record_system_debt_increase(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        if currency not in self.total_system_debt:
++            self.total_system_debt[currency] = 0
++        self.total_system_debt[currency] += amount_pennies
++        logger.debug(f"SYSTEM_DEBT_INCREASE | +{amount_pennies} ({source}) | Total Debt: {self.total_system_debt[currency]}")
++
++    def record_system_debt_decrease(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        if currency not in self.total_system_debt:
++            self.total_system_debt[currency] = 0
++        self.total_system_debt[currency] -= amount_pennies
++        # Floor at 0 to prevent negative debt anomalies
++        if self.total_system_debt[currency] < 0:
++            logger.warning(f"SYSTEM_DEBT_UNDERFLOW | Attempted to decrease debt below zero via {source}. Resetting to 0.")
++            self.total_system_debt[currency] = 0
++        logger.debug(f"SYSTEM_DEBT_DECREASE | -{amount_pennies} ({source}) | Total Debt: {self.total_system_debt[currency]}")
++
+     def record_monetary_expansion(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         self.expected_m2_pennies += amount_pennies
+ 
+diff --git a/modules/government/components/monetary_ledger.py b/modules/government/components/monetary_ledger.py
+index 05a6f449..39b9b744 100644
+--- a/modules/government/components/monetary_ledger.py
++++ b/modules/government/components/monetary_ledger.py
+@@ -22,6 +22,28 @@ class MonetaryLedger:
+         # WO-024: Fractional Reserve Credit Tracking
+         self.credit_delta_this_tick: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
+ 
++        # WO-IMPL-SYSTEM-DEBT: System Debt Tracking
++        self.total_system_debt: Dict[CurrencyCode, int] = {}
++
++    def get_system_debt_pennies(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        return self.total_system_debt.get(currency, 0)
++
++    def record_system_debt_increase(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        if currency not in self.total_system_debt:
++            self.total_system_debt[currency] = 0
++        self.total_system_debt[currency] += amount_pennies
++        logger.debug(f"SYSTEM_DEBT_INCREASE | +{amount_pennies} ({source}) | Total Debt: {self.total_system_debt[currency]}")
++
++    def record_system_debt_decrease(self, amount_pennies: int, source: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        if currency not in self.total_system_debt:
++            self.total_system_debt[currency] = 0
++        self.total_system_debt[currency] -= amount_pennies
++        # Floor at 0 to prevent negative debt anomalies
++        if self.total_system_debt[currency] < 0:
++            logger.warning(f"SYSTEM_DEBT_UNDERFLOW | Attempted to decrease debt below zero via {source}. Resetting to 0.")
++            self.total_system_debt[currency] = 0
++        logger.debug(f"SYSTEM_DEBT_DECREASE | -{amount_pennies} ({source}) | Total Debt: {self.total_system_debt[currency]}")
++
+     def reset_tick_flow(self):
+         """
+         Called at the start of every tick to reset flow counters and snapshot totals.
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index b2248283..ebe8db7f 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -200,7 +200,7 @@ class WorldState:
+             # Debt Calculation (Phase 33 Hardening)
+             # We defer system debt calculation to a future update or macro tracker
+             # to strictly decouple WorldState from agent iteration.
+-            system_debt_pennies = 0
++            system_debt_pennies = self.monetary_ledger.get_system_debt_pennies(DEFAULT_CURRENCY)
+             
+             return MoneySupplyDTO(
+                 total_m2_pennies=total_m2_pennies,
+diff --git a/tests/unit/finance/test_monetary_ledger_debt.py b/tests/unit/finance/test_monetary_ledger_debt.py
+new file mode 100644
+index 00000000..729b6cab
+--- /dev/null
++++ b/tests/unit/finance/test_monetary_ledger_debt.py
+@@ -0,0 +1,35 @@
++import pytest
++from unittest.mock import MagicMock
++from modules.finance.kernel.ledger import MonetaryLedger
++from modules.system.api import DEFAULT_CURRENCY
++
++class TestMonetaryLedgerDebt:
++
++    def test_initial_debt_is_zero(self):
++        ledger = MonetaryLedger([], MagicMock())
++        assert ledger.get_system_debt_pennies(DEFAULT_CURRENCY) == 0
++
++    def test_record_system_debt_increase(self):
++        ledger = MonetaryLedger([], MagicMock())
++        ledger.record_system_debt_increase(1000, "test_source", DEFAULT_CURRENCY)
++        assert ledger.get_system_debt_pennies(DEFAULT_CURRENCY) == 1000
++
++    def test_record_system_debt_decrease(self):
++        ledger = MonetaryLedger([], MagicMock())
++        ledger.record_system_debt_increase(1000, "test_source", DEFAULT_CURRENCY)
++        ledger.record_system_debt_decrease(500, "test_source", DEFAULT_CURRENCY)
++        assert ledger.get_system_debt_pennies(DEFAULT_CURRENCY) == 500
++
++    def test_system_debt_underflow_protection(self):
++        ledger = MonetaryLedger([], MagicMock())
++        ledger.record_system_debt_increase(500, "test_source", DEFAULT_CURRENCY)
++        ledger.record_system_debt_decrease(1000, "test_source", DEFAULT_CURRENCY)
++        assert ledger.get_system_debt_pennies(DEFAULT_CURRENCY) == 0
++
++    def test_multiple_currencies(self):
++        ledger = MonetaryLedger([], MagicMock())
++        ledger.record_system_debt_increase(1000, "test_source", "USD")
++        ledger.record_system_debt_increase(2000, "test_source", "EUR")
++
++        assert ledger.get_system_debt_pennies("USD") == 1000
++        assert ledger.get_system_debt_pennies("EUR") == 2000

@@ -1,6 +1,6 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-03-03 (Wave 5 GC Mock Leak Identified / Phase 35 Stability Audit Deepened)
+**최종 업데이트**: 2026-03-04 (Wave 6 Memory Stabilization Complete / Mock Hardening Pending)
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
 
@@ -15,17 +15,14 @@
 
 ## 1. 현재 개발 단계
 
-    - **`Phase 35: Audit Stabilization & Structural Integrity`** 🛡️ 🛠️ (2026-03-01)
-        - **Goal**: Address critical findings from Forensic Audit Phase 21 (M2 Black Hole, Ghost Firms, Orphaned Sagas).
-        - **Status**: **ACTIVE**
-            - [x] **Wave 4 Mission**: Verified Jules' "Connectivity & SSoT Enforcement" (FinancialSentry, InventorySentry, M2 boundary split).
-            - [x] **Handover Generated**: Architecture Handover Report for Phase 34/35 complete.
-            - [x] **Wave 5 Tracking**: [S3-1] Forensic Audit complete; 5 parallel implementation missions armed.
-            - [x] **M2 Integrity (Confirmed via Audit)**: Sum `max(0, balance)` to prevent negative money supply. ✅
-            - [x] **Atomic Lifecycle (Implemented)**: `FirmFactory` ensures registration-before-injection. ✅
-            - [x] **Saga Caretaker (Implemented)**: Purged orphaned saga references via `SagaCaretaker`. ✅
-            - [x] **Lifecycle Adaptation**: Hardened protocols for `IBirthContext`/`IDeathContext`. ✅
-            - [x] **GC Mock Leak Identification (Critical)**: Diagnosed massive test suite hangs (tens of seconds) caused by `MagicMock` explosion and GC stalling. Registered `TD-TEST-GC-MOCK-EXPLOSION` and armed Gemini mission `WO-HYPOTHESIS-5-GC-MOCK-LEAK`. 🛡️
+    - **`Phase 36: Memory Stabilization & Lifecycle Hardening`** 🛡️ 💎 (2026-03-04)
+        - **Goal**: Finalize "Zero-Leak" runtime state and harden test mocks to prevent infinite object explosions.
+        - **Status**: **STABILIZED**
+            - [x] **LEAK_FIX_1-5 Merged**: Resolved cyclic references in `WorldState`, `Engine`, `TickOrchestrator`, and `DemographicManager`. ✅
+            - [x] **Mock Spec Enforcement**: Enforced `spec=` on all global context mocks to prevent "Mock Drift". ✅
+            - [x] **WinError 206 Resolve**: Fixed session conclusion script to handle 400+ context files via temporary list passing. ✅
+            - [ ] **MOCK_FIX_3 (Pending)**: `ShallowModuleMock` terminal refactor identified as exposing 100+ legacy test failures; deferred to next session as high-priority tech debt. ⚠️
+            - [ ] **TD-LIFECYCLE-AGENT-DISPOSE**: Encapsulation refactor for agent cleanup pending implementation. 📝
 
     - **`Phase 34: Project Rebirth (Batch Simulation & Reporting)`** 📈 🚀 (2026-02-28)
         - **Goal**: Decommission failed "Cockpit" web infrastructure and pivot to a high-performance Batch Reporting pipeline.
@@ -61,6 +58,9 @@
 
     - **`Phase 19: Post-Wave Technical Debt Liquidation (Wave 3-5)`** ⚖️ ✅ (2026-02-19)
         - **Status**: COMPLETED
+        - **Session Conclusion Fix**: Resolved `WinError 206` and context pollution.
+        - **Deep Context Cleanup**: Purged 500+ stale review/insight files from active directories to `_archive`.
+        - **Mock Implementation Hardening**: Integrated `create_autospec` and registered `MOCK_FIX_3` tech debt.
         - **Focus**: Market Engine Refactoring & Data Integrity (Wave 3)
         - **Achievement**: Successfully merged Matching Engine Integer Hardening and Transaction Schema Migration.
         - **Overall Status**:

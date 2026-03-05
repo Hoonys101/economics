@@ -2,6 +2,18 @@ import sys
 from unittest.mock import Mock, MagicMock, patch
 import pytest
 import time
+import os
+
+# HOTFIX: Resolve Pytest 9.0.2 NameError in unraisableexception.py
+try:
+    import _pytest.unraisableexception
+    if hasattr(_pytest.unraisableexception, "cleanup") and not hasattr(_pytest.unraisableexception, "gc_collect_iterations_key"):
+        # Inject the missing key to prevent NameError during teardown
+        from _pytest.stash import StashKey
+        _pytest.unraisableexception.gc_collect_iterations_key = StashKey[int]()
+        print("DEBUG: [conftest.py] Applied hotfix for _pytest.unraisableexception.gc_collect_iterations_key")
+except (ImportError, AttributeError):
+    pass
 
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.agents.central_bank import CentralBank
@@ -390,7 +402,13 @@ def pytest_runtest_teardown(item, nextitem):
     MockRegistry.reset_all()
 
     # Force garbage collection to remove cyclic references
-    gc.collect(1)
+    # Throttled GC: Only run every 5 tests to reduce overhead and prevent teardown instability
+    if not hasattr(pytest, "_test_counter"):
+        pytest._test_counter = 0
+    pytest._test_counter += 1
+    
+    if pytest._test_counter % 5 == 0:
+        gc.collect(1)
 
     # Try to clear global singleton registries
     try:

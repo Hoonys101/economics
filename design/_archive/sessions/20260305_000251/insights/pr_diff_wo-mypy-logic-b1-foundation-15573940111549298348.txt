@@ -1,0 +1,229 @@
+diff --git a/communications/insights/WO-MYPY-LOGIC-B1-FOUNDATION.md b/communications/insights/WO-MYPY-LOGIC-B1-FOUNDATION.md
+new file mode 100644
+index 00000000..de3c3b3f
+--- /dev/null
++++ b/communications/insights/WO-MYPY-LOGIC-B1-FOUNDATION.md
+@@ -0,0 +1,46 @@
++# WO-MYPY-LOGIC-B1-FOUNDATION Insight Report
++
++## 1. Architectural Insights
++
++### Penny Standard Enforcement
++The audit revealed inconsistencies in how financial values were handled, specifically mixing `float` and `int`. We enforced the "Penny Standard" by:
++- **TransactionProcessor**: Removing `float()` casts and ensuring `total_pennies` (int) is the Single Source of Truth (SSoT) for settlement.
++- **Portfolio**: Updating the `add` method to accept `price` in pennies (int) and using integer arithmetic for average cost calculation.
++- **CentralBank**: Verified that internal wallet operations strictly use `int` (no changes required).
++
++### Protocol & Interface Synchronization
++We identified drift between Protocol definitions and their implementations, violating the Liskov Substitution Principle (LSP).
++- **IAgent**: Added `name` attribute to Protocol to support logging usage.
++- **IBank**: Updated `grant_loan` signature to allow `optional` parameters (`due_tick`, `borrower_profile`) used by the concrete `Bank` implementation.
++- **IGovernmentPolicy**: Synchronized the `decide` method signature to accept `GovernmentSensoryDTO` (via `Optional` and `TYPE_CHECKING` imports), aligning with `TaylorRulePolicy` and `SmartLeviathanPolicy`.
++- **WorldState & Simulation**: Corrected type hinting for `ISettlementSystem` (vs `SettlementSystem`) and ensured `_calculate_total_money` returns the expected `float` type by extracting from the dictionary.
++
++### Module Fixes
++- **Simulation Engine**: Fixed import errors for `IGlobalRegistry`, `ISettlementSystem`, and `IAgentRegistry`, and corrected return type mismatches.
++
++## 2. Regression Analysis
++
++All changes were refactors of type hints, signatures, and strict integer casting.
++- **Finance**: The logic remains the same but is now type-safe. Integer rounding in Portfolio might cause micro-deviations (fractions of a penny) compared to float, but this is the desired behavior for the Penny Standard.
++- **Policy**: The signature updates are compatible with existing calls in `Government` agent.
++- **Engine**: The legacy wrapper `_calculate_total_money` was updated to return `float` as expected by its signature, summing/extracting from the `Dict` returned by `WorldState`.
++
++No regressions were found during testing.
++
++## 3. Test Evidence
++
++```
++=========================== short test summary info ============================
++SKIPPED [1] tests/integration/test_server_integration.py:16: websockets is mocked
++SKIPPED [1] tests/security/test_god_mode_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_websocket_auth.py:13: websockets is mocked
++SKIPPED [1] tests/system/test_server_auth.py:11: websockets is mocked, skipping server auth tests
++SKIPPED [1] tests/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/test_ws.py:11: fastapi is mocked
++SKIPPED [1] tests/market/test_dto_purity.py:26: Pydantic is mocked
++SKIPPED [1] tests/market/test_dto_purity.py:54: Pydantic is mocked
++SKIPPED [1] tests/modules/system/test_global_registry.py:101: Pydantic is mocked
++SKIPPED [1] tests/modules/system/test_global_registry.py:132: Pydantic is mocked
++================= 1033 passed, 11 skipped, 1 warning in 17.47s =================
++```
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 772a54d2..b146d85e 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -300,7 +300,7 @@ class IBankService(Protocol):
+     """
+     def get_interest_rate(self) -> float: ...
+ 
+-    def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int) -> Optional[Tuple[LoanDTO, Any]]: ...
++    def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanDTO, Any]]: ...
+ 
+     def stage_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: Optional[int], borrower_profile: Optional[BorrowerProfileDTO]) -> Optional[LoanDTO]: ...
+ 
+diff --git a/modules/simulation/api.py b/modules/simulation/api.py
+index 5f3837a7..3f974eb6 100644
+--- a/modules/simulation/api.py
++++ b/modules/simulation/api.py
+@@ -172,6 +172,7 @@ class IDecisionEngine(Protocol):
+ class IAgent(Protocol):
+     id: AgentID
+     is_active: bool
++    name: str # Added for logging/telemetry
+ 
+ @runtime_checkable
+ class IOrchestratorAgent(IAgent, Protocol):
+diff --git a/simulation/engine.py b/simulation/engine.py
+index c35e8785..fe387af5 100644
+--- a/simulation/engine.py
++++ b/simulation/engine.py
+@@ -15,7 +15,8 @@ from simulation.models import Transaction
+ from simulation.dtos.commands import GodCommandDTO
+ from modules.system.services.command_service import CommandService
+ from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
+-from modules.system.api import DEFAULT_CURRENCY
++from modules.system.api import DEFAULT_CURRENCY, IGlobalRegistry, IAgentRegistry
++from modules.finance.api import ISettlementSystem
+ 
+ from simulation.db.logger import SimulationLogger
+ import simulation
+@@ -65,7 +66,7 @@ class Simulation:
+ 
+         # Initialize SimulationLogger
+         db_path = self.world_state.config_manager.get("simulation.database_name", "simulation_data.db")
+-        self.simulation_logger = SimulationLogger(db_path)
++        self.simulation_logger: SimulationLogger = SimulationLogger(db_path)
+         self.simulation_logger.run_id = self.world_state.run_id
+         # Expose via global module attribute for access by agents
+         simulation.logger = self.simulation_logger
+@@ -304,7 +305,8 @@ class Simulation:
+ 
+     def _calculate_total_money(self) -> float:
+         """Legacy wrapper for WorldState.calculate_total_money"""
+-        return self.world_state.calculate_total_money()
++        money_dict = self.world_state.calculate_total_money()
++        return float(money_dict.get(DEFAULT_CURRENCY, 0))
+ 
+     def _process_transactions(self, transactions: List[Transaction]) -> None:
+         """Legacy wrapper for ActionProcessor.process_transactions"""
+diff --git a/simulation/interfaces/policy_interface.py b/simulation/interfaces/policy_interface.py
+index 682a85be..23ac6115 100644
+--- a/simulation/interfaces/policy_interface.py
++++ b/simulation/interfaces/policy_interface.py
+@@ -1,5 +1,8 @@
+ from abc import ABC, abstractmethod
+-from typing import Dict, Any, Optional
++from typing import Dict, Any, Optional, TYPE_CHECKING
++
++if TYPE_CHECKING:
++    from modules.government.dtos import GovernmentSensoryDTO
+ 
+ class IGovernmentPolicy(ABC):
+     """
+@@ -8,7 +11,7 @@ class IGovernmentPolicy(ABC):
+     """
+     
+     @abstractmethod
+-    def decide(self, government: Any, sensory_data: Any, current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
++    def decide(self, government: Any, sensory_data: Optional["GovernmentSensoryDTO"], current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
+         """
+         Analyzes economic conditions to determine policy (rates, tax, budget).
+         
+diff --git a/simulation/policies/taylor_rule_policy.py b/simulation/policies/taylor_rule_policy.py
+index e9ebaba4..ee1f9608 100644
+--- a/simulation/policies/taylor_rule_policy.py
++++ b/simulation/policies/taylor_rule_policy.py
+@@ -1,4 +1,4 @@
+-from typing import Dict, Any, Deque, TYPE_CHECKING
++from typing import Dict, Any, Deque, TYPE_CHECKING, Optional
+ from collections import deque
+ from simulation.interfaces.policy_interface import IGovernmentPolicy
+ from modules.common.utils.shadow_logger import log_shadow
+@@ -18,7 +18,7 @@ class TaylorRulePolicy(IGovernmentPolicy):
+         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
+         self.potential_gdp = 0.0
+ 
+-    def decide(self, government: Any, sensory_data: "GovernmentSensoryDTO", current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
++    def decide(self, government: Any, sensory_data: Optional["GovernmentSensoryDTO"], current_tick: int, central_bank: Any = None) -> Dict[str, Any]:
+         # Refactored to use sensory DTO instead of raw market_data
+         if not sensory_data:
+             return {"status": "NO_DATA"}
+diff --git a/simulation/portfolio.py b/simulation/portfolio.py
+index 058ec3ca..49a2695b 100644
+--- a/simulation/portfolio.py
++++ b/simulation/portfolio.py
+@@ -11,9 +11,10 @@ class Portfolio:
+         self.owner_id = owner_id
+         self.holdings: Dict[int, Share] = {}  # firm_id -> Share
+ 
+-    def add(self, firm_id: int, quantity: float, price: float):
++    def add(self, firm_id: int, quantity: float, price: int):
+         """
+         Adds shares to the portfolio, updating Weighted Average Cost (WAC).
++        Price must be in pennies (int).
+         """
+         if quantity <= 0:
+             return
+@@ -24,13 +25,16 @@ class Portfolio:
+             total_qty = share.quantity + quantity
+ 
+             share.quantity = total_qty
+-            share.acquisition_price = total_cost / total_qty
++            if total_qty > 0:
++                share.acquisition_price = int(round(total_cost / total_qty))
++            else:
++                share.acquisition_price = 0
+         else:
+             self.holdings[firm_id] = Share(
+                 firm_id=firm_id,
+                 holder_id=self.owner_id,
+                 quantity=quantity,
+-                acquisition_price=price
++                acquisition_price=int(price)
+             )
+ 
+     def get_stock_quantity(self, firm_id: int) -> float:
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index fcbdc52f..f5216865 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -232,13 +232,13 @@ class TransactionProcessor(SystemInterface):
+                 success = handler.handle(tx, buyer, seller, context)
+ 
+                 # Record Result
+-                amount = 0.0
++                amount = 0
+                 if success:
+                     # TD-MKT-FLOAT-MATCH: total_pennies is the SSoT for settlement
+                     if getattr(tx, 'total_pennies', 0) > 0:
+-                        amount = float(tx.total_pennies)
++                        amount = int(tx.total_pennies)
+                     else:
+-                        amount = float(round_to_pennies(tx.quantity * tx.price * 100))
++                        amount = int(round_to_pennies(tx.quantity * tx.price * 100))
+ 
+                 results.append(
+                     SettlementResultDTO(
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index 520200b2..4f6208c4 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -35,6 +35,7 @@ if TYPE_CHECKING:
+     from simulation.systems.event_system import EventSystem
+     from simulation.systems.sensory_system import SensorySystem
+     from simulation.systems.settlement_system import SettlementSystem
++    from modules.finance.api import ISettlementSystem
+     from simulation.systems.commerce_system import CommerceSystem
+     from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
+     from modules.analysis.crisis_monitor import CrisisMonitor
+@@ -122,7 +123,7 @@ class WorldState:
+         self.social_system: Optional[SocialSystem] = None
+         self.event_system: Optional[EventSystem] = None
+         self.sensory_system: Optional[SensorySystem] = None
+-        self.settlement_system: Optional[SettlementSystem] = None
++        self.settlement_system: Optional[ISettlementSystem] = None
+         self.agent_registry: Optional[IAgentRegistry] = None # Added for explicit typing
+         self.saga_orchestrator: Optional[ISagaOrchestrator] = None
+         self.monetary_ledger: Optional[IMonetaryLedger] = None

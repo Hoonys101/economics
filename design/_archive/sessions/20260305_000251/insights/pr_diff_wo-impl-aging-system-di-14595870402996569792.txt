@@ -1,0 +1,340 @@
+diff --git a/communications/insights/WO-IMPL-AGING-SYSTEM-DI.md b/communications/insights/WO-IMPL-AGING-SYSTEM-DI.md
+new file mode 100644
+index 00000000..3c7afd5e
+--- /dev/null
++++ b/communications/insights/WO-IMPL-AGING-SYSTEM-DI.md
+@@ -0,0 +1,36 @@
++# WO-IMPL-AGING-SYSTEM-DI: AgingSystem Dependency Injection Alignment
++
++## 1. Architectural Insights
++
++### Dependency Injection Pattern
++We have successfully decoupled `AgingSystem` from the raw configuration module by introducing `LifecycleConfigDTO`. This DTO serves as a strict contract, enforcing type safety and the Penny Standard (integer math) for all configuration parameters. The factory method `from_config_module` centralizes the parsing and conversion logic, ensuring that the system logic remains clean and testable.
++
++### Protocol Decoupling
++The dependency on the concrete `DemographicManager` class has been replaced with the `IDemographicManager` protocol. This required updating the protocol in `modules/demographics/api.py` to expose the `process_aging` method, which was previously implicit. This change allows for better mocking in unit tests and breaks hard dependencies between systems.
++
++### Configuration Injection at Composition Root
++`AgentLifecycleManager` now acts as the composition root for the lifecycle subsystems. It is responsible for instantiating the `LifecycleConfigDTO` from the injected `config_module` and passing it to the `AgingSystem`. This pattern ensures that the subsystem remains unaware of the global configuration source.
++
++## 2. Regression Analysis
++
++### Test Updates
++- **`tests/unit/systems/lifecycle/test_aging_system.py`**: Completely rewritten to use `LifecycleConfigDTO` and mock `IDemographicManager`. The tests now explicitly construct configuration objects, verifying that the system behaves correctly under different settings without relying on global state.
++- **`tests/integration/test_wo167_grace_protocol.py`**: No changes were needed to the test code itself, proving that the refactoring in `AgentLifecycleManager` successfully maintained backward compatibility for integration scenarios. The `LifecycleConfigDTO.from_config_module` correctly adapted the mock config objects used in these tests.
++
++### Risks Mitigated
++- **Type Safety**: Removed potential for runtime `AttributeError` or type mismatches (float vs int) inside the critical path of the aging loop.
++- **Testing Hygiene**: Mocks are now strictly typed (using `spec=IDemographicManager`), preventing tests from relying on implementation details that are not part of the public interface.
++
++## 3. Test Evidence
++
++```
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_execute_delegation PASSED [ 14%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_firm_distress PASSED [ 28%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_firm_grace_period_config PASSED [ 42%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_solvency_gate_active PASSED [ 57%]
++tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_solvency_gate_inactive PASSED [ 71%]
++tests/integration/test_wo167_grace_protocol.py::TestGraceProtocol::test_firm_grace_protocol PASSED [ 85%]
++tests/integration/test_wo167_grace_protocol.py::TestGraceProtocol::test_household_grace_protocol PASSED [100%]
++
++============================== 7 passed in 0.47s ===============================
++```
+diff --git a/modules/demographics/api.py b/modules/demographics/api.py
+index 13a9b382..137ef1ea 100644
+--- a/modules/demographics/api.py
++++ b/modules/demographics/api.py
+@@ -1,9 +1,8 @@
+-
+ """
+ Demographics Module API
+ Defines the interface for Population Management and Statistical Aggregation.
+ """
+-from typing import Protocol, Dict, List, Any, TypedDict, runtime_checkable
++from typing import Protocol, Dict, List, Any, TypedDict, runtime_checkable, Optional
+ from enum import Enum
+ 
+ # --- Data Transfer Objects ---
+@@ -68,3 +67,9 @@ class IDemographicManager(Protocol):
+         Force-rebuilds the internal cache from a list of agents.
+         """
+         ...
++
++    def process_aging(self, agents: List[Any], current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> None:
++        """
++        Processes aging for a list of agents.
++        """
++        ...
+diff --git a/simulation/systems/lifecycle/aging_system.py b/simulation/systems/lifecycle/aging_system.py
+index ce5a2b72..6c2e9b14 100644
+--- a/simulation/systems/lifecycle/aging_system.py
++++ b/simulation/systems/lifecycle/aging_system.py
+@@ -1,10 +1,10 @@
+ from __future__ import annotations
+ from typing import List, Any, Dict, Protocol, runtime_checkable, Optional
+ import logging
+-from simulation.systems.lifecycle.api import IAgingSystem, IAgingFirm, IFinanceEngine
++from simulation.systems.lifecycle.api import IAgingSystem, IAgingFirm, IFinanceEngine, LifecycleConfigDTO
+ from simulation.dtos.api import SimulationState
+ from simulation.models import Transaction
+-from simulation.systems.demographic_manager import DemographicManager
++from modules.demographics.api import IDemographicManager
+ from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
+ from simulation.interfaces.market_interface import IMarket
+ from modules.finance.api import IFinancialEntity
+@@ -14,8 +14,8 @@ class AgingSystem(IAgingSystem):
+     Handles aging, needs updates, and distress/grace protocol checks for agents.
+     Strictly follows Protocol Purity and Integer Math.
+     """
+-    def __init__(self, config_module: Any, demographic_manager: DemographicManager, logger: logging.Logger):
+-        self.config = config_module
++    def __init__(self, config: LifecycleConfigDTO, demographic_manager: IDemographicManager, logger: logging.Logger):
++        self.config = config
+         self.demographic_manager = demographic_manager
+         self.logger = logger
+ 
+@@ -44,10 +44,10 @@ class AgingSystem(IAgingSystem):
+         Refactored for Protocol Purity.
+         """
+         # Config values (converted to pennies where applicable)
+-        assets_threshold_pennies = int(getattr(self.config, "ASSETS_CLOSURE_THRESHOLD", 0.0) * 100)
+-        closure_turns_threshold = getattr(self.config, "FIRM_CLOSURE_TURNS_THRESHOLD", 5)
+-        liquidity_inc_rate = getattr(self.config, "LIQUIDITY_NEED_INCREASE_RATE", 1.0)
+-        grace_period = getattr(self.config, "DISTRESS_GRACE_PERIOD", 5)
++        assets_threshold_pennies = self.config.assets_closure_threshold_pennies
++        closure_turns_threshold = self.config.firm_closure_turns_threshold
++        liquidity_inc_rate = self.config.liquidity_need_increase_rate
++        grace_period = self.config.distress_grace_period
+ 
+         for firm in state.firms:
+             if not isinstance(firm, IAgingFirm) or not firm.is_active:
+@@ -115,9 +115,9 @@ class AgingSystem(IAgingSystem):
+         WO-167: Handles distress checks for households.
+         Triggers emergency liquidation if starving but solvent.
+         """
+-        survival_threshold = getattr(self.config, "SURVIVAL_NEED_DEATH_THRESHOLD", 100.0)
++        survival_threshold = self.config.survival_need_death_threshold
+         distress_threshold = survival_threshold * 0.9
+-        grace_period = getattr(self.config, "DISTRESS_GRACE_PERIOD", 5)
++        grace_period = self.config.distress_grace_period
+ 
+         for household in state.households:
+             # Direct access to _bio_state is unavoidable without DTO setter,
+@@ -208,8 +208,7 @@ class AgingSystem(IAgingSystem):
+         """
+         total_pennies = 0
+         # MIGRATION: Use integer default price (Penny Standard)
+-        raw_price = getattr(self.config, "DEFAULT_FALLBACK_PRICE", 1000)
+-        default_price_pennies = int(raw_price)
++        default_price_pennies = self.config.default_fallback_price_pennies
+ 
+         for item_id, qty in inventory.items():
+             price_pennies = default_price_pennies
+diff --git a/simulation/systems/lifecycle/api.py b/simulation/systems/lifecycle/api.py
+index 8d0a1945..ba376ed7 100644
+--- a/simulation/systems/lifecycle/api.py
++++ b/simulation/systems/lifecycle/api.py
+@@ -1,8 +1,39 @@
+ from __future__ import annotations
+ from typing import Protocol, List, Any, Dict, runtime_checkable, TYPE_CHECKING
++from dataclasses import dataclass
++import logging
+ from simulation.dtos.api import SimulationState
+ from simulation.models import Transaction
+ from modules.finance.api import IFinancialEntity
++from modules.demographics.api import IDemographicManager
++
++@dataclass(frozen=True)
++class LifecycleConfigDTO:
++    """
++    Strictly typed configuration DTO for the Lifecycle and Aging systems.
++    Replaces loose config_module getattr calls and enforces the Penny Standard.
++    """
++    assets_closure_threshold_pennies: int
++    firm_closure_turns_threshold: int
++    liquidity_need_increase_rate: float
++    distress_grace_period: int
++    survival_need_death_threshold: float
++    default_fallback_price_pennies: int
++
++    @classmethod
++    def from_config_module(cls, config_module: Any) -> "LifecycleConfigDTO":
++        """
++        Factory method to safely construct the DTO from a dynamic config module.
++        Centralizes the float-to-penny conversions and default fallbacks.
++        """
++        return cls(
++            assets_closure_threshold_pennies=int(getattr(config_module, "ASSETS_CLOSURE_THRESHOLD", 0.0) * 100),
++            firm_closure_turns_threshold=int(getattr(config_module, "FIRM_CLOSURE_TURNS_THRESHOLD", 5)),
++            liquidity_need_increase_rate=float(getattr(config_module, "LIQUIDITY_NEED_INCREASE_RATE", 1.0)),
++            distress_grace_period=int(getattr(config_module, "DISTRESS_GRACE_PERIOD", 5)),
++            survival_need_death_threshold=float(getattr(config_module, "SURVIVAL_NEED_DEATH_THRESHOLD", 100.0)),
++            default_fallback_price_pennies=int(getattr(config_module, "DEFAULT_FALLBACK_PRICE", 1000))
++        )
+ 
+ @runtime_checkable
+ class ILifecycleSubsystem(Protocol):
+@@ -23,7 +54,8 @@ class IAgingSystem(ILifecycleSubsystem, Protocol):
+     Responsible for incrementing age, updating biological needs,
+     and performing health/distress checks for all agents.
+     """
+-    ...
++    def __init__(self, config: LifecycleConfigDTO, demographic_manager: IDemographicManager, logger: logging.Logger) -> None:
++        ...
+ 
+ @runtime_checkable
+ class IBirthSystem(ILifecycleSubsystem, Protocol):
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index a0d966c7..69ed5c08 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -25,6 +25,7 @@ from modules.finance.api import IShareholderRegistry
+ from modules.simulation.api import IEstateRegistry
+ 
+ # New Imports
++from simulation.systems.lifecycle.api import LifecycleConfigDTO
+ from simulation.systems.lifecycle.aging_system import AgingSystem
+ from simulation.systems.lifecycle.birth_system import BirthSystem
+ from simulation.systems.lifecycle.death_system import DeathSystem
+@@ -67,7 +68,9 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+         )
+ 
+         # Instantiate Sub-Systems
+-        self.aging_system = AgingSystem(config_module, demographic_manager, logger)
++        # DTO Injection for AgingSystem
++        lifecycle_config = LifecycleConfigDTO.from_config_module(config_module)
++        self.aging_system = AgingSystem(lifecycle_config, demographic_manager, logger)
+ 
+         if household_factory is None:
+              raise ValueError("IHouseholdFactory is mandatory for AgentLifecycleManager.")
+diff --git a/tests/unit/systems/lifecycle/test_aging_system.py b/tests/unit/systems/lifecycle/test_aging_system.py
+index 34a14bc6..6fadd2e6 100644
+--- a/tests/unit/systems/lifecycle/test_aging_system.py
++++ b/tests/unit/systems/lifecycle/test_aging_system.py
+@@ -1,11 +1,12 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from simulation.systems.lifecycle.aging_system import AgingSystem
+-from simulation.systems.lifecycle.api import IAgingFirm, IFinanceEngine
++from simulation.systems.lifecycle.api import IAgingFirm, IFinanceEngine, LifecycleConfigDTO
+ from simulation.dtos.api import SimulationState
+ from simulation.interfaces.market_interface import IMarket
+ from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
+ from modules.finance.api import IFinancialEntity
++from modules.demographics.api import IDemographicManager
+ 
+ class MockMarket:
+     def __init__(self):
+@@ -51,19 +52,21 @@ class MockFirm:
+ 
+ class TestAgingSystem:
+     @pytest.fixture
+-    def aging_system(self):
+-        config = MagicMock()
+-        config.ASSETS_CLOSURE_THRESHOLD = 0.0 # Pennies will be 0
+-        config.FIRM_CLOSURE_TURNS_THRESHOLD = 5
+-        config.LIQUIDITY_NEED_INCREASE_RATE = 1.0
+-        config.DISTRESS_GRACE_PERIOD = 5
+-        config.GOODS_INITIAL_PRICE = {"default": 10.0}
+-        config.SURVIVAL_NEED_DEATH_THRESHOLD = 100.0
+-
+-        demographic_manager = MagicMock()
+-        logger = MagicMock()
++    def default_config(self):
++        return LifecycleConfigDTO(
++            assets_closure_threshold_pennies=0,
++            firm_closure_turns_threshold=5,
++            liquidity_need_increase_rate=1.0,
++            distress_grace_period=5,
++            survival_need_death_threshold=100.0,
++            default_fallback_price_pennies=1000
++        )
+ 
+-        return AgingSystem(config, demographic_manager, logger)
++    @pytest.fixture
++    def aging_system(self, default_config):
++        demographic_manager = MagicMock(spec=IDemographicManager)
++        logger = MagicMock()
++        return AgingSystem(default_config, demographic_manager, logger)
+ 
+     def test_execute_delegation(self, aging_system):
+         state = MagicMock()
+@@ -93,8 +96,19 @@ class TestAgingSystem:
+         assert firm.finance_state.distress_tick_counter == 1
+         assert isinstance(result, list)
+ 
+-    def test_firm_grace_period_config(self, aging_system):
+-        aging_system.config.DISTRESS_GRACE_PERIOD = 10
++    def test_firm_grace_period_config(self, default_config):
++        # Override config
++        config = LifecycleConfigDTO(
++            assets_closure_threshold_pennies=0,
++            firm_closure_turns_threshold=5,
++            liquidity_need_increase_rate=1.0,
++            distress_grace_period=10, # Modified
++            survival_need_death_threshold=100.0,
++            default_fallback_price_pennies=1000
++        )
++        demographic_manager = MagicMock(spec=IDemographicManager)
++        logger = MagicMock()
++        aging_system = AgingSystem(config, demographic_manager, logger)
+ 
+         firm = MockFirm(balance=-1000, distress=True, counter=9)
+ 
+@@ -112,13 +126,25 @@ class TestAgingSystem:
+         assert firm.finance_state.distress_tick_counter == 10
+         assert firm.is_active is True
+ 
+-    def test_solvency_gate_active(self, aging_system):
++    def test_solvency_gate_active(self, default_config):
+         """
+         Verify a firm with high assets but high loss turns is NOT closed (Solvency Gate).
+         """
+         # Threshold is 0.0 (0 pennies). Let's set it to 100.0 (10000 pennies)
+-        aging_system.config.ASSETS_CLOSURE_THRESHOLD = 100.0
+-        threshold_pennies = 10000
++        config = LifecycleConfigDTO(
++            assets_closure_threshold_pennies=10000, # Modified: 100.0 * 100
++            firm_closure_turns_threshold=5,
++            liquidity_need_increase_rate=1.0,
++            distress_grace_period=5,
++            survival_need_death_threshold=100.0,
++            default_fallback_price_pennies=1000
++        )
++
++        demographic_manager = MagicMock(spec=IDemographicManager)
++        logger = MagicMock()
++        aging_system = AgingSystem(config, demographic_manager, logger)
++
++        assets_threshold_pennies = 10000
+ 
+         # Solvent if > 2 * threshold = 20000 pennies
+         firm = MockFirm(balance=25000) # 250.00
+@@ -137,12 +163,24 @@ class TestAgingSystem:
+ 
+         assert firm.is_active is True # Should survive due to Solvency Gate
+ 
+-    def test_solvency_gate_inactive(self, aging_system):
++    def test_solvency_gate_inactive(self, default_config):
+         """
+         Verify a firm with low assets AND high loss turns IS closed.
+         """
+-        aging_system.config.ASSETS_CLOSURE_THRESHOLD = 100.0
+-        threshold_pennies = 10000
++        config = LifecycleConfigDTO(
++            assets_closure_threshold_pennies=10000, # Modified: 100.0 * 100
++            firm_closure_turns_threshold=5,
++            liquidity_need_increase_rate=1.0,
++            distress_grace_period=5,
++            survival_need_death_threshold=100.0,
++            default_fallback_price_pennies=1000
++        )
++
++        demographic_manager = MagicMock(spec=IDemographicManager)
++        logger = MagicMock()
++        aging_system = AgingSystem(config, demographic_manager, logger)
++
++        assets_threshold_pennies = 10000
+ 
+         # Not solvent if <= 2 * threshold = 20000 pennies
+         firm = MockFirm(balance=15000) # 150.00 (Between 1x and 2x threshold, technically solvent by strict def? No, strict is > 2x)

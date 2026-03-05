@@ -1,0 +1,232 @@
+diff --git a/audits/audit_economic_integrity.py b/audits/audit_economic_integrity.py
+index 6691152b..426177e5 100644
+--- a/audits/audit_economic_integrity.py
++++ b/audits/audit_economic_integrity.py
+@@ -37,20 +37,23 @@ class EconomicIntegrityAudit(unittest.TestCase):
+             return False
+         return True
+ 
+-    def check_transaction_atomicity(self, tx: Transaction, buyer_balance_pre: int, buyer_balance_post: int, seller_balance_pre: int, seller_balance_post: int):
++    def check_transaction_atomicity(self, tx: Transaction, buyer_balance_pre: int, buyer_balance_post: int, seller_balance_pre: int, seller_balance_post: int, tax_intents: List[Any] = None):
+         """
+         Verifies that the buyer's debit equals the seller's credit (plus tax/fees).
+         """
+         debit = buyer_balance_pre - buyer_balance_post
+         credit = seller_balance_post - seller_balance_pre
+ 
+-        # Simple check: Debit should equal Credit if no tax
+-        # If tax exists, Debit = Credit + Tax
++        total_tax = 0
++        if tax_intents:
++            for intent in tax_intents:
++                total_tax += int(intent.amount)
+ 
+-        # We need to know the tax amount to verify fully.
+-        # For now, we check that money didn't disappear without a trace.
+-        # This function would need access to the tax transaction or ledger to verify the third leg.
+-        pass
++        if debit != credit + total_tax:
++            logger.error(f"ATOMICITY_VIOLATION | Tx: {tx.id}, Debit: {debit}, Credit: {credit}, Tax: {total_tax}")
++            return False
++
++        return True
+ 
+     def verify_reflux_completeness(self, total_tax_collected: int, government_revenue_recorded: int):
+         """
+diff --git a/communications/insights/Track_A_Finance_Audit.md b/communications/insights/Track_A_Finance_Audit.md
+new file mode 100644
+index 00000000..b8826d59
+--- /dev/null
++++ b/communications/insights/Track_A_Finance_Audit.md
+@@ -0,0 +1,38 @@
++# Track A: Finance & Economic Integrity Audit Insight Report
++
++## [Architectural Insights]
++* **Zero-Sum Integrity & Float Incursions:** The transaction handlers (`GoodsTransactionHandler`, `MonetaryTransactionHandler`) were lacking strict enforcement of integer monetary values (pennies). If floating-point values made it into the system, they could cause rounding anomalies and violate zero-sum integrity over time. We added strict type checks to raise `FloatIncursionError` when non-integers are passed.
++* **M2 Validation:** The system needed a robust way to audit the money supply at the end of each tick to ensure no ghost money was created or lost outside of authorized ledger operations. The `audit_total_m2` was integrated directly into the `Phase6_PostTickMetrics` phase of the `TickOrchestrator`, comparing the actual agent balances against the authorized ledger.
++* **Logging:** To improve forensics, explicit logging using the `MONEY_SUPPLY_CHECK` tag was added to `MonetaryTransactionHandler` for all operations that expand or contract the money supply (LLR, OMO, Liquidation).
++
++## [Regression Analysis]
++* During the refactoring of `SettlementSystem` and related systems to correctly identify `ICentralBank` implementations without resorting to `hasattr()`, we found that the mock object in `tests/finance/test_protocol_integrity.py` (`MockCentralBank`) was missing the `check_and_provide_liquidity` method. This caused `test_central_bank_infinite_funds` to fail.
++* **Resolution:** We implemented `check_and_provide_liquidity` on `MockCentralBank` returning `None` to satisfy the `ICentralBank` protocol, aligning the test with the newly enforced constraints and making it pass again.
++
++## [Test Evidence]
++```
++tests/finance/test_account_registry.py::test_account_registry_integration PASSED [  4%]
++tests/finance/test_account_registry.py::test_settlement_default_registry PASSED [  8%]
++tests/finance/test_circular_imports_fix.py::test_finance_system_instantiation_and_protocols PASSED [ 13%]
++tests/finance/test_circular_imports_fix.py::test_issue_treasury_bonds_protocol_usage PASSED [ 17%]
++tests/finance/test_circular_imports_fix.py::test_evaluate_solvency_protocol_usage PASSED [ 21%]
++tests/finance/test_monetary_expansion_handler.py::TestMonetaryExpansionWarning::test_repro_warning PASSED [ 26%]
++tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_settlement_overdraft_protection PASSED [ 30%]
++tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_settlement_zero_sum PASSED [ 34%]
++tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_central_bank_infinite_funds PASSED [ 39%]
++tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_real_estate_unit_lien_dto PASSED [ 43%]
++tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_housing_system_maintenance_zero_sum PASSED [ 47%]
++tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_housing_system_rent_zero_sum PASSED [ 52%]
++tests/finance/test_settlement_fx_swap.py::test_execute_swap_success PASSED [ 56%]
++tests/finance/test_settlement_fx_swap.py::test_execute_swap_insufficient_funds_rollback PASSED [ 60%]
++tests/finance/test_settlement_fx_swap.py::test_execute_swap_invalid_amounts PASSED [ 65%]
++tests/finance/test_settlement_fx_swap.py::test_execute_swap_missing_agent PASSED [ 69%]
++tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_transfer_float_raises_error PASSED [ 73%]
++tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_create_and_transfer_float_raises_error PASSED [ 78%]
++tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_issue_treasury_bonds_float_leak PASSED [ 82%]
++tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_solvency_grace_period_solvent PASSED [ 86%]
++tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_solvency_grace_period_insolvent PASSED [ 91%]
++tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_solvency_established_firm PASSED [ 95%]
++tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_firm_implementation PASSED [100%]
++======================== 23 passed, 1 warning in 0.55s =========================
++```
+diff --git a/simulation/orchestration/phases/metrics.py b/simulation/orchestration/phases/metrics.py
+index 29208e79..03e2b8e0 100644
+--- a/simulation/orchestration/phases/metrics.py
++++ b/simulation/orchestration/phases/metrics.py
+@@ -90,6 +90,10 @@ class Phase6_PostTickMetrics(IPhaseStrategy):
+             else:
+                  logger.info(msg, extra=extra_data)
+ 
++            # --- SSoT M2 Audit ---
++            if state.settlement_system:
++                state.settlement_system.audit_total_m2(expected_total=expected_money)
++
+             # Track Economics
+             if state.tracker:
+                 m0_dict = self.world_state.calculate_base_money()
+diff --git a/simulation/systems/handlers/goods_handler.py b/simulation/systems/handlers/goods_handler.py
+index 9214a5f0..1cee48e0 100644
+--- a/simulation/systems/handlers/goods_handler.py
++++ b/simulation/systems/handlers/goods_handler.py
+@@ -6,7 +6,7 @@ from simulation.core_agents import Household
+ from simulation.firms import Firm
+ from modules.system.api import DEFAULT_CURRENCY
+ from modules.simulation.api import IInventoryHandler, InventorySlot
+-from modules.finance.api import IFinancialAgent, ISolvencyChecker, ISalesTracker, IRevenueTracker, IExpenseTracker, IConsumer, IConsumptionTracker
++from modules.finance.api import IFinancialAgent, ISolvencyChecker, ISalesTracker, IRevenueTracker, IExpenseTracker, IConsumer, IConsumptionTracker, FloatIncursionError
+ from modules.finance.utils.currency_math import round_to_pennies
+ 
+ logger = logging.getLogger(__name__)
+@@ -23,6 +23,12 @@ class GoodsTransactionHandler(ITransactionHandler):
+             return False
+ 
+         # SSoT: Use total_pennies directly (Strict Schema Enforced)
++        if isinstance(tx.total_pennies, float):
++            raise FloatIncursionError(f"Settlement integrity violation: amount must be int, got float: {tx.total_pennies}.")
++
++        if not isinstance(tx.total_pennies, int):
++            raise TypeError(f"Settlement integrity violation: amount must be int, got {type(tx.total_pennies)}.")
++
+         trade_value = tx.total_pennies
+ 
+ 
+diff --git a/simulation/systems/handlers/monetary_handler.py b/simulation/systems/handlers/monetary_handler.py
+index 4a6a240c..f483ab23 100644
+--- a/simulation/systems/handlers/monetary_handler.py
++++ b/simulation/systems/handlers/monetary_handler.py
+@@ -3,6 +3,7 @@ import logging
+ from simulation.systems.api import ITransactionHandler, TransactionContext
+ from simulation.models import Transaction, RealEstateUnit
+ from modules.common.interfaces import IInvestor, IPropertyOwner, IIssuer
++from modules.finance.api import FloatIncursionError
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -21,6 +22,14 @@ class MonetaryTransactionHandler(ITransactionHandler):
+ 
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+         tx_type = tx.transaction_type
++
++        # SSoT: Integer total_pennies
++        if isinstance(tx.total_pennies, float):
++            raise FloatIncursionError(f"Settlement integrity violation: amount must be int, got float: {tx.total_pennies}.")
++
++        if not isinstance(tx.total_pennies, int):
++            raise TypeError(f"Settlement integrity violation: amount must be int, got {type(tx.total_pennies)}.")
++
+         trade_value = tx.total_pennies
+ 
+         # Central Bank is needed for minting/burning
+@@ -33,46 +42,63 @@ class MonetaryTransactionHandler(ITransactionHandler):
+         if tx_type == "lender_of_last_resort":
+             # Minting: Central Bank (Buyer/Source) -> Bank/Agent (Seller/Target)
+             success = context.settlement_system.transfer(
+-                buyer, seller, int(trade_value), "lender_of_last_resort"
++                buyer, seller, trade_value, "lender_of_last_resort"
+             )
++            if success:
++                context.logger.info(
++                    f"MONEY_SUPPLY_CHECK | LLR Expansion: +{trade_value}.",
++                    extra={"tick": context.time, "tag": "MONEY_SUPPLY_CHECK"}
++                )
+             # Ledger accounting is done in Phase3_Transaction via MonetaryLedger
+ 
+         elif tx_type == "asset_liquidation":
+             # Minting: Gov/CB (Buyer) -> Agent (Seller)
+             success = context.settlement_system.transfer(
+-                buyer, seller, int(trade_value), "asset_liquidation"
++                buyer, seller, trade_value, "asset_liquidation"
+             )
+             if success:
+                 # Asset Transfer Logic (Stock/RE)
+                 self._apply_asset_liquidation_effects(tx, buyer, seller, context)
++                context.logger.info(
++                    f"MONEY_SUPPLY_CHECK | Asset Liquidation Minting: +{trade_value}.",
++                    extra={"tick": context.time, "tag": "MONEY_SUPPLY_CHECK"}
++                )
+ 
+         elif tx_type == "bond_interest":
+              success = context.settlement_system.transfer(
+-                 buyer, seller, int(trade_value), tx_type
++                 buyer, seller, trade_value, tx_type
+              )
+ 
+         elif tx_type in ["bond_purchase", "omo_purchase"]:
+             # QE: CB (Buyer) -> Gov/Agent (Seller)
+             success = context.settlement_system.transfer(
+-                buyer, seller, int(trade_value), tx_type
++                buyer, seller, trade_value, tx_type
+             )
+             if success:
+                  context.logger.info(
+-                     f"QE | Central Bank purchased bond/asset {trade_value:.2f}.",
++                     f"QE | Central Bank purchased bond/asset {trade_value}.",
+                      extra={"tick": context.time, "tag": "QE"}
+                  )
++                 context.logger.info(
++                     f"MONEY_SUPPLY_CHECK | OMO Purchase Expansion: +{trade_value}.",
++                     extra={"tick": context.time, "tag": "MONEY_SUPPLY_CHECK"}
++                 )
+ 
+         elif tx_type in ["bond_repayment", "omo_sale"]:
+             # QT: Agent (Buyer) -> CB (Seller)
+             # Burning: Money goes to CB and disappears.
+             success = context.settlement_system.transfer(
+-                buyer, seller, int(trade_value), tx_type
++                buyer, seller, trade_value, tx_type
+             )
+             if success:
+                 context.logger.info(
+-                    f"QT | Central Bank sold bond/asset {trade_value:.2f}.",
++                    f"QT | Central Bank sold bond/asset {trade_value}.",
+                     extra={"tick": context.time, "tag": "QT"}
+                 )
++                context.logger.info(
++                    f"MONEY_SUPPLY_CHECK | OMO Sale Contraction: -{trade_value}.",
++                    extra={"tick": context.time, "tag": "MONEY_SUPPLY_CHECK"}
++                )
+ 
+         return success is not None
+ 
+diff --git a/tests/finance/test_protocol_integrity.py b/tests/finance/test_protocol_integrity.py
+index 2fb7179d..82adcc97 100644
+--- a/tests/finance/test_protocol_integrity.py
++++ b/tests/finance/test_protocol_integrity.py
+@@ -97,6 +97,9 @@ class MockCentralBank:
+     def execute_open_market_operation(self, instruction: Any) -> List[Any]:
+         return []
+ 
++    def check_and_provide_liquidity(self, bank_agent: Any, amount_needed: int) -> Optional[Any]:
++        return None
++
+ class TestProtocolIntegrity:
+ 
+     @pytest.fixture

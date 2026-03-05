@@ -1,0 +1,526 @@
+diff --git a/communications/insights/WO-IMPL-FINANCIAL-INTEGRITY-FIX.md b/communications/insights/WO-IMPL-FINANCIAL-INTEGRITY-FIX.md
+new file mode 100644
+index 00000000..56aabd16
+--- /dev/null
++++ b/communications/insights/WO-IMPL-FINANCIAL-INTEGRITY-FIX.md
+@@ -0,0 +1,168 @@
++# WO-IMPL-FINANCIAL-INTEGRITY-FIX Insight Report
++
++## 1. Architectural Insights
++
++### M2 Boundary Detection Strategy
++We introduced a strict "M2 Boundary Detection" mechanism within `SettlementSystem.transfer()`. This architectural decision moves the responsibility of tracking monetary expansion/contraction from individual transaction handlers (which are prone to omission) to the central settlement kernel.
++
++*   **Helper**: `_is_m2_agent(agent)` encapsulates the logic for determining M2 inclusion (Non-M2: System Agents, Commercial Banks; M2: Households, Firms).
++*   **Logic**:
++    *   **Injection (Non-M2 -> M2)**: Automatically records expansion.
++    *   **Leakage (M2 -> Non-M2)**: Automatically records contraction.
++    *   **Neutral (M2 <-> M2, Non-M2 <-> Non-M2)**: No ledger effect.
++
++This ensures zero-sum integrity relative to the M2 definition, regardless of the transaction type (Tax, Welfare, Interest, etc.).
++
++### Receipt Transaction Handling
++We standardized the handling of "Receipt Transactions" (`money_creation`, `money_destruction`). Previously, these were treated as standard transactions but lacked handlers, causing noise. We now:
++1.  **Mark as Executed**: `SettlementSystem` forces `metadata={'executed': True}` for these receipts.
++2.  **Explicit No-Op**: `TransactionProcessor` explicitly ignores these types to prevent "No handler" warnings, treating them as audit logs rather than actionable commands.
++
++## 2. Regression Analysis
++
++### Existing Tests
++Existing unit tests in `tests/unit/systems/test_settlement_system.py` and `tests/unit/test_transaction_processor.py` were run.
++*   **Outcome**: All passed.
++*   **Analysis**: The changes were additive and conditional. `transfer()` logic only triggers ledger recording if a ledger is present (mocked in new tests, absent or mocked loosely in old ones). The `_is_m2_agent` check is safe against mocks due to `hasattr` checks implicitly handled by attribute access or type checks. `TransactionProcessor` changes simply expanded the ignore list.
++
++### New Regression Test (`tests/repro_wo_impl_financial_integrity.py`)
++A new comprehensive test suite was created to verify the fix:
++*   `test_transfer_non_m2_to_m2_expansion`: Confirms automatic expansion recording.
++*   `test_transfer_m2_to_non_m2_contraction`: Confirms automatic contraction recording.
++*   `test_transfer_m2_to_m2_no_expansion`: Confirms no side-effects for peer transfers.
++*   `test_transaction_processor_ignores_money_creation`: Confirms suppression of warnings.
++*   `test_money_creation_metadata_executed`: Confirms metadata injection.
++
++## 3. Test Evidence
++
++### New Feature Verification
++```text
++$ python -m pytest tests/repro_wo_impl_financial_integrity.py
++
++tests/repro_wo_impl_financial_integrity.py::test_transfer_m2_to_m2_no_expansion
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=d5825f60-fa76-4e8d-a985-d9dd789d6715, Status=COMPLETED, Message=Transaction successful.
++PASSED                                                                   [ 16%]
++tests/repro_wo_impl_financial_integrity.py::test_transfer_non_m2_to_m2_expansion
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=bfc8f3d7-7512-4890-922f-9c201088aacd, Status=COMPLETED, Message=Transaction successful.
++PASSED                                                                   [ 33%]
++tests/repro_wo_impl_financial_integrity.py::test_transfer_m2_to_non_m2_contraction
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=e6298843-9316-4bba-99e8-0d9a1df59eb5, Status=COMPLETED, Message=Transaction successful.
++PASSED                                                                   [ 50%]
++tests/repro_wo_impl_financial_integrity.py::test_transfer_non_m2_to_non_m2_no_effect
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=1b2fc94d-77d9-4f40-a888-22a4ee27e226, Status=COMPLETED, Message=Transaction successful.
++PASSED                                                                   [ 66%]
++tests/repro_wo_impl_financial_integrity.py::test_transaction_processor_ignores_money_creation PASSED [ 83%]
++tests/repro_wo_impl_financial_integrity.py::test_money_creation_metadata_executed
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:settlement_system.py:690 MINT_AND_TRANSFER | Created 100 USD from 0 to 101. Reason: Minting
++PASSED                                                                   [100%]
++
++=============================== warnings summary ===============================
++../home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_mode
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
++========================= 6 passed, 1 warning in 0.38s =========================
++```
++
++### Legacy Test Verification
++```text
++$ python -m pytest tests/unit/systems/test_settlement_system.py tests/unit/test_transaction_processor.py
++
++tests/unit/systems/test_settlement_system.py::test_transfer_success
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=ec8c68ac-f750-4267-ae8c-3b669746a160, Status=COMPLETED, Message=Transaction successful.
++PASSED                                                                   [  4%]
++tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_funds
++-------------------------------- live log call ---------------------------------
++WARNING  simulation.systems.settlement_system:settlement_system.py:486 SETTLEMENT_FAIL | Insufficient funds. Cash: 10, Req: 20.
++PASSED                                                                   [  9%]
++tests/unit/systems/test_settlement_system.py::test_create_and_transfer_minting
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:settlement_system.py:690 MINT_AND_TRANSFER | Created 100 USD from 0 to 1. Reason: Minting
++PASSED                                                                   [ 14%]
++tests/unit/systems/test_settlement_system.py::test_create_and_transfer_government_grant
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=90b53f52-549b-4bed-8b1c-697a5ac939f1, Status=COMPLETED, Message=Transaction successful.
++PASSED                                                                   [ 19%]
++tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_burning
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:settlement_system.py:738 TRANSFER_AND_DESTROY | Destroyed 50 USD from 1 to 0. Reason: Burning
++PASSED                                                                   [ 23%]
++tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_tax
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=aa6fdd3b-a5b9-48d0-8600-d839ce5c0717, Status=COMPLETED, Message=Transaction successful.
++PASSED                                                                   [ 28%]
++tests/unit/systems/test_settlement_system.py::test_record_liquidation
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:settlement_system.py:313 LIQUIDATION: Agent 1 liquidated. Inventory: 100, Capital: 50, Recovered: 20. Net Destruction: 130. Total Destroyed: 130. Reason: Bankruptcy
++INFO     simulation.systems.settlement_system:settlement_system.py:313 LIQUIDATION: Agent 1 liquidated. Inventory: 10, Capital: 0, Recovered: 0. Net Destruction: 10. Total Destroyed: 140. Reason: More Loss
++PASSED                                                                   [ 33%]
++tests/unit/systems/test_settlement_system.py::test_record_liquidation_escheatment
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:settlement_system.py:313 LIQUIDATION: Agent 1 liquidated. Inventory: 10, Capital: 10, Recovered: 0. Net Destruction: 20. Total Destroyed: 20. Reason: Escheatment Test
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=e0929291-e9b8-4ec0-90b6-831e98928349, Status=COMPLETED, Message=Transaction successful.
++PASSED                                                                   [ 38%]
++tests/unit/systems/test_settlement_system.py::test_transfer_rollback
++-------------------------------- live log call ---------------------------------
++WARNING  modules.finance.transaction.engine:engine.py:100 Deposit failed for 2. Rolling back withdrawal from 1. Error: Deposit Failed
++ERROR    simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=3d21af3a-8d4c-4c6a-8dfe-ff380e7def62, Status=CRITICAL_FAILURE, Message=Deposit failed: Deposit Failed. Rollback successful.
++ERROR    simulation.systems.settlement_system:settlement_system.py:658 SETTLEMENT_E_FAIL | Engine Error: Deposit failed: Deposit Failed. Rollback successful.
++PASSED                                                                   [ 42%]
++tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_cash_despite_bank_balance
++-------------------------------- live log call ---------------------------------
++WARNING  simulation.systems.settlement_system:settlement_system.py:486 SETTLEMENT_FAIL | Insufficient funds. Cash: 10, Req: 50.
++PASSED                                                                   [ 47%]
++tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_total_funds
++-------------------------------- live log call ---------------------------------
++WARNING  simulation.systems.settlement_system:settlement_system.py:486 SETTLEMENT_FAIL | Insufficient funds. Cash: 10, Req: 50.
++PASSED                                                                   [ 52%]
++tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_success
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=batch_1_0, Status=COMPLETED, Message=Transaction successful (Batch)
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=batch_1_1, Status=COMPLETED, Message=Transaction successful (Batch)
++PASSED                                                                   [ 57%]
++tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_rollback
++-------------------------------- live log call ---------------------------------
++WARNING  simulation.systems.settlement_system:settlement_system.py:486 SETTLEMENT_FAIL | Insufficient funds. Cash: 100, Req: 200.
++WARNING  simulation.systems.settlement_system:settlement_system.py:356 MULTIPARTY_FAIL | Insufficient funds for B
++PASSED                                                                   [ 61%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_success
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=atomic_1_0, Status=COMPLETED, Message=Transaction successful (Batch)
++INFO     simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=atomic_1_1, Status=COMPLETED, Message=Transaction successful (Batch)
++PASSED                                                                   [ 66%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_rollback
++-------------------------------- live log call ---------------------------------
++WARNING  simulation.systems.settlement_system:settlement_system.py:486 SETTLEMENT_FAIL | Insufficient funds. Cash: 90, Req: 100.
++PASSED                                                                   [ 71%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_credit_fail_rollback
++-------------------------------- live log call ---------------------------------
++WARNING  modules.finance.transaction.engine:engine.py:100 Deposit failed for B. Rolling back withdrawal from A. Error: Deposit Fail
++ERROR    simulation.systems.settlement_system:engine.py:135 Transaction Record: ID=atomic_1_0, Status=CRITICAL_FAILURE, Message=Batch Execution Failed on atomic_1_0: Deposit failed: Deposit Fail. Rollback successful.
++PASSED                                                                   [ 76%]
++tests/unit/test_transaction_processor.py::test_transaction_processor_dispatch_to_handler PASSED [ 80%]
++tests/unit/test_transaction_processor.py::test_transaction_processor_ignores_credit_creation PASSED [ 85%]
++tests/unit/test_transaction_processor.py::test_goods_handler_uses_atomic_settlement
++-------------------------------- live log call ---------------------------------
++WARNING  simulation.systems.handlers.goods_handler:goods_handler.py:132 GOODS_HANDLER_WARN | Seller 2 does not implement IInventoryHandler
++WARNING  simulation.systems.handlers.goods_handler:goods_handler.py:142 GOODS_HANDLER_WARN | Buyer 1 does not implement IInventoryHandler
++PASSED                                                                   [ 90%]
++tests/unit/test_transaction_processor.py::test_public_manager_routing PASSED [ 95%]
++tests/unit/test_transaction_processor.py::test_transaction_processor_dispatches_housing PASSED [100%]
++
++=============================== warnings summary ===============================
++../home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_mode
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
++======================== 21 passed, 1 warning in 0.63s =========================
++```
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index e3a552c6..8c28af36 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -248,6 +248,28 @@ class SettlementSystem(IMonetaryAuthority):
+ 
+         return total_m2
+ 
++    def _is_m2_agent(self, agent: Any) -> bool:
++        """
++        Determines if an agent is part of the M2 Money Supply.
++        M2 Excludes: System Agents (Central Bank, Gov, etc.) and Commercial Banks.
++        """
++        if not agent:
++            return False
++
++        # 1. Check ID Exclusion
++        if str(agent.id) in {str(uid) for uid in NON_M2_SYSTEM_AGENT_IDS}:
++            return False
++
++        # 2. Check Bank ID (if bank reference exists)
++        if self.bank and str(agent.id) == str(self.bank.id):
++             return False
++
++        # 3. Check Type Exclusion (IBank implementation)
++        if isinstance(agent, IBank):
++            return False
++
++        return True
++
+     def get_assets_by_currency(self) -> Dict[str, int]:
+         """
+         Implements ICurrencyHolder for M2 verification.
+@@ -613,6 +635,18 @@ class SettlementSystem(IMonetaryAuthority):
+                  if self.panic_recorder:
+                      self.panic_recorder.record_withdrawal(amount)
+ 
++             # WO-IMPL-FINANCIAL-INTEGRITY-FIX: M2 Boundary Detection
++             if self.monetary_ledger:
++                 is_debit_m2 = self._is_m2_agent(debit_agent)
++                 is_credit_m2 = self._is_m2_agent(credit_agent)
++
++                 if not is_debit_m2 and is_credit_m2:
++                     # Injection (Non-M2 -> M2)
++                     self.monetary_ledger.record_monetary_expansion(amount, source=memo, currency=currency)
++                 elif is_debit_m2 and not is_credit_m2:
++                     # Leakage (M2 -> Non-M2)
++                     self.monetary_ledger.record_monetary_contraction(amount, source=memo, currency=currency)
++
+              self._emit_zero_sum_check(debit_agent.id, credit_agent.id, amount)
+              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
+         elif result.status == 'FAILED':
+@@ -737,6 +771,12 @@ class SettlementSystem(IMonetaryAuthority):
+         if buyer_id is None or seller_id is None:
+              return None
+ 
++        metadata = {"memo": memo}
++
++        # WO-IMPL-FINANCIAL-INTEGRITY-FIX: Mark creation/destruction as executed
++        if transaction_type in ["money_creation", "money_destruction"]:
++            metadata["executed"] = True
++
+         return Transaction(
+             buyer_id=buyer_id,
+             seller_id=seller_id,
+@@ -747,7 +787,7 @@ class SettlementSystem(IMonetaryAuthority):
+             market_id="settlement",
+             transaction_type=transaction_type,
+             time=tick,
+-            metadata={"memo": memo}
++            metadata=metadata
+         )
+ 
+     def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = "god_mode_injection") -> bool:
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index 5e6db183..a70d1973 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -169,8 +169,9 @@ class TransactionProcessor(SystemInterface):
+ 
+             # Fallback
+             if handler is None:
+-                if tx.transaction_type in ["credit_creation", "credit_destruction"]:
+-                    continue  # Symbolic, no-op
++                # WO-IMPL-FINANCIAL-INTEGRITY-FIX: Explicitly ignore M2 Ops and Symbolic Ops
++                if tx.transaction_type in ["credit_creation", "credit_destruction", "money_creation", "money_destruction"]:
++                    continue  # Symbolic, no-op or handled by SettlementSystem
+ 
+                 if default_handler:
+                     handler = default_handler
+diff --git a/tests/unit/systems/test_m2_integrity.py b/tests/unit/systems/test_m2_integrity.py
+new file mode 100644
+index 00000000..6a460032
+--- /dev/null
++++ b/tests/unit/systems/test_m2_integrity.py
+@@ -0,0 +1,256 @@
++import pytest
++from unittest.mock import MagicMock, ANY
++from simulation.systems.settlement_system import SettlementSystem
++from simulation.systems.transaction_processor import TransactionProcessor
++from modules.finance.api import IFinancialAgent, IBank, IMonetaryLedger, ITransaction
++from modules.system.constants import ID_CENTRAL_BANK, ID_GOVERNMENT, ID_BANK
++from modules.system.api import DEFAULT_CURRENCY
++from simulation.models import Transaction
++from simulation.dtos.api import SimulationState
++
++# Reuse MockAgent from existing tests or create a simple one
++class MockAgent(IFinancialAgent):
++    def __init__(self, agent_id, assets=0):
++        self._id = agent_id
++        self._assets = int(assets)
++        self.is_active = True
++
++    @property
++    def id(self):
++        return self._id
++
++    @property
++    def balance_pennies(self) -> int:
++        return self._assets
++
++    def get_balance(self, currency=DEFAULT_CURRENCY) -> int:
++        if currency == DEFAULT_CURRENCY:
++            return self._assets
++        return 0
++
++    def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
++        self._assets -= int(amount)
++
++    def _deposit(self, amount, currency=DEFAULT_CURRENCY):
++        self._assets += int(amount)
++
++    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
++        self._withdraw(amount, currency)
++
++    def deposit(self, amount, currency=DEFAULT_CURRENCY):
++        self._deposit(amount, currency)
++
++    def get_assets_by_currency(self):
++        return {DEFAULT_CURRENCY: self._assets}
++
++class MockBank(MockAgent, IBank):
++    def __init__(self, agent_id=ID_BANK, assets=1000000):
++        super().__init__(agent_id, assets)
++        self.accounts = {}
++
++    def get_customer_balance(self, agent_id): return 0
++    def get_debt_status(self, borrower_id): return None
++    def terminate_loan(self, loan_id): return None
++    def withdraw_for_customer(self, agent_id, amount): return False
++    def get_total_deposits(self): return 0
++    def close_account(self, agent_id): return 0
++    def repay_loan(self, loan_id, amount): return amount
++    def receive_repayment(self, borrower_id, amount): return amount
++    def grant_loan(self, *args, **kwargs): return None
++    def stage_loan(self, *args, **kwargs): return None
++    def get_interest_rate(self): return 0.05
++
++@pytest.fixture
++def mock_ledger():
++    return MagicMock(spec=IMonetaryLedger)
++
++@pytest.fixture
++def settlement_system(mock_ledger):
++    bank = MockBank()
++    registry = MagicMock()
++    # Mock registry behavior
++    registry.get_agent.side_effect = lambda uid: bank if uid == ID_BANK else None
++
++    system = SettlementSystem(bank=bank, agent_registry=registry)
++    system.set_monetary_ledger(mock_ledger)
++    return system
++
++def test_transfer_m2_to_m2_no_expansion(settlement_system, mock_ledger):
++    """
++    Household -> Household (M2 -> M2)
++    Should NOT trigger expansion or contraction.
++    """
++    sender = MockAgent(101, 1000) # Household
++    receiver = MockAgent(102, 500) # Household
++
++    # Manually register in local map for _get_engine context
++    settlement_system.agent_registry.get_agent = MagicMock(side_effect=lambda uid: sender if uid == 101 else (receiver if uid == 102 else None))
++
++    settlement_system.transfer(sender, receiver, 100, "Regular Transfer")
++
++    assert sender.balance_pennies == 900
++    assert receiver.balance_pennies == 600
++
++    # Should not call ledger
++    mock_ledger.record_monetary_expansion.assert_not_called()
++    mock_ledger.record_monetary_contraction.assert_not_called()
++
++def test_transfer_non_m2_to_m2_expansion(settlement_system, mock_ledger):
++    """
++    Government -> Household (Non-M2 -> M2)
++    Should trigger record_monetary_expansion.
++    """
++    sender = MockAgent(ID_GOVERNMENT, 10000) # Government (Non-M2)
++    receiver = MockAgent(101, 500) # Household (M2)
++
++    settlement_system.agent_registry.get_agent = MagicMock(side_effect=lambda uid: sender if uid == ID_GOVERNMENT else (receiver if uid == 101 else None))
++
++    settlement_system.transfer(sender, receiver, 100, "Welfare Payment")
++
++    assert sender.balance_pennies == 9900
++    assert receiver.balance_pennies == 600
++
++    # Should record expansion
++    mock_ledger.record_monetary_expansion.assert_called_once_with(100, source="Welfare Payment", currency=DEFAULT_CURRENCY)
++    mock_ledger.record_monetary_contraction.assert_not_called()
++
++def test_transfer_m2_to_non_m2_contraction(settlement_system, mock_ledger):
++    """
++    Household -> Government (M2 -> Non-M2)
++    Should trigger record_monetary_contraction.
++    """
++    sender = MockAgent(101, 1000) # Household (M2)
++    receiver = MockAgent(ID_GOVERNMENT, 500) # Government (Non-M2)
++
++    settlement_system.agent_registry.get_agent = MagicMock(side_effect=lambda uid: sender if uid == 101 else (receiver if uid == ID_GOVERNMENT else None))
++
++    settlement_system.transfer(sender, receiver, 200, "Tax Payment")
++
++    assert sender.balance_pennies == 800
++    assert receiver.balance_pennies == 700
++
++    # Should record contraction
++    mock_ledger.record_monetary_contraction.assert_called_once_with(200, source="Tax Payment", currency=DEFAULT_CURRENCY)
++    mock_ledger.record_monetary_expansion.assert_not_called()
++
++def test_transfer_non_m2_to_non_m2_no_effect(settlement_system, mock_ledger):
++    """
++    Government -> Bank (Non-M2 -> Non-M2)
++    Should NOT trigger expansion or contraction.
++    """
++    sender = MockAgent(ID_GOVERNMENT, 10000) # Non-M2
++    receiver = MockBank(ID_BANK, 5000) # Non-M2
++
++    settlement_system.agent_registry.get_agent = MagicMock(side_effect=lambda uid: sender if uid == ID_GOVERNMENT else (receiver if uid == ID_BANK else None))
++
++    settlement_system.transfer(sender, receiver, 500, "Bailout")
++
++    assert sender.balance_pennies == 9500
++    assert receiver.balance_pennies == 5500
++
++    mock_ledger.record_monetary_expansion.assert_not_called()
++    mock_ledger.record_monetary_contraction.assert_not_called()
++
++def test_transaction_processor_ignores_money_creation():
++    """
++    Verify TransactionProcessor ignores 'money_creation' transactions
++    to avoid 'No handler' warnings.
++    """
++    config = MagicMock()
++    tp = TransactionProcessor(config_module=config)
++
++    state = MagicMock(spec=SimulationState)
++    state.logger = MagicMock()
++    state.transactions = [
++        Transaction(
++            buyer_id=ID_CENTRAL_BANK, seller_id=101, item_id="currency",
++            price=1.0, quantity=100, market_id="settlement",
++            transaction_type="money_creation", time=0, total_pennies=100,
++            metadata={"executed": True} # This should cause it to be skipped if logic is correct
++        )
++    ]
++    # Also test one WITHOUT executed=True to ensure it is caught by the new exclusion logic
++    # But first let's see current behavior.
++
++    # If we add a transaction WITHOUT executed=True, it currently triggers a warning.
++    # After fix, it should be ignored.
++    tx_unexecuted = Transaction(
++        buyer_id=ID_CENTRAL_BANK, seller_id=101, item_id="currency",
++        price=1.0, quantity=100, market_id="settlement",
++        transaction_type="money_creation", time=0, total_pennies=100
++    )
++    state.transactions.append(tx_unexecuted)
++
++    # Mock context requirements
++    state.agents = {101: MagicMock()}
++    state.public_manager = None
++    state.bank = MagicMock()
++    state.central_bank = MagicMock()
++    state.settlement_system = MagicMock()
++    state.primary_government = MagicMock()
++    state.stock_market = MagicMock()
++    state.real_estate_units = []
++    state.market_data = {}
++    state.inactive_agents = {}
++    state.shareholder_registry = MagicMock()
++    state.effects_queue = []
++    state.time = 0
++
++    tp.execute(state)
++
++    # Before fix: Should warn about "money_creation"
++    # After fix: Should NOT warn
++    # We assert that warning is NOT called for "money_creation"
++    # But currently it IS called. So running this test before fix will fail if we assert_not_called.
++
++    # To demonstrate failure (TDD), we assert that warning IS called for now,
++    # and then flip it, OR just assert not called and let it fail.
++    # I will assert not called, expecting failure.
++
++    warnings = [call[0][0] for call in state.logger.warning.call_args_list]
++    assert not any("No handler for tx type: money_creation" in w for w in warnings), \
++        f"Should not warn about money_creation, but got: {warnings}"
++
++def test_money_creation_metadata_executed():
++    """
++    Verify that create_and_transfer sets 'executed': True in metadata.
++    """
++    mock_ledger = MagicMock(spec=IMonetaryLedger)
++    settlement_system = SettlementSystem()
++    settlement_system.set_monetary_ledger(mock_ledger)
++
++    cb = MockAgent(ID_CENTRAL_BANK, 0) # Central Bank can mint
++    receiver = MockAgent(101, 0)
++
++    # Mock registry
++    settlement_system.agent_registry = MagicMock()
++    settlement_system.agent_registry.get_agent.side_effect = lambda uid: cb if uid == ID_CENTRAL_BANK else receiver
++
++    # Use create_and_transfer (acts as minting if source is CB)
++    # We need source to be instance of ICentralBank
++    class MockCB(MockAgent): # Add ICentralBank marker if needed, but Python mocks are flexible.
++        pass
++    # Actually SettlementSystem checks isinstance(source, ICentralBank).
++    # So we need to mock that.
++
++    # Create a proper Mock that passes isinstance check?
++    # Or just patch isinstance? Patching is risky.
++    # I'll create a class that inherits ICentralBank protocol or mock it with spec.
++
++    # Actually, simpler: SettlementSystem imports ICentralBank.
++    # I can use MagicMock(spec=ICentralBank) but need to implement required methods if checked.
++    # SettlementSystem checks: if isinstance(source_authority, ICentralBank)
++
++    # Let's import ICentralBank
++    from modules.finance.api import ICentralBank
++    class TrueCB(MockAgent, ICentralBank):
++        def process_omo_settlement(self, transaction): pass
++        def execute_open_market_operation(self, instruction): return []
++
++    cb_agent = TrueCB(ID_CENTRAL_BANK, 0)
++
++    tx = settlement_system.create_and_transfer(cb_agent, receiver, 100, "Minting", 0)
++
++    assert tx is not None
++    assert tx.metadata is not None
++    assert tx.metadata.get("executed") is True, "Metadata should contain 'executed': True for money_creation"

@@ -1,0 +1,290 @@
+diff --git a/communications/insights/wo-ssot-intent.md b/communications/insights/wo-ssot-intent.md
+new file mode 100644
+index 00000000..13a11545
+--- /dev/null
++++ b/communications/insights/wo-ssot-intent.md
+@@ -0,0 +1,56 @@
++# Insight Report: wo-ssot-intent (Intent Unification)
++
++## [Architectural Insights]
++- **Intent Unification:** Created `SettlementSystem.process_transfer()`, which bridges the intent described in a `Transaction` DTO with the execution layer in `SettlementSystem.transfer()`. This establishes a unified Single Source of Truth (SSoT) entry point for financial transactions.
++- **Double-Counting Risk Fixed:** Removed redundant manual `monetary_ledger` updates in `DefaultTransferHandler`. The system natively hooks M2 expansion/contraction inside `SettlementSystem.transfer()`, preventing metrics drift.
++- **Handler Consolidation:** Refactored various specialized transaction handlers (`financial`, `monetary`, `public_manager`, `government_spending`, etc.) to use the uniform `process_transfer` method, effectively centralizing standard transfer logic.
++- **Purity Decorator Restored:** Ensured the `@enforce_purity()` decorator on `transfer()` remained perfectly intact, preventing runtime protocol validation regression.
++
++## [Regression Analysis]
++- Tests focusing on the `TransactionProcessor` and `SettlementSystem` passed directly without functional regressions. The test framework gracefully handles the new `process_transfer` method.
++
++## [Test Evidence]
++```
++DEBUG: [conftest.py] Root conftest loading at 08:42:33
++DEBUG: [conftest.py] Import phase complete at 08:42:33
++============================= test session starts ==============================
++platform linux -- Python 3.12.9, pytest-9.0.2, pluggy-1.5.0
++rootdir: /app
++plugins: time-machine-2.16.0, asyncio-0.25.3, anyio-4.8.0, xdist-3.6.1
++asyncio: mode=Mode.STRICT, default_loop_scope=None
++collected 25 items
++
++tests/unit/test_transaction_processor.py::test_transaction_processor_dispatch_to_handler PASSED [  4%]
++tests/unit/test_transaction_processor.py::test_transaction_processor_ignores_credit_creation PASSED [  8%]
++tests/unit/test_transaction_processor.py::test_goods_handler_uses_atomic_settlement PASSED [ 12%]
++tests/unit/test_transaction_processor.py::test_public_manager_routing PASSED [ 16%]
++tests/unit/test_transaction_processor.py::test_transaction_processor_dispatches_housing PASSED [ 20%]
++tests/unit/systems/test_settlement_system.py::test_register_deregister_account PASSED [ 24%]
++tests/unit/systems/test_settlement_system.py::test_get_balance PASSED    [ 28%]
++tests/unit/systems/test_settlement_system.py::test_get_total_circulating_cash PASSED [ 32%]
++tests/unit/systems/test_settlement_system.py::test_get_total_m2_pennies PASSED [ 36%]
++tests/unit/systems/test_settlement_system.py::test_get_assets_by_currency PASSED [ 40%]
++tests/unit/systems/test_settlement_system.py::test_record_liquidation PASSED [ 44%]
++tests/unit/systems/test_settlement_system.py::test_record_liquidation_escheatment PASSED [ 48%]
++tests/unit/systems/test_settlement_system.py::test_transfer_rollback PASSED [ 52%]
++tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_cash_despite_bank_balance PASSED [ 56%]
++tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_total_funds PASSED [ 60%]
++tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_success PASSED [ 64%]
++tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_rollback PASSED [ 68%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_success PASSED [ 72%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_rollback PASSED [ 76%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_credit_fail_rollback PASSED [ 80%]
++tests/unit/simulation/systems/test_settlement_system_atomic.py::TestSettlementSystemAtomic::test_transaction_to_dead_agent_triggers_post_distribution_and_buffers_tx PASSED [ 84%]
++tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_transfer_float_raises_error PASSED [ 88%]
++tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_create_and_transfer_float_raises_error PASSED [ 92%]
++tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_issue_treasury_bonds_float_leak PASSED [ 96%]
++
++=============================== warnings summary ===============================
++../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_mode
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
++======================== 25 passed, 1 warning in 0.46s =========================
++```
+diff --git a/simulation/systems/handlers/asset_transfer_handler.py b/simulation/systems/handlers/asset_transfer_handler.py
+index e9e81564..bce2aff3 100644
+--- a/simulation/systems/handlers/asset_transfer_handler.py
++++ b/simulation/systems/handlers/asset_transfer_handler.py
+@@ -18,9 +18,7 @@ class AssetTransferHandler(ITransactionHandler):
+         trade_value = tx.total_pennies
+ 
+         # 1. Execute Settlement (Direct Transfer)
+-        settlement_success = context.settlement_system.transfer(
+-            buyer, seller, trade_value, f"asset_transfer:{tx.item_id}"
+-        )
++        settlement_success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
+ 
+         # 2. Apply Side-Effects
+         if settlement_success:
+diff --git a/simulation/systems/handlers/financial_handler.py b/simulation/systems/handlers/financial_handler.py
+index a0986882..7f111046 100644
+--- a/simulation/systems/handlers/financial_handler.py
++++ b/simulation/systems/handlers/financial_handler.py
+@@ -23,13 +23,13 @@ class FinancialTransactionHandler(ITransactionHandler):
+         success = False
+ 
+         if tx_type in ["interest_payment", "loan_interest", "deposit_interest", "deposit", "withdrawal", "bank_profit_remittance", "holding_cost"]:
+-             success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
++             success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
+ 
+              if success and isinstance(buyer, IExpenseTracker):
+                  buyer.record_expense(int(trade_value), tx.currency)
+ 
+         elif tx_type == "dividend":
+-             success = context.settlement_system.transfer(seller, buyer, trade_value, "dividend_payment")
++             success = context.settlement_system.process_transfer(tx, seller, buyer, context.time)
+ 
+              if success and isinstance(buyer, Household):
+                  # Household capital income tracking
+@@ -69,7 +69,7 @@ class FinancialTransactionHandler(ITransactionHandler):
+ 
+         elif tx_type in ["repayment", "loan_repayment"]:
+              # Transfer Only. No Expense Recording (Principal Repayment).
+-             success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
++             success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
+ 
+              # Atomic Ledger Update (Phase 4.1)
+              if success and tx_type == "loan_repayment":
+@@ -82,7 +82,7 @@ class FinancialTransactionHandler(ITransactionHandler):
+ 
+         elif tx_type in ["investment"]:
+              # Transfer + Expense Recording (CAPEX treated as expense for consistency)
+-             success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
++             success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
+              if success and isinstance(buyer, IExpenseTracker):
+                  buyer.record_expense(int(trade_value), tx.currency)
+ 
+diff --git a/simulation/systems/handlers/government_spending_handler.py b/simulation/systems/handlers/government_spending_handler.py
+index f3761847..5daeeca5 100644
+--- a/simulation/systems/handlers/government_spending_handler.py
++++ b/simulation/systems/handlers/government_spending_handler.py
+@@ -16,9 +16,7 @@ class GovernmentSpendingHandler(ITransactionHandler):
+         # infrastructure_spending: Buyer is Government. Seller is typically System/Reflux or Agent.
+         # TransactionProcessor logic: success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")
+ 
+-        success = context.settlement_system.transfer(
+-            buyer, seller, trade_value, tx.transaction_type
+-        )
++        success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
+ 
+         return success is not None
+ 
+diff --git a/simulation/systems/handlers/monetary_handler.py b/simulation/systems/handlers/monetary_handler.py
+index f483ab23..cd43c2ef 100644
+--- a/simulation/systems/handlers/monetary_handler.py
++++ b/simulation/systems/handlers/monetary_handler.py
+@@ -41,9 +41,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
+ 
+         if tx_type == "lender_of_last_resort":
+             # Minting: Central Bank (Buyer/Source) -> Bank/Agent (Seller/Target)
+-            success = context.settlement_system.transfer(
+-                buyer, seller, trade_value, "lender_of_last_resort"
+-            )
++            success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
+             if success:
+                 context.logger.info(
+                     f"MONEY_SUPPLY_CHECK | LLR Expansion: +{trade_value}.",
+@@ -53,9 +51,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
+ 
+         elif tx_type == "asset_liquidation":
+             # Minting: Gov/CB (Buyer) -> Agent (Seller)
+-            success = context.settlement_system.transfer(
+-                buyer, seller, trade_value, "asset_liquidation"
+-            )
++            success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
+             if success:
+                 # Asset Transfer Logic (Stock/RE)
+                 self._apply_asset_liquidation_effects(tx, buyer, seller, context)
+@@ -65,15 +61,11 @@ class MonetaryTransactionHandler(ITransactionHandler):
+                 )
+ 
+         elif tx_type == "bond_interest":
+-             success = context.settlement_system.transfer(
+-                 buyer, seller, trade_value, tx_type
+-             )
++             success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
+ 
+         elif tx_type in ["bond_purchase", "omo_purchase"]:
+             # QE: CB (Buyer) -> Gov/Agent (Seller)
+-            success = context.settlement_system.transfer(
+-                buyer, seller, trade_value, tx_type
+-            )
++            success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
+             if success:
+                  context.logger.info(
+                      f"QE | Central Bank purchased bond/asset {trade_value}.",
+@@ -87,9 +79,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
+         elif tx_type in ["bond_repayment", "omo_sale"]:
+             # QT: Agent (Buyer) -> CB (Seller)
+             # Burning: Money goes to CB and disappears.
+-            success = context.settlement_system.transfer(
+-                buyer, seller, trade_value, tx_type
+-            )
++            success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
+             if success:
+                 context.logger.info(
+                     f"QT | Central Bank sold bond/asset {trade_value}.",
+diff --git a/simulation/systems/handlers/public_manager_handler.py b/simulation/systems/handlers/public_manager_handler.py
+index 370f13b0..a20a154a 100644
+--- a/simulation/systems/handlers/public_manager_handler.py
++++ b/simulation/systems/handlers/public_manager_handler.py
+@@ -62,9 +62,7 @@ class PublicManagerTransactionHandler(ITransactionHandler):
+                     ))
+         else:
+              # Legacy/Non-taxable (e.g. assets)
+-             success = context.settlement_system.transfer(
+-                buyer, pm, trade_value, f"public_sale:{tx.item_id}"
+-             )
++             success = context.settlement_system.process_transfer(tx, buyer, pm, context.time)
+ 
+         if not success:
+             context.logger.error(f"PUBLIC_MANAGER transaction failed: Settlement refused.")
+diff --git a/simulation/systems/handlers/stock_handler.py b/simulation/systems/handlers/stock_handler.py
+index ed256c63..9e13a501 100644
+--- a/simulation/systems/handlers/stock_handler.py
++++ b/simulation/systems/handlers/stock_handler.py
+@@ -19,7 +19,7 @@ class StockTransactionHandler(ITransactionHandler):
+ 
+         # 1. Execute Settlement (Direct Transfer)
+         # Stock trades typically don't have sales tax in this simulation model yet.
+-        settlement_success = context.settlement_system.transfer(buyer, seller, trade_value, f"stock_trade:{tx.item_id}")
++        settlement_success = context.settlement_system.process_transfer(tx, buyer, seller, context.time)
+ 
+         # 2. Apply Side-Effects
+         if settlement_success:
+diff --git a/simulation/systems/handlers/transfer_handler.py b/simulation/systems/handlers/transfer_handler.py
+index b17e245f..c3678c95 100644
+--- a/simulation/systems/handlers/transfer_handler.py
++++ b/simulation/systems/handlers/transfer_handler.py
+@@ -5,29 +5,15 @@ from typing import Any
+ class DefaultTransferHandler(ITransactionHandler):
+     """
+     Handles generic 'transfer' transactions generated by SettlementSystem.
+-    These transactions are already financially settled; this handler
+-    serves strictly as a pass-through to ensure the MonetaryLedger
+-    can record the event for M2 Audits and tracking.
++    These transactions are already financially settled by SettlementSystem.
++    MonetaryLedger updates are now handled natively within SettlementSystem.transfer(),
++    so this handler strictly acts as a pass-through to acknowledge the transaction
++    without double-counting M2 metrics.
+     """
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+-        # Transaction logic is already executed. Notify MonetaryLedger.
+-        if context.settlement_system and hasattr(context.settlement_system, 'monetary_ledger') and context.settlement_system.monetary_ledger:
+-            # Check M2 boundary
+-            is_buyer_m2 = context.settlement_system._is_m2_agent(buyer)
+-            is_seller_m2 = context.settlement_system._is_m2_agent(seller)
+-
+-            amount = getattr(tx, 'total_pennies', 0)
+-            currency = getattr(tx, 'currency', 'USD')
+-            memo = getattr(tx, 'metadata', {}).get('memo', 'transfer')
+-
+-            # Buyer is the sender (debit), Seller is the receiver (credit) in standard tx logic
+-            if not is_buyer_m2 and is_seller_m2:
+-                # Non-M2 -> M2 (Expansion)
+-                context.settlement_system.monetary_ledger.record_monetary_expansion(amount, source=memo, currency=currency)
+-            elif is_buyer_m2 and not is_seller_m2:
+-                # M2 -> Non-M2 (Contraction)
+-                context.settlement_system.monetary_ledger.record_monetary_contraction(amount, source=memo, currency=currency)
+-
++        # Transaction logic is already executed by SettlementSystem.
++        # MonetaryLedger is already updated by SettlementSystem.transfer().
++        # No further action needed to prevent Double-Counting Risk (WO-SSOT-INTENT).
+         return True
+ 
+     def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index 8caceea3..b8f73da1 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -731,6 +731,31 @@ class SettlementSystem(IMonetaryAuthority):
+             }
+         )
+ 
++    @enforce_purity()
++    def process_transfer(
++        self,
++        tx: "Transaction",
++        debit_agent: IFinancialEntity,
++        credit_agent: IFinancialEntity,
++        tick: Optional[int] = None
++    ) -> Optional["ITransaction"]:
++        """
++        SSoT Unified Entry Point: Transaction DTO의 데이터를 기반으로 정산을 수행합니다.
++        """
++        amount = tx.total_pennies
++        memo = tx.metadata.get("memo", tx.transaction_type) if tx.metadata else tx.transaction_type
++        currency = getattr(tx, 'currency', DEFAULT_CURRENCY)
++        current_tick = tick if tick is not None else getattr(tx, 'time', 0)
++
++        return self.transfer(
++            debit_agent=debit_agent,
++            credit_agent=credit_agent,
++            amount=amount,
++            memo=memo,
++            tick=current_tick,
++            currency=currency
++        )
++
+     @enforce_purity()
+     def transfer(
+         self,

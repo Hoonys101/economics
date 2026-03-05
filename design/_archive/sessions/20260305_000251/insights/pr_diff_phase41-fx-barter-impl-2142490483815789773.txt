@@ -1,0 +1,368 @@
+diff --git a/communications/insights/phase41_fx_barter_implementation.md b/communications/insights/phase41_fx_barter_implementation.md
+new file mode 100644
+index 00000000..ffd9b198
+--- /dev/null
++++ b/communications/insights/phase41_fx_barter_implementation.md
+@@ -0,0 +1,74 @@
++# Insight Report: Phase 4.1 - Multi-Currency Barter-FX Implementation
++
++**Date**: 2026-02-22
++**Author**: Jules (AI Implementation Agent)
++**Status**: COMPLETED
++
++---
++
++## 1. [Architectural Insights]
++
++### Atomic Barter Swaps in SettlementSystem
++The implementation of "Penny-level Barter Swaps" was achieved by extending the `SettlementSystem` to support the `execute_swap` method, as defined in the `ISettlementSystem` protocol. This implementation leverages the existing `LedgerEngine`'s `process_batch` capability to ensure atomicity.
++
++**Key Decisions:**
++*   **Protocol Adherence**: Strictly followed `ISettlementSystem` protocol and `FXMatchDTO` structure defined in `modules/finance/api.py` and `modules/finance/dtos.py`.
++*   **Atomic Execution**: Utilized `LedgerEngine.process_batch` to execute both legs of the swap (A->B and B->A) as a single atomic unit. If either leg fails (e.g., due to insufficient funds or validation error), the entire operation is rolled back by the engine.
++*   **Pre-flight Checks**: Implemented `_prepare_seamless_funds` checks prior to engine invocation. This serves as an optimization to reject invalid swaps early and provides better error logging ("insufficient_funds" tag) without incurring the overhead of a failed engine transaction.
++*   **Return Value**: The method returns a composite `Transaction` object (type `FX_SWAP`) that represents the primary leg (A->B) but includes metadata about the second leg (amount, currency, rate). This provides a single record for downstream analytics while the ledger records individual transfers.
++*   **Integer Integrity**: All amounts are strictly validated to be positive integers (pennies), adhering to the "Penny Standard".
++
++### Technical Debt & Observations
++*   **SettlementSystem Complexity**: `SettlementSystem` is growing large. While it delegates to `LedgerEngine`, it still contains logic for bank indices (`_bank_depositors`), metrics recording, and legacy `create_transaction_record`. Future refactoring might consider extracting the bank index logic to a dedicated `BankRegistry` or `AccountManager`.
++*   **Protocol Definition**: The `ISettlementSystem` protocol in `modules/finance/api.py` was already up-to-date, which simplified the implementation. This indicates good "Design First" discipline.
++
++---
++
++## 2. [Regression Analysis]
++
++*   **Impact Scope**: The changes were additive. A new method `execute_swap` was added to `SettlementSystem`. Existing methods (`transfer`, `execute_multiparty_settlement`) remain untouched.
++*   **Risk Assessment**: Low. The new logic is isolated and only invoked when `execute_swap` is called (likely by the Matching Engine in future phases).
++*   **Verification**:
++    *   New unit tests (`tests/finance/test_settlement_fx_swap.py`) cover success, insufficient funds, invalid inputs, and missing agents.
++    *   Existing tests for `SettlementSystem` should pass without modification.
++
++---
++
++## 3. [Test Evidence]
++
++**Command**: `pytest tests/finance/test_settlement_fx_swap.py`
++
++**Output**:
++```
++tests/finance/test_settlement_fx_swap.py::test_execute_swap_success
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:engine.py:131 Transaction Record: ID=swap_1_leg1, Status=COMPLETED, Message=Transaction successful (Batch)
++INFO     simulation.systems.settlement_system:engine.py:131 Transaction Record: ID=swap_1_leg2, Status=COMPLETED, Message=Transaction successful (Batch)
++PASSED                                                                   [ 25%]
++tests/finance/test_settlement_fx_swap.py::test_execute_swap_insufficient_funds_rollback
++-------------------------------- live log call ---------------------------------
++ERROR    simulation.systems.settlement_system:settlement_system.py:358 SETTLEMENT_FAIL | Insufficient funds. Cash: 100, Req: 400.
++PASSED                                                                   [ 50%]
++tests/finance/test_settlement_fx_swap.py::test_execute_swap_invalid_amounts
++-------------------------------- live log call ---------------------------------
++ERROR    simulation.systems.settlement_system:settlement_system.py:371 FX_SWAP_FAIL | Non-positive amounts: {'party_a_id': 101, 'party_b_id': 102, 'amount_a_pennies': -500, 'currency_a': 'USD', 'amount_b_pennies': 400, 'currency_b': 'EUR', 'match_tick': 1, 'rate_a_to_b': 0.8}
++PASSED                                                                   [ 75%]
++tests/finance/test_settlement_fx_swap.py::test_execute_swap_missing_agent
++-------------------------------- live log call ---------------------------------
++ERROR    simulation.systems.settlement_system:settlement_system.py:383 FX_SWAP_FAIL | Agents not found. A: 101, B: 102
++PASSED                                                                   [100%]
++
++=============================== warnings summary ===============================
++../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_mode
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
++======================== 4 passed, 2 warnings in 0.80s =========================
++```
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index a871140a..ae8744fd 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -7,8 +7,8 @@ from simulation.finance.api import ITransaction
+ from modules.finance.api import (
+     IFinancialAgent, IFinancialEntity, IBank, InsufficientFundsError,
+     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
+-    IMonetaryAuthority, IEconomicMetricsService, IPanicRecorder, ICentralBank
+-
++    IMonetaryAuthority, IEconomicMetricsService, IPanicRecorder, ICentralBank,
++    FXMatchDTO
+ )
+ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry, ISystemFinancialAgent
+ from modules.system.constants import ID_CENTRAL_BANK
+@@ -361,6 +361,90 @@ class SettlementSystem(IMonetaryAuthority):
+         )
+         return False
+ 
++    def execute_swap(self, match: FXMatchDTO) -> Optional[ITransaction]:
++        """
++        Phase 4.1: Executes an atomic currency swap (Barter FX).
++        Ensures both legs (A->B, B->A) succeed or neither occurs.
++        """
++        # 1. Validate Inputs
++        if match["amount_a_pennies"] <= 0 or match["amount_b_pennies"] <= 0:
++            self.logger.error(f"FX_SWAP_FAIL | Non-positive amounts: {match}")
++            return None
++
++        # 2. Retrieve Agents
++        party_a = None
++        party_b = None
++
++        if self.agent_registry:
++            party_a = self.agent_registry.get_agent(match["party_a_id"])
++            party_b = self.agent_registry.get_agent(match["party_b_id"])
++
++        if not party_a or not party_b:
++            self.logger.error(f"FX_SWAP_FAIL | Agents not found. A: {match['party_a_id']}, B: {match['party_b_id']}")
++            return None
++
++        # 3. Seamless Funds Check (Pre-flight)
++        # Note: This is an optimization. The engine will strictly enforce this, but we check early to avoid engine overhead.
++        if not self._prepare_seamless_funds(party_a, match["amount_a_pennies"], match["currency_a"]):
++            return None
++        if not self._prepare_seamless_funds(party_b, match["amount_b_pennies"], match["currency_b"]):
++            return None
++
++        # 4. Construct Atomic Batch
++        # Leg 1: A -> B (Currency A)
++        tx1 = TransactionDTO(
++            transaction_id=f"swap_{match['match_tick']}_leg1",
++            source_account_id=str(party_a.id),
++            destination_account_id=str(party_b.id),
++            amount=match["amount_a_pennies"],
++            currency=match["currency_a"],
++            description=f"FX Swap Leg 1: {match['amount_a_pennies']} {match['currency_a']}"
++        )
++
++        # Leg 2: B -> A (Currency B)
++        tx2 = TransactionDTO(
++            transaction_id=f"swap_{match['match_tick']}_leg2",
++            source_account_id=str(party_b.id),
++            destination_account_id=str(party_a.id),
++            amount=match["amount_b_pennies"],
++            currency=match["currency_b"],
++            description=f"FX Swap Leg 2: {match['amount_b_pennies']} {match['currency_b']}"
++        )
++
++        # 5. Execute Atomically
++        try:
++            engine = self._get_engine(context_agents=[party_a, party_b])
++            results = engine.process_batch([tx1, tx2])
++        except RuntimeError:
++            self.logger.error("FX_SWAP_FAIL | Engine init failed.")
++            return None
++
++        # 6. Verify Outcome
++        all_success = all(r.status == 'COMPLETED' for r in results)
++        if not all_success:
++            self.logger.error(f"FX_SWAP_FAIL | Atomic batch failed. Results: {[r.message for r in results]}")
++            return None
++
++        # 7. Return Summary Transaction
++        # We return a representative transaction record for the swap event.
++        # We return the "primary" leg (A->B) with metadata about the swap.
++        return Transaction(
++            buyer_id=party_a.id,
++            seller_id=party_b.id,
++            item_id=match["currency_a"],
++            quantity=match["amount_a_pennies"],
++            price=match["rate_a_to_b"], # Store rate as price
++            total_pennies=match["amount_a_pennies"],
++            market_id="fx_market",
++            transaction_type="FX_SWAP",
++            time=match["match_tick"],
++            metadata={
++                "swap_leg_2_amount": match["amount_b_pennies"],
++                "swap_leg_2_currency": match["currency_b"],
++                "rate": match["rate_a_to_b"]
++            }
++        )
++
+     @enforce_purity()
+     def transfer(
+         self,
+diff --git a/tests/finance/test_settlement_fx_swap.py b/tests/finance/test_settlement_fx_swap.py
+new file mode 100644
+index 00000000..4c63b8c5
+--- /dev/null
++++ b/tests/finance/test_settlement_fx_swap.py
+@@ -0,0 +1,176 @@
++import pytest
++from unittest.mock import MagicMock
++from typing import Dict, Any
++from modules.finance.api import IFinancialAgent, FXMatchDTO
++from simulation.systems.settlement_system import SettlementSystem
++from modules.system.api import IAgentRegistry
++
++# Mock Agent Class that implements IFinancialAgent and ITransactionParticipant
++class MockFinancialAgent:
++    def __init__(self, agent_id: int, balances: Dict[str, int]):
++        self.id = agent_id
++        self._balances = balances
++        self.allows_overdraft = False
++
++    def get_balance(self, currency: str = "USD") -> int:
++        return self._balances.get(currency, 0)
++
++    def deposit(self, amount: int, currency: str = "USD", memo: str = ""):
++        self._balances[currency] = self._balances.get(currency, 0) + amount
++
++    def withdraw(self, amount: int, currency: str = "USD", memo: str = ""):
++        current = self._balances.get(currency, 0)
++        if current < amount and not self.allows_overdraft:
++            raise Exception("Insufficient funds")
++        self._balances[currency] = current - amount
++
++    # Implement protocol requirements for IFinancialAgent
++    def _deposit(self, amount: int, currency: str = "USD") -> None:
++        self.deposit(amount, currency)
++
++    def _withdraw(self, amount: int, currency: str = "USD") -> None:
++        self.withdraw(amount, currency)
++
++    def get_liquid_assets(self, currency: str = "USD") -> float:
++        return float(self.get_balance(currency)) / 100.0
++
++    def get_total_debt(self) -> float:
++        return 0.0
++
++    def get_all_balances(self) -> Dict[str, int]:
++        return self._balances.copy()
++
++    @property
++    def total_wealth(self) -> int:
++        return sum(self._balances.values())
++
++@pytest.fixture
++def settlement_system():
++    registry = MagicMock(spec=IAgentRegistry)
++    system = SettlementSystem(agent_registry=registry)
++    return system, registry
++
++def test_execute_swap_success(settlement_system):
++    system, registry = settlement_system
++
++    # Setup Agents
++    agent_a = MockFinancialAgent(101, {"USD": 1000, "EUR": 0})
++    agent_b = MockFinancialAgent(102, {"USD": 0, "EUR": 1000})
++
++    # Configure Registry to return these mocks
++    # Note: get_agent uses loose typing in code, expecting integer or string ID
++    def get_agent_side_effect(agent_id: Any):
++        aid = int(agent_id)
++        return {101: agent_a, 102: agent_b}.get(aid)
++
++    registry.get_agent.side_effect = get_agent_side_effect
++
++    # Define Match
++    match: FXMatchDTO = {
++        "party_a_id": 101,
++        "party_b_id": 102,
++        "amount_a_pennies": 500,
++        "currency_a": "USD",
++        "amount_b_pennies": 400,
++        "currency_b": "EUR",
++        "match_tick": 1,
++        "rate_a_to_b": 0.8
++    }
++
++    # Execute
++    tx = system.execute_swap(match)
++
++    # Verify
++    assert tx is not None
++    assert tx.transaction_type == "FX_SWAP"
++
++    # Balances
++    assert agent_a.get_balance("USD") == 500  # 1000 - 500
++    assert agent_a.get_balance("EUR") == 400  # 0 + 400
++    assert agent_b.get_balance("USD") == 500  # 0 + 500
++    assert agent_b.get_balance("EUR") == 600  # 1000 - 400
++
++def test_execute_swap_insufficient_funds_rollback(settlement_system):
++    system, registry = settlement_system
++
++    # Setup Agents: Agent A has enough USD, Agent B does NOT have enough EUR
++    agent_a = MockFinancialAgent(101, {"USD": 1000, "EUR": 0})
++    agent_b = MockFinancialAgent(102, {"USD": 0, "EUR": 100}) # Only 100 EUR, needs 400
++
++    def get_agent_side_effect(agent_id: Any):
++        aid = int(agent_id)
++        return {101: agent_a, 102: agent_b}.get(aid)
++
++    registry.get_agent.side_effect = get_agent_side_effect
++
++    match: FXMatchDTO = {
++        "party_a_id": 101,
++        "party_b_id": 102,
++        "amount_a_pennies": 500,
++        "currency_a": "USD",
++        "amount_b_pennies": 400, # Needs 400 EUR
++        "currency_b": "EUR",
++        "match_tick": 1,
++        "rate_a_to_b": 0.8
++    }
++
++    # Execute
++    tx = system.execute_swap(match)
++
++    # Verify Failure
++    assert tx is None
++
++    # Verify Balances Unchanged (Rollback or pre-check prevention)
++    assert agent_a.get_balance("USD") == 1000
++    assert agent_b.get_balance("EUR") == 100
++
++def test_execute_swap_invalid_amounts(settlement_system):
++    system, registry = settlement_system
++
++    agent_a = MockFinancialAgent(101, {"USD": 1000})
++    agent_b = MockFinancialAgent(102, {"EUR": 1000})
++
++    def get_agent_side_effect(agent_id: Any):
++        aid = int(agent_id)
++        return {101: agent_a, 102: agent_b}.get(aid)
++
++    registry.get_agent.side_effect = get_agent_side_effect
++
++    match: FXMatchDTO = {
++        "party_a_id": 101,
++        "party_b_id": 102,
++        "amount_a_pennies": -500, # Negative
++        "currency_a": "USD",
++        "amount_b_pennies": 400,
++        "currency_b": "EUR",
++        "match_tick": 1,
++        "rate_a_to_b": 0.8
++    }
++
++    tx = system.execute_swap(match)
++    assert tx is None
++
++def test_execute_swap_missing_agent(settlement_system):
++    system, registry = settlement_system
++
++    agent_a = MockFinancialAgent(101, {"USD": 1000})
++
++    def get_agent_side_effect(agent_id: Any):
++        aid = int(agent_id)
++        return {101: agent_a}.get(aid) # 102 Missing
++
++    registry.get_agent.side_effect = get_agent_side_effect
++
++    match: FXMatchDTO = {
++        "party_a_id": 101,
++        "party_b_id": 102,
++        "amount_a_pennies": 500,
++        "currency_a": "USD",
++        "amount_b_pennies": 400,
++        "currency_b": "EUR",
++        "match_tick": 1,
++        "rate_a_to_b": 0.8
++    }
++
++    tx = system.execute_swap(match)
++    assert tx is None

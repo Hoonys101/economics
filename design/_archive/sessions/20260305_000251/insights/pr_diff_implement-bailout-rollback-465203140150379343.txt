@@ -1,0 +1,263 @@
+diff --git a/modules/finance/handlers/bailout.py b/modules/finance/handlers/bailout.py
+index 1b110c88..68da08fc 100644
+--- a/modules/finance/handlers/bailout.py
++++ b/modules/finance/handlers/bailout.py
+@@ -1,3 +1,4 @@
++import logging
+ from typing import Any
+ from modules.finance.api import ITransactionHandler
+ from modules.system.api import AssetBuyoutRequestDTO, IAssetRecoverySystem, AssetBuyoutResultDTO
+@@ -9,6 +10,7 @@ class BailoutHandler(ITransactionHandler):
+     """
+     def __init__(self, asset_recovery_system: IAssetRecoverySystem):
+         self.asset_recovery_system = asset_recovery_system
++        self.logger = logging.getLogger(__name__)
+ 
+     def validate(self, request: Any, context: Any) -> bool:
+         """
+@@ -33,8 +35,11 @@ class BailoutHandler(ITransactionHandler):
+ 
+     def rollback(self, transaction_id: str, context: Any) -> bool:
+         """
+-        Rollback for bailouts is complex (returning assets).
+-        Currently not supported/implemented for Phase 1.
++        Rollback for bailouts reverses the asset buyout in the recovery system.
++        Expects AssetBuyoutRequestDTO in the context.
+         """
+-        # TODO: Implement generic rollback
+-        return False
++        if not isinstance(context, AssetBuyoutRequestDTO):
++            self.logger.error(f"Rollback failed for transaction {transaction_id}. Invalid context type: {type(context)}. Expected AssetBuyoutRequestDTO.")
++            return False
++
++        return self.asset_recovery_system.rollback_asset_buyout(context)
+diff --git a/modules/system/api.py b/modules/system/api.py
+index f89d2344..075b79c6 100644
+--- a/modules/system/api.py
++++ b/modules/system/api.py
+@@ -392,6 +392,19 @@ class IAssetRecoverySystem(Protocol):
+         """
+         ...
+ 
++    def rollback_asset_buyout(self, request: AssetBuyoutRequestDTO) -> bool:
++        """
++        Reverses an asset buyout by returning assets from the recovery system's inventory.
++        Also attempts to return currency to the recovery system.
++        """
++        ...
++
++    def set_agent_registry(self, registry: IAgentRegistry) -> None:
++        """
++        Injects the Agent Registry for lookups during rollback.
++        """
++        ...
++
+     def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
+         """
+         Receives inventory from a firm undergoing liquidation (Asset Buyout).
+diff --git a/modules/system/execution/public_manager.py b/modules/system/execution/public_manager.py
+index bc890667..ccb0eb64 100644
+--- a/modules/system/execution/public_manager.py
++++ b/modules/system/execution/public_manager.py
+@@ -5,10 +5,10 @@ from collections import defaultdict
+ from modules.system.api import (
+     IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO,
+     PublicManagerReportDTO, CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder,
+-    AssetBuyoutRequestDTO, AssetBuyoutResultDTO, ISystemFinancialAgent
++    AssetBuyoutRequestDTO, AssetBuyoutResultDTO, ISystemFinancialAgent, IAgentRegistry
+ )
+ from modules.finance.api import IFinancialAgent, InsufficientFundsError, ILiquidator, ISettlementSystem
+-from modules.simulation.api import IConfigurable
++from modules.simulation.api import IInventoryHandler, IConfigurable
+ from modules.system.constants import ID_PUBLIC_MANAGER
+ from simulation.models import Order
+ 
+@@ -28,7 +28,7 @@ class PublicManager(IAssetRecoverySystem, ILiquidator, ICurrencyHolder, IFinanci
+         self.managed_inventory: Dict[str, float] = defaultdict(float)
+         self.system_treasury: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
+         self.settlement_system: Optional[ISettlementSystem] = None
+-        self.logger = logging.getLogger('PublicManager')
++        self.agent_registry: Optional[IAgentRegistry] = None
+         self.last_tick_recovered_assets: Dict[str, float] = defaultdict(float)
+         self.last_tick_revenue: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
+         self.total_revenue_lifetime: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
+@@ -146,6 +146,72 @@ class PublicManager(IAssetRecoverySystem, ILiquidator, ICurrencyHolder, IFinanci
+             buyer_id=self.id
+         )
+ 
++    def rollback_asset_buyout(self, request: AssetBuyoutRequestDTO) -> bool:
++        """
++        Reverses an asset buyout by returning assets from PublicManager's inventory.
++        Also reclaims the currency paid.
++        """
++        total_value = 0
++        returned_items = {}
++
++        # 1. Calculate and reverse inventory
++        for item_id, quantity in request.inventory.items():
++            if quantity <= 0:
++                continue
++
++            # Check if we actually have enough in managed inventory to return (Safety)
++            current_pm_qty = self.managed_inventory.get(item_id, 0.0)
++            qty_to_return = min(quantity, current_pm_qty)
++
++            if qty_to_return > 0:
++                self.managed_inventory[item_id] = current_pm_qty - qty_to_return
++                returned_items[item_id] = qty_to_return
++
++                # Reverse transient tracking if possible
++                if item_id in self.last_tick_recovered_assets:
++                     self.last_tick_recovered_assets[item_id] = max(0.0, self.last_tick_recovered_assets[item_id] - qty_to_return)
++
++            # Calculate valuation for currency reversal
++            price = request.market_prices.get(item_id, 0)
++            value = int(price * quantity * request.distress_discount)
++            total_value += value
++
++        # 2. Re-distribute assets to seller if they exist
++        if self.agent_registry and returned_items:
++             seller = self.agent_registry.get_agent(request.seller_id)
++             if seller and isinstance(seller, IInventoryHandler):
++                  for item_id, qty in returned_items.items():
++                       seller.add_item(item_id, qty, reason="ROLLBACK_BAILOUT")
++                  self.logger.info(f"Returned {len(returned_items)} items to Seller {request.seller_id}")
++
++        # 3. Currency Reversal (Seller -> PublicManager)
++        if self.settlement_system and total_value > 0:
++             seller = None
++             if self.agent_registry:
++                  seller = self.agent_registry.get_agent(request.seller_id)
++
++             if seller and isinstance(seller, IFinancialAgent):
++                  success = self.settlement_system.transfer(
++                       debit_agent=seller,
++                       credit_agent=self,
++                       amount=total_value,
++                       memo="ROLLBACK_BAILOUT_RECLAIM",
++                       currency=DEFAULT_CURRENCY
++                  )
++                  if success:
++                       # Reverse cumulative deficit
++                       self.cumulative_deficit = max(0, self.cumulative_deficit - total_value)
++                       self.logger.info(f"Reclaimed {total_value} pennies from Agent {request.seller_id}")
++                  else:
++                       self.logger.warning(f"Failed to reclaim {total_value} pennies from Agent {request.seller_id} during rollback.")
++
++        self.logger.info(f"Rolled back Asset Buyout from Agent {request.seller_id}. Total Value: {total_value}")
++        return True
++
++    def set_agent_registry(self, registry: IAgentRegistry) -> None:
++        """Injects the Agent Registry for lookups during rollback."""
++        self.agent_registry = registry
++
+     def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
+         """
+         Receives inventory from a liquidated firm via asset buyout.
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 53478350..b3a790c9 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -266,6 +266,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.public_manager = PublicManager(config=self.config)
+         # Inject Settlement System (WO-IMPL-MODULAR-LIQUIDATION)
+         sim.public_manager.set_settlement_system(sim.settlement_system)
++        sim.public_manager.set_agent_registry(sim.agent_registry)
+ 
+         if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
+             sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
+diff --git a/tests/unit/handlers/test_bailout_handler.py b/tests/unit/handlers/test_bailout_handler.py
+index dc011bb8..90b14ac1 100644
+--- a/tests/unit/handlers/test_bailout_handler.py
++++ b/tests/unit/handlers/test_bailout_handler.py
+@@ -29,3 +29,26 @@ def test_bailout_handler_execute_success():
+ 
+     assert result == expected_result
+     mock_system.execute_asset_buyout.assert_called_with(request)
++
++def test_bailout_handler_rollback_success():
++    mock_system = Mock(spec=IAssetRecoverySystem)
++    mock_system.rollback_asset_buyout.return_value = True
++
++    handler = BailoutHandler(mock_system)
++    request = AssetBuyoutRequestDTO(1, {"item1": 10.0}, {"item1": 100}, 0.5)
++
++    # Rollback expects the request in context for stateless handler
++    success = handler.rollback("tx1", request)
++
++    assert success is True
++    mock_system.rollback_asset_buyout.assert_called_with(request)
++
++def test_bailout_handler_rollback_fail_invalid_context():
++    mock_system = Mock(spec=IAssetRecoverySystem)
++    handler = BailoutHandler(mock_system)
++
++    # Rollback with invalid context (not a DTO)
++    success = handler.rollback("tx1", "invalid_context")
++
++    assert success is False
++    mock_system.rollback_asset_buyout.assert_not_called()
+diff --git a/tests/unit/modules/system/execution/test_public_manager.py b/tests/unit/modules/system/execution/test_public_manager.py
+index a2e5cd40..451d77f1 100644
+--- a/tests/unit/modules/system/execution/test_public_manager.py
++++ b/tests/unit/modules/system/execution/test_public_manager.py
+@@ -3,6 +3,8 @@ from unittest.mock import MagicMock
+ from modules.system.execution.public_manager import PublicManager
+ from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, DEFAULT_CURRENCY, AssetBuyoutRequestDTO
+ from modules.system.constants import ID_PUBLIC_MANAGER
++from modules.simulation.api import IInventoryHandler
++from modules.finance.api import IFinancialAgent
+ 
+ class TestPublicManager:
+ 
+@@ -71,4 +73,47 @@ class TestPublicManager:
+         assert result.success
+         assert result.total_paid_pennies == 500 # 10 * 100 * 0.5
+         assert public_manager.managed_inventory['gold'] == 10
+-        assert public_manager.last_tick_recovered_assets['gold'] == 10
+\ No newline at end of file
++        assert public_manager.last_tick_recovered_assets['gold'] == 10
++
++    def test_rollback_asset_buyout(self, public_manager):
++        # Setup mocks for currency reversal and asset restoration
++        mock_settlement = MagicMock()
++        public_manager.set_settlement_system(mock_settlement)
++
++        mock_registry = MagicMock()
++        public_manager.set_agent_registry(mock_registry)
++
++        # Create a mock that implements both protocols
++        class MockSeller(IInventoryHandler, IFinancialAgent):
++             pass
++
++        mock_seller = MagicMock(spec=MockSeller)
++        mock_seller.id = 1
++        mock_registry.get_agent.return_value = mock_seller
++
++        request = AssetBuyoutRequestDTO(
++            seller_id=1,
++            inventory={'gold': 10},
++            market_prices={'gold': 100},
++            distress_discount=0.5
++        )
++        # 1. Execute
++        public_manager.execute_asset_buyout(request)
++        assert public_manager.managed_inventory['gold'] == 10
++
++        # 2. Rollback
++        success = public_manager.rollback_asset_buyout(request)
++
++        assert success
++        assert public_manager.managed_inventory['gold'] == 0
++        assert public_manager.last_tick_recovered_assets['gold'] == 0
++
++        # Verify asset restoration
++        mock_seller.add_item.assert_called_with('gold', 10, reason="ROLLBACK_BAILOUT")
++
++        # Verify currency reversal (10 * 100 * 0.5 = 500)
++        mock_settlement.transfer.assert_called_once()
++        args, kwargs = mock_settlement.transfer.call_args
++        assert kwargs['debit_agent'] == mock_seller
++        assert kwargs['credit_agent'] == public_manager
++        assert kwargs['amount'] == 500
+\ No newline at end of file

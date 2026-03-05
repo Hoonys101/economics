@@ -1,0 +1,1204 @@
+diff --git a/communications/insights/WO-LIQUIDATE-ISOLATION.md b/communications/insights/WO-LIQUIDATE-ISOLATION.md
+new file mode 100644
+index 00000000..9485dfa9
+--- /dev/null
++++ b/communications/insights/WO-LIQUIDATE-ISOLATION.md
+@@ -0,0 +1,55 @@
++# Insight Report: WO-LIQUIDATE-ISOLATION
++
++## 1. Architectural Insights
++
++### Rollback Decoupling & Protocol Hardening
++The decoupling of rollback mechanics from domain objects (`Bank`, `Agent`) to the `TransactionProcessor` and `ITransactionHandler` represents a significant shift towards a stateless, service-oriented architecture.
++
++*   **Centralized Authority**: `TransactionProcessor` is now the sole authority for dispatching rollback requests via `rollback_transaction`. It delegates to specialized handlers, removing the need for agents to know how to reverse transactions.
++*   **Protocol Enforcement**: The `ITransactionHandler` protocol now explicitly includes `rollback(tx, context) -> bool`. This enforces that any new transaction type MUST consider reversibility during design.
++*   **Fail-Safe Strategy**: Handlers for complex sagas (Housing, Asset Transfer) now have explicit rollback stubs that log critical warnings rather than failing silently or attempting dangerous partial reversals. This highlights areas for future "Reverse Saga" implementation.
++
++### Analytics Purity & DTO Enforcement
++The `AnalyticsSystem` has been refactored to strictly consume DTOs (`HouseholdSnapshotDTO`, `FirmStateDTO`) instead of accessing agent state directly.
++
++*   **State Isolation**: The analytics pipeline no longer calls `get_assets_by_currency()` or other dynamic methods on agents. This prevents "Observer Effect" where analytics could theoretically mutate state or trigger lazy loading side-effects.
++*   **Type Safety**: Explicit type checking (`isinstance(Household)`) and DTO construction ensures that the data shape is guaranteed before processing.
++
++## 2. Regression Analysis
++
++During the implementation, the following regressions/issues were identified and resolved:
++
++1.  **Analytics Purity Violation**:
++    *   **Issue**: `AnalyticsSystem` was calling `agent.get_assets_by_currency()` directly.
++    *   **Fix**: Refactored `aggregate_tick_data` to instantiate `HouseholdSnapshotDTO` or `FirmStateDTO` and extract assets from there. Added `tests/unit/simulation/systems/test_analytics_system_purity.py` to enforce this constraint (verified by asserting `get_assets_by_currency` is NOT called).
++
++2.  **Missing `IndustryDomain` Import**:
++    *   **Issue**: `modules/market/api.py` failed to import `IndustryDomain`, causing `NameError` during tests.
++    *   **Fix**: Added `from modules.common.enums import IndustryDomain` to `modules/market/api.py`.
++
++3.  **Test Environment Dependencies**:
++    *   **Issue**: `pytest`, `pydantic`, `pyyaml`, `joblib`, `scikit-learn` were missing in the environment.
++    *   **Fix**: Installed missing dependencies to enable verification scripts.
++
++## 3. Test Evidence
++
++### Unit Verification: Analytics Purity
++The new test `tests/unit/simulation/systems/test_analytics_system_purity.py` confirms that direct access is forbidden and DTOs are used.
++
++```text
++tests/unit/simulation/systems/test_analytics_system_purity.py::TestAnalyticsSystemPurity::test_aggregate_tick_data_uses_snapshots_only PASSED [100%]
++```
++
++### Operational Forensics
++`scripts/operation_forensics.py` ran successfully, indicating the system is stable and capable of running a 60-tick simulation with the new Transaction Processor logic.
++
++```text
++Initializing Operation Forensics (STRESS TEST: Asset=50.0 for 60 ticks)...
++...
++Tick 60/60 complete...
++💾 Raw diagnostic logs saved to logs/diagnostic_raw.csv
++Simulation Complete. Analyzing 0 deaths...
++📄 Forensic report saved to reports/AUTOPSY_REPORT.md
++```
++
++(Note: An existing M2 delta issue persists, as noted in Tech Debt Ledger, but no new crashes or regressions were introduced by the rollback refactor).
+diff --git a/modules/market/api.py b/modules/market/api.py
+index 94129600..1c447f04 100644
+--- a/modules/market/api.py
++++ b/modules/market/api.py
+@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
+ from modules.finance.dtos import MoneyDTO
+ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+ from modules.common.interfaces import IPropertyOwner
++from modules.common.enums import IndustryDomain
+ from modules.finance.api import IFinancialAgent
+ from modules.market.safety_dtos import PriceLimitConfigDTO, ValidationResultDTO
+ 
+diff --git a/modules/market/handlers/housing_transaction_handler.py b/modules/market/handlers/housing_transaction_handler.py
+index 794ce15a..5f374bfa 100644
+--- a/modules/market/handlers/housing_transaction_handler.py
++++ b/modules/market/handlers/housing_transaction_handler.py
+@@ -270,3 +270,13 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+                     unit.occupant_id = buyer.id
+                     buyer.residing_property_id = unit_id
+                     buyer.is_homeless = False
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses a committed housing transaction.
++        CRITICAL: This is a high-risk operation involving mortgages, liens, and ownership.
++        Currently not supported for post-commit rollback.
++        Saga compensation logic handles failures *during* execution.
++        """
++        context.logger.critical(f"Rollback requested for COMPITTED Housing Transaction {tx.id}. Not supported due to Saga complexity.")
++        return False
+diff --git a/reports/diagnostic_refined.md b/reports/diagnostic_refined.md
+index 32123cc9..2ad53deb 100644
+--- a/reports/diagnostic_refined.md
++++ b/reports/diagnostic_refined.md
+@@ -13,116 +13,135 @@ Critical events extracted for Gemini analysis.
+ - **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+ - **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+ - **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+-- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 243820964, Expected: 862860964, Delta: -619040000
+-- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 443772051, Expected: 1062862051, Delta: -619090000
+-- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 698419579, Expected: 1517476043, Delta: -819056464
+-- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 898252002, Expected: 1852588880, Delta: -954336878
+-- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1097321735, Expected: 2101511138, Delta: -1004189403
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 828, Req: 17205.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 828, Req: 27402.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1737970, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1737970, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1737970, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1737970, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1737970, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1737970, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1737970, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1737970, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1737970, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1737970, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1737970, Req: 5000000.
+-- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1218771989, Expected: 2373024253, Delta: -1154252264
+-- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1418437080, Expected: 2770862121, Delta: -1352425041
+-- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1618107928, Expected: 2970582969, Delta: -1352475041
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1407094, Req: 5000000.
+-- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1638920256, Expected: 3181638884, Delta: -1542718628
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1749385, Req: 5000000.
+-- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1650299326, Expected: 3401338920, Delta: -1751039594
+-- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1448194198, Expected: 3671077048, Delta: -2222882850
+-- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1652820310, Expected: 3875758905, Delta: -2222938595
+-- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1857398785, Expected: 4229891083, Delta: -2372492298
+-- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1807983012, Expected: 4494537811, Delta: -2686554799
+-- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2012514275, Expected: 4704861788, Delta: -2692347513
+-- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2216997245, Expected: 5092829820, Delta: -2875832575
+-- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2421431937, Expected: 5318398026, Delta: -2896966089
+-- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2625818855, Expected: 5706226943, Delta: -3080408088
+-- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2830156529, Expected: 5931656373, Delta: -3101499844
+-- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3039445686, Expected: 6324345275, Delta: -3284899589
+-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3248688085, Expected: 6559638025, Delta: -3310949940
+-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3457882109, Expected: 6952194402, Delta: -3494312293
+-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3667027990, Expected: 7187353153, Delta: -3520325163
+-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3876122928, Expected: 7579774894, Delta: -3703651966
+-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4085167717, Expected: 7814796204, Delta: -3729628487
+-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4299107909, Expected: 8212081757, Delta: -3912973848
+-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4513044996, Expected: 8456909379, Delta: -3943864383
+-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4726925063, Expected: 8854102528, Delta: -4127177465
+-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 123 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+-  - Details: agent_id=123
+-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4940794054, Expected: 9098821229, Delta: -4158027175
+-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5154440498, Expected: 9495956171, Delta: -4341515673
++- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 239949894, Expected: 858989894, Delta: -619040000
++- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 239949894, Expected: 858989894, Delta: -619040000
++- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 439901749, Expected: 1058991749, Delta: -619090000
++- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 439901749, Expected: 1058991749, Delta: -619090000
++- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 639802542, Expected: 1458857066, Delta: -819054524
++- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 639802542, Expected: 1458857066, Delta: -819054524
++- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 839649474, Expected: 1658753998, Delta: -819104524
++- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 839649474, Expected: 1658753998, Delta: -819104524
++- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1038483644, Expected: 2058453087, Delta: -1019969443
++- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1038483644, Expected: 2058453087, Delta: -1019969443
++- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1238247815, Expected: 2258267258, Delta: -1020019443
++- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1238247815, Expected: 2258267258, Delta: -1020019443
++- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1437965556, Expected: 2656800100, Delta: -1218834544
++- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1437965556, Expected: 2656800100, Delta: -1218834544
++- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1637637690, Expected: 2857478760, Delta: -1219841070
++- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1637637690, Expected: 2857478760, Delta: -1219841070
++- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1842264370, Expected: 3260874938, Delta: -1418610568
++- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1842264370, Expected: 3260874938, Delta: -1418610568
++- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2046843847, Expected: 3471414489, Delta: -1424570642
++- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2046843847, Expected: 3471414489, Delta: -1424570642
++- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2251376908, Expected: 3874669856, Delta: -1623292948
++- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2251376908, Expected: 3874669856, Delta: -1623292948
++- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2326283641, Expected: 4169245381, Delta: -1842961740
++- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2326283641, Expected: 4169245381, Delta: -1842961740
++- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2530746461, Expected: 4454554615, Delta: -1923808154
++- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2530746461, Expected: 4454554615, Delta: -1923808154
++- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2543563829, Expected: 4744072404, Delta: -2200508575
++- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2543563829, Expected: 4744072404, Delta: -2200508575
++- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2524209436, Expected: 5028585302, Delta: -2504375866
++- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2524209436, Expected: 5028585302, Delta: -2504375866
++- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2728611940, Expected: 5318614003, Delta: -2590002063
++- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2728611940, Expected: 5318614003, Delta: -2590002063
++- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2937967537, Expected: 5635083302, Delta: -2697115765
++- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2937967537, Expected: 5635083302, Delta: -2697115765
++- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3147276256, Expected: 5946735850, Delta: -2799459594
++- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3147276256, Expected: 5946735850, Delta: -2799459594
++- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3019951972, Expected: 6226124132, Delta: -3206172160
++- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3019951972, Expected: 6226124132, Delta: -3206172160
++- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2856730395, Expected: 6500536110, Delta: -3643805715
++- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2856730395, Expected: 6500536110, Delta: -3643805715
++- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3066037221, Expected: 6709892936, Delta: -3643855715
++- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3066037221, Expected: 6709892936, Delta: -3643855715
++- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2824438557, Expected: 6979301535, Delta: -4154862978
++- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2824438557, Expected: 6979301535, Delta: -4154862978
++- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3033740715, Expected: 7188653693, Delta: -4154912978
++- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3033740715, Expected: 7188653693, Delta: -4154912978
++- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2740443340, Expected: 7453065149, Delta: -4712621809
++- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2740443340, Expected: 7453065149, Delta: -4712621809
++- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2949749094, Expected: 7662420903, Delta: -4712671809
++- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2949749094, Expected: 7662420903, Delta: -4712671809
++- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3159007958, Expected: 7871729767, Delta: -4712721809
++- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3159007958, Expected: 7871729767, Delta: -4712721809
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3652631, Req: 5000000.
++- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3363219820, Expected: 8084491723, Delta: -4721271903
++- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3363219820, Expected: 8084491723, Delta: -4721271903
++- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3572386648, Expected: 8489423127, Delta: -4917036479
++- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3572386648, Expected: 8489423127, Delta: -4917036479
++- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3781505300, Expected: 8712045757, Delta: -4930540457
++- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3781505300, Expected: 8712045757, Delta: -4930540457
++- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3990270492, Expected: 9116834888, Delta: -5126564396
++- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3990270492, Expected: 9116834888, Delta: -5126564396
+ - **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 120 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+   - Details: agent_id=120
+-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5373186855, Expected: 9745416653, Delta: -4372229798
+-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5591914351, Expected: 10152618516, Delta: -4560704165
+-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5810578674, Expected: 10401984159, Delta: -4591405485
+-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5057886188, Expected: 10660978223, Delta: -5603092035
+-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5271555247, Expected: 10874920768, Delta: -5603365521
+-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5490203919, Expected: 11093818801, Delta: -5603614882
+-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5708775279, Expected: 11312671403, Delta: -5603896124
+-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5927264222, Expected: 11597220441, Delta: -5669956219
+-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6145664855, Expected: 11968997605, Delta: -5823332750
+-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5156642940, Expected: 12222958559, Delta: -7066315619
+-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5375084745, Expected: 12441869120, Delta: -7066784375
+-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5593414158, Expected: 12660734357, Delta: -7067320199
+-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5811622981, Expected: 12879556837, Delta: -7067933856
+-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6029698668, Expected: 13098336509, Delta: -7068637841
+-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6247626712, Expected: 13317073372, Delta: -7069446660
+-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6465336485, Expected: 13683722614, Delta: -7218386129
+-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6687859964, Expected: 13978002161, Delta: -7290142197
+-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6910224995, Expected: 14354514262, Delta: -7444289267
+-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7132353736, Expected: 14648707260, Delta: -7516353524
+-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7354215623, Expected: 15025081358, Delta: -7670865735
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3214641, Req: 5000000.
++- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4199352852, Expected: 9339057604, Delta: -5139704752
++- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4199352852, Expected: 9339057604, Delta: -5139704752
++- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4413380897, Expected: 9749119788, Delta: -5335738891
++- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4413380897, Expected: 9749119788, Delta: -5335738891
++- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4627362667, Expected: 9981196266, Delta: -5353833599
++- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4627362667, Expected: 9981196266, Delta: -5353833599
++- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4841297915, Expected: 10391119313, Delta: -5549821398
++- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4841297915, Expected: 10391119313, Delta: -5549821398
++- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5055186749, Expected: 10623056249, Delta: -5567869500
++- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5055186749, Expected: 10623056249, Delta: -5567869500
++- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5268978062, Expected: 11032839917, Delta: -5763861855
++- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5268978062, Expected: 11032839917, Delta: -5763861855
++- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 123 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
++  - Details: agent_id=123
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2991464, Req: 5000000.
++- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5482825761, Expected: 11264628003, Delta: -5781802242
++- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5482825761, Expected: 11264628003, Delta: -5781802242
++- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5701567255, Expected: 11679418709, Delta: -5977851454
++- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5701567255, Expected: 11679418709, Delta: -5977851454
++- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5920313395, Expected: 11921007659, Delta: -6000694264
++- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5920313395, Expected: 11921007659, Delta: -6000694264
+ - **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 121 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+   - Details: agent_id=121
+-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7577102975, Expected: 15319184493, Delta: -7742081518
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 822, Req: 917.
+-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6106807286, Expected: 15567989798, Delta: -9461182512
+-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6324691315, Expected: 15786746743, Delta: -9462055428
+-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6542466642, Expected: 16005459351, Delta: -9462992709
+-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6765114421, Expected: 16229177503, Delta: -9464063082
+-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 122 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage, Unpaid Tax
++- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 122 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+   - Details: agent_id=122
+-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6988747830, Expected: 16452850912, Delta: -9464103082
+-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7212275369, Expected: 16676479786, Delta: -9464204417
+-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7435809527, Expected: 16900063944, Delta: -9464254417
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4740076, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4740076, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4740076, Req: 5000000.
+-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7644298968, Expected: 17108603385, Delta: -9464304417
+-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7872644032, Expected: 17530858777, Delta: -9658214745
+\ No newline at end of file
++- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6139133971, Expected: 12335810762, Delta: -6196676791
++- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6139133971, Expected: 12335810762, Delta: -6196676791
++- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6357901068, Expected: 12577486265, Delta: -6219585197
++- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6357901068, Expected: 12577486265, Delta: -6219585197
++- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6576563649, Expected: 12992148771, Delta: -6415585122
++- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6576563649, Expected: 12992148771, Delta: -6415585122
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2820831, Req: 5000000.
++- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6795182486, Expected: 13233632270, Delta: -6438449784
++- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6795182486, Expected: 13233632270, Delta: -6438449784
++- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7018808548, Expected: 13653163568, Delta: -6634355020
++- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7018808548, Expected: 13653163568, Delta: -6634355020
++- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5970395316, Expected: 13912051527, Delta: -7941656211
++- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5970395316, Expected: 13912051527, Delta: -7941656211
++- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6189183497, Expected: 14130889708, Delta: -7941706211
++- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6189183497, Expected: 14130889708, Delta: -7941706211
++- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6407927909, Expected: 14349684120, Delta: -7941756211
++- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6407927909, Expected: 14349684120, Delta: -7941756211
++- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6631628562, Expected: 14573434773, Delta: -7941806211
++- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6631628562, Expected: 14573434773, Delta: -7941806211
++- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6855182551, Expected: 14797140676, Delta: -7941958125
++- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6855182551, Expected: 14797140676, Delta: -7941958125
++- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7078793733, Expected: 15020801858, Delta: -7942008125
++- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7078793733, Expected: 15020801858, Delta: -7942008125
++- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7302309227, Expected: 15315754083, Delta: -8013444856
++- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7302309227, Expected: 15315754083, Delta: -8013444856
++- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7525830966, Expected: 15691504666, Delta: -8165673700
++- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7525830966, Expected: 15691504666, Delta: -8165673700
++- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7749307988, Expected: 15986373702, Delta: -8237065714
++- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7749307988, Expected: 15986373702, Delta: -8237065714
++- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7977740306, Expected: 16366990160, Delta: -8389249854
++- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7977740306, Expected: 16366990160, Delta: -8389249854
++- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8205923098, Expected: 16671723096, Delta: -8465799998
++- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8205923098, Expected: 16671723096, Delta: -8465799998
++- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8434264073, Expected: 17051998738, Delta: -8617734665
++- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8434264073, Expected: 17051998738, Delta: -8617734665
++- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8662559369, Expected: 17356798499, Delta: -8694239130
++- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8662559369, Expected: 17356798499, Delta: -8694239130
++- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8890808997, Expected: 17736937126, Delta: -8846128129
++- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8890808997, Expected: 17736937126, Delta: -8846128129
++- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9124012965, Expected: 18046599899, Delta: -8922586934
++- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9124012965, Expected: 18046599899, Delta: -8922586934
++- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9357170280, Expected: 18436599560, Delta: -9079429280
++- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9357170280, Expected: 18436599560, Delta: -9079429280
+\ No newline at end of file
+diff --git a/simulation.lock b/simulation.lock
+index e4bc9aea..0595e367 100644
+--- a/simulation.lock
++++ b/simulation.lock
+@@ -1 +1 @@
+-20236
+\ No newline at end of file
++8774
+\ No newline at end of file
+diff --git a/simulation/systems/analytics_system.py b/simulation/systems/analytics_system.py
+index bd8dba4b..1a71db34 100644
+--- a/simulation/systems/analytics_system.py
++++ b/simulation/systems/analytics_system.py
+@@ -1,4 +1,4 @@
+-from typing import List, Tuple, TYPE_CHECKING
++from typing import List, Tuple, TYPE_CHECKING, Dict, Any
+ import logging
+ from simulation.dtos import AgentStateData, TransactionData, EconomicIndicatorData, MarketHistoryData
+ from simulation.core_agents import Household
+@@ -35,35 +35,33 @@ class AnalyticsSystem:
+             if not getattr(agent, "is_active", False):
+                 continue
+ 
+-            # Base DTO construction
+-            # Use getattr for safety, though BaseAgent should have these
+-            assets = agent.get_assets_by_currency() if hasattr(agent, 'get_assets_by_currency') else {DEFAULT_CURRENCY: 0.0}
+-
+-            agent_dto = AgentStateData(
+-                run_id=run_id,
+-                time=time,
+-                agent_id=agent.id,
+-                agent_type="",
+-                assets=assets,
+-                is_active=agent.is_active,
+-                generation=getattr(agent, "generation", 0),
+-            )
++            # Initialize variables
++            assets: Dict[str, Any] = {DEFAULT_CURRENCY: 0.0}
++            agent_type = ""
++            generation = 0
+ 
++            # Specific DTO Logic per Agent Type
+             if isinstance(agent, Household):
+-                agent_dto.agent_type = "household"
++                agent_type = "household"
+                 # Phase 9.1 Refactor: Use snapshot DTO for safe observation
+                 snapshot = agent.create_snapshot_dto()
+                 
++                # Use assets from snapshot
++                assets = snapshot.econ_state.assets
++
+                 # SnapshotDTO uses full names: econ_state, bio_state
+-                agent_dto.is_employed = snapshot.econ_state.is_employed
+-                agent_dto.employer_id = snapshot.econ_state.employer_id
++                is_employed = snapshot.econ_state.is_employed
++                employer_id = snapshot.econ_state.employer_id
+ 
+                 # Needs
+-                agent_dto.needs_survival = snapshot.bio_state.needs.get("survival", 0)
+-                agent_dto.needs_labor = snapshot.bio_state.needs.get("labor_need", 0)
++                needs_survival = snapshot.bio_state.needs.get("survival", 0)
++                needs_labor = snapshot.bio_state.needs.get("labor_need", 0)
+ 
+                 # Inventory (Using public protocol)
+-                agent_dto.inventory_food = snapshot.econ_state.inventory.get("food", 0.0)
++                inventory_food = snapshot.econ_state.inventory.get("food", 0.0)
++
++                # Generation
++                generation = snapshot.bio_state.generation
+ 
+                 # Time Allocation - world_state.household_time_allocation should also come from DTO if possible
+                 # For now keeping it as it's a world state property, but checking if it's in snapshot
+@@ -73,24 +71,73 @@ class AnalyticsSystem:
+                 shopping_hours = getattr(agent.config, "SHOPPING_HOURS", 2.0)
+                 hours_per_tick = getattr(agent.config, "HOURS_PER_TICK", 24.0)
+ 
+-                agent_dto.time_leisure = time_leisure
+-                agent_dto.time_worked = max(0.0, hours_per_tick - time_leisure - shopping_hours)
++                time_worked = max(0.0, hours_per_tick - time_leisure - shopping_hours)
++
++                agent_dto = AgentStateData(
++                    run_id=run_id,
++                    time=time,
++                    agent_id=agent.id,
++                    agent_type=agent_type,
++                    assets=assets,
++                    is_active=agent.is_active,
++                    generation=generation,
++                    is_employed=is_employed,
++                    employer_id=employer_id,
++                    needs_survival=needs_survival,
++                    needs_labor=needs_labor,
++                    inventory_food=inventory_food,
++                    time_leisure=time_leisure,
++                    time_worked=time_worked
++                )
+ 
+             elif isinstance(agent, Firm):
+-                agent_dto.agent_type = "firm"
++                agent_type = "firm"
+                 # Phase 9.1 Refactor: Use state DTO for safe observation
+                 state_dto = agent.get_state_dto()
+                 
+-                agent_dto.inventory_food = state_dto.production.inventory.get("food", 0.0)
+-                agent_dto.current_production = state_dto.production.current_production
+-                agent_dto.num_employees = len(state_dto.hr.employees)
++                # Use assets from state_dto (balance)
++                assets = {DEFAULT_CURRENCY: state_dto.finance.balance}
++
++                inventory_food = state_dto.production.inventory.get("food", 0.0)
++                current_production = state_dto.production.current_production
++                num_employees = len(state_dto.hr.employees)
+                 
+                 # Metadata extraction
+-                agent_dto.generation = getattr(state_dto, "generation", 0)
++                generation = getattr(state_dto, "generation", getattr(agent, "generation", 0))
++
++                agent_dto = AgentStateData(
++                    run_id=run_id,
++                    time=time,
++                    agent_id=agent.id,
++                    agent_type=agent_type,
++                    assets=assets,
++                    is_active=agent.is_active,
++                    generation=generation,
++                    inventory_food=inventory_food,
++                    current_production=current_production,
++                    num_employees=num_employees
++                )
+ 
+             else:
+-                # Other agents (Bank, Gov, etc)
+-                agent_dto.agent_type = agent.__class__.__name__.lower()
++                # Other agents (Bank, Gov, etc) - Fallback
++                agent_type = agent.__class__.__name__.lower()
++
++                # Base DTO construction
++                # Use getattr for safety, though BaseAgent should have these
++                if hasattr(agent, 'get_assets_by_currency'):
++                    assets = agent.get_assets_by_currency()
++
++                generation = getattr(agent, "generation", 0)
++
++                agent_dto = AgentStateData(
++                    run_id=run_id,
++                    time=time,
++                    agent_id=agent.id,
++                    agent_type=agent_type,
++                    assets=assets,
++                    is_active=agent.is_active,
++                    generation=generation,
++                )
+ 
+             agent_states.append(agent_dto)
+ 
+diff --git a/simulation/systems/api.py b/simulation/systems/api.py
+index 195001d3..50f837b9 100644
+--- a/simulation/systems/api.py
++++ b/simulation/systems/api.py
+@@ -308,3 +308,20 @@ class ITransactionHandler(ABC):
+                   the transaction aborted.
+         """
+         raise NotImplementedError
++
++    @abstractmethod
++    def rollback(self, tx: 'Transaction', context: 'TransactionContext') -> bool:
++        """
++        Reverses the effects of a previously executed transaction.
++
++        This method should be idempotent and handle cases where the transaction
++        partially failed or was fully successful but needs reversal.
++
++        Args:
++            tx: The Transaction object to be rolled back.
++            context: An immutable context object providing access to simulation state.
++
++        Returns:
++            bool: True if the rollback was successful, False otherwise.
++        """
++        raise NotImplementedError
+diff --git a/simulation/systems/handlers/asset_transfer_handler.py b/simulation/systems/handlers/asset_transfer_handler.py
+index 8fc58c50..e9e81564 100644
+--- a/simulation/systems/handlers/asset_transfer_handler.py
++++ b/simulation/systems/handlers/asset_transfer_handler.py
+@@ -86,3 +86,12 @@ class AssetTransferHandler(ITransactionHandler):
+                 context.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
+             else:
+                 context.stock_market.update_shareholder(seller.id, firm_id, 0.0)
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses the asset transfer.
++        Ideally should reverse both money and asset ownership.
++        Currently not implemented for complex asset transfers.
++        """
++        context.logger.warning(f"Rollback requested for AssetTransferHandler (ID: {getattr(tx, 'id', 'unknown')}). Not supported.")
++        return False
+diff --git a/simulation/systems/handlers/emergency_handler.py b/simulation/systems/handlers/emergency_handler.py
+index 8ed93dcf..92ca6761 100644
+--- a/simulation/systems/handlers/emergency_handler.py
++++ b/simulation/systems/handlers/emergency_handler.py
+@@ -51,3 +51,10 @@ class EmergencyTransactionHandler(ITransactionHandler):
+                     })
+ 
+         return success
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses the effects of an emergency purchase.
++        """
++        context.logger.warning(f"Rollback requested for EmergencyTransactionHandler (ID: {getattr(tx, 'id', 'unknown')}). Not supported.")
++        return False
+diff --git a/simulation/systems/handlers/escheatment_handler.py b/simulation/systems/handlers/escheatment_handler.py
+index 53fb4513..963e9976 100644
+--- a/simulation/systems/handlers/escheatment_handler.py
++++ b/simulation/systems/handlers/escheatment_handler.py
+@@ -65,3 +65,18 @@ class EscheatmentHandler(ITransactionHandler):
+             ))
+ 
+         return success
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses an escheatment transaction.
++        Transfers funds back from Government to the original owner.
++        """
++        if context.government:
++            amount = tx.total_pennies
++            # Reverse: Government pays Agent
++            # But Agent might be dead/inactive. EstateRegistry handles this.
++            # We need to find the agent again.
++            agent = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
++            if agent:
++                 return context.settlement_system.transfer(context.government, agent, amount, f"rollback_escheatment:{tx.id}") is not None
++        return False
+diff --git a/simulation/systems/handlers/financial_handler.py b/simulation/systems/handlers/financial_handler.py
+index a720b7f3..a0986882 100644
+--- a/simulation/systems/handlers/financial_handler.py
++++ b/simulation/systems/handlers/financial_handler.py
+@@ -87,3 +87,30 @@ class FinancialTransactionHandler(ITransactionHandler):
+                  buyer.record_expense(int(trade_value), tx.currency)
+ 
+         return success is not None
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses financial transactions by transferring funds back.
++        """
++        tx_type = tx.transaction_type
++        trade_value = tx.total_pennies
++
++        # Determine original Source (Buyer) and Destination (Seller/Gov)
++        # Rollback: Destination pays Source
++
++        source = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
++        destination = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
++
++        if tx_type == "tax":
++            destination = context.government
++
++        if not source or not destination:
++            context.logger.error(f"Rollback failed for {tx.id}: Agent missing. Source: {tx.buyer_id}, Dest: {tx.seller_id}")
++            return False
++
++        success = context.settlement_system.transfer(destination, source, int(trade_value), f"rollback:{tx_type}:{tx.id}")
++
++        if success and tx_type == "loan_repayment":
++            context.logger.warning(f"Rollback for loan_repayment {tx.id} executed (money returned), but loan ledger NOT updated (principal not restored).")
++
++        return success is not None
+diff --git a/simulation/systems/handlers/goods_handler.py b/simulation/systems/handlers/goods_handler.py
+index c76bd20e..a84a14f0 100644
+--- a/simulation/systems/handlers/goods_handler.py
++++ b/simulation/systems/handlers/goods_handler.py
+@@ -174,3 +174,38 @@ class GoodsTransactionHandler(ITransactionHandler):
+             # Track Consumption Expenditure (Financial)
+             if isinstance(buyer, IConsumptionTracker):
+                 buyer.add_consumption_expenditure(buyer_total_cost, item_id=tx.item_id)
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses a goods transaction.
++        Attempts to reverse money flow and inventory.
++        """
++        trade_value = tx.total_pennies
++
++        source = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
++        destination = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
++
++        if not source or not destination:
++            return False
++
++        # 1. Reverse Money (Seller -> Buyer)
++        success = context.settlement_system.transfer(destination, source, int(trade_value), f"rollback_goods:{tx.item_id}:{tx.id}")
++
++        # 2. Reverse Tax (Gov -> Buyer)
++        # Note: We need to know how much tax was paid. This information is ideally in metadata or recalculated.
++        # Recalculating intents:
++        if context.taxation_system:
++             intents = context.taxation_system.calculate_tax_intents(tx, source, destination, context.government, context.market_data)
++             for intent in intents:
++                 context.settlement_system.transfer(context.government, source, int(intent.amount), f"rollback_tax:{intent.reason}:{tx.id}")
++
++        # 3. Reverse Inventory (Buyer -> Seller)
++        # Only if physical good
++        # Assuming we can just move it back.
++        # This part is risky if buyer consumed it.
++        # For now, we only reverse money as "Goods" rollback is usually for failed atomic sets before consumption triggers.
++        # If consumption triggered, we might need to "un-consume" which is hard.
++
++        context.logger.info(f"Rollback for Goods {tx.id} executed (Financial only). Inventory reversal skipped.")
++
++        return success is not None
+diff --git a/simulation/systems/handlers/government_spending_handler.py b/simulation/systems/handlers/government_spending_handler.py
+index 5a81618a..f3761847 100644
+--- a/simulation/systems/handlers/government_spending_handler.py
++++ b/simulation/systems/handlers/government_spending_handler.py
+@@ -21,3 +21,21 @@ class GovernmentSpendingHandler(ITransactionHandler):
+         )
+ 
+         return success is not None
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses government spending.
++        """
++        trade_value = tx.total_pennies
++
++        # Original: Gov (Buyer) -> Agent (Seller)
++        # Rollback: Agent (Seller) -> Gov (Buyer)
++
++        source = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
++        destination = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
++
++        if not source or not destination:
++             return False
++
++        success = context.settlement_system.transfer(destination, source, int(trade_value), f"rollback_gov_spend:{tx.transaction_type}:{tx.id}")
++        return success is not None
+diff --git a/simulation/systems/handlers/inheritance_handler.py b/simulation/systems/handlers/inheritance_handler.py
+index 4b9911b2..a17c72ac 100644
+--- a/simulation/systems/handlers/inheritance_handler.py
++++ b/simulation/systems/handlers/inheritance_handler.py
+@@ -82,3 +82,53 @@ class InheritanceHandler(ITransactionHandler):
+             return success
+ 
+         return True
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses inheritance distribution.
++        Heirs pay back the Estate.
++        """
++        deceased_agent_id = tx.buyer_id
++        estate_agent = context.agents.get(deceased_agent_id) or context.inactive_agents.get(deceased_agent_id)
++
++        if not estate_agent:
++             return False
++
++        heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
++        if not heir_ids:
++             return True
++
++        # Reconstruct amounts (assuming consistent state or using total_pennies from tx if accurate)
++        # Note: handle() uses current wallet balance. If we assume rollback happens immediately,
++        # we can't easily know exactly what was distributed unless we stored it in tx.metadata['distribution'].
++        # However, we can try to reverse using total_pennies if that was populated correctly.
++        # But handle() calculates assets_val dynamically and doesn't update tx.total_pennies necessarily?
++        # Let's assume for now that we can't perfectly rollback without detailed logs,
++        # so we log warning and fail safe, OR we assume total_pennies in tx is the amount.
++
++        amount = tx.total_pennies
++        if amount <= 0:
++             return True
++
++        count = len(heir_ids)
++        base_amount = amount // count
++        distributed_sum = 0
++
++        # Reverse transfers
++        success_all = True
++
++        for i, h_id in enumerate(heir_ids):
++             heir = context.agents.get(h_id)
++             if not heir: continue
++
++             repay_amount = base_amount
++             if i == count - 1:
++                 repay_amount = amount - distributed_sum
++
++             distributed_sum += base_amount
++
++             if repay_amount > 0:
++                 if not context.settlement_system.transfer(heir, estate_agent, repay_amount, f"rollback_inheritance:{tx.id}"):
++                      success_all = False
++
++        return success_all
+diff --git a/simulation/systems/handlers/labor_handler.py b/simulation/systems/handlers/labor_handler.py
+index b86d993d..4d125f69 100644
+--- a/simulation/systems/handlers/labor_handler.py
++++ b/simulation/systems/handlers/labor_handler.py
+@@ -180,3 +180,75 @@ class LaborTransactionHandler(ITransactionHandler):
+                 research_skill = seller.skills.get("research", Skill("research")).value
+                 multiplier = getattr(context.config_module, "RND_PRODUCTIVITY_MULTIPLIER", 0.0)
+                 buyer.productivity_factor += (research_skill * multiplier)
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses labor transactions.
++        For wages, it attempts to reverse the payment.
++        For hiring, it does not currently fire the employee but logs a warning.
++        """
++        if tx.transaction_type == "HIRE":
++             context.logger.warning(f"Rollback requested for HIRE {tx.id}. Reversing hiring state is not implemented.")
++             return False
++
++        # Wage Reversal
++        trade_value = tx.total_pennies
++
++        # Original: Firm (Buyer) -> Employee (Seller) + Gov
++        # Rollback: Employee -> Firm, Gov -> Firm
++
++        firm = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
++        employee = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
++
++        if not firm or not employee:
++            return False
++
++        # 1. Reverse Net Wage
++        # We don't know exact net wage easily without recalculating tax.
++        # But we can try to reverse what we can.
++        # If we use settle_atomic logic from handle, we know structure.
++        # But we need exact amounts.
++        # Assuming we can just reverse the total_pennies from Employee to Firm?
++        # No, total_pennies is Gross Wage. Employee received Net. Gov received Tax.
++
++        # Recalculate Tax to know split
++        if context.taxation_system:
++             intents = context.taxation_system.calculate_tax_intents(tx, firm, employee, context.government, context.market_data)
++
++             seller_net_amount = trade_value
++             seller_tax = 0
++             buyer_tax = 0
++
++             for intent in intents:
++                 amount = int(intent.amount)
++                 if intent.payer_id == employee.id:
++                     seller_net_amount -= amount
++                     seller_tax += amount
++                 elif intent.payer_id == firm.id:
++                     buyer_tax += amount
++
++             # Reverse Employee -> Firm (Net Wage)
++             if seller_net_amount > 0:
++                 context.settlement_system.transfer(employee, firm, seller_net_amount, f"rollback_wage_net:{tx.id}")
++
++             # Reverse Gov -> Firm (Buyer Tax)
++             # Reverse Gov -> Employee -> Firm? Or Gov -> Firm directly for withholding?
++             # Withholding was deducted from Seller. So Gov should pay Seller?
++             # But if we rollback, Seller pays back Net to Firm.
++             # Gov pays back Withholding to Firm (since Firm paid Gross - Withholding + Withholding = Gross).
++             # Wait.
++             # Firm paid: Net to Seller + Withholding to Gov + EmployerTax to Gov.
++             # To rollback:
++             # Seller pays Net to Firm.
++             # Gov pays Withholding to Firm.
++             # Gov pays EmployerTax to Firm.
++
++             if seller_tax > 0:
++                 context.settlement_system.transfer(context.government, firm, seller_tax, f"rollback_wage_withholding:{tx.id}")
++
++             if buyer_tax > 0:
++                 context.settlement_system.transfer(context.government, firm, buyer_tax, f"rollback_wage_emptax:{tx.id}")
++
++             return True
++
++        return False
+diff --git a/simulation/systems/handlers/monetary_handler.py b/simulation/systems/handlers/monetary_handler.py
+index 4d28f9ba..4a6a240c 100644
+--- a/simulation/systems/handlers/monetary_handler.py
++++ b/simulation/systems/handlers/monetary_handler.py
+@@ -133,3 +133,12 @@ class MonetaryTransactionHandler(ITransactionHandler):
+                     buyer.add_property(unit_id)
+         except (IndexError, ValueError):
+             pass
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses the effects of a monetary transaction.
++        For simple transfers, it attempts to reverse the funds.
++        For asset transfers, it logs a warning as complex rollback is risky.
++        """
++        context.logger.warning(f"Rollback requested for MonetaryTransaction {tx.transaction_type} (ID: {getattr(tx, 'id', 'unknown')}). Not fully implemented.")
++        return False
+diff --git a/simulation/systems/handlers/public_manager_handler.py b/simulation/systems/handlers/public_manager_handler.py
+index b4cb47ef..c509d054 100644
+--- a/simulation/systems/handlers/public_manager_handler.py
++++ b/simulation/systems/handlers/public_manager_handler.py
+@@ -143,3 +143,26 @@ class PublicManagerTransactionHandler(ITransactionHandler):
+                          context.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
+              except:
+                  pass
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses a Public Manager sale.
++        """
++        pm = context.public_manager
++        if not pm: return False
++
++        trade_value = tx.total_pennies
++
++        buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
++        if not buyer: return False
++
++        # Reverse Money: PM -> Buyer
++        success = context.settlement_system.transfer(pm, buyer, int(trade_value), f"rollback_pm_sale:{tx.id}")
++
++        # Reverse Inventory: Buyer -> PM
++        # If possible.
++        # PM inventory management for 'restock' via rollback is not explicitly exposed.
++        # We log warning.
++        context.logger.warning(f"Rollback for PM Sale {tx.id} executed (Financial only). Inventory restoration to PM not implemented.")
++
++        return success is not None
+diff --git a/simulation/systems/handlers/stock_handler.py b/simulation/systems/handlers/stock_handler.py
+index e7524700..ed256c63 100644
+--- a/simulation/systems/handlers/stock_handler.py
++++ b/simulation/systems/handlers/stock_handler.py
+@@ -80,3 +80,55 @@ class StockTransactionHandler(ITransactionHandler):
+             f"STOCK_TX | Buyer: {buyer.id}, Seller: {seller.id}, Firm: {firm_id}, Qty: {tx.quantity}, Price: {tx.price}",
+             extra={"tick": context.time, "tags": ["stock_market", "transaction"]}
+         )
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Reverses a stock transaction.
++        Attempts to reverse money and share ownership.
++        """
++        trade_value = tx.total_pennies
++
++        buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
++        seller = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
++
++        if not buyer or not seller:
++            return False
++
++        # 1. Reverse Money: Seller -> Buyer
++        success = context.settlement_system.transfer(seller, buyer, int(trade_value), f"rollback_stock:{tx.item_id}:{tx.id}")
++
++        if not success:
++             return False
++
++        # 2. Reverse Shares: Buyer -> Seller
++        try:
++            firm_id = int(tx.item_id.split("_")[1])
++
++            # Remove from Buyer
++            if hasattr(buyer, "portfolio"):
++                buyer.portfolio.remove(firm_id, tx.quantity)
++
++            # Add to Seller
++            if hasattr(seller, "portfolio"):
++                # Price is approximate (original trade price)
++                price_pennies = int(trade_value / tx.quantity) if tx.quantity > 0 else 0
++                seller.portfolio.add(firm_id, tx.quantity, price_pennies)
++
++            # Registry Update
++            if context.stock_market:
++                # Sync Buyer
++                if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
++                     context.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
++                else:
++                     context.stock_market.update_shareholder(buyer.id, firm_id, 0.0)
++
++                # Sync Seller
++                if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
++                    context.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
++
++            context.logger.info(f"Rollback Stock {tx.id} executed.")
++            return True
++
++        except (IndexError, ValueError):
++            context.logger.error(f"Rollback Stock {tx.id} failed: Invalid item_id.")
++            return False
+diff --git a/simulation/systems/handlers/transfer_handler.py b/simulation/systems/handlers/transfer_handler.py
+index c44b857a..9fe05798 100644
+--- a/simulation/systems/handlers/transfer_handler.py
++++ b/simulation/systems/handlers/transfer_handler.py
+@@ -12,3 +12,10 @@ class DefaultTransferHandler(ITransactionHandler):
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+         # Transaction logic is already executed. Acknowledge for ledger.
+         return True
++
++    def rollback(self, tx: Transaction, context: TransactionContext) -> bool:
++        """
++        Default transfer handler is a pass-through for already settled transactions.
++        Rollback is assumed to be handled by the caller or SettlementSystem directly.
++        """
++        return True
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index a70d1973..59d2fe9c 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -39,6 +39,47 @@ class TransactionProcessor(SystemInterface):
+         """Registers a handler for Public Manager transactions (seller check)."""
+         self._public_manager_handler = handler
+ 
++    def _build_context(self, state: SimulationState) -> TransactionContext:
++        """
++        Builds the TransactionContext from the SimulationState.
++        """
++        # Determine Public Manager from state if available
++        public_manager = getattr(state, "public_manager", None)
++
++        # Determine Bank and Central Bank from state
++        bank = getattr(state, "bank", None)
++        central_bank = getattr(state, "central_bank", None)
++
++        # Determine Taxation System (Should be in state or we create/access it?)
++        taxation_system = getattr(state, "taxation_system", None)
++        if not taxation_system:
++            if not hasattr(self, "taxation_system"):
++                # Lazy init if missing? Or rely on config.
++                from modules.government.taxation.system import TaxationSystem
++
++                self.taxation_system = TaxationSystem(self.config_module)
++            taxation_system = self.taxation_system
++
++        return TransactionContext(
++            agents=state.agents,
++            inactive_agents=getattr(state, "inactive_agents", {}),
++            government=state.primary_government,
++            settlement_system=state.settlement_system,
++            taxation_system=taxation_system,
++            stock_market=state.stock_market,
++            real_estate_units=state.real_estate_units,
++            market_data=state.market_data,
++            config_module=self.config_module,
++            logger=state.logger,
++            time=state.time,
++            bank=bank,
++            central_bank=central_bank,
++            public_manager=public_manager,
++            transaction_queue=[],  # Initialize empty queue for side-effects
++            shareholder_registry=state.shareholder_registry,
++            estate_registry=getattr(state, 'estate_registry', None)
++        )
++
+     def _handle_public_manager(self, tx: Transaction, context: TransactionContext) -> Optional[SettlementResultDTO]:
+         """
+         Handles transactions where the seller is the Public Manager.
+@@ -106,43 +147,7 @@ class TransactionProcessor(SystemInterface):
+         """
+         results: List[SettlementResultDTO] = []
+ 
+-        # 1. Build TransactionContext
+-        # Determine Public Manager from state if available
+-        public_manager = getattr(state, "public_manager", None)
+-
+-        # Determine Bank and Central Bank from state
+-        bank = getattr(state, "bank", None)
+-        central_bank = getattr(state, "central_bank", None)
+-
+-        # Determine Taxation System (Should be in state or we create/access it?)
+-        taxation_system = getattr(state, "taxation_system", None)
+-        if not taxation_system:
+-            if not hasattr(self, "taxation_system"):
+-                # Lazy init if missing? Or rely on config.
+-                from modules.government.taxation.system import TaxationSystem
+-
+-                self.taxation_system = TaxationSystem(self.config_module)
+-            taxation_system = self.taxation_system
+-
+-        context = TransactionContext(
+-            agents=state.agents,
+-            inactive_agents=getattr(state, "inactive_agents", {}),
+-            government=state.primary_government,
+-            settlement_system=state.settlement_system,
+-            taxation_system=taxation_system,
+-            stock_market=state.stock_market,
+-            real_estate_units=state.real_estate_units,
+-            market_data=state.market_data,
+-            config_module=self.config_module,
+-            logger=state.logger,
+-            time=state.time,
+-            bank=bank,
+-            central_bank=central_bank,
+-            public_manager=public_manager,
+-            transaction_queue=[],  # Initialize empty queue for side-effects
+-            shareholder_registry=state.shareholder_registry,
+-            estate_registry=getattr(state, 'estate_registry', None)
+-        )
++        context = self._build_context(state)
+ 
+         default_handler = self._handlers.get("default")
+ 
+@@ -277,3 +282,36 @@ class TransactionProcessor(SystemInterface):
+             state.transactions.extend(context.transaction_queue)
+ 
+         return results
++
++    def rollback_transaction(self, tx: Transaction, state: SimulationState) -> bool:
++        """
++        Rolls back a transaction using the registered handler.
++        """
++        context = self._build_context(state)
++
++        # Check PM Handler first (Special Routing logic from handle)
++        is_pm_seller = (
++            tx.seller_id == ID_PUBLIC_MANAGER
++            or tx.seller_id == "PUBLIC_MANAGER"
++            or tx.seller_id == -1
++        )
++        is_systemic = tx.transaction_type in [
++            "inheritance_distribution",
++            "escheatment",
++        ]
++
++        if is_pm_seller and not is_systemic and self._public_manager_handler:
++             return self._public_manager_handler.rollback(tx, context)
++
++        # Standard Dispatch
++        handler = self._handlers.get(tx.transaction_type)
++        if handler:
++            return handler.rollback(tx, context)
++
++        # Default Handler?
++        default_handler = self._handlers.get("default")
++        if default_handler:
++             return default_handler.rollback(tx, context)
++
++        state.logger.warning(f"Rollback requested but no handler found for {tx.transaction_type}")
++        return False
+diff --git a/tests/integration/test_persistence_purity.py b/tests/integration/test_persistence_purity.py
+index e1e8ab7f..12b71cf3 100644
+--- a/tests/integration/test_persistence_purity.py
++++ b/tests/integration/test_persistence_purity.py
+@@ -37,9 +37,13 @@ def test_analytics_system_purity():
+     # Mock Snapshot for Purity
+     mock_snapshot = MagicMock()
+     mock_snapshot.econ_state.inventory = {"food": 5.0}
++    mock_snapshot.econ_state.assets = {"USD": 10000}
+     mock_snapshot.econ_state.is_employed = True
+     mock_snapshot.econ_state.employer_id = 2
+     mock_snapshot.bio_state.needs = {"survival": 0.5, "labor_need": 0.2}
++    mock_snapshot.bio_state.generation = 0
++    mock_snapshot.econ_state.labor_income_this_tick_pennies = 0
++    mock_snapshot.econ_state.capital_income_this_tick_pennies = 0
+     hh.create_snapshot_dto.return_value = mock_snapshot
+ 
+     hh.config = MagicMock()
+@@ -58,6 +62,8 @@ def test_analytics_system_purity():
+     mock_firm_state.hr.employees = [1, 3] # 2 employees
+     mock_firm_state.production.inventory = {"food": 20.0}
+     mock_firm_state.production.current_production = 100.0
++    mock_firm_state.finance.balance = 500000
++    mock_firm_state.generation = 0
+     firm.get_state_dto.return_value = mock_firm_state
+ 
+     world_state.agents = {1: hh, 2: firm}
+diff --git a/tests/unit/simulation/systems/test_analytics_system_purity.py b/tests/unit/simulation/systems/test_analytics_system_purity.py
+new file mode 100644
+index 00000000..4eb05e47
+--- /dev/null
++++ b/tests/unit/simulation/systems/test_analytics_system_purity.py
+@@ -0,0 +1,96 @@
++import unittest
++from unittest.mock import MagicMock, PropertyMock
++from simulation.systems.analytics_system import AnalyticsSystem
++from simulation.core_agents import Household
++from simulation.firms import Firm
++from simulation.models import Transaction
++from simulation.dtos import AgentStateData, EconomicIndicatorData
++from modules.household.dtos import HouseholdSnapshotDTO, EconStateDTO, BioStateDTO, SocialStateDTO
++from modules.simulation.dtos.api import FirmStateDTO
++from modules.system.api import DEFAULT_CURRENCY
++
++class TestAnalyticsSystemPurity(unittest.TestCase):
++    def setUp(self):
++        self.analytics_system = AnalyticsSystem()
++        self.world_state = MagicMock()
++        self.world_state.run_id = "test_run"
++        self.world_state.time = 100
++        self.world_state.transactions = []
++        self.world_state.tracker = MagicMock()
++        self.world_state.tracker.get_latest_indicators.return_value = {}
++        self.world_state.household_time_allocation = {}
++
++    def test_aggregate_tick_data_uses_snapshots_only(self):
++        """
++        Verify that aggregate_tick_data does NOT call direct state accessors on Agents,
++        but instead relies on create_snapshot_dto() or get_state_dto().
++        """
++        # Mock Household
++        household = MagicMock(spec=Household)
++        household.id = 1
++        household.is_active = True
++
++        # Configure Snapshot Mock
++        snapshot = MagicMock(spec=HouseholdSnapshotDTO)
++        snapshot.econ_state = MagicMock(spec=EconStateDTO)
++        snapshot.econ_state.is_employed = True
++        snapshot.econ_state.employer_id = 101
++        snapshot.econ_state.inventory = {"food": 10.0}
++        snapshot.econ_state.assets = {DEFAULT_CURRENCY: 5000}
++        snapshot.econ_state.labor_income_this_tick_pennies = 1000
++        snapshot.econ_state.capital_income_this_tick_pennies = 500
++
++        snapshot.bio_state = MagicMock(spec=BioStateDTO)
++        snapshot.bio_state.needs = {"survival": 0.5, "labor_need": 0.2}
++        snapshot.bio_state.generation = 1
++
++        household.create_snapshot_dto.return_value = snapshot
++        household.config = MagicMock()
++        household.config.SHOPPING_HOURS = 2.0
++        household.config.HOURS_PER_TICK = 24.0
++
++        # Mock Firm
++        firm = MagicMock(spec=Firm)
++        firm.id = 101
++        firm.is_active = True
++
++        # Configure Firm State DTO Mock
++        firm_state = MagicMock(spec=FirmStateDTO)
++        firm_state.production = MagicMock()
++        firm_state.production.inventory = {"food": 100.0}
++        firm_state.production.current_production = 50.0
++        firm_state.hr = MagicMock()
++        firm_state.hr.employees = [1]
++        firm_state.finance = MagicMock()
++        firm_state.finance.assets = {DEFAULT_CURRENCY: 100000} # Mocking property access if needed
++        # Or if it uses balance dict
++
++        firm.get_state_dto.return_value = firm_state
++
++        # Setup World State Agents
++        self.world_state.agents = {1: household, 101: firm}
++        self.world_state.households = [household]
++
++        # --- EXECUTE ---
++        self.analytics_system.aggregate_tick_data(self.world_state)
++
++        # --- VERIFY ---
++
++        # 1. Household: Ensure create_snapshot_dto was called
++        household.create_snapshot_dto.assert_called()
++
++        # 2. Firm: Ensure get_state_dto was called
++        firm.get_state_dto.assert_called_once()
++
++        # 3. FORBIDDEN CALLS: Ensure get_assets_by_currency is NOT called
++        # This is the key "Purity" check.
++        household.get_assets_by_currency.assert_not_called()
++        firm.get_assets_by_currency.assert_not_called()
++
++        # 4. Ensure properties like 'needs' are not accessed directly on agent if they exist as props
++        # (Though they are usually on bio_component, legacy accessors might exist)
++        # We can't easily assert property access wasn't made unless we mock them as PropertyMock and check call_count.
++        # But asserting get_assets_by_currency_not_called is a strong signal for now given the code structure.
++
++if __name__ == '__main__':
++    unittest.main()

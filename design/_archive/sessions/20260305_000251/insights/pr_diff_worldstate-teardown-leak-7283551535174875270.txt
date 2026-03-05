@@ -1,0 +1,77 @@
+diff --git a/communications/insights/LEAK_FIX_2_WORLDSTATE_TEARDOWN.md b/communications/insights/LEAK_FIX_2_WORLDSTATE_TEARDOWN.md
+new file mode 100644
+index 00000000..192aeabf
+--- /dev/null
++++ b/communications/insights/LEAK_FIX_2_WORLDSTATE_TEARDOWN.md
+@@ -0,0 +1,33 @@
++# LEAK_FIX_2_WORLDSTATE_TEARDOWN Insight Report
++
++## [Architectural Insights]
++The codebase relies on centralized management of simulation state and subsystems within the `WorldState` object. Due to the complex interdependencies between various tracking managers, systems, registries, and the core `WorldState`, significant circular reference chains exist. This creates potential memory leaks during multiple simulation test setups and teardowns as garbage collection fails to resolve these cyclic dependencies efficiently.
++
++Adding an explicit `teardown()` method to `WorldState` allows systematic decoupling of nested system references, preventing the cyclic references that stall normal GC behavior, thus acting as a defensive mechanism against memory leakage over sequential simulation tests or execution loops.
++
++## [Regression Analysis]
++No regressions or failing tests were encountered. Adding the `teardown()` method is a localized patch to enable manual memory cleanup in the core simulation state without disrupting current test behavior or modifying architectural data flows. The unit test suite executed cleanly on the first run after applying the fix.
++
++## [Test Evidence]
++
++```
++============================= test session starts ==============================
++platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
++rootdir: /app
++plugins: mock-3.15.1, asyncio-1.3.0, anyio-4.12.1
++asyncio: mode=Mode.STRICT, default_loop_scope=None
++collected 11 items
++
++tests/unit/simulation/agents/test_breeding_planner.py .                  [  9%]
++tests/unit/simulation/core/test_economic_dtos.py .                       [ 18%]
++tests/unit/simulation/metrics/test_economic_tracker_purity.py .          [ 27%]
++tests/unit/simulation/metrics/test_market_panic.py .                     [ 36%]
++tests/unit/simulation/metrics/test_m2_delegation.py .                    [ 45%]
++tests/unit/simulation/registries/test_orphan_escheatment.py .            [ 54%]
++tests/unit/simulation/systems/test_analytics_system_purity.py .          [ 63%]
++tests/unit/simulation/systems/test_audit_total_m2.py .                   [ 72%]
++tests/unit/simulation/systems/test_ma_manager_pennies.py ..              [ 90%]
++tests/unit/simulation/systems/test_settlement_system_atomic.py .         [100%]
++
++============================== 11 passed in 6.52s ==============================
++```
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index 0ebebacd..530996a8 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -355,3 +355,33 @@ class WorldState:
+ 
+     def get_all_households(self) -> Sequence[Any]:
+         return self.households
++
++    def teardown(self):
++        # Break subsystem references
++        subsystems = [
++            'tracker', 'inequality_tracker', 'stock_tracker', 'personality_tracker',
++            'ai_training_manager', 'ma_manager', 'demographic_manager', 'immigration_manager',
++            'inheritance_manager', 'housing_system', 'persistence_manager', 'analytics_system',
++            'firm_system', 'technology_manager', 'generational_wealth_audit', 'breeding_planner',
++            'transaction_processor', 'lifecycle_manager', 'finance_system', 'ai_trainer',
++            'social_system', 'event_system', 'sensory_system', 'settlement_system',
++            'saga_orchestrator', 'monetary_ledger', 'shareholder_registry', 'taxation_system',
++            'commerce_system', 'labor_market_analyzer', 'crisis_monitor', 'public_manager',
++            'politics_system', 'index_circuit_breaker', 'estate_registry', 'scenario_verifier',
++            'telemetry_collector', 'dashboard_service', 'command_queue', 'telemetry_exchange'
++        ]
++        for attr in subsystems:
++            if hasattr(self, attr):
++                setattr(self, attr, None)
++        # Clear collections
++        self.goods_data.clear()
++        self.real_estate_units.clear()
++        self.currency_holders.clear()
++        self._currency_holders_set.clear()
++        self.household_time_allocation.clear()
++        self._governments.clear()
++        self.markets.clear()
++        self.system_commands.clear()
++        self.god_commands.clear()
++        self.agent_registry = None
++        self.global_registry = None

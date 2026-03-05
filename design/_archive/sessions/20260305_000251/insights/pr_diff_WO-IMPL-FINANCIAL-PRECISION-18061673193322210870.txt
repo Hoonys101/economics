@@ -1,0 +1,391 @@
+diff --git a/communications/insights/WO-IMPL-FINANCIAL-PRECISION.md b/communications/insights/WO-IMPL-FINANCIAL-PRECISION.md
+new file mode 100644
+index 00000000..2c0c894e
+--- /dev/null
++++ b/communications/insights/WO-IMPL-FINANCIAL-PRECISION.md
+@@ -0,0 +1,24 @@
++# WO-IMPL-FINANCIAL-PRECISION Insight Report
++
++## 1. Architectural Insights
++- **Penny Standard Enforcement**: The transition to `int` (pennies) for all monetary values is critical for zero-sum integrity. We identified that `ProductionStateDTO.capital_stock` was still a `float`, potentially causing drift in asset valuation. We converted it to `int`. Similarly, `EconomicIndicatorData.education_spending` was updated to `Optional[int]`.
++- **Dust Distribution**: The previous pro-rata liquidation logic truncated remainders (`int(claim * factor)`), leading to monetary leakage (destruction of money) when the total claim didn't divide evenly. We implemented a "Dust-Aware Distribution" pattern that tracks the `current_remaining` cash and ensures the last claimant in a tier receives the exact remainder, guaranteeing `sum(payments) == available_cash`.
++- **Test Drift**: Several integration tests (`test_m2_integrity.py`, `test_omo_system.py`) were asserting float values (Dollars) against `MonetaryLedger.get_monetary_delta()`, which correctly returns `int` (Pennies). This suggests a historical drift where tests were not updated to match the Penny Standard enforcement. We updated these tests to strictly expect integer pennies, reinforcing the architectural decision.
++
++## 2. Regression Analysis
++- **Liquidation Math**: A new test `tests/test_liquidation_math.py` was created to reproduce the leakage. It confirmed that `99 != 100` with the old logic (1 penny leak). With the new logic, it passes (`100 == 100`).
++- **M2 Integrity & OMO**: Existing tests failed because they expected `1000.0` (float dollars) but received `100000` (int pennies). This was a "false positive" regression in the sense that the code was correct (Penny Standard), but the tests were outdated. We fixed the tests to align with the standard.
++- **Forensics**: `scripts/operation_forensics.py` showed a large M2 mismatch warning (`745108757` delta). This appears to be a pre-existing systemic issue (likely due to initial state configuration or other components not fully migrated) and is out of scope for the "Dust Fix", but the "Dust Fix" itself is verified.
++
++## 3. Test Evidence
++```
++=========================== short test summary info ============================
++SKIPPED [1] tests/integration/test_server_integration.py:16: websockets is mocked
++SKIPPED [1] tests/security/test_god_mode_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/security/test_websocket_auth.py:13: websockets is mocked
++SKIPPED [1] tests/system/test_server_auth.py:11: websockets is mocked, skipping server auth tests
++SKIPPED [1] tests/test_server_auth.py:8: fastapi is mocked, skipping server auth tests
++SKIPPED [1] tests/test_ws.py:11: fastapi is mocked
++================= 1063 passed, 7 skipped, 1 warning in 14.31s ==================
++```
+diff --git a/modules/simulation/dtos/api.py b/modules/simulation/dtos/api.py
+index 452f7161..90e3cb15 100644
+--- a/modules/simulation/dtos/api.py
++++ b/modules/simulation/dtos/api.py
+@@ -45,7 +45,7 @@ class ProductionStateDTO:
+     current_production: float
+     productivity_factor: float
+     production_target: float
+-    capital_stock: float
++    capital_stock: int
+     base_quality: float
+     automation_level: float
+     specialization: str
+diff --git a/reports/diagnostic_refined.md b/reports/diagnostic_refined.md
+index 193637f0..bc383b94 100644
+--- a/reports/diagnostic_refined.md
++++ b/reports/diagnostic_refined.md
+@@ -1,143 +1,25 @@
+ # Refined Diagnostic Logs
+ Critical events extracted for Gemini analysis.
+ 
+-- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1612081.73, Expected: 1990995.15, Delta: -378913.4200
+-- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2558513.85, Expected: 2464211.21, Delta: 94302.6400
+-- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2611640.33, Expected: 2490774.45, Delta: 120865.8800
+-- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3558046.27, Expected: 2963977.42, Delta: 594068.8500
+-- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 3610867.71, Expected: 2990388.14, Delta: 620479.5700
+-- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4541896.41, Expected: 3455902.49, Delta: 1085993.9200
+-- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 4610049.17, Expected: 3489978.87, Delta: 1120070.3000
+-- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5540962.83, Expected: 3955435.70, Delta: 1585527.1300
+-- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5609001.03, Expected: 3989454.80, Delta: 1619546.2300
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2567670, Req: 5000000.
+-- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5609001.03, Expected: 3989454.80, Delta: 1619546.2300
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6557845.39, Expected: 4463876.98, Delta: 2093968.4100
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6607602.79, Expected: 4488755.68, Delta: 2118847.1100
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7556337.87, Expected: 4963123.22, Delta: 2593214.6500
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3632629, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3632629, Req: 5000000.
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3632629, Req: 5000000.
+-- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 7556337.87, Expected: 4963123.22, Delta: 2593214.6500
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8483795.47, Expected: 5426852.02, Delta: 3056943.4500
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 8483795.47, Expected: 5426852.02, Delta: 3056943.4500
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9394685.29, Expected: 5882296.93, Delta: 3512388.3600
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 9481190.43, Expected: 5925549.50, Delta: 3555640.9300
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10391839.87, Expected: 6380874.22, Delta: 4010965.6500
+-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1031.
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10391839.87, Expected: 6380874.22, Delta: 4010965.6500
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 10618027.35, Expected: 6493967.96, Delta: 4124059.3900
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11388133.05, Expected: 6879020.81, Delta: 4509112.2400
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11614092.81, Expected: 6992000.69, Delta: 4622092.1200
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 12383918.03, Expected: 7376913.30, Delta: 5007004.7300
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 12609623.43, Expected: 7489766.00, Delta: 5119857.4300
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 13379161.35, Expected: 7874534.96, Delta: 5504626.3900
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 13604590.89, Expected: 7987249.73, Delta: 5617341.1600
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14373816.25, Expected: 8371862.41, Delta: 6001953.8400
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14598986.17, Expected: 8484447.37, Delta: 6114538.8000
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 117 (Inactive=True), Seller: 1 (Inactive=False) for Transaction: emergency_buy
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14570436.17, Expected: 8484447.37, Delta: 6085988.8000
+-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 122 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+-  - Details: agent_id=122
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14542901.08, Expected: 8484447.37, Delta: 6058453.7100
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14542901.08, Expected: 8484447.37, Delta: 6058453.7100
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 14551950.70, Expected: 8488972.18, Delta: 6062978.5200
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15537148.70, Expected: 8981571.18, Delta: 6555577.5200
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15545930.58, Expected: 8985962.12, Delta: 6559968.4600
+-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 121 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+-  - Details: agent_id=121
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16522336.00, Expected: 9477911.21, Delta: 7044424.7900
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16522336.00, Expected: 9477911.21, Delta: 7044424.7900
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16522336.00, Expected: 9477911.21, Delta: 7044424.7900
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16522336.00, Expected: 9477911.21, Delta: 7044424.7900
+-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 120 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+-  - Details: agent_id=120
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16521736.57, Expected: 9477911.21, Delta: 7043825.3600
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 16823186.03, Expected: 9628635.94, Delta: 7194550.0900
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 17516556.43, Expected: 9975321.14, Delta: 7541235.2900
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 17817857.13, Expected: 10125971.49, Delta: 7691885.6400
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 18511008.53, Expected: 10472547.19, Delta: 8038461.3400
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 18811089.27, Expected: 10622587.56, Delta: 8188501.7100
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 19505077.51, Expected: 10969581.68, Delta: 8535495.8300
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 19804953.59, Expected: 11119519.72, Delta: 8685433.8700
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 20497708.73, Expected: 11465897.29, Delta: 9031811.4400
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 20898392.23, Expected: 11666239.04, Delta: 9232153.1900
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21590894.95, Expected: 12012490.40, Delta: 9578404.5500
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21991353.33, Expected: 12212719.59, Delta: 9778633.7400
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22683617.79, Expected: 12558851.82, Delta: 10124765.9700
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 23083838.47, Expected: 12758962.16, Delta: 10324876.3100
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 23775870.07, Expected: 13104977.96, Delta: 10670892.1100
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 24175843.81, Expected: 13304964.83, Delta: 10870878.9800
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 24863536.79, Expected: 13648811.32, Delta: 11214725.4700
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 25265322.51, Expected: 13849704.18, Delta: 11415618.3300
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 25953819.47, Expected: 14193952.66, Delta: 11759866.8100
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 26356403.53, Expected: 14395244.69, Delta: 11961158.8400
+-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 27016154.47, Expected: 14739370.16, Delta: 12276784.3100
+\ No newline at end of file
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
++- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 460000991, Expected: 519000000, Delta: -58999009
++- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 460000991, Expected: 519000000, Delta: -58999009
++- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 859830511, Expected: 718914760, Delta: 140915751
++- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 859830511, Expected: 718914760, Delta: 140915751
++- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1259512317, Expected: 918755663, Delta: 340756654
++- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1259512317, Expected: 918755663, Delta: 340756654
++- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1657044211, Expected: 1117521610, Delta: 539522601
++- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1658956727, Expected: 1118477868, Delta: 540478859
++- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2056397753, Expected: 1317198381, Delta: 739199372
++- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2068216523, Expected: 1323107766, Delta: 745108757
+\ No newline at end of file
+diff --git a/simulation/dtos/api.py b/simulation/dtos/api.py
+index 539be614..bc8e5ed6 100644
+--- a/simulation/dtos/api.py
++++ b/simulation/dtos/api.py
+@@ -103,7 +103,7 @@ class EconomicIndicatorData:
+     total_capital_income: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)
+     # Phase 23: Education & Opportunity Metrics
+     avg_education_level: Optional[float] = None
+-    education_spending: Optional[float] = None
++    education_spending: Optional[int] = None
+     education_coverage: Optional[float] = None
+     brain_waste_count: Optional[int] = None
+ 
+diff --git a/simulation/systems/liquidation_manager.py b/simulation/systems/liquidation_manager.py
+index 50ef72cc..9b285cc1 100644
+--- a/simulation/systems/liquidation_manager.py
++++ b/simulation/systems/liquidation_manager.py
+@@ -125,13 +125,18 @@ class LiquidationManager:
+                 remaining_cash -= total_tier_claim
+                 logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} fully paid. Remaining cash: {remaining_cash}")
+             else:
+-                # Pay pro-rata
+-                factor = remaining_cash / total_tier_claim
+-                for claim in tier_claims:
+-                    payment = int(claim.amount_pennies * factor)
++                # Pay pro-rata (Dust-Aware Distribution)
++                current_remaining = int(remaining_cash)
++                for i, claim in enumerate(tier_claims):
++                    if i == len(tier_claims) - 1:
++                        payment = current_remaining
++                    else:
++                        payment = int((claim.amount_pennies * remaining_cash) // total_tier_claim)
+                     self._pay_claim(agent, claim, payment, state, partial=True)
++                    current_remaining -= payment
++
+                 remaining_cash = 0.0
+-                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} partially paid (Factor: {factor:.2f}). Cash exhausted.")
++                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} partially paid (Pro-Rata). Cash exhausted.")
+ 
+         # --- Tier 5: Equity ---
+         # TD-033: Check if there is ANY value to distribute (Cash or Foreign Assets)
+diff --git a/tests/integration/test_m2_integrity.py b/tests/integration/test_m2_integrity.py
+index 559f3bb1..bb3853ca 100644
+--- a/tests/integration/test_m2_integrity.py
++++ b/tests/integration/test_m2_integrity.py
+@@ -53,7 +53,7 @@ class TestM2Integrity(unittest.TestCase):
+         self.ledger.process_transactions([tx_create])
+ 
+         delta = self.ledger.get_monetary_delta()
+-        self.assertEqual(delta, 1000.0, "Credit Creation should be Expansion")
++        self.assertEqual(delta, 100000, "Credit Creation should be Expansion")
+ 
+     def test_credit_destruction_contraction(self):
+         """Verify credit destruction is still contraction."""
+@@ -64,7 +64,7 @@ class TestM2Integrity(unittest.TestCase):
+         self.ledger.process_transactions([tx_destroy])
+ 
+         delta = self.ledger.get_monetary_delta()
+-        self.assertEqual(delta, -500.0, "Credit Destruction should be Contraction")
++        self.assertEqual(delta, -50000, "Credit Destruction should be Contraction")
+ 
+ if __name__ == '__main__':
+     unittest.main()
+diff --git a/tests/integration/test_omo_system.py b/tests/integration/test_omo_system.py
+index deb2954a..0f128f8d 100644
+--- a/tests/integration/test_omo_system.py
++++ b/tests/integration/test_omo_system.py
+@@ -203,8 +203,8 @@ def test_process_omo_purchase_transaction(omo_setup):
+ 
+     # Verify Gov Ledger Updated via MonetaryLedger (SSoT for M2 Tracking)
+     delta = gov_agent.monetary_ledger.get_monetary_delta()
+-    # 100 pennies created. get_monetary_delta returns Dollars (1.00)
+-    assert delta == 1.00
++    # 100 pennies created. get_monetary_delta returns Pennies (100)
++    assert delta == 100
+ 
+ def test_process_omo_sale_transaction(omo_setup):
+     cb_system, tp, state, cb_agent, gov_agent, household, settlement = omo_setup
+@@ -239,5 +239,5 @@ def test_process_omo_sale_transaction(omo_setup):
+ 
+     # Verify Gov Ledger Updated (Burning)
+     delta = gov_agent.monetary_ledger.get_monetary_delta()
+-    # 100 pennies destroyed. get_monetary_delta returns -1.00
+-    assert delta == -1.00
++    # 100 pennies destroyed. get_monetary_delta returns Pennies (-100)
++    assert delta == -100
+diff --git a/tests/test_liquidation_math.py b/tests/test_liquidation_math.py
+new file mode 100644
+index 00000000..1999ca1e
+--- /dev/null
++++ b/tests/test_liquidation_math.py
+@@ -0,0 +1,84 @@
++import unittest
++from unittest.mock import MagicMock, ANY
++from modules.common.financial.dtos import Claim
++from simulation.systems.liquidation_manager import LiquidationManager
++from simulation.finance.api import ISettlementSystem
++from modules.finance.api import ILiquidatable
++from simulation.dtos.api import SimulationState
++
++class TestLiquidationMath(unittest.TestCase):
++    def setUp(self):
++        self.mock_settlement_system = MagicMock(spec=ISettlementSystem)
++        self.mock_hr_service = MagicMock()
++        self.mock_tax_service = MagicMock()
++        self.mock_agent_registry = MagicMock()
++        self.mock_shareholder_registry = MagicMock()
++
++        self.manager = LiquidationManager(
++            settlement_system=self.mock_settlement_system,
++            hr_service=self.mock_hr_service,
++            tax_service=self.mock_tax_service,
++            agent_registry=self.mock_agent_registry,
++            shareholder_registry=self.mock_shareholder_registry
++        )
++
++    def test_liquidation_dust_distribution(self):
++        """
++        Verify that pro-rata distribution handles remainders correctly (zero-sum).
++        Scenario: 100 pennies available, 3 claims of 50 pennies each (Total 150).
++        Factor: 100/150 = 0.666...
++        Expected payments: 33, 33, 34 (Total 100).
++        """
++        # Mock dependencies
++        mock_agent = MagicMock(spec=ILiquidatable)
++        mock_agent.id = 1
++
++        mock_state = MagicMock(spec=SimulationState)
++        mock_state.time = 100
++        mock_state.transactions = [] # Mock list for appending transactions
++
++        # Mock claims
++        claims = [
++            Claim(creditor_id=101, amount_pennies=50, tier=1, description="Claim 1"),
++            Claim(creditor_id=102, amount_pennies=50, tier=1, description="Claim 2"),
++            Claim(creditor_id=103, amount_pennies=50, tier=1, description="Claim 3"),
++        ]
++
++        # Mock get_agent for creditors
++        def get_agent_side_effect(agent_id):
++            mock_creditor = MagicMock()
++            mock_creditor.id = agent_id
++            return mock_creditor
++
++        self.mock_agent_registry.get_agent.side_effect = get_agent_side_effect
++
++        # Mock settlement transfer success
++        self.mock_settlement_system.transfer.return_value = True
++
++        # Execute waterfall directly
++        available_cash = 100
++        self.manager.execute_waterfall(mock_agent, claims, available_cash, mock_state)
++
++        # Verify total payments
++        # We need to capture the amount passed to settlement_system.transfer
++        # call_args_list items are (args, kwargs)
++        # transfer(agent, creditor, amount, memo, currency)
++
++        total_paid = 0
++        payments = []
++        for call in self.mock_settlement_system.transfer.call_args_list:
++            args, _ = call
++            amount = args[2] # 3rd argument is amount
++            total_paid += amount
++            payments.append(amount)
++
++        print(f"DEBUG: Payments made: {payments}")
++        print(f"DEBUG: Total paid: {total_paid}")
++
++        # Assert zero-sum
++        self.assertEqual(total_paid, available_cash, f"Total paid {total_paid} does not match available cash {available_cash}. Leakage detected.")
++
++        # Specific check for distribution logic (optional, but good to verify implementation detail)
++        # With standard dust distribution, we expect [33, 33, 34] or similar depending on order
++        self.assertIn(33, payments)
++        self.assertIn(34, payments)

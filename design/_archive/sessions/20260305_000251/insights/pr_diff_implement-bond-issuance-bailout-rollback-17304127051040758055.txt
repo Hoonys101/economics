@@ -1,0 +1,273 @@
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index e1345fa7..eb91ce08 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -1060,6 +1060,7 @@ class BondIssuanceRequestDTO:
+     coupon_rate: float      # Annual coupon rate (0.05 = 5%)
+     maturity_tick: int      # Tick when the bond matures
+     bond_series_id: Optional[str] = None # Optional ID for grouping
++    transaction_id: Optional[str] = None # Optional ID for tracking
+ 
+ @runtime_checkable
+ class ITransactionHandler(Protocol):
+@@ -1101,6 +1102,12 @@ class IBondMarketSystem(Protocol):
+         """
+         ...
+ 
++    def cancel_bond(self, bond_id: str) -> bool:
++        """
++        Cancels a previously issued bond, typically during a rollback.
++        """
++        ...
++
+     def register_bond_series(self, issuer_id: AgentID, series_id: str, details: Dict[str, Any]) -> None:
+         """
+         Registers a new bond series in the security master.
+diff --git a/modules/finance/handlers/bailout.py b/modules/finance/handlers/bailout.py
+index 1b110c88..fb86e5d9 100644
+--- a/modules/finance/handlers/bailout.py
++++ b/modules/finance/handlers/bailout.py
+@@ -1,7 +1,11 @@
+-from typing import Any
++from typing import Any, Dict
++import logging
++import uuid
+ from modules.finance.api import ITransactionHandler
+ from modules.system.api import AssetBuyoutRequestDTO, IAssetRecoverySystem, AssetBuyoutResultDTO
+ 
++logger = logging.getLogger(__name__)
++
+ class BailoutHandler(ITransactionHandler):
+     """
+     Handler for Bailout Transactions (Asset Buyouts).
+@@ -9,6 +13,7 @@ class BailoutHandler(ITransactionHandler):
+     """
+     def __init__(self, asset_recovery_system: IAssetRecoverySystem):
+         self.asset_recovery_system = asset_recovery_system
++        self._results: Dict[str, AssetBuyoutResultDTO] = {}
+ 
+     def validate(self, request: Any, context: Any) -> bool:
+         """
+@@ -29,12 +34,29 @@ class BailoutHandler(ITransactionHandler):
+         if not isinstance(request, AssetBuyoutRequestDTO):
+              raise ValueError("Invalid request type for BailoutHandler")
+ 
+-        return self.asset_recovery_system.execute_asset_buyout(request)
++        result = self.asset_recovery_system.execute_asset_buyout(request)
++        if result.success:
++            tx_id = result.transaction_id or str(uuid.uuid4())
++            self._results[tx_id] = result
++        return result
+ 
+     def rollback(self, transaction_id: str, context: Any) -> bool:
+         """
+-        Rollback for bailouts is complex (returning assets).
+-        Currently not supported/implemented for Phase 1.
++        Rollback for bailouts delegates to Asset Recovery System.
+         """
+-        # TODO: Implement generic rollback
+-        return False
++        result = self._results.get(transaction_id)
++        if not result:
++            logger.warning(f"Rollback requested for unknown bailout transaction: {transaction_id}")
++            return False
++
++        try:
++            success = self.asset_recovery_system.rollback_asset_buyout(result)
++            if success:
++                del self._results[transaction_id]
++                logger.info(f"Successfully rolled back bailout transaction {transaction_id}.")
++            else:
++                logger.error(f"Failed to rollback bailout transaction {transaction_id}.")
++            return success
++        except Exception as e:
++            logger.critical(f"CRITICAL: Rollback exception for Bailout {transaction_id}. Error: {e}")
++            return False
+diff --git a/modules/finance/handlers/bond_issuance.py b/modules/finance/handlers/bond_issuance.py
+index d1f22d13..6d30c517 100644
+--- a/modules/finance/handlers/bond_issuance.py
++++ b/modules/finance/handlers/bond_issuance.py
+@@ -1,5 +1,6 @@
+-from typing import Any
++from typing import Any, Dict
+ import logging
++import uuid
+ from modules.finance.api import ITransactionHandler, IBondMarketSystem, BondIssuanceRequestDTO
+ from modules.finance.transaction.api import ILedgerEngine
+ from modules.system.api import DEFAULT_CURRENCY
+@@ -14,6 +15,7 @@ class BondIssuanceHandler(ITransactionHandler):
+     def __init__(self, bond_market_system: IBondMarketSystem, ledger_engine: ILedgerEngine):
+         self.bond_market_system = bond_market_system
+         self.ledger_engine = ledger_engine
++        self._active_issuances: Dict[str, BondIssuanceRequestDTO] = {}
+ 
+     def validate(self, request: Any, context: Any) -> bool:
+         if not isinstance(request, BondIssuanceRequestDTO):
+@@ -24,6 +26,9 @@ class BondIssuanceHandler(ITransactionHandler):
+         if not isinstance(request, BondIssuanceRequestDTO):
+             raise ValueError("Invalid request type for BondIssuanceHandler")
+ 
++        transaction_id = request.transaction_id or str(uuid.uuid4())
++        self._active_issuances[transaction_id] = request
++
+         # 1. Calculate Total Cost
+         total_cost = request.issue_price * request.quantity
+ 
+@@ -69,5 +74,37 @@ class BondIssuanceHandler(ITransactionHandler):
+         return True
+ 
+     def rollback(self, transaction_id: str, context: Any) -> bool:
+-        # TODO: Implement full rollback (reverse payment, cancel bond)
+-        return False
++        request = self._active_issuances.get(transaction_id)
++        if not request:
++            logger.warning(f"Rollback requested for unknown transaction_id: {transaction_id}")
++            return False
++
++        total_cost = request.issue_price * request.quantity
++
++        try:
++            # Reverse payment
++            reverse_result = self.ledger_engine.process_transaction(
++                source_account_id=str(request.issuer_id),
++                destination_account_id=str(request.buyer_id),
++                amount=total_cost,
++                currency=DEFAULT_CURRENCY,
++                description=f"ROLLBACK: Bond Issuance Reversal for {transaction_id}"
++            )
++            if reverse_result.status != 'COMPLETED':
++                logger.critical(f"CRITICAL: Rollback failed for Bond Issuance! Money trapped in Issuer {request.issuer_id}. Error: {reverse_result.message}")
++                return False
++
++            # Cancel bond
++            bond_id = f"BOND_{transaction_id}"
++            if not self.bond_market_system.cancel_bond(bond_id):
++                logger.error(f"Failed to cancel bond {bond_id} in BondMarketSystem.")
++                return False
++
++            # Clean up
++            del self._active_issuances[transaction_id]
++            logger.info(f"Successfully rolled back Bond Issuance {transaction_id}.")
++            return True
++
++        except Exception as e:
++            logger.critical(f"CRITICAL: Rollback exception for Bond Issuance {transaction_id}. Error: {e}")
++            return False
+diff --git a/modules/system/api.py b/modules/system/api.py
+index f89d2344..ffcfd5c5 100644
+--- a/modules/system/api.py
++++ b/modules/system/api.py
+@@ -392,6 +392,12 @@ class IAssetRecoverySystem(Protocol):
+         """
+         ...
+ 
++    def rollback_asset_buyout(self, result: AssetBuyoutResultDTO) -> bool:
++        """
++        Reverses an executed asset buyout.
++        """
++        ...
++
+     def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
+         """
+         Receives inventory from a firm undergoing liquidation (Asset Buyout).
+diff --git a/modules/system/execution/public_manager.py b/modules/system/execution/public_manager.py
+index bc890667..44716754 100644
+--- a/modules/system/execution/public_manager.py
++++ b/modules/system/execution/public_manager.py
+@@ -146,6 +146,26 @@ class PublicManager(IAssetRecoverySystem, ILiquidator, ICurrencyHolder, IFinanci
+             buyer_id=self.id
+         )
+ 
++    def rollback_asset_buyout(self, result: AssetBuyoutResultDTO) -> bool:
++        """
++        Reverses an executed asset buyout.
++        Deducts the items from inventory.
++        """
++        if not result.success:
++            return False
++
++        for item_id, quantity in result.items_acquired.items():
++            self.managed_inventory[item_id] -= quantity
++            self.last_tick_recovered_assets[item_id] -= quantity
++            # Ensure it doesn't go below zero if somehow manipulated
++            if self.managed_inventory[item_id] < 0:
++                self.managed_inventory[item_id] = 0
++            if self.last_tick_recovered_assets[item_id] < 0:
++                self.last_tick_recovered_assets[item_id] = 0
++
++        self.logger.info(f"Rolled back Asset Buyout. Refunded: {result.total_paid_pennies}, Items: {len(result.items_acquired)}")
++        return True
++
+     def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
+         """
+         Receives inventory from a liquidated firm via asset buyout.
+diff --git a/tests/unit/handlers/test_bailout_rollback.py b/tests/unit/handlers/test_bailout_rollback.py
+new file mode 100644
+index 00000000..ad52fc3d
+--- /dev/null
++++ b/tests/unit/handlers/test_bailout_rollback.py
+@@ -0,0 +1,23 @@
++import pytest
++from unittest.mock import MagicMock
++from modules.finance.handlers.bailout import BailoutHandler
++from modules.system.api import AssetBuyoutRequestDTO, AssetBuyoutResultDTO
++
++def test_bailout_rollback_success():
++    asset_system = MagicMock()
++    handler = BailoutHandler(asset_system)
++
++    request = AssetBuyoutRequestDTO(seller_id=1, inventory={"A": 10}, market_prices={"A": 100})
++
++    result = AssetBuyoutResultDTO(success=True, total_paid_pennies=1000, items_acquired={"A": 10}, buyer_id=2, transaction_id="test_bailout")
++
++    asset_system.execute_asset_buyout.return_value = result
++    asset_system.rollback_asset_buyout.return_value = True
++
++    # Execute
++    res = handler.execute(request, None)
++    assert res.success is True
++
++    # Verify rollback
++    assert handler.rollback("test_bailout", None) is True
++    asset_system.rollback_asset_buyout.assert_called_once_with(result)
+diff --git a/tests/unit/handlers/test_bond_issuance_rollback.py b/tests/unit/handlers/test_bond_issuance_rollback.py
+new file mode 100644
+index 00000000..f8cdc476
+--- /dev/null
++++ b/tests/unit/handlers/test_bond_issuance_rollback.py
+@@ -0,0 +1,35 @@
++import pytest
++from unittest.mock import MagicMock
++from modules.finance.handlers.bond_issuance import BondIssuanceHandler
++from modules.finance.api import BondIssuanceRequestDTO
++from modules.finance.transaction.api import TransactionResultDTO, TransactionDTO
++
++def test_bond_issuance_rollback_success():
++    bond_market = MagicMock()
++    ledger = MagicMock()
++    handler = BondIssuanceHandler(bond_market, ledger)
++
++    # Create request
++    request = BondIssuanceRequestDTO(
++        issuer_id="1", buyer_id="2", face_value=100, issue_price=100, quantity=10,
++        coupon_rate=0.05, maturity_tick=10, transaction_id="test_tx"
++    )
++
++    # Mock ledger process to return success for both execute and rollback
++    success_result = TransactionResultDTO(
++        transaction=TransactionDTO("tx", "src", "dst", 1000, "USD", "desc"),
++        status='COMPLETED', message="OK", timestamp=1.0
++    )
++    ledger.process_transaction.return_value = success_result
++
++    # Mock bond market to return success
++    bond_market.issue_bond.return_value = True
++    bond_market.cancel_bond.return_value = True
++
++    # Execute
++    assert handler.execute(request, None) is True
++
++    # Verify rollback
++    assert handler.rollback("test_tx", None) is True
++    bond_market.cancel_bond.assert_called_once_with("BOND_test_tx")
++    assert ledger.process_transaction.call_count == 2

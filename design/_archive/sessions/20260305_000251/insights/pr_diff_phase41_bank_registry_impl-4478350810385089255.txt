@@ -1,0 +1,467 @@
+diff --git a/communications/insights/phase41_bank_registry_impl.md b/communications/insights/phase41_bank_registry_impl.md
+new file mode 100644
+index 00000000..580059b6
+--- /dev/null
++++ b/communications/insights/phase41_bank_registry_impl.md
+@@ -0,0 +1,71 @@
++# Phase 4.1 Bank Registry Implementation Insight Report
++
++## 1. Architectural Insights
++
++### Service Extraction
++The `BankRegistry` service was extracted to decouple bank state management from the `FinanceSystem` logic. This adheres to the "Logic Separation" guardrail.
++- **Protocol Definition**: `IBankRegistry` was defined in `modules/finance/api.py`.
++- **Implementation**: `BankRegistry` was implemented in `modules/finance/registry/bank_registry.py`.
++- **Integration**: `FinanceSystem` now accepts an optional `IBankRegistry` and uses it to manage bank states.
++
++### State Management & SSoT
++To maintain the Single Source of Truth (SSoT) within the `FinancialLedgerDTO` while enabling the `BankRegistry` service:
++- The `BankRegistry` holds the `_banks` dictionary.
++- The `FinancialLedgerDTO` references this same dictionary.
++- This ensures that modifications via `BankRegistry` methods are reflected in the ledger used by stateless engines, and vice-versa (assuming in-place modifications).
++
++## 2. Regression Analysis
++
++### Backward Compatibility
++The `FinanceSystem.__init__` signature was updated to accept an optional `bank_registry` argument. If not provided, it defaults to creating a new `BankRegistry` and registering the provided `bank` instance. This ensures that existing code instantiating `FinanceSystem` without the new argument continues to work without modification.
++
++### Verified Tests
++- **New Tests**: `tests/modules/finance/registry/test_bank_registry.py` verified the functionality of the new registry.
++- **Existing Tests**: `tests/unit/finance/test_finance_system_refactor.py` and `tests/unit/test_bank_decomposition.py` passed, confirming that the integration of `BankRegistry` into `FinanceSystem` did not break existing financial logic.
++
++## 3. Test Evidence
++
++```
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_initialization_empty PASSED [  2%]
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_initialization_with_data PASSED [  4%]
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_register_bank PASSED [  7%]
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_get_deposit PASSED [  9%]
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_get_loan PASSED [ 12%]
++tests/modules/finance/registry/test_bank_registry.py::TestBankRegistry::test_shared_reference PASSED [ 14%]
++tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_clear_market_matching PASSED [ 17%]
++tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_settle_matured_loans PASSED [ 19%]
++tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_submit_loan_offer_insufficient_reserves PASSED [ 21%]
++tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_submit_loan_offer_success PASSED [ 24%]
++tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_submit_loan_request PASSED [ 26%]
++tests/unit/finance/engines/test_finance_engines.py::test_loan_risk_engine_assess_approved PASSED [ 29%]
++tests/unit/finance/engines/test_finance_engines.py::test_loan_risk_engine_assess_denied PASSED [ 31%]
++tests/unit/finance/engines/test_finance_engines.py::test_loan_booking_engine_grant_loan PASSED [ 34%]
++tests/unit/finance/engines/test_finance_engines.py::test_liquidation_engine_liquidate PASSED [ 36%]
++tests/unit/finance/engines/test_finance_engines.py::test_debt_servicing_engine PASSED [ 39%]
++tests/unit/finance/engines/test_finance_engines.py::test_zero_sum_verifier PASSED [ 41%]
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_bank_methods_presence PASSED [ 43%]
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_grant_loan PASSED [ 46%]
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_repay_loan PASSED [ 48%]
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_balance PASSED [ 51%]
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_debt_status PASSED [ 53%]
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_interface_compliance_mypy PASSED [ 56%]
++tests/unit/finance/test_credit_scoring.py::test_assess_approved PASSED   [ 58%]
++tests/unit/finance/test_credit_scoring.py::test_assess_dti_fail PASSED   [ 60%]
++tests/unit/finance/test_credit_scoring.py::test_assess_ltv_fail PASSED   [ 63%]
++tests/unit/finance/test_credit_scoring.py::test_assess_unsecured_cap_fail PASSED [ 65%]
++tests/unit/finance/test_credit_scoring.py::test_zero_income_fail PASSED  [ 68%]
++tests/unit/finance/test_finance_system_refactor.py::test_request_bailout_loan_success PASSED [ 70%]
++tests/unit/finance/test_finance_system_refactor.py::test_request_bailout_loan_insufficient_funds PASSED [ 73%]
++tests/unit/finance/test_finance_system_refactor.py::test_grant_bailout_loan_deprecated PASSED [ 75%]
++tests/unit/finance/test_settlement_system_overdraft.py::TestSettlementSystemOverdraft::test_normal_agent_cannot_overdraft PASSED [ 78%]
++tests/unit/finance/test_settlement_system_overdraft.py::TestSettlementSystemOverdraft::test_system_agent_can_overdraft PASSED [ 80%]
++tests/unit/finance/test_utils.py::test_round_to_pennies_basic PASSED     [ 82%]
++tests/unit/finance/test_utils.py::test_round_to_pennies_decimal PASSED   [ 85%]
++tests/unit/finance/test_utils.py::test_round_to_pennies_int PASSED       [ 87%]
++tests/unit/finance/test_utils.py::test_round_to_pennies_large PASSED     [ 90%]
++tests/unit/finance/test_utils.py::test_round_to_pennies_negative PASSED  [ 92%]
++tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_default_processing PASSED [ 95%]
++tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_grant_loan_delegation PASSED [ 97%]
++tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_run_tick_interest_collection PASSED [100%]
++======================== 41 passed, 2 warnings in 0.46s ========================
++```
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index da1c0a61..b492cfd2 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -26,6 +26,7 @@ if TYPE_CHECKING:
+     from modules.common.dtos import Claim
+     from modules.finance.wallet.api import IWallet
+     from modules.hr.api import IHRService
++    from modules.finance.engine_api import BankStateDTO, DepositStateDTO, LoanStateDTO
+ 
+ # Forward reference for type hinting
+ class Firm: pass
+@@ -1154,3 +1155,41 @@ class ITransactionEngine(Protocol):
+         Dispatches the transaction to the registered handler.
+         """
+         ...
++
++# ==============================================================================
++# === BANK REGISTRY PROTOCOLS
++# ==============================================================================
++
++@runtime_checkable
++class IBankRegistry(Protocol):
++    """
++    Interface for the Bank Registry service.
++    Manages the collection of bank states within the financial system.
++    """
++    @property
++    def banks_dict(self) -> Dict[AgentID, "BankStateDTO"]:
++        """
++        Returns the underlying dictionary of banks.
++        Required for integration with FinancialLedgerDTO.
++        """
++        ...
++
++    def register_bank(self, bank_state: "BankStateDTO") -> None:
++        """Registers a bank state."""
++        ...
++
++    def get_bank(self, bank_id: AgentID) -> Optional["BankStateDTO"]:
++        """Retrieves a bank state by ID."""
++        ...
++
++    def get_all_banks(self) -> List["BankStateDTO"]:
++        """Returns all registered banks."""
++        ...
++
++    def get_deposit(self, bank_id: AgentID, deposit_id: str) -> Optional["DepositStateDTO"]:
++        """Retrieves a specific deposit state."""
++        ...
++
++    def get_loan(self, bank_id: AgentID, loan_id: str) -> Optional["LoanStateDTO"]:
++        """Retrieves a specific loan state."""
++        ...
+diff --git a/modules/finance/registry/bank_registry.py b/modules/finance/registry/bank_registry.py
+new file mode 100644
+index 00000000..d3e7dcac
+--- /dev/null
++++ b/modules/finance/registry/bank_registry.py
+@@ -0,0 +1,54 @@
++from typing import Dict, List, Optional
++from modules.simulation.api import AgentID
++from modules.finance.api import IBankRegistry
++from modules.finance.engine_api import BankStateDTO, DepositStateDTO, LoanStateDTO
++
++class BankRegistry(IBankRegistry):
++    """
++    Implementation of the Bank Registry service.
++    Manages the collection of bank states within the financial system.
++    """
++
++    def __init__(self, initial_banks: Optional[Dict[AgentID, BankStateDTO]] = None):
++        """
++        Initializes the bank registry.
++
++        Args:
++            initial_banks: Optional initial dictionary of bank states.
++                           If provided, it uses this dictionary directly (by reference).
++        """
++        self._banks: Dict[AgentID, BankStateDTO] = initial_banks if initial_banks is not None else {}
++
++    @property
++    def banks_dict(self) -> Dict[AgentID, BankStateDTO]:
++        """
++        Returns the underlying dictionary of banks.
++        Required for integration with FinancialLedgerDTO.
++        """
++        return self._banks
++
++    def register_bank(self, bank_state: BankStateDTO) -> None:
++        """Registers a bank state."""
++        self._banks[bank_state.bank_id] = bank_state
++
++    def get_bank(self, bank_id: AgentID) -> Optional[BankStateDTO]:
++        """Retrieves a bank state by ID."""
++        return self._banks.get(bank_id)
++
++    def get_all_banks(self) -> List[BankStateDTO]:
++        """Returns all registered banks."""
++        return list(self._banks.values())
++
++    def get_deposit(self, bank_id: AgentID, deposit_id: str) -> Optional[DepositStateDTO]:
++        """Retrieves a specific deposit state."""
++        bank = self.get_bank(bank_id)
++        if bank:
++            return bank.deposits.get(deposit_id)
++        return None
++
++    def get_loan(self, bank_id: AgentID, loan_id: str) -> Optional[LoanStateDTO]:
++        """Retrieves a specific loan state."""
++        bank = self.get_bank(bank_id)
++        if bank:
++            return bank.loans.get(loan_id)
++        return None
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index bb451b04..1f5bfc46 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -4,7 +4,7 @@ import uuid
+ from modules.finance.api import (
+     IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialAgent, IFinancialFirm,
+     InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanInfoDTO,
+-    IConfig, IBank, IGovernmentFinance, IMonetaryAuthority
++    IConfig, IBank, IGovernmentFinance, IMonetaryAuthority, IBankRegistry
+ )
+ from modules.finance.domain import AltmanZScoreCalculator
+ from modules.analysis.fiscal_monitor import FiscalMonitor
+@@ -22,6 +22,7 @@ from modules.finance.engines.loan_booking_engine import LoanBookingEngine
+ from modules.finance.engines.liquidation_engine import LiquidationEngine
+ from modules.finance.engines.debt_servicing_engine import DebtServicingEngine
+ from modules.finance.engines.interest_rate_engine import InterestRateEngine
++from modules.finance.registry.bank_registry import BankRegistry
+ 
+ from typing import TYPE_CHECKING
+ if TYPE_CHECKING:
+@@ -39,7 +40,7 @@ class FinanceSystem(IFinanceSystem):
+     MIGRATION: Uses integer pennies.
+     """
+ 
+-    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None):
++    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None, bank_registry: Optional[IBankRegistry] = None):
+         self.government = government
+         self.central_bank = central_bank
+         self.bank = bank
+@@ -56,18 +57,25 @@ class FinanceSystem(IFinanceSystem):
+         self.debt_servicing_engine = DebtServicingEngine()
+         self.interest_rate_engine = InterestRateEngine()
+ 
+-        # 2. Initialize Ledger (Single Source of Truth)
++        # 2. Initialize Bank Registry
++        self.bank_registry = bank_registry or BankRegistry()
++
++        # Ensure initial bank is registered
++        if not self.bank_registry.get_bank(bank.id):
++            bank_state = BankStateDTO(
++                bank_id=bank.id,
++                base_rate=bank.base_rate,
++                reserves={DEFAULT_CURRENCY: 0}
++            )
++            self.bank_registry.register_bank(bank_state)
++
++        # 3. Initialize Ledger (Single Source of Truth)
+         # We perform a basic sync from the legacy agents to the new ledger
++        # The ledger shares the banks dictionary with the registry
+         self.ledger = FinancialLedgerDTO(
+             current_tick=0,
+             treasury=TreasuryStateDTO(government_id=government.id),
+-            banks={
+-                bank.id: BankStateDTO(
+-                    bank_id=bank.id,
+-                    base_rate=bank.base_rate,
+-                    reserves={DEFAULT_CURRENCY: 0}
+-                )
+-            }
++            banks=self.bank_registry.banks_dict
+         )
+ 
+         # Sync Initial State (Optimistic) - REMOVED
+@@ -79,8 +87,8 @@ class FinanceSystem(IFinanceSystem):
+             return
+ 
+         # Sync Bank Reserves
+-        for bank_id, bank_state in self.ledger.banks.items():
+-            balance = self.settlement_system.get_balance(bank_id, DEFAULT_CURRENCY)
++        for bank_state in self.bank_registry.get_all_banks():
++            balance = self.settlement_system.get_balance(bank_state.bank_id, DEFAULT_CURRENCY)
+             bank_state.reserves[DEFAULT_CURRENCY] = balance
+ 
+         # Sync Treasury
+@@ -148,10 +156,16 @@ class FinanceSystem(IFinanceSystem):
+         # Construct LoanInfoDTO for the caller
+         # lender_id was set in app_dto
+         lender_id = app_dto.lender_id
+-        if not lender_id and self.ledger.banks:
+-             lender_id = next(iter(self.ledger.banks.keys()))
++        if not lender_id:
++             # Fallback to first available bank
++             all_banks = self.bank_registry.get_all_banks()
++             if all_banks:
++                 lender_id = all_banks[0].bank_id
+ 
+-        loan_state = self.ledger.banks[lender_id].loans.get(loan_id)
++        if not lender_id:
++            return None, result.generated_transactions
++
++        loan_state = self.bank_registry.get_loan(lender_id, loan_id)
+ 
+         if not loan_state:
+             return None, result.generated_transactions
+@@ -179,17 +193,18 @@ class FinanceSystem(IFinanceSystem):
+ 
+     def get_customer_balance(self, bank_id: AgentID, customer_id: AgentID) -> int:
+         """Query the ledger for deposit balance."""
+-        if bank_id in self.ledger.banks:
+-            deposit_id = f"DEP_{customer_id}_{bank_id}"
+-            if deposit_id in self.ledger.banks[bank_id].deposits:
+-                return self.ledger.banks[bank_id].deposits[deposit_id].balance_pennies
++        deposit_id = f"DEP_{customer_id}_{bank_id}"
++        deposit = self.bank_registry.get_deposit(bank_id, deposit_id)
++        if deposit:
++            return deposit.balance_pennies
+         return 0
+ 
+     def get_customer_debt_status(self, bank_id: AgentID, customer_id: AgentID) -> List[LoanInfoDTO]:
+         """Query the ledger for loans."""
+         loans = []
+-        if bank_id in self.ledger.banks:
+-            for loan in self.ledger.banks[bank_id].loans.values():
++        bank_state = self.bank_registry.get_bank(bank_id)
++        if bank_state:
++            for loan in bank_state.loans.values():
+                 if loan.borrower_id == customer_id and loan.remaining_principal_pennies > 0:
+                     loans.append(LoanInfoDTO(
+                         loan_id=loan.loan_id,
+@@ -206,9 +221,9 @@ class FinanceSystem(IFinanceSystem):
+         return loans
+ 
+     def close_deposit_account(self, bank_id: AgentID, agent_id: AgentID) -> int:
+-        if bank_id in self.ledger.banks:
++        bank_state = self.bank_registry.get_bank(bank_id)
++        if bank_state:
+             deposit_id = f"DEP_{agent_id}_{bank_id}"
+-            bank_state = self.ledger.banks[bank_id]
+             if deposit_id in bank_state.deposits:
+                 balance = bank_state.deposits[deposit_id].balance_pennies
+                 del bank_state.deposits[deposit_id]
+@@ -217,7 +232,7 @@ class FinanceSystem(IFinanceSystem):
+ 
+     def record_loan_repayment(self, loan_id: str, amount: int) -> int:
+         # Find loan in all banks
+-        for bank_state in self.ledger.banks.values():
++        for bank_state in self.bank_registry.get_all_banks():
+             if loan_id in bank_state.loans:
+                 loan = bank_state.loans[loan_id]
+                 applied = min(amount, loan.remaining_principal_pennies)
+@@ -232,7 +247,7 @@ class FinanceSystem(IFinanceSystem):
+         total_applied = 0
+ 
+         loans_to_pay = []
+-        for bank_state in self.ledger.banks.values():
++        for bank_state in self.bank_registry.get_all_banks():
+             for loan in bank_state.loans.values():
+                 # Ensure flexible ID matching (int vs str)
+                 if int(loan.borrower_id) == int(borrower_id) and loan.remaining_principal_pennies > 0:
+@@ -322,8 +337,9 @@ class FinanceSystem(IFinanceSystem):
+         # Updates self.ledger.treasury.bonds
+ 
+         base_rate = 0.03
+-        if self.ledger.banks:
+-            base_rate = next(iter(self.ledger.banks.values())).base_rate
++        all_banks = self.bank_registry.get_all_banks()
++        if all_banks:
++            base_rate = all_banks[0].base_rate
+ 
+         yield_rate = base_rate + 0.01
+         bond_maturity = 400
+@@ -356,8 +372,9 @@ class FinanceSystem(IFinanceSystem):
+         # Check funds in Ledger (only for Commercial Bank)
+         if buyer_id == self.bank.id:
+             bank_reserves = 0
+-            if buyer_id in self.ledger.banks:
+-                bank_reserves = self.ledger.banks[buyer_id].reserves.get(DEFAULT_CURRENCY, 0)
++            bank_state = self.bank_registry.get_bank(buyer_id)
++            if bank_state:
++                bank_reserves = bank_state.reserves.get(DEFAULT_CURRENCY, 0)
+ 
+             if bank_reserves < amount:
+                  logger.warning(f"BOND_ISSUANCE_SKIPPED | Bank {buyer_id} insufficient reserves: {bank_reserves} < {amount}")
+@@ -479,8 +496,9 @@ class FinanceSystem(IFinanceSystem):
+             return None
+ 
+         base_rate = 0.03 # Default
+-        if self.ledger.banks:
+-            base_rate = next(iter(self.ledger.banks.values())).base_rate
++        all_banks = self.bank_registry.get_all_banks()
++        if all_banks:
++            base_rate = all_banks[0].base_rate
+ 
+         penalty_premium = self.config_module.get("economy_params.BAILOUT_PENALTY_PREMIUM", 0.05)
+ 
+diff --git a/tests/modules/finance/registry/test_bank_registry.py b/tests/modules/finance/registry/test_bank_registry.py
+new file mode 100644
+index 00000000..45929549
+--- /dev/null
++++ b/tests/modules/finance/registry/test_bank_registry.py
+@@ -0,0 +1,84 @@
++import pytest
++from modules.finance.registry.bank_registry import BankRegistry
++from modules.finance.engine_api import BankStateDTO, DepositStateDTO, LoanStateDTO
++from modules.system.api import DEFAULT_CURRENCY
++
++class TestBankRegistry:
++    def test_initialization_empty(self):
++        registry = BankRegistry()
++        assert registry.banks_dict == {}
++        assert registry.get_all_banks() == []
++
++    def test_initialization_with_data(self):
++        bank_state = BankStateDTO(bank_id=1, base_rate=0.03)
++        initial_banks = {
++            1: bank_state
++        }
++        registry = BankRegistry(initial_banks=initial_banks)
++        assert registry.banks_dict == initial_banks
++        assert registry.get_bank(1) == initial_banks[1]
++
++    def test_register_bank(self):
++        registry = BankRegistry()
++        bank_state = BankStateDTO(bank_id=1, base_rate=0.03)
++        registry.register_bank(bank_state)
++
++        assert registry.get_bank(1) == bank_state
++        assert registry.banks_dict[1] == bank_state
++
++    def test_get_deposit(self):
++        registry = BankRegistry()
++        deposit = DepositStateDTO(
++            deposit_id="DEP_1_1",
++            customer_id=2,
++            balance_pennies=1000,
++            interest_rate=0.0
++        )
++        bank_state = BankStateDTO(
++            bank_id=1,
++            base_rate=0.03,
++            deposits={"DEP_1_1": deposit}
++        )
++        registry.register_bank(bank_state)
++
++        fetched = registry.get_deposit(1, "DEP_1_1")
++        assert fetched == deposit
++
++        # Test missing bank or deposit
++        assert registry.get_deposit(1, "DEP_MISSING") is None
++        assert registry.get_deposit(999, "DEP_1_1") is None
++
++    def test_get_loan(self):
++        registry = BankRegistry()
++        loan = LoanStateDTO(
++            loan_id="LOAN_1",
++            borrower_id=2,
++            lender_id=1,
++            principal_pennies=5000,
++            remaining_principal_pennies=5000,
++            interest_rate=0.05,
++            origination_tick=0,
++            due_tick=100
++        )
++        bank_state = BankStateDTO(
++            bank_id=1,
++            base_rate=0.03,
++            loans={"LOAN_1": loan}
++        )
++        registry.register_bank(bank_state)
++
++        fetched = registry.get_loan(1, "LOAN_1")
++        assert fetched == loan
++
++        assert registry.get_loan(1, "LOAN_MISSING") is None
++        assert registry.get_loan(999, "LOAN_1") is None
++
++    def test_shared_reference(self):
++        """Verify that modifications to the shared dict are reflected."""
++        registry = BankRegistry()
++        shared_dict = registry.banks_dict
++
++        bank_state = BankStateDTO(bank_id=1, base_rate=0.03)
++        shared_dict[1] = bank_state
++
++        assert registry.get_bank(1) == bank_state

@@ -1,0 +1,163 @@
+diff --git a/communications/insights/transfer_rollback_implementation.md b/communications/insights/transfer_rollback_implementation.md
+new file mode 100644
+index 00000000..eef6761b
+--- /dev/null
++++ b/communications/insights/transfer_rollback_implementation.md
+@@ -0,0 +1,5 @@
++### Transfer Rollback Implementation (역방향 트랜잭션을 통한 롤백)
++- **현상**: 이체 트랜잭션 실패 또는 보상 트랜잭션 필요 시 롤백을 처리하는 로직이 미구현 상태였음.
++- **원인**: `TransferHandler.rollback`이 `TODO`로 남아 작동하지 않음.
++- **해결**: 원본 트랜잭션(`TransactionDTO`)의 Source와 Destination을 반전시킨 역방향 트랜잭션을 `LedgerEngine`을 통해 실행하도록 `rollback` 메서드 구현.
++- **교훈**: 롤백 트랜잭션 실행 시 발생하는 예외(Exception)는 원상 복구 실패라는 치명적인 상태 불일치를 의미하므로, 예외를 조용히 무시(Swallow)하지 않고 반드시 상세히 로깅하여 추적 가능성을 확보해야 함.
+diff --git a/modules/finance/handlers/transfer.py b/modules/finance/handlers/transfer.py
+index a14d25d8..b729b7ed 100644
+--- a/modules/finance/handlers/transfer.py
++++ b/modules/finance/handlers/transfer.py
+@@ -1,7 +1,10 @@
++import logging
+ from typing import Any
+ from modules.finance.api import ITransactionHandler
+ from modules.finance.transaction.api import ILedgerEngine, TransactionDTO, TransactionResultDTO
+ 
++logger = logging.getLogger(__name__)
++
+ class TransferHandler(ITransactionHandler):
+     """
+     Handler for basic financial transfers (TransactionType.TRANSFER).
+@@ -29,5 +32,21 @@ class TransferHandler(ITransactionHandler):
+         )
+ 
+     def rollback(self, transaction_id: str, context: Any) -> bool:
+-        # TODO: Implement rollback
+-        return False
++        if not isinstance(context, TransactionDTO):
++            logger.error(f"Rollback failed for tx {transaction_id}: context is not a TransactionDTO")
++            return False
++
++        try:
++            result = self.ledger_engine.process_transaction(
++                source_account_id=context.destination_account_id,
++                destination_account_id=context.source_account_id,
++                amount=context.amount,
++                currency=context.currency,
++                description=f"ROLLBACK of original tx {context.transaction_id}"
++            )
++            if result.status != 'COMPLETED':
++                logger.error(f"Rollback failed for tx {transaction_id}: {result.message}")
++            return result.status == 'COMPLETED'
++        except Exception as e:
++            logger.error(f"Rollback failed for tx {transaction_id} (original tx {context.transaction_id}): {e}")
++            return False
+diff --git a/tests/unit/handlers/test_transfer_handler.py b/tests/unit/handlers/test_transfer_handler.py
+new file mode 100644
+index 00000000..23674776
+--- /dev/null
++++ b/tests/unit/handlers/test_transfer_handler.py
+@@ -0,0 +1,107 @@
++import pytest
++from unittest.mock import MagicMock
++from modules.finance.handlers.transfer import TransferHandler
++from modules.finance.transaction.api import TransactionDTO, TransactionResultDTO
++
++class TestTransferHandler:
++    def test_rollback_with_valid_context(self):
++        # Setup
++        mock_ledger_engine = MagicMock()
++        handler = TransferHandler(mock_ledger_engine)
++
++        tx_dto = TransactionDTO(
++            transaction_id="orig_tx_123",
++            source_account_id="source_1",
++            destination_account_id="dest_1",
++            amount=1000,
++            currency="USD",
++            description="Original Transfer"
++        )
++
++        # Mock successful rollback transaction
++        mock_result = TransactionResultDTO(
++            transaction=MagicMock(),
++            status='COMPLETED',
++            message="Rollback successful",
++            timestamp=123.0
++        )
++        mock_ledger_engine.process_transaction.return_value = mock_result
++
++        # Execute
++        result = handler.rollback(transaction_id="rollback_tx_123", context=tx_dto)
++
++        # Verify
++        assert result is True
++        mock_ledger_engine.process_transaction.assert_called_once_with(
++            source_account_id="dest_1",
++            destination_account_id="source_1",
++            amount=1000,
++            currency="USD",
++            description="ROLLBACK of original tx orig_tx_123"
++        )
++
++    def test_rollback_with_failed_ledger(self):
++        # Setup
++        mock_ledger_engine = MagicMock()
++        handler = TransferHandler(mock_ledger_engine)
++
++        tx_dto = TransactionDTO(
++            transaction_id="orig_tx_123",
++            source_account_id="source_1",
++            destination_account_id="dest_1",
++            amount=1000,
++            currency="USD",
++            description="Original Transfer"
++        )
++
++        # Mock failed rollback transaction
++        mock_result = TransactionResultDTO(
++            transaction=MagicMock(),
++            status='FAILED',
++            message="Rollback failed",
++            timestamp=123.0
++        )
++        mock_ledger_engine.process_transaction.return_value = mock_result
++
++        # Execute
++        result = handler.rollback(transaction_id="rollback_tx_123", context=tx_dto)
++
++        # Verify
++        assert result is False
++        mock_ledger_engine.process_transaction.assert_called_once()
++
++    def test_rollback_with_invalid_context(self):
++        # Setup
++        mock_ledger_engine = MagicMock()
++        handler = TransferHandler(mock_ledger_engine)
++
++        # Execute with non-TransactionDTO context
++        result = handler.rollback(transaction_id="rollback_tx_123", context={"some": "dict"})
++
++        # Verify
++        assert result is False
++        mock_ledger_engine.process_transaction.assert_not_called()
++
++    def test_rollback_with_exception(self):
++        # Setup
++        mock_ledger_engine = MagicMock()
++        handler = TransferHandler(mock_ledger_engine)
++
++        tx_dto = TransactionDTO(
++            transaction_id="orig_tx_123",
++            source_account_id="source_1",
++            destination_account_id="dest_1",
++            amount=1000,
++            currency="USD",
++            description="Original Transfer"
++        )
++
++        # Mock exception during rollback
++        mock_ledger_engine.process_transaction.side_effect = Exception("DB error")
++
++        # Execute
++        result = handler.rollback(transaction_id="rollback_tx_123", context=tx_dto)
++
++        # Verify
++        assert result is False
++        mock_ledger_engine.process_transaction.assert_called_once()

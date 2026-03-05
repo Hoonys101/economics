@@ -1,0 +1,534 @@
+diff --git a/communications/insights/MISSION_impl_liquidation_wave1_5.md b/communications/insights/MISSION_impl_liquidation_wave1_5.md
+new file mode 100644
+index 00000000..e7c67b3d
+--- /dev/null
++++ b/communications/insights/MISSION_impl_liquidation_wave1_5.md
+@@ -0,0 +1,48 @@
++# Insight Report: Mission Wave 1.5 Implementation
++
++## 1. Architectural Insights
++
++### 1.1. Platform Abstraction Layer
++- **Component**: `modules/platform/infrastructure/lock_manager.py`
++- **Insight**: Segregated OS-specific locking logic (`fcntl` for Unix, `msvcrt` for Windows) into a `PlatformLockManager` implementing `ILockManager`. This removes the hard dependency on `fcntl` in the core initialization logic, enabling Windows compatibility.
++- **Decision**: The `LockManager` is instantiated early in `SimulationInitializer` and injected into the `Simulation` engine, ensuring the lock is held for the duration of the process and released upon finalization.
++- **Refinement**: Switched from `open(..., 'w')` to `open(..., 'a')` to ensure the lock file is not truncated if it contains content (like PID) in future iterations.
++
++### 1.2. Initialization Order & Dependency Injection
++- **Issue**: The `SettlementSystem` (used by `Bootstrapper`) relies on `AgentRegistry` to resolve agent IDs. Previously, `AgentRegistry` was linked to `WorldState` *after* the bootstrap phase, causing `Bootstrapper` transactions to fail or operate on disconnected components.
++- **Resolution**: Reordered `SimulationInitializer.build_simulation` to link `AgentRegistry` immediately after System Agents (Gov, Bank, CB) are instantiated and registered. This ensures `SettlementSystem` has full visibility during the initial wealth distribution.
++
++## 2. Regression Analysis
++
++### 2.1. Test Environment Locking Conflicts
++- **Symptom**: System integration tests (e.g., `test_engine.py`, `test_phase29_depression.py`) began failing with `RuntimeError: Simulation is already running`.
++- **Root Cause**: The new `PlatformLockManager` correctly acquired a file lock on `simulation.lock`. Since the test suite runs multiple simulations sequentially (or in parallel threads) within the same environment without always fully cleaning up file handles, subsequent tests failed to acquire the lock.
++- **Fix**: Implemented a global `autouse=True` fixture `mock_platform_lock_manager` in `tests/conftest.py`. This patches `PlatformLockManager.acquire` and `release` methods globally to do nothing during tests.
++- **Exception**: Unit tests for the lock manager itself (`tests/platform/test_lock_manager.py`) opt-out of this global mock using `@pytest.mark.no_lock_mock` to verify real locking logic (with internal OS mocks).
++
++### 2.2. SimulationInitializer Unit Testing
++- **Challenge**: `SimulationInitializer` has extensive dependencies (40+ imports), making unit testing brittle.
++- **Strategy**: Utilized `unittest.mock.patch` with `contextlib.ExitStack` to mock all external dependencies in `tests/simulation/test_initializer.py`. This allowed us to verify the *order of operations* (specifically Registry linking vs. Bootstrap) without instantiating the entire simulation graph.
++
++## 3. Test Evidence
++
++### 3.1. Platform Lock Manager (`tests/platform/test_lock_manager.py`)
++```text
++tests/platform/test_lock_manager.py::TestPlatformLockManager::test_acquire_unix_success PASSED [ 20%]
++tests/platform/test_lock_manager.py::TestPlatformLockManager::test_acquire_unix_fail PASSED [ 40%]
++tests/platform/test_lock_manager.py::TestPlatformLockManager::test_acquire_windows_success PASSED [ 60%]
++tests/platform/test_lock_manager.py::TestPlatformLockManager::test_acquire_windows_fail PASSED [ 80%]
++tests/platform/test_lock_manager.py::TestPlatformLockManager::test_release_unix PASSED [100%]
++```
++
++### 3.2. Initialization Logic (`tests/simulation/test_initializer.py`)
++```text
++tests/simulation/test_initializer.py::TestSimulationInitializer::test_registry_linked_before_bootstrap PASSED [100%]
++```
++
++### 3.3. Integration Verification
++Verified that high-level integration tests run without locking conflicts.
++```text
++tests/system/test_phase29_depression.py::TestPhase29Depression::test_depression_scenario_triggers PASSED [100%]
++tests/integration/test_config_hot_swap.py::test_defaults_loaded PASSED [ 75%]
++```
+diff --git a/modules/platform/api.py b/modules/platform/api.py
+new file mode 100644
+index 00000000..5a55a73a
+--- /dev/null
++++ b/modules/platform/api.py
+@@ -0,0 +1,25 @@
++from typing import Protocol, runtime_checkable
++
++class LockAcquisitionError(Exception):
++    """Raised when a file lock cannot be acquired (e.g., another instance is running)."""
++    pass
++
++@runtime_checkable
++class ILockManager(Protocol):
++    """
++    Abstract interface for handling file-based concurrency locking.
++    Must support both Windows (msvcrt) and Unix (fcntl).
++    """
++
++    def acquire(self) -> None:
++        """
++        Acquires an exclusive, non-blocking lock on the configured resource.
++        Raises LockAcquisitionError if the lock is already held.
++        """
++        ...
++
++    def release(self) -> None:
++        """
++        Releases the held lock and closes any underlying file handles.
++        """
++        ...
+diff --git a/modules/platform/infrastructure/lock_manager.py b/modules/platform/infrastructure/lock_manager.py
+new file mode 100644
+index 00000000..faaae189
+--- /dev/null
++++ b/modules/platform/infrastructure/lock_manager.py
+@@ -0,0 +1,106 @@
++import os
++import sys
++import logging
++from typing import Optional, TextIO
++
++# Platform-specific imports
++if os.name == 'nt':
++    try:
++        import msvcrt
++    except ImportError:
++        msvcrt = None
++else:
++    try:
++        import fcntl
++    except ImportError:
++        fcntl = None
++
++from modules.platform.api import ILockManager, LockAcquisitionError
++
++class PlatformLockManager(ILockManager):
++    """
++    Cross-platform implementation of file locking.
++    Uses 'fcntl' on Unix-like systems and 'msvcrt' on Windows.
++    """
++
++    def __init__(self, lock_file_path: str = 'simulation.lock'):
++        self.lock_file_path = lock_file_path
++        self._lock_file: Optional[TextIO] = None
++        self.logger = logging.getLogger(__name__)
++
++    def acquire(self) -> None:
++        """
++        Acquires an exclusive, non-blocking lock.
++        Raises LockAcquisitionError if failed.
++        """
++        if self._lock_file:
++            return # Already acquired
++
++        try:
++            # Use 'a' (append) to avoid truncating the file if it exists and has content (e.g. PID)
++            self._lock_file = open(self.lock_file_path, 'a')
++        except IOError as e:
++            raise LockAcquisitionError(f"Could not open lock file: {e}")
++
++        if os.name == 'nt':
++            self._acquire_windows()
++        else:
++            self._acquire_unix()
++
++        self.logger.info(f"Acquired exclusive lock on {self.lock_file_path}")
++
++    def _acquire_windows(self) -> None:
++        if not msvcrt:
++             self.logger.warning("msvcrt module not found on Windows. Locking disabled.")
++             return
++
++        try:
++            # LK_NBLCK: Non-blocking lock
++            # Lock 1 byte at the beginning of the file
++            fd = self._lock_file.fileno()
++            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
++        except IOError:
++            self._cleanup()
++            raise LockAcquisitionError("Simulation is already running (Windows lock).")
++
++    def _acquire_unix(self) -> None:
++        if not fcntl:
++             self.logger.warning("fcntl module not found on Unix. Locking disabled.")
++             return
++
++        try:
++            # LOCK_EX: Exclusive
++            # LOCK_NB: Non-blocking
++            fcntl.flock(self._lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
++        except IOError:
++            self._cleanup()
++            raise LockAcquisitionError("Simulation is already running (Unix lock).")
++
++    def release(self) -> None:
++        """
++        Releases the lock and closes the file.
++        """
++        if not self._lock_file:
++            return
++
++        try:
++            if os.name == 'nt':
++                if msvcrt:
++                    fd = self._lock_file.fileno()
++                    msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
++            else:
++                if fcntl:
++                    fcntl.flock(self._lock_file, fcntl.LOCK_UN)
++        except IOError:
++            self.logger.warning("Error releasing lock.")
++        finally:
++            self._cleanup()
++            self.logger.info(f"Released lock on {self.lock_file_path}")
++
++    def _cleanup(self) -> None:
++        if self._lock_file:
++            try:
++                self._lock_file.close()
++            except IOError:
++                pass
++            self._lock_file = None
+diff --git a/pytest.ini b/pytest.ini
+index 2705a992..734ce744 100644
+--- a/pytest.ini
++++ b/pytest.ini
+@@ -12,3 +12,4 @@ log_cli_level = INFO
+ asyncio_mode = auto
+ markers =
+     asyncio: mark test as an asyncio test
++    no_lock_mock: opt-out of the global PlatformLockManager mock
+diff --git a/simulation/engine.py b/simulation/engine.py
+index 74a5167b..c35e8785 100644
+--- a/simulation/engine.py
++++ b/simulation/engine.py
+@@ -96,7 +96,13 @@ class Simulation:
+         self.world_state.logger.info("Simulation finalized and Repository connection closed.")
+ 
+         # Release application-level lock if exists
+-        if hasattr(self, "_lock_file") and self._lock_file:
++        if hasattr(self, "lock_manager") and self.lock_manager:
++            try:
++                self.lock_manager.release()
++                self.world_state.logger.info("Released simulation.lock via LockManager")
++            except Exception as e:
++                self.world_state.logger.error(f"Failed to release simulation.lock via LockManager: {e}")
++        elif hasattr(self, "_lock_file") and self._lock_file:
+             try:
+                 self._lock_file.close() # Closing the file releases the lock
+                 self.world_state.logger.info("Released simulation.lock")
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index f0966f82..9a7be139 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -5,12 +5,9 @@ import hashlib
+ import json
+ import os
+ from collections import deque
+-try:
+-    import fcntl
+-except ImportError:
+-    fcntl = None
+ if TYPE_CHECKING:
+     from simulation.engine import Simulation
++from modules.platform.infrastructure.lock_manager import PlatformLockManager, LockAcquisitionError
+ from modules.common.config_manager.api import ConfigManager
+ from simulation.initialization.api import SimulationInitializerInterface
+ from simulation.models import Order, RealEstateUnit
+@@ -105,17 +102,14 @@ class SimulationInitializer(SimulationInitializerInterface):
+         Simulation 인스턴스를 생성하고 모든 구성 요소를 조립합니다.
+         (기존 Simulation.__init__ 로직을 이 곳으로 이동)
+         """
+-        lock_file = None
+-        if fcntl:
+-            lock_file = open('simulation.lock', 'w')
+-            try:
+-                fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+-                self.logger.info('Acquired exclusive lock on simulation.lock')
+-            except IOError:
+-                self.logger.error('Another simulation instance is already running (locked by simulation.lock).')
+-                raise RuntimeError('Simulation is already running.')
+-        else:
+-            self.logger.warning('File locking (fcntl) is not supported on this platform. Concurrency safety is not guaranteed.')
++        # Cross-Platform Locking Mechanism (Wave 1.5)
++        lock_manager = PlatformLockManager('simulation.lock')
++        try:
++            lock_manager.acquire()
++        except LockAcquisitionError:
++            self.logger.error('Another simulation instance is already running (locked by simulation.lock).')
++            raise RuntimeError('Simulation is already running.')
++
+         global_registry = GlobalRegistry()
+         agent_registry = AgentRegistry()
+         settlement_system = SettlementSystem(logger=self.logger, agent_registry=agent_registry)
+@@ -125,7 +119,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+ 
+         # sim.agent_registry.set_state(sim.world_state) # DEFERRED to end of build_simulation
+ 
+-        sim._lock_file = lock_file
++        sim.lock_manager = lock_manager
+         sim.event_bus = EventBus()
+         sim.world_state.taxation_system = TaxationSystem(config_module=self.config)
+         from modules.system.telemetry import TelemetryCollector
+@@ -207,6 +201,11 @@ class SimulationInitializer(SimulationInitializerInterface):
+              # Central Bank ID is handled internally by the class, but we register it here
+              # to ensure it exists in the primary agent lookup table.
+              sim.agents[ID_CENTRAL_BANK] = sim.central_bank
++
++        # TD-INIT-RACE: Registry must be linked BEFORE Bootstrapper runs.
++        # Now that System Agents (Gov, Bank, CB) are in sim.agents, we link the registry.
++        sim.agent_registry.set_state(sim.world_state)
++
+         sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system)
+         sim.government.finance_system = sim.finance_system
+         sim.bank.set_finance_system(sim.finance_system)
+@@ -392,7 +391,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+ 
+         # TD-FIN-INVISIBLE-HAND: Ensure system agents are registered before Snapshot
+         self.logger.info("LATE_INITIALIZATION | Finalizing AgentRegistry state snapshot.")
+-        sim.agent_registry.set_state(sim.world_state)
++        # sim.agent_registry.set_state(sim.world_state) # MOVED up before Bootstrapper
+ 
+         self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
+         return sim
+\ No newline at end of file
+diff --git a/tests/conftest.py b/tests/conftest.py
+index d0bab658..8bb7698d 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -45,11 +45,25 @@ from modules.finance.system import FinanceSystem
+ from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
+ from modules.finance.api import ISettlementSystem, IMonetaryAuthority
+ 
++@pytest.fixture(autouse=True)
++def mock_platform_lock_manager(request):
++    """Mocks PlatformLockManager methods globally to prevent file locking during tests."""
++    # Allow tests to opt-out of this mock (e.g., unit tests for the lock manager itself)
++    if request.node.get_closest_marker("no_lock_mock"):
++        yield
++        return
++
++    # Patch the methods on the class itself to handle all import variations
++    with patch('modules.platform.infrastructure.lock_manager.PlatformLockManager.acquire') as mock_acquire, \
++         patch('modules.platform.infrastructure.lock_manager.PlatformLockManager.release') as mock_release:
++        yield
++
+ @pytest.fixture(autouse=True)
+ def mock_fcntl():
+     """Mocks fcntl to prevent file locking during tests."""
+     # We patch the fcntl module used in initializer.py
+     # If the system doesn't have fcntl, it might be None, so we patch carefully.
++    # Note: With mock_platform_lock_manager, this might be redundant but safe to keep for now.
+     import simulation.initialization.initializer
+     with patch('simulation.initialization.initializer.fcntl', create=True) as mock_fcntl:
+         if mock_fcntl:
+diff --git a/tests/platform/test_lock_manager.py b/tests/platform/test_lock_manager.py
+new file mode 100644
+index 00000000..8abf00b9
+--- /dev/null
++++ b/tests/platform/test_lock_manager.py
+@@ -0,0 +1,88 @@
++import pytest
++import os
++import sys
++from unittest.mock import MagicMock, patch, mock_open
++
++from modules.platform.infrastructure.lock_manager import PlatformLockManager, LockAcquisitionError
++
++@pytest.mark.no_lock_mock
++class TestPlatformLockManager:
++
++    def setup_method(self):
++        self.lock_path = "test_simulation.lock"
++
++    @patch('modules.platform.infrastructure.lock_manager.os.name', 'posix')
++    @patch('modules.platform.infrastructure.lock_manager.fcntl')
++    def test_acquire_unix_success(self, mock_fcntl):
++        mock_fcntl.LOCK_EX = 2
++        mock_fcntl.LOCK_NB = 4
++
++        manager = PlatformLockManager(self.lock_path)
++        with patch('builtins.open', mock_open()) as mock_file:
++            manager.acquire()
++
++            mock_fcntl.flock.assert_called_once()
++            args = mock_fcntl.flock.call_args[0]
++            # Verify lock flags (LOCK_EX | LOCK_NB)
++            assert args[1] == (mock_fcntl.LOCK_EX | mock_fcntl.LOCK_NB)
++
++    @patch('modules.platform.infrastructure.lock_manager.os.name', 'posix')
++    @patch('modules.platform.infrastructure.lock_manager.fcntl')
++    def test_acquire_unix_fail(self, mock_fcntl):
++        mock_fcntl.LOCK_EX = 2
++        mock_fcntl.LOCK_NB = 4
++        mock_fcntl.flock.side_effect = IOError("Locked")
++
++        manager = PlatformLockManager(self.lock_path)
++
++        with patch('builtins.open', mock_open()) as mock_file:
++            with pytest.raises(LockAcquisitionError):
++                manager.acquire()
++
++    @patch('modules.platform.infrastructure.lock_manager.os.name', 'nt')
++    @patch('modules.platform.infrastructure.lock_manager.msvcrt', create=True)
++    def test_acquire_windows_success(self, mock_msvcrt):
++        mock_msvcrt.LK_NBLCK = 1
++
++        manager = PlatformLockManager(self.lock_path)
++        with patch('builtins.open', mock_open()) as mock_file:
++            # Mock fileno()
++            mock_file.return_value.fileno.return_value = 10
++
++            manager.acquire()
++
++            mock_msvcrt.locking.assert_called_once()
++            # Verify lock flags (LK_NBLCK, 1 byte)
++            args = mock_msvcrt.locking.call_args[0]
++            assert args[0] == 10 # fd
++            assert args[1] == mock_msvcrt.LK_NBLCK
++            assert args[2] == 1
++
++    @patch('modules.platform.infrastructure.lock_manager.os.name', 'nt')
++    @patch('modules.platform.infrastructure.lock_manager.msvcrt', create=True)
++    def test_acquire_windows_fail(self, mock_msvcrt):
++        mock_msvcrt.LK_NBLCK = 1
++        mock_msvcrt.locking.side_effect = IOError("Locked")
++
++        manager = PlatformLockManager(self.lock_path)
++
++        with patch('builtins.open', mock_open()) as mock_file:
++            mock_file.return_value.fileno.return_value = 10
++
++            with pytest.raises(LockAcquisitionError):
++                manager.acquire()
++
++    @patch('modules.platform.infrastructure.lock_manager.os.name', 'posix')
++    @patch('modules.platform.infrastructure.lock_manager.fcntl')
++    def test_release_unix(self, mock_fcntl):
++        mock_fcntl.LOCK_EX = 2
++        mock_fcntl.LOCK_NB = 4
++        mock_fcntl.LOCK_UN = 8
++
++        manager = PlatformLockManager(self.lock_path)
++        with patch('builtins.open', mock_open()) as mock_file:
++            manager.acquire()
++            manager.release()
++
++            mock_fcntl.flock.assert_called_with(mock_file.return_value, mock_fcntl.LOCK_UN)
++            mock_file.return_value.close.assert_called()
+diff --git a/tests/simulation/test_initializer.py b/tests/simulation/test_initializer.py
+new file mode 100644
+index 00000000..81f9d472
+--- /dev/null
++++ b/tests/simulation/test_initializer.py
+@@ -0,0 +1,104 @@
++import pytest
++from unittest.mock import MagicMock, patch, call
++from contextlib import ExitStack
++from simulation.initialization.initializer import SimulationInitializer
++from modules.system.constants import ID_GOVERNMENT, ID_CENTRAL_BANK, ID_BANK
++
++class TestSimulationInitializer:
++
++    @patch('simulation.initialization.initializer.PlatformLockManager')
++    @patch('simulation.initialization.initializer.Simulation')
++    @patch('simulation.initialization.initializer.SettlementSystem')
++    @patch('simulation.initialization.initializer.Bootstrapper')
++    @patch('simulation.initialization.initializer.AgentRegistry')
++    def test_registry_linked_before_bootstrap(self, MockAgentRegistry, MockBootstrapper, MockSettlementSystem, MockSimulation, MockLockManager):
++        # Setup
++        mock_config = MagicMock()
++        mock_config.INITIAL_MONEY_SUPPLY = 1000
++        mock_config.INITIAL_BANK_ASSETS = 1000
++        mock_config.NUM_HOUSING_UNITS = 10
++        mock_config.GOODS = ['food']
++        mock_config.INITIAL_PROPERTY_VALUE = 100
++        mock_config.INITIAL_RENT_PRICE = 10
++
++        mock_repo = MagicMock()
++        mock_logger = MagicMock()
++
++        initializer = SimulationInitializer(
++            config_manager=MagicMock(),
++            config_module=mock_config,
++            goods_data=[],
++            repository=mock_repo,
++            logger=mock_logger,
++            households=[],
++            firms=[],
++            ai_trainer=MagicMock(),
++            initial_balances={1: 100} # Trigger bootstrap for agent 1
++        )
++
++        mock_sim_instance = MockSimulation.return_value
++        # Ensure sim.agents is a dict so update/assignment works
++        mock_sim_instance.agents = {}
++
++        mock_registry_instance = MockAgentRegistry.return_value
++        # IMPORTANT: Link the registry mock to the simulation mock so calls to sim.agent_registry are tracked on the same object
++        mock_sim_instance.agent_registry = mock_registry_instance
++
++        # Create a manager to track call order
++        manager = MagicMock()
++        manager.attach_mock(MockBootstrapper, 'Bootstrapper')
++        manager.attach_mock(mock_registry_instance, 'AgentRegistry')
++
++        # List of components to mock to prevent initialization errors
++        # Note: Local imports in build_simulation cannot be patched via simulation.initialization.initializer
++        components_to_mock = [
++            'GlobalRegistry', 'EventBus', 'TaxationSystem',
++            'MonetaryLedger', 'SagaOrchestrator', 'ShareholderRegistry', 'EconomicIndicatorTracker',
++            'CentralBank', 'Bank', 'Government', 'FinanceSystem', 'RealEstateUnit',
++            'OrderBookMarket', 'LaborMarket', 'LoanMarket', 'InequalityTracker', 'PersonalityStatisticsTracker',
++            'AITrainingManager', 'MAManager', 'PersistenceManager', 'HouseholdFactory', 'DemographicManager',
++            'ImmigrationManager', 'InheritanceManager', 'HousingSystem', 'AnalyticsSystem', 'FirmSystem',
++            'TechnologyManager', 'GenerationalWealthAudit', 'VectorizedHouseholdPlanner', 'TransactionProcessor',
++            'AgentLifecycleManager', 'SocialSystem', 'EventSystem', 'SensorySystem', 'CommerceSystem',
++            'LaborMarketAnalyzer', 'CrisisMonitor', 'EscrowAgent', 'JudicialSystem',
++            'PublicManager', 'HousingService', 'Registry', 'AccountingSystem', 'CentralBankSystem',
++            'CreditScoringService'
++        ]
++
++        with ExitStack() as stack:
++            # Patch global imports
++            for component in components_to_mock:
++                stack.enter_context(patch(f'simulation.initialization.initializer.{component}'))
++
++            # Patch local imports at their source
++            stack.enter_context(patch('modules.system.services.command_service.CommandService'))
++            stack.enter_context(patch('modules.system.telemetry.TelemetryCollector'))
++            stack.enter_context(patch('simulation.dtos.strategy.ScenarioStrategy'))
++            stack.enter_context(patch('modules.analysis.scenario_verifier.engine.ScenarioVerifier'))
++
++            initializer.build_simulation()
++
++        # Verify LockManager usage
++        MockLockManager.assert_called_with('simulation.lock')
++        MockLockManager.return_value.acquire.assert_called_once()
++
++        # Verify Call Order
++        # We need to check if 'set_state' was called on the instance returned by AgentRegistry()
++        # Since we mocked AgentRegistry class, verify method calls on its return value.
++
++        # Note: manager.mock_calls tracks calls to attached mocks.
++        # Bootstrapper is attached as 'Bootstrapper'.
++        # AgentRegistry instance is attached as 'AgentRegistry'.
++
++        set_state_calls = [c for c in manager.mock_calls if 'AgentRegistry.set_state' in str(c)]
++        bootstrap_calls = [c for c in manager.mock_calls if 'Bootstrapper.distribute_initial_wealth' in str(c)]
++
++        assert len(set_state_calls) > 0, "AgentRegistry.set_state should be called"
++        assert len(bootstrap_calls) > 0, "Bootstrapper.distribute_initial_wealth should be called"
++
++        # Get the index of the first call of each
++        first_set_state_idx = manager.mock_calls.index(set_state_calls[0])
++        first_bootstrap_idx = manager.mock_calls.index(bootstrap_calls[0])
++
++        assert first_set_state_idx < first_bootstrap_idx, \
++            f"AgentRegistry.set_state (idx {first_set_state_idx}) must be called BEFORE Bootstrapper.distribute_initial_wealth (idx {first_bootstrap_idx})"

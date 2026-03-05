@@ -1,0 +1,374 @@
+diff --git a/communications/insights/WO-WAVE-B-3-SAGA.md b/communications/insights/WO-WAVE-B-3-SAGA.md
+new file mode 100644
+index 00000000..675d2a6c
+--- /dev/null
++++ b/communications/insights/WO-WAVE-B-3-SAGA.md
+@@ -0,0 +1,77 @@
++# WO-WAVE-B-3-SAGA: Saga Recovery & Cleanup Insight Report
++
++## 1. Architectural Insights
++
++### Liveness-Aware Saga Orchestration
++The `SagaOrchestrator` has been hardened to prevent "Zombie Sagas" by integrating directly with the `AgentRegistry`. Previously, the orchestrator relied on ad-hoc checks against `simulation_state.agents`, which was fragile and prone to errors if agents were removed from the state map but not fully cleaned up.
++
++**Key Changes:**
++- **Dependency Injection:** `IAgentRegistry` is now injected into `SagaOrchestrator` via the constructor. This aligns with the architectural goal of using dedicated registries for state queries rather than raw dictionary access.
++- **Protocol-Based Liveness:** The orchestrator now uses `agent_registry.is_agent_active(agent_id)` to determine participant status. This abstracts the underlying implementation of "activity" (e.g., handling dead agents, bankrupt agents, or system agents).
++- **Proactive Cleanup:** When an inactive participant is detected, the saga is immediately cancelled, logged with `SAGA_CLEANUP`, and removed from the active set. This prevents the system from wasting cycles on dead transactions.
++- **Error Resilience:** Compensation logic is wrapped in robust error handling. If `compensate_step` fails (e.g., because the counterparty is also dead), the error is logged as `SAGA_COMPENSATE_FAIL` but the cleanup proceeds, ensuring the orchestrator remains stable.
++
++### Technical Debt Resolution
++- **TD-FIN-SAGA-REGRESSION:** The spam of `SAGA_SKIP` logs (implied by repeated processing of dead sagas) is resolved by the proactive cleanup mechanism.
++- **Layering Compliance:** By injecting `AgentRegistry` in `SimulationInitializer` (Phase 1), we respect the initialization order and ensure the orchestrator has access to the necessary services without circular dependencies.
++
++## 2. Regression Analysis
++
++### Impact on Legacy Tests
++- `tests/unit/sagas/test_orchestrator.py`: This test suite verifies the core saga submission and processing logic.
++- **Regression Check:** The constructor signature change (`agent_registry` argument) is backward compatible (defaulting to `None`). Existing tests that instantiate `SagaOrchestrator` without arguments continue to pass, verifying that the fallback logic for liveness checks (using `simulation_state`) remains functional. This ensures that we haven't broken environments where the registry might not be fully wired up yet (e.g., unit tests mocking only parts of the system).
++
++### New Verification Logic
++- A new test file `tests/unit/sagas/test_saga_cleanup.py` was created to specifically target the new functionality.
++- This "Chaos Test" confirms:
++    1. **Cleanup:** Sagas with inactive participants are removed.
++    2. **Logging:** `SAGA_CLEANUP` logs are generated with correct context.
++    3. **Resilience:** `SAGA_COMPENSATE_FAIL` is handled gracefully without crashing the loop.
++
++## 3. Test Evidence
++
++### New Feature Verification (`tests/unit/sagas/test_saga_cleanup.py`)
++```
++tests/unit/sagas/test_saga_cleanup.py::test_saga_cleanup_inactive_buyer
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.sagas.orchestrator:orchestrator.py:61 SAGA_SUBMITTED | Saga fe13951b-ea39-46fd-9627-2ad406a677dd submitted.
++INFO     modules.finance.sagas.orchestrator:orchestrator.py:142 SAGA_CLEANUP | Saga fe13951b-ea39-46fd-9627-2ad406a677dd cancelled due to inactive participant. Buyer Active: False, Seller Active: True
++PASSED                                                                   [ 33%]
++tests/unit/sagas/test_saga_cleanup.py::test_saga_cleanup_and_compensate
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.sagas.orchestrator:orchestrator.py:61 SAGA_SUBMITTED | Saga eded76f4-94f7-45f7-90cb-d4eb7f2d666d submitted.
++INFO     modules.finance.sagas.orchestrator:orchestrator.py:142 SAGA_CLEANUP | Saga eded76f4-94f7-45f7-90cb-d4eb7f2d666d cancelled due to inactive participant. Buyer Active: True, Seller Active: False
++PASSED                                                                   [ 66%]
++tests/unit/sagas/test_saga_cleanup.py::test_saga_compensate_failure_resilience
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.sagas.orchestrator:orchestrator.py:61 SAGA_SUBMITTED | Saga fa604ff2-b0d6-40d4-943f-7e4767266bae submitted.
++ERROR    modules.finance.sagas.orchestrator:orchestrator.py:153 SAGA_COMPENSATE_FAIL | Critical Compensation Failure
++PASSED                                                                   [100%]
++```
++
++### Full Regression Suite (`tests/unit/sagas/`)
++```
++tests/unit/sagas/test_orchestrator.py::test_submit_saga
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.sagas.orchestrator:orchestrator.py:61 SAGA_SUBMITTED | Saga c10a53bc-2770-4a40-93c4-54e9857b343e submitted.
++PASSED                                                                   [ 12%]
++tests/unit/sagas/test_orchestrator.py::test_process_sagas_liveness_check
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.sagas.orchestrator:orchestrator.py:61 SAGA_SUBMITTED | Saga 9675e527-7225-4903-b099-8f7a1063b373 submitted.
++INFO     modules.finance.sagas.orchestrator:orchestrator.py:142 SAGA_CLEANUP | Saga 9675e527-7225-4903-b099-8f7a1063b373 cancelled due to inactive participant. Buyer Active: False, Seller Active: True
++PASSED                                                                   [ 25%]
++tests/unit/sagas/test_orchestrator.py::test_process_sagas_active_participants
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.sagas.orchestrator:orchestrator.py:61 SAGA_SUBMITTED | Saga daf8bd6a-caa7-41e2-b4ed-8e439f5f91ac submitted.
++PASSED                                                                   [ 37%]
++tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_success
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.sagas.orchestrator:orchestrator.py:61 SAGA_SUBMITTED | Saga b0386a26-8b80-4f16-adfe-4730dd22159c submitted.
++WARNING  modules.finance.sagas.orchestrator:orchestrator.py:200 SAGA_AGENT_DEATH | Triggering compensation for Saga b0386a26-8b80-4f16-adfe-4730dd22159c due to agent 999 death.
++PASSED                                                                   [ 50%]
++tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_no_handler
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.sagas.orchestrator:orchestrator.py:61 SAGA_SUBMITTED | Saga 0f024e83-0727-4d23-895a-f2512d2e43f7 submitted.
++ERROR    modules.finance.sagas.orchestrator:orchestrator.py:191 SAGA_COMPENSATE_FAIL | No handler provided for find_and_compensate_by_agent
++PASSED                                                                   [ 62%]
++```
+diff --git a/modules/finance/sagas/orchestrator.py b/modules/finance/sagas/orchestrator.py
+index 8c6f03cf..6d67d21a 100644
+--- a/modules/finance/sagas/orchestrator.py
++++ b/modules/finance/sagas/orchestrator.py
+@@ -7,6 +7,7 @@ from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO
+ from modules.finance.saga_handler import HousingTransactionSagaHandler
+ from modules.simulation.api import ISimulationState, IAgent, HouseholdSnapshotDTO
+ from modules.government.api import IGovernment
++from modules.system.api import IAgentRegistry
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -17,9 +18,10 @@ class SagaOrchestrator(ISagaOrchestrator):
+     Strictly enforces HousingTransactionSagaStateDTO usage.
+     """
+ 
+-    def __init__(self, monetary_ledger: Optional[IMonetaryLedger] = None):
++    def __init__(self, monetary_ledger: Optional[IMonetaryLedger] = None, agent_registry: Optional[IAgentRegistry] = None):
+         self.active_sagas: Dict[UUID, HousingTransactionSagaStateDTO] = {}
+         self.monetary_ledger = monetary_ledger
++        self.agent_registry = agent_registry
+         self._simulation_state: Optional[ISimulationState] = None
+ 
+     @property
+@@ -102,21 +104,34 @@ class SagaOrchestrator(ISagaOrchestrator):
+                         del self.active_sagas[saga_id]
+                     continue
+ 
+-                buyer = sim_state.agents.get(buyer_id)
+-                seller = sim_state.agents.get(seller_id)
++                is_buyer_inactive = False
++                is_seller_inactive = False
+ 
+-                is_buyer_inactive = not buyer or not getattr(buyer, 'is_active', False)
+-                is_seller_inactive = not seller or not getattr(seller, 'is_active', False)
++                if self.agent_registry:
++                    is_buyer_inactive = not self.agent_registry.is_agent_active(buyer_id)
+ 
+-                # Special handling for System/Government agents
+-                if seller_id == -1:
+-                    is_seller_inactive = False
+-                elif seller and isinstance(seller, IGovernment):
+-                    is_seller_inactive = False
++                    # Special handling for System Agents or Genesis (-1)
++                    if seller_id == -1:
++                        is_seller_inactive = False
++                    else:
++                        is_seller_inactive = not self.agent_registry.is_agent_active(seller_id)
++                else:
++                    # Fallback Logic (Legacy)
++                    buyer = sim_state.agents.get(buyer_id)
++                    seller = sim_state.agents.get(seller_id)
+ 
+-                # Fallback check for Government singleton via simulation state
+-                if not seller and sim_state.government and hasattr(sim_state.government, 'id') and sim_state.government.id == seller_id:
+-                    is_seller_inactive = False
++                    is_buyer_inactive = not buyer or not getattr(buyer, 'is_active', False)
++                    is_seller_inactive = not seller or not getattr(seller, 'is_active', False)
++
++                    # Special handling for System/Government agents
++                    if seller_id == -1:
++                        is_seller_inactive = False
++                    elif seller and isinstance(seller, IGovernment):
++                        is_seller_inactive = False
++
++                    # Fallback check for Government singleton via simulation state
++                    if not seller and sim_state.government and hasattr(sim_state.government, 'id') and sim_state.government.id == seller_id:
++                        is_seller_inactive = False
+ 
+                 if is_buyer_inactive or is_seller_inactive:
+                     saga.status = "CANCELLED"
+@@ -124,9 +139,8 @@ class SagaOrchestrator(ISagaOrchestrator):
+                         saga.logs = []
+                     saga.logs.append("Cancelled due to inactive participant.")
+ 
+-                    # Wave 5 Phase 3: Reduce log level to INFO for inactive agent events
+                     logger.info(
+-                         f"SAGA_CANCELLED | Saga {saga_id} cancelled due to inactive participant. "
++                         f"SAGA_CLEANUP | Saga {saga_id} cancelled due to inactive participant. "
+                          f"Buyer Active: {not is_buyer_inactive}, Seller Active: {not is_seller_inactive}",
+                          extra={"saga_id": str(saga_id)}
+                     )
+@@ -136,9 +150,10 @@ class SagaOrchestrator(ISagaOrchestrator):
+                          try:
+                              handler.compensate_step(saga)
+                          except Exception as comp_err:
+-                             logger.error(f"SAGA_COMPENSATE_FAIL | {comp_err}")
++                             logger.error(f"SAGA_COMPENSATE_FAIL | {comp_err}", extra={"saga_id": str(saga_id)})
+ 
+-                    del self.active_sagas[saga_id]
++                    if saga_id in self.active_sagas:
++                        del self.active_sagas[saga_id]
+                     continue
+ 
+                 # 2. Execute Step
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 0ee6ef32..030c59b1 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -157,7 +157,7 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.world_state.telemetry_collector = sim.telemetry_collector
+         sim.world_state.global_registry.set('system.telemetry_collector', sim.telemetry_collector, origin=OriginType.SYSTEM)
+         sim.monetary_ledger = MonetaryLedger(sim.world_state.transactions, sim)
+-        sim.saga_orchestrator = SagaOrchestrator(monetary_ledger=sim.monetary_ledger)
++        sim.saga_orchestrator = SagaOrchestrator(monetary_ledger=sim.monetary_ledger, agent_registry=agent_registry)
+         sim.world_state.monetary_ledger = sim.monetary_ledger
+         sim.world_state.saga_orchestrator = sim.saga_orchestrator
+         sim.shareholder_registry = ShareholderRegistry()
+diff --git a/tests/unit/sagas/test_saga_cleanup.py b/tests/unit/sagas/test_saga_cleanup.py
+new file mode 100644
+index 00000000..8c8de11a
+--- /dev/null
++++ b/tests/unit/sagas/test_saga_cleanup.py
+@@ -0,0 +1,177 @@
++import pytest
++from unittest.mock import MagicMock, patch
++from uuid import uuid4
++import logging
++
++from modules.finance.sagas.orchestrator import SagaOrchestrator
++from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, HousingSagaAgentContext
++from modules.simulation.api import HouseholdSnapshotDTO
++from modules.system.api import IAgentRegistry
++
++@pytest.fixture
++def mock_registry():
++    registry = MagicMock(spec=IAgentRegistry)
++    # Default to active
++    registry.is_agent_active.return_value = True
++    return registry
++
++@pytest.fixture
++def saga_orchestrator(mock_registry):
++    # Pass registry to constructor (Refactoring step)
++    return SagaOrchestrator(agent_registry=mock_registry)
++
++def test_saga_cleanup_inactive_buyer(saga_orchestrator, mock_registry, caplog):
++    """
++    Chaos Test: Manually set an agent to INACTIVE while it has a pending saga.
++    Verifies that the saga is removed and cleaned up.
++    """
++    saga_id = uuid4()
++    buyer_id = 101
++    seller_id = 202
++
++    saga = HousingTransactionSagaStateDTO(
++        saga_id=saga_id,
++        status="PENDING_OFFER",
++        buyer_context=HouseholdSnapshotDTO(
++            household_id=str(buyer_id), cash=1000, income=100,
++            credit_score=700, existing_debt=0, assets_value=0
++        ),
++        seller_context=HousingSagaAgentContext(id=seller_id, monthly_income=500, existing_monthly_debt=0),
++        property_id=500,
++        offer_price=100,
++        down_payment_amount=20,
++        logs=[]
++    )
++
++    saga_orchestrator.submit_saga(saga)
++
++    # Setup Simulation State (Still needed for handler initialization)
++    sim_state = MagicMock()
++    # Mocks for agents are needed if logic accesses them directly,
++    # but we are testing that it uses registry for liveness.
++    # However, existing logic might still access agents for other things.
++    sim_state.agents = {
++        buyer_id: MagicMock(),
++        seller_id: MagicMock()
++    }
++    sim_state.government = MagicMock()
++    sim_state.government.id = 0
++    saga_orchestrator.simulation_state = sim_state
++
++    # CHAOS: Set Buyer to Inactive in Registry
++    def side_effect(aid):
++        if aid == buyer_id:
++            return False
++        return True
++    mock_registry.is_agent_active.side_effect = side_effect
++
++    with patch("modules.finance.sagas.orchestrator.HousingTransactionSagaHandler") as MockHandler:
++        handler_instance = MockHandler.return_value
++
++        # Run process
++        with caplog.at_level(logging.INFO):
++            saga_orchestrator.process_sagas()
++
++        # VERIFICATION
++
++        # 1. Saga removed from active list
++        assert saga_id not in saga_orchestrator.active_sagas
++
++        # 2. Cleanup Log
++        # "Saga {saga_id} cancelled due to inactive participant."
++        assert any("cancelled due to inactive participant" in record.message for record in caplog.records)
++
++        # 3. Compensation attempted (status PENDING_OFFER allows compensation?)
++        # Logic says: if status not in ["INITIATED", "STARTED", "PENDING_OFFER"]: compensate
++        # So PENDING_OFFER might skip compensation depending on exact logic.
++        # Let's change status to CREDIT_CHECK to ensure compensation is called.
++
++def test_saga_cleanup_and_compensate(saga_orchestrator, mock_registry, caplog):
++    saga_id = uuid4()
++    buyer_id = 101
++    seller_id = 202
++
++    saga = HousingTransactionSagaStateDTO(
++        saga_id=saga_id,
++        status="CREDIT_CHECK", # Beyond discovery
++        buyer_context=HouseholdSnapshotDTO(
++            household_id=str(buyer_id), cash=1000, income=100,
++            credit_score=700, existing_debt=0, assets_value=0
++        ),
++        seller_context=HousingSagaAgentContext(id=seller_id, monthly_income=500, existing_monthly_debt=0),
++        property_id=500,
++        offer_price=100,
++        down_payment_amount=20,
++        logs=[]
++    )
++
++    saga_orchestrator.submit_saga(saga)
++
++    sim_state = MagicMock()
++    sim_state.agents = {buyer_id: MagicMock(), seller_id: MagicMock()}
++    sim_state.government = MagicMock()
++    sim_state.government.id = 0
++    saga_orchestrator.simulation_state = sim_state
++
++    # CHAOS: Seller Inactive
++    def side_effect(aid):
++        if aid == seller_id:
++            return False
++        return True
++    mock_registry.is_agent_active.side_effect = side_effect
++
++    with patch("modules.finance.sagas.orchestrator.HousingTransactionSagaHandler") as MockHandler:
++        handler_instance = MockHandler.return_value
++
++        saga_orchestrator.process_sagas()
++
++        # Check compensation called
++        handler_instance.compensate_step.assert_called_once()
++        assert saga_id not in saga_orchestrator.active_sagas
++
++def test_saga_compensate_failure_resilience(saga_orchestrator, mock_registry, caplog):
++    """
++    Verifies that if compensation fails, the orchestrator logs error and continues (removes saga).
++    """
++    saga_id = uuid4()
++    buyer_id = 101
++    seller_id = 202
++
++    saga = HousingTransactionSagaStateDTO(
++        saga_id=saga_id,
++        status="CREDIT_CHECK",
++        buyer_context=HouseholdSnapshotDTO(
++            household_id=str(buyer_id), cash=1000, income=100,
++            credit_score=700, existing_debt=0, assets_value=0
++        ),
++        seller_context=HousingSagaAgentContext(id=seller_id, monthly_income=500, existing_monthly_debt=0),
++        property_id=500,
++        offer_price=100,
++        down_payment_amount=20,
++        logs=[]
++    )
++
++    saga_orchestrator.submit_saga(saga)
++
++    sim_state = MagicMock()
++    sim_state.agents = {buyer_id: MagicMock(), seller_id: MagicMock()}
++    sim_state.government = MagicMock()
++    sim_state.government.id = 0
++    saga_orchestrator.simulation_state = sim_state
++
++    # CHAOS: Inactive
++    mock_registry.is_agent_active.return_value = False
++
++    with patch("modules.finance.sagas.orchestrator.HousingTransactionSagaHandler") as MockHandler:
++        handler_instance = MockHandler.return_value
++        # Simulate Exception during compensation
++        handler_instance.compensate_step.side_effect = Exception("Critical Compensation Failure")
++
++        with caplog.at_level(logging.ERROR):
++            saga_orchestrator.process_sagas()
++
++        # 1. Log SAGA_COMPENSATE_FAIL
++        assert any("SAGA_COMPENSATE_FAIL" in record.message for record in caplog.records)
++
++        # 2. Saga still removed
++        assert saga_id not in saga_orchestrator.active_sagas
