@@ -3,28 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-HANG-FIX-BATCH-NOTIFY": {
-      "key": "WO-IMPL-HANG-FIX-BATCH-NOTIFY",
-      "title": "IMPL: Phase C - GlobalRegistry Batch Mode",
+    "WO-IMPL-MEM-AI-LAZY-LOAD": {
+      "key": "WO-IMPL-MEM-AI-LAZY-LOAD",
+      "title": "IMPL: AI Engine \uc120\uc81c \ub85c\ub529 \uc81c\uac70 (Lazy-Loading \ud65c\uc131\ud654)",
       "type": "jules",
-      "instruction_raw": "Implement `batch_mode` context manager in `GlobalRegistry` and wrap `initializer.py` registration loops as specified in the MISSION_SPEC.",
+      "instruction_raw": "## \ud575\uc2ec \ubcc0\uacbd (Section 9 ANTIGRAVITY REVIEW \uae30\uc900)\n\nAIEngineRegistry.get_engine()\uc740 \uc774\ubbf8 lazy-caching\uc744 \uad6c\ud604\ud558\uace0 \uc788\uc73c\ubbc0\ub85c,\nLazyAIEngineProxy \ud328\ud134\uc740 \uad6c\ud604\ud558\uc9c0 \ub9c8\uc138\uc694.\n\n### \ubcc0\uacbd 1: \uc120\uc81c \ub85c\ub529 \ub8e8\ud504 \uc0ad\uc81c\n\ud30c\uc77c: modules/system/builders/simulation_builder.py\nL69-72\uc758 \uc544\ub798 \ucf54\ub4dc\ub97c \uc0ad\uc81c\ud569\ub2c8\ub2e4:\n```python\nall_value_orientations = [\"wealth_and_needs\", \"needs_and_growth\", \"needs_and_social_status\"]\nfor vo in all_value_orientations:\n    ai_trainer.get_engine(vo)\n```\n\ub2e8, `all_value_orientations` \ub9ac\uc2a4\ud2b8 \uc790\uccb4\ub294 L155\uc5d0\uc11c value_orientation \uc120\ud0dd\uc5d0 \uc0ac\uc6a9\ub418\ubbc0\ub85c \uc720\uc9c0\ud569\ub2c8\ub2e4.\n\n### \ubcc0\uacbd 2: RealEstateUnit\uc740 \uac74\ub4dc\ub9ac\uc9c0 \ub9c8\uc138\uc694\nSection 2.2\uc758 \ubd80\ub3d9\uc0b0 \ucd5c\uc801\ud654\ub294 \ud3ed\ubc1c \ubc18\uacbd\uc774 \ub192\uc544 \uc774\ubc88 \ubbf8\uc158 \ubc94\uc704\uc5d0\uc11c \uc81c\uc678\ud569\ub2c8\ub2e4.\n\n### \uac80\uc99d\n- \uae30\uc874 \ud14c\uc2a4\ud2b8\uac00 \uae68\uc9c0\uc9c0 \uc54a\ub294\uc9c0 \ud655\uc778: pytest tests/ -x --timeout=60\n- AIEngineRegistry.get_engine()\uc758 lazy-caching\uc774 \uc815\uc0c1 \uc791\ub3d9\ud558\ub294\uc9c0 \ud655\uc778",
       "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_HANG_FIX_BATCH_NOTIFY.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
-    "WO-IMPL-HANG-FIX-ADAPTER-OPT": {
-      "key": "WO-IMPL-HANG-FIX-ADAPTER-OPT",
-      "title": "IMPL: Phase D+E - Adapter Protocol & Logging Guard",
-      "type": "jules",
-      "instruction_raw": "Optimize protocol checks in `RegistryAccountAccessor` and downgrade logging levels in adapters as specified in the MISSION_SPEC.",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_HANG_FIX_ADAPTER_OPT.md",
+      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_MEM_AI_LAZY_LOAD.md",
       "wait": false,
       "session_id": null,
       "worker": null,
