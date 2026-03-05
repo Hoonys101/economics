@@ -96,10 +96,22 @@ class RegistryAccountAccessor(IAccountAccessor):
 
     def exists(self, account_id: AgentID) -> bool:
         agent = self._get_agent(account_id)
-        return agent is not None and (
-            isinstance(agent, IFinancialAgent) or
-            isinstance(agent, IFinancialEntity)
-        )
+        if agent is None:
+            return False
+
+        agent_class = type(agent)
+        if agent_class in self._protocol_cache:
+            return self._protocol_cache[agent_class] in ('agent', 'entity')
+
+        if isinstance(agent, IFinancialAgent):
+            self._protocol_cache[agent_class] = 'agent'
+            return True
+        if isinstance(agent, IFinancialEntity):
+            self._protocol_cache[agent_class] = 'entity'
+            return True
+
+        self._protocol_cache[agent_class] = 'none'
+        return False
 
 class DictionaryAccountAccessor(IAccountAccessor):
     """

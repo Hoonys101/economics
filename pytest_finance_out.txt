@@ -1,0 +1,501 @@
+
+tests/finance/test_account_registry.py::test_account_registry_integration
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_account_registry_integration | Total Objects: 75282
+PASSED                                                                   [  4%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_account_registry_integration | Total Objects: 168477
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_account_registry_integration -> POST_test_account_registry_integration ---
+INFO     mem_observer:mem_observer.py:42   function: +22031
+INFO     mem_observer:mem_observer.py:42   tuple: +10000
+INFO     mem_observer:mem_observer.py:42   dict: +9656
+INFO     mem_observer:mem_observer.py:42   cell: +6695
+INFO     mem_observer:mem_observer.py:42   list: +5904
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +3259
+INFO     mem_observer:mem_observer.py:42   cython_function_or_method: +3020
+INFO     mem_observer:mem_observer.py:42   getset_descriptor: +2729
+INFO     mem_observer:mem_observer.py:42   builtin_function_or_method: +2383
+INFO     mem_observer:mem_observer.py:42   Parameter: +2300
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_account_registry.py::test_settlement_default_registry
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_settlement_default_registry | Total Objects: 168031
+PASSED                                                                   [  8%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_settlement_default_registry | Total Objects: 168449
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_settlement_default_registry -> POST_test_settlement_default_registry ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   dict: +18
+INFO     mem_observer:mem_observer.py:42   list: +16
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   tuple: +14
+INFO     mem_observer:mem_observer.py:42   partial: +7
+INFO     mem_observer:mem_observer.py:42   method: +6
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +5
+INFO     mem_observer:mem_observer.py:42   type: +5
+INFO     mem_observer:mem_observer.py:42   MagicMock: +4
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_adapter_caching.py::test_registry_account_accessor_caching
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_registry_account_accessor_caching | Total Objects: 168045
+PASSED                                                                   [ 12%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_registry_account_accessor_caching | Total Objects: 168611
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_registry_account_accessor_caching -> POST_test_registry_account_accessor_caching ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +76
+INFO     mem_observer:mem_observer.py:42   builtin_function_or_method: +45
+INFO     mem_observer:mem_observer.py:42   set: +26
+INFO     mem_observer:mem_observer.py:42   dict: +18
+INFO     mem_observer:mem_observer.py:42   tuple: +18
+INFO     mem_observer:mem_observer.py:42   list: +17
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   method: +7
+INFO     mem_observer:mem_observer.py:42   partial: +7
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_adapter_caching.py::test_registry_account_accessor_exists_caching
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_registry_account_accessor_exists_caching | Total Objects: 168207
+PASSED                                                                   [ 16%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_registry_account_accessor_exists_caching | Total Objects: 168625
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_registry_account_accessor_exists_caching -> POST_test_registry_account_accessor_exists_caching ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   dict: +18
+INFO     mem_observer:mem_observer.py:42   list: +16
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   tuple: +14
+INFO     mem_observer:mem_observer.py:42   partial: +7
+INFO     mem_observer:mem_observer.py:42   method: +6
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +5
+INFO     mem_observer:mem_observer.py:42   type: +5
+INFO     mem_observer:mem_observer.py:42   MagicMock: +4
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_circular_imports_fix.py::test_finance_system_instantiation_and_protocols
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_finance_system_instantiation_and_protocols | Total Objects: 168221
+PASSED                                                                   [ 20%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_finance_system_instantiation_and_protocols | Total Objects: 168659
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_finance_system_instantiation_and_protocols -> POST_test_finance_system_instantiation_and_protocols ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   dict: +19
+INFO     mem_observer:mem_observer.py:42   list: +17
+INFO     mem_observer:mem_observer.py:42   tuple: +16
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +12
+INFO     mem_observer:mem_observer.py:42   method: +7
+INFO     mem_observer:mem_observer.py:42   partial: +7
+INFO     mem_observer:mem_observer.py:42   type: +5
+INFO     mem_observer:mem_observer.py:42   set: +5
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_circular_imports_fix.py::test_issue_treasury_bonds_protocol_usage
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_issue_treasury_bonds_protocol_usage | Total Objects: 168255
+-------------------------------- live log call ---------------------------------
+INFO     modules.finance.system:system.py:388 QE_ACTIVATED | Debt/GDP: 250000.00 > 1.5. Buyer: Central Bank
+PASSED                                                                   [ 24%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_issue_treasury_bonds_protocol_usage | Total Objects: 168676
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_issue_treasury_bonds_protocol_usage -> POST_test_issue_treasury_bonds_protocol_usage ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   dict: +18
+INFO     mem_observer:mem_observer.py:42   list: +16
+INFO     mem_observer:mem_observer.py:42   tuple: +15
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   partial: +7
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +6
+INFO     mem_observer:mem_observer.py:42   method: +6
+INFO     mem_observer:mem_observer.py:42   type: +5
+INFO     mem_observer:mem_observer.py:42   MagicMock: +4
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_circular_imports_fix.py::test_evaluate_solvency_protocol_usage
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_evaluate_solvency_protocol_usage | Total Objects: 168271
+PASSED                                                                   [ 28%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_evaluate_solvency_protocol_usage | Total Objects: 168695
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_evaluate_solvency_protocol_usage -> POST_test_evaluate_solvency_protocol_usage ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   dict: +18
+INFO     mem_observer:mem_observer.py:42   list: +16
+INFO     mem_observer:mem_observer.py:42   tuple: +15
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +8
+INFO     mem_observer:mem_observer.py:42   partial: +7
+INFO     mem_observer:mem_observer.py:42   method: +6
+INFO     mem_observer:mem_observer.py:42   type: +5
+INFO     mem_observer:mem_observer.py:42   MagicMock: +4
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_monetary_expansion_handler.py::TestMonetaryExpansionWarning::test_repro_warning
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_repro_warning | Total Objects: 168303
+-------------------------------- live log call ---------------------------------
+INFO     modules.finance.kernel.ledger:ledger.py:126 MONETARY_LEDGER | M2 Expansion: +1000 (test_source) | New Expected M2: 1000
+PASSED                                                                   [ 32%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_repro_warning | Total Objects: 169933
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_repro_warning -> POST_test_repro_warning ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +1316
+INFO     mem_observer:mem_observer.py:42   _CallList: +57
+INFO     mem_observer:mem_observer.py:42   dict: +51
+INFO     mem_observer:mem_observer.py:42   Parameter: +46
+INFO     mem_observer:mem_observer.py:42   tuple: +45
+INFO     mem_observer:mem_observer.py:42   list: +36
+INFO     mem_observer:mem_observer.py:42   type: +19
+INFO     mem_observer:mem_observer.py:42   MagicMock: +18
+INFO     mem_observer:mem_observer.py:42   method: +9
+INFO     mem_observer:mem_observer.py:42   partial: +9
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +18
+
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_settlement_overdraft_protection
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_settlement_overdraft_protection | Total Objects: 168296
+-------------------------------- live log call ---------------------------------
+WARNING  simulation.systems.settlement_system:settlement_system.py:635 SETTLEMENT_FAIL | Insufficient funds. Cash: 100, Req: 150.
+PASSED                                                                   [ 36%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_settlement_overdraft_protection | Total Objects: 168770
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_settlement_overdraft_protection -> POST_test_settlement_overdraft_protection ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +24
+INFO     mem_observer:mem_observer.py:42   list: +20
+INFO     mem_observer:mem_observer.py:42   dict: +20
+INFO     mem_observer:mem_observer.py:42   tuple: +18
+INFO     mem_observer:mem_observer.py:42   builtin_function_or_method: +16
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   method: +9
+INFO     mem_observer:mem_observer.py:42   partial: +8
+INFO     mem_observer:mem_observer.py:42   type: +5
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_settlement_zero_sum
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_settlement_zero_sum | Total Objects: 168353
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:engine.py:136 Transaction Record: ID=0053f3ef-59a2-4ef5-8049-17afa426cbf0, Status=COMPLETED, Message=Transaction successful.
+PASSED                                                                   [ 40%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_settlement_zero_sum | Total Objects: 168823
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_settlement_zero_sum -> POST_test_settlement_zero_sum ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +24
+INFO     mem_observer:mem_observer.py:42   list: +19
+INFO     mem_observer:mem_observer.py:42   dict: +19
+INFO     mem_observer:mem_observer.py:42   tuple: +15
+INFO     mem_observer:mem_observer.py:42   builtin_function_or_method: +15
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   partial: +8
+INFO     mem_observer:mem_observer.py:42   method: +7
+INFO     mem_observer:mem_observer.py:42   type: +5
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_central_bank_infinite_funds
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_central_bank_infinite_funds | Total Objects: 168408
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:engine.py:136 Transaction Record: ID=58f19abf-fa60-4c45-baba-86245addc7a7, Status=COMPLETED, Message=Transaction successful.
+PASSED                                                                   [ 44%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_central_bank_infinite_funds | Total Objects: 168856
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_central_bank_infinite_funds -> POST_test_central_bank_infinite_funds ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   dict: +19
+INFO     mem_observer:mem_observer.py:42   list: +17
+INFO     mem_observer:mem_observer.py:42   tuple: +16
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +14
+INFO     mem_observer:mem_observer.py:42   builtin_function_or_method: +8
+INFO     mem_observer:mem_observer.py:42   partial: +8
+INFO     mem_observer:mem_observer.py:42   method: +7
+INFO     mem_observer:mem_observer.py:42   type: +5
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_real_estate_unit_lien_dto
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_real_estate_unit_lien_dto | Total Objects: 168441
+PASSED                                                                   [ 48%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_real_estate_unit_lien_dto | Total Objects: 168859
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_real_estate_unit_lien_dto -> POST_test_real_estate_unit_lien_dto ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   dict: +18
+INFO     mem_observer:mem_observer.py:42   list: +16
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   tuple: +14
+INFO     mem_observer:mem_observer.py:42   partial: +7
+INFO     mem_observer:mem_observer.py:42   method: +6
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +5
+INFO     mem_observer:mem_observer.py:42   type: +5
+INFO     mem_observer:mem_observer.py:42   MagicMock: +4
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_housing_system_maintenance_zero_sum
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_housing_system_maintenance_zero_sum | Total Objects: 168455
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:engine.py:136 Transaction Record: ID=de5fcab9-c921-491a-9d76-ccd41b3f3f3e, Status=COMPLETED, Message=Transaction successful.
+PASSED                                                                   [ 52%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_housing_system_maintenance_zero_sum | Total Objects: 168888
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_housing_system_maintenance_zero_sum -> POST_test_housing_system_maintenance_zero_sum ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   dict: +19
+INFO     mem_observer:mem_observer.py:42   list: +17
+INFO     mem_observer:mem_observer.py:42   tuple: +15
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   partial: +8
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +7
+INFO     mem_observer:mem_observer.py:42   method: +7
+INFO     mem_observer:mem_observer.py:42   type: +5
+INFO     mem_observer:mem_observer.py:42   MagicMock: +4
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_housing_system_rent_zero_sum
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_housing_system_rent_zero_sum | Total Objects: 168473
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:engine.py:136 Transaction Record: ID=8be8a1b4-e62b-46ae-8179-1a372bb98053, Status=COMPLETED, Message=Transaction successful.
+PASSED                                                                   [ 56%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_housing_system_rent_zero_sum | Total Objects: 168902
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_housing_system_rent_zero_sum -> POST_test_housing_system_rent_zero_sum ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   dict: +19
+INFO     mem_observer:mem_observer.py:42   list: +17
+INFO     mem_observer:mem_observer.py:42   tuple: +15
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   partial: +8
+INFO     mem_observer:mem_observer.py:42   method: +7
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +5
+INFO     mem_observer:mem_observer.py:42   type: +5
+INFO     mem_observer:mem_observer.py:42   MagicMock: +4
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_settlement_fx_swap.py::test_execute_swap_success
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_execute_swap_success | Total Objects: 168484
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:engine.py:136 Transaction Record: ID=swap_1_leg1, Status=COMPLETED, Message=Transaction successful (Batch)
+INFO     simulation.systems.settlement_system:engine.py:136 Transaction Record: ID=swap_1_leg2, Status=COMPLETED, Message=Transaction successful (Batch)
+PASSED                                                                   [ 60%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_execute_swap_success | Total Objects: 169168
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_execute_swap_success -> POST_test_execute_swap_success ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +393
+INFO     mem_observer:mem_observer.py:42   _Call: +67
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +34
+INFO     mem_observer:mem_observer.py:42   dict: +27
+INFO     mem_observer:mem_observer.py:42   builtin_function_or_method: +27
+INFO     mem_observer:mem_observer.py:42   tuple: +24
+INFO     mem_observer:mem_observer.py:42   list: +21
+INFO     mem_observer:mem_observer.py:42   _CallList: +21
+INFO     mem_observer:mem_observer.py:42   method: +8
+INFO     mem_observer:mem_observer.py:42   partial: +8
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +6
+
+tests/finance/test_settlement_fx_swap.py::test_execute_swap_insufficient_funds_rollback
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_execute_swap_insufficient_funds_rollback | Total Objects: 168556
+-------------------------------- live log call ---------------------------------
+WARNING  simulation.systems.settlement_system:settlement_system.py:635 SETTLEMENT_FAIL | Insufficient funds. Cash: 100, Req: 400.
+PASSED                                                                   [ 64%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_execute_swap_insufficient_funds_rollback | Total Objects: 169141
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_execute_swap_insufficient_funds_rollback -> POST_test_execute_swap_insufficient_funds_rollback ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +393
+INFO     mem_observer:mem_observer.py:42   _Call: +31
+INFO     mem_observer:mem_observer.py:42   dict: +27
+INFO     mem_observer:mem_observer.py:42   tuple: +22
+INFO     mem_observer:mem_observer.py:42   list: +21
+INFO     mem_observer:mem_observer.py:42   _CallList: +21
+INFO     mem_observer:mem_observer.py:42   partial: +8
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +7
+INFO     mem_observer:mem_observer.py:42   type: +7
+INFO     mem_observer:mem_observer.py:42   method: +7
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +6
+
+tests/finance/test_settlement_fx_swap.py::test_execute_swap_invalid_amounts
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_execute_swap_invalid_amounts | Total Objects: 168570
+-------------------------------- live log call ---------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:648 FX_SWAP_FAIL | Non-positive amounts: FXMatchDTO(party_a_id=101, party_b_id=102, amount_a_pennies=-500, currency_a='USD', amount_b_pennies=400, currency_b='EUR', match_tick=1, rate_a_to_b=0.8)
+PASSED                                                                   [ 68%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_execute_swap_invalid_amounts | Total Objects: 169123
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_execute_swap_invalid_amounts -> POST_test_execute_swap_invalid_amounts ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +393
+INFO     mem_observer:mem_observer.py:42   dict: +24
+INFO     mem_observer:mem_observer.py:42   tuple: +22
+INFO     mem_observer:mem_observer.py:42   _CallList: +21
+INFO     mem_observer:mem_observer.py:42   list: +20
+INFO     mem_observer:mem_observer.py:42   partial: +8
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +7
+INFO     mem_observer:mem_observer.py:42   type: +7
+INFO     mem_observer:mem_observer.py:42   method: +7
+INFO     mem_observer:mem_observer.py:42   MagicMock: +6
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +6
+
+tests/finance/test_settlement_fx_swap.py::test_execute_swap_missing_agent
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_execute_swap_missing_agent | Total Objects: 168584
+-------------------------------- live log call ---------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:660 FX_SWAP_FAIL | Agents not found. A: 101, B: 102
+PASSED                                                                   [ 72%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_execute_swap_missing_agent | Total Objects: 169143
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_execute_swap_missing_agent -> POST_test_execute_swap_missing_agent ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +393
+INFO     mem_observer:mem_observer.py:42   dict: +24
+INFO     mem_observer:mem_observer.py:42   tuple: +22
+INFO     mem_observer:mem_observer.py:42   _CallList: +21
+INFO     mem_observer:mem_observer.py:42   list: +20
+INFO     mem_observer:mem_observer.py:42   _Call: +11
+INFO     mem_observer:mem_observer.py:42   partial: +8
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +7
+INFO     mem_observer:mem_observer.py:42   type: +7
+INFO     mem_observer:mem_observer.py:42   method: +7
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +6
+
+tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_transfer_float_raises_error
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_transfer_float_raises_error | Total Objects: 168598
+PASSED                                                                   [ 76%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_transfer_float_raises_error | Total Objects: 169033
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_transfer_float_raises_error -> POST_test_transfer_float_raises_error ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   list: +19
+INFO     mem_observer:mem_observer.py:42   dict: +19
+INFO     mem_observer:mem_observer.py:42   tuple: +17
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   method: +9
+INFO     mem_observer:mem_observer.py:42   partial: +8
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +5
+INFO     mem_observer:mem_observer.py:42   type: +5
+INFO     mem_observer:mem_observer.py:42   MagicMock: +4
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_create_and_transfer_float_raises_error
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_create_and_transfer_float_raises_error | Total Objects: 168619
+PASSED                                                                   [ 80%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_create_and_transfer_float_raises_error | Total Objects: 169061
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_create_and_transfer_float_raises_error -> POST_test_create_and_transfer_float_raises_error ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   dict: +19
+INFO     mem_observer:mem_observer.py:42   list: +17
+INFO     mem_observer:mem_observer.py:42   tuple: +16
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +12
+INFO     mem_observer:mem_observer.py:42   partial: +8
+INFO     mem_observer:mem_observer.py:42   method: +7
+INFO     mem_observer:mem_observer.py:42   type: +5
+INFO     mem_observer:mem_observer.py:42   builtin_function_or_method: +5
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_issue_treasury_bonds_float_leak
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_issue_treasury_bonds_float_leak | Total Objects: 168647
+PASSED                                                                   [ 84%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_issue_treasury_bonds_float_leak | Total Objects: 169429
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_issue_treasury_bonds_float_leak -> POST_test_issue_treasury_bonds_float_leak ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +555
+INFO     mem_observer:mem_observer.py:42   dict: +33
+INFO     mem_observer:mem_observer.py:42   _CallList: +30
+INFO     mem_observer:mem_observer.py:42   tuple: +27
+INFO     mem_observer:mem_observer.py:42   list: +24
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +14
+INFO     mem_observer:mem_observer.py:42   _Call: +14
+INFO     mem_observer:mem_observer.py:42   type: +10
+INFO     mem_observer:mem_observer.py:42   partial: +9
+INFO     mem_observer:mem_observer.py:42   MagicMock: +9
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +9
+
+tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_solvency_grace_period_solvent
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_solvency_grace_period_solvent | Total Objects: 168660
+PASSED                                                                   [ 88%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_solvency_grace_period_solvent | Total Objects: 169659
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_solvency_grace_period_solvent -> POST_test_solvency_grace_period_solvent ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +488
+INFO     mem_observer:mem_observer.py:42   dict: +110
+INFO     mem_observer:mem_observer.py:42   _CallList: +54
+INFO     mem_observer:mem_observer.py:42   list: +50
+INFO     mem_observer:mem_observer.py:42   tuple: +49
+INFO     mem_observer:mem_observer.py:42   set: +33
+INFO     mem_observer:mem_observer.py:42   RegistryValueDTO: +32
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +28
+INFO     mem_observer:mem_observer.py:42   type: +18
+INFO     mem_observer:mem_observer.py:42   Parameter: +12
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +9
+
+tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_solvency_grace_period_insolvent
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_solvency_grace_period_insolvent | Total Objects: 168835
+PASSED                                                                   [ 92%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_solvency_grace_period_insolvent | Total Objects: 169675
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_solvency_grace_period_insolvent -> POST_test_solvency_grace_period_insolvent ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +488
+INFO     mem_observer:mem_observer.py:42   _CallList: +54
+INFO     mem_observer:mem_observer.py:42   tuple: +47
+INFO     mem_observer:mem_observer.py:42   dict: +46
+INFO     mem_observer:mem_observer.py:42   list: +35
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +22
+INFO     mem_observer:mem_observer.py:42   type: +18
+INFO     mem_observer:mem_observer.py:42   Parameter: +12
+INFO     mem_observer:mem_observer.py:42   _Call: +11
+INFO     mem_observer:mem_observer.py:42   _SpecState: +11
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +9
+
+tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_solvency_established_firm
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_solvency_established_firm | Total Objects: 168851
+PASSED                                                                   [ 96%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_solvency_established_firm | Total Objects: 169691
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_solvency_established_firm -> POST_test_solvency_established_firm ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +488
+INFO     mem_observer:mem_observer.py:42   _CallList: +54
+INFO     mem_observer:mem_observer.py:42   tuple: +47
+INFO     mem_observer:mem_observer.py:42   dict: +46
+INFO     mem_observer:mem_observer.py:42   list: +35
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +22
+INFO     mem_observer:mem_observer.py:42   type: +18
+INFO     mem_observer:mem_observer.py:42   Parameter: +12
+INFO     mem_observer:mem_observer.py:42   _Call: +11
+INFO     mem_observer:mem_observer.py:42   _SpecState: +11
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +9
+
+tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_firm_implementation
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_firm_implementation | Total Objects: 168867
+PASSED                                                                   [100%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_firm_implementation | Total Objects: 169318
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_firm_implementation -> POST_test_firm_implementation ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +307
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +22
+INFO     mem_observer:mem_observer.py:42   dict: +17
+INFO     mem_observer:mem_observer.py:42   list: +16
+INFO     mem_observer:mem_observer.py:42   _CallList: +15
+INFO     mem_observer:mem_observer.py:42   tuple: +14
+INFO     mem_observer:mem_observer.py:42   builtin_function_or_method: +9
+INFO     mem_observer:mem_observer.py:42   set: +8
+INFO     mem_observer:mem_observer.py:42   partial: +7
+INFO     mem_observer:mem_observer.py:42   method: +6
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +4
+
+
+============================= 25 passed in 12.36s ==============================

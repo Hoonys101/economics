@@ -33,3 +33,6 @@ WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +
 
 ============================== 24 passed in 9.77s ==============================
 ```
+
+### Update following PR Review
+*   **Architectural Update**: The caching pattern (`_protocol_cache`) was also implemented in the `exists` method of `RegistryAccountAccessor`. Before this change, the `exists` method still heavily relied on `isinstance(..., IFinancialAgent)` which negated the cache performance improvements during high-frequency checks like transaction validation. The cache logic resolves this gap effectively.

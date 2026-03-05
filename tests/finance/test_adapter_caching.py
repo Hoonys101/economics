@@ -78,3 +78,56 @@ def test_registry_account_accessor_caching():
     # Second time should hit cache and still raise
     with pytest.raises(InvalidAccountError):
         accessor.get_participant(none_id)
+
+def test_registry_account_accessor_exists_caching():
+    # Setup
+    registry_mock = MagicMock(spec=IAgentRegistry)
+    accessor = RegistryAccountAccessor(registry=registry_mock)
+
+    agent_id = 1
+    entity_id = 2
+    none_id = 3
+    non_existent_id = 4
+
+    agent = DummyAgent(agent_id)
+    entity = DummyEntity(entity_id)
+    none_agent = DummyNonFinancial(none_id)
+
+    # Mock registry returns
+    def get_agent_side_effect(aid):
+        if aid == agent_id: return agent
+        if aid == entity_id: return entity
+        if aid == none_id: return none_agent
+        return None
+
+    registry_mock.get_agent.side_effect = get_agent_side_effect
+
+    # 1. Test exists caching for Agent
+    assert len(accessor._protocol_cache) == 0
+    assert accessor.exists(agent_id) is True
+    assert DummyAgent in accessor._protocol_cache
+    assert accessor._protocol_cache[DummyAgent] == 'agent'
+
+    # Second time should hit cache
+    assert accessor.exists(agent_id) is True
+
+    # 2. Test exists caching for Entity
+    assert DummyEntity not in accessor._protocol_cache
+    assert accessor.exists(entity_id) is True
+    assert DummyEntity in accessor._protocol_cache
+    assert accessor._protocol_cache[DummyEntity] == 'entity'
+
+    # Second time should hit cache
+    assert accessor.exists(entity_id) is True
+
+    # 3. Test exists caching for Non-Financial
+    assert DummyNonFinancial not in accessor._protocol_cache
+    assert accessor.exists(none_id) is False
+    assert DummyNonFinancial in accessor._protocol_cache
+    assert accessor._protocol_cache[DummyNonFinancial] == 'none'
+
+    # Second time should hit cache
+    assert accessor.exists(none_id) is False
+
+    # 4. Test non-existent account
+    assert accessor.exists(non_existent_id) is False
