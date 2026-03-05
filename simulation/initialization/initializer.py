@@ -518,7 +518,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         agents_local = sim.agents
         agent_registry_local = sim.agent_registry
         settlement_system_local = sim.settlement_system
-        bank_id_local = sim.bank.id
+        bank_id_local = sim.bank.id if getattr(sim, 'bank', None) else None
         demographic_manager_local = getattr(sim, 'demographic_manager', None)
 
         # 1. Household Atomic Registration
@@ -527,7 +527,8 @@ class SimulationInitializer(SimulationInitializerInterface):
             agent_registry_local.register(hh)
 
             # Guarantee Settlement Account Existence
-            settlement_system_local.register_account(bank_id_local, hh.id)
+            if bank_id_local is not None:
+                settlement_system_local.register_account(bank_id_local, hh.id)
             hh.settlement_system = settlement_system_local
 
             if demographic_manager_local and hasattr(hh, 'demographic_manager'):
@@ -539,7 +540,8 @@ class SimulationInitializer(SimulationInitializerInterface):
             agent_registry_local.register(firm)
 
             # Guarantee Settlement Account Existence BEFORE Bootstrapper
-            settlement_system_local.register_account(bank_id_local, firm.id)
+            if bank_id_local is not None:
+                settlement_system_local.register_account(bank_id_local, firm.id)
             firm.settlement_system = settlement_system_local
 
         # Determine next available ID (assuming user agents start > 100)
@@ -550,9 +552,11 @@ class SimulationInitializer(SimulationInitializerInterface):
             max_user_id = max(int_keys) if int_keys else 0
         sim.next_agent_id = max(100, max_user_id + 1)
 
-        if demographic_manager_local:
-            demographic_manager_local.sync_stats(sim.households)
-            demographic_manager_local.set_world_state(sim.world_state)
+        # In previous logic, sim.demographic_manager was required. Maintain required semantics.
+        # Fallback to direct attribute lookup to throw normal AttributeError if missing when expected
+        dm_to_use = demographic_manager_local if demographic_manager_local else sim.demographic_manager
+        dm_to_use.sync_stats(sim.households)
+        dm_to_use.set_world_state(sim.world_state)
 
         # Distribute Real Estate
         top_20_count = len(sim.households) // 5
