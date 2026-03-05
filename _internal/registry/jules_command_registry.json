@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-HANG-FIX-PROXY-CACHE": {
-      "key": "WO-IMPL-HANG-FIX-PROXY-CACHE",
-      "title": "IMPL: Phase A - Proxy Cache in Initializer",
-      "type": "jules",
-      "instruction_raw": "Implement local variable caching in `initializer.py` to eliminate `__getattr__` overhead as specified in the MISSION_SPEC.",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_HANG_FIX_PROXY_CACHE.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-IMPL-HANG-FIX-REGISTRY-LOCK": {
       "key": "WO-IMPL-HANG-FIX-REGISTRY-LOCK",
       "title": "IMPL: Phase B - AccountRegistry Thread Safety",
