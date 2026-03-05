@@ -1,3 +1,4 @@
+from typing import Optional
 from typing import List, Tuple, TYPE_CHECKING, Dict, Any
 import logging
 from simulation.dtos import AgentStateData, TransactionData, EconomicIndicatorData, MarketHistoryData

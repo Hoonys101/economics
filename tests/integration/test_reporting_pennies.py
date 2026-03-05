@@ -6,6 +6,8 @@ from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
 from simulation.systems.handlers.labor_handler import LaborTransactionHandler
 from simulation.models import Transaction
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
+from modules.analytics.api import EconomyAnalyticsSnapshotDTO, HouseholdAnalyticsDTO, FirmAnalyticsDTO, MarketAnalyticsDTO
+
 from modules.simulation.dtos.api import HouseholdConfigDTO
 from modules.finance.api import IIncomeTracker, IConsumptionTracker
 
@@ -164,7 +166,31 @@ class TestReportingPennies:
         firms = []
         markets = {}
 
-        tracker.track(1, households, firms, markets)
+        # Create DTOs
+        h_dto = HouseholdAnalyticsDTO(
+            agent_id=1,
+            is_active=True,
+            total_cash_pennies=0,
+            portfolio_value_pennies=0,
+            is_employed=False,
+            trust_score=0.5,
+            survival_need=0.5,
+            consumption_expenditure_pennies=5000,
+            food_expenditure_pennies=2000,
+            labor_income_pennies=0,
+            education_level=1.0,
+            aptitude=0.5
+        )
+        snapshot = EconomyAnalyticsSnapshotDTO(
+            tick=1,
+            households=[h_dto],
+            firms=[],
+            markets=[],
+            money_supply_pennies=0,
+            m2_leak_pennies=0,
+            monetary_base_pennies=0
+        )
+        tracker.track_tick(snapshot)
 
         # Check metrics
         latest = tracker.get_latest_indicators()

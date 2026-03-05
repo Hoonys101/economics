@@ -1,0 +1,267 @@
+
+tests/test_economic_tracker_precision.py::TestEconomicTrackerPrecision::test_tracker_returns_integers
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_tracker_returns_integers | Total Objects: 78609
+PASSED                                                                   [  7%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_tracker_returns_integers | Total Objects: 169706
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_tracker_returns_integers -> POST_test_tracker_returns_integers ---
+INFO     mem_observer:mem_observer.py:42   function: +21680
+INFO     mem_observer:mem_observer.py:42   tuple: +9650
+INFO     mem_observer:mem_observer.py:42   dict: +9315
+INFO     mem_observer:mem_observer.py:42   cell: +6643
+INFO     mem_observer:mem_observer.py:42   list: +5688
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +3185
+INFO     mem_observer:mem_observer.py:42   cython_function_or_method: +3020
+INFO     mem_observer:mem_observer.py:42   getset_descriptor: +2648
+INFO     mem_observer:mem_observer.py:42   builtin_function_or_method: +2391
+INFO     mem_observer:mem_observer.py:42   Parameter: +2300
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +7
+
+tests/unit/test_metrics_hardening.py::TestMetricsHardening::test_economic_tracker_track
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_economic_tracker_track | Total Objects: 168901
+PASSED                                                                   [ 15%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_economic_tracker_track | Total Objects: 169430
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_economic_tracker_track -> POST_test_economic_tracker_track ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +384
+INFO     mem_observer:mem_observer.py:42   dict: +23
+INFO     mem_observer:mem_observer.py:42   list: +20
+INFO     mem_observer:mem_observer.py:42   tuple: +20
+INFO     mem_observer:mem_observer.py:42   _CallList: +18
+INFO     mem_observer:mem_observer.py:42   method: +11
+INFO     mem_observer:mem_observer.py:42   partial: +11
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +6
+INFO     mem_observer:mem_observer.py:42   type: +6
+INFO     mem_observer:mem_observer.py:42   MagicMock: +5
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +5
+
+tests/unit/test_metrics_hardening.py::TestMetricsHardening::test_inequality_tracker_quintiles
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_inequality_tracker_quintiles | Total Objects: 168931
+-------------------------------- live log call ---------------------------------
+INFO     simulation.metrics.inequality_tracker:inequality_tracker.py:91 Cohort initialized with 5 households
+PASSED                                                                   [ 23%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_inequality_tracker_quintiles | Total Objects: 169447
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_inequality_tracker_quintiles -> POST_test_inequality_tracker_quintiles ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +384
+INFO     mem_observer:mem_observer.py:42   dict: +22
+INFO     mem_observer:mem_observer.py:42   list: +18
+INFO     mem_observer:mem_observer.py:42   _CallList: +18
+INFO     mem_observer:mem_observer.py:42   tuple: +17
+INFO     mem_observer:mem_observer.py:42   partial: +9
+INFO     mem_observer:mem_observer.py:42   method: +7
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +6
+INFO     mem_observer:mem_observer.py:42   type: +6
+INFO     mem_observer:mem_observer.py:42   MagicMock: +5
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +5
+
+tests/unit/test_metrics_hardening.py::TestMetricsHardening::test_stock_tracker_arithmetic
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_stock_tracker_arithmetic | Total Objects: 168942
+PASSED                                                                   [ 30%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_stock_tracker_arithmetic | Total Objects: 169455
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_stock_tracker_arithmetic -> POST_test_stock_tracker_arithmetic ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +384
+INFO     mem_observer:mem_observer.py:42   dict: +21
+INFO     mem_observer:mem_observer.py:42   _CallList: +18
+INFO     mem_observer:mem_observer.py:42   list: +17
+INFO     mem_observer:mem_observer.py:42   tuple: +17
+INFO     mem_observer:mem_observer.py:42   partial: +9
+INFO     mem_observer:mem_observer.py:42   method: +7
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +6
+INFO     mem_observer:mem_observer.py:42   type: +6
+INFO     mem_observer:mem_observer.py:42   MagicMock: +5
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +5
+
+tests/unit/test_metrics_hardening.py::TestMetricsHardening::test_stock_tracker_currency_conversion
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_stock_tracker_currency_conversion | Total Objects: 168953
+PASSED                                                                   [ 38%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_stock_tracker_currency_conversion | Total Objects: 169466
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_stock_tracker_currency_conversion -> POST_test_stock_tracker_currency_conversion ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +384
+INFO     mem_observer:mem_observer.py:42   dict: +21
+INFO     mem_observer:mem_observer.py:42   _CallList: +18
+INFO     mem_observer:mem_observer.py:42   list: +17
+INFO     mem_observer:mem_observer.py:42   tuple: +17
+INFO     mem_observer:mem_observer.py:42   partial: +9
+INFO     mem_observer:mem_observer.py:42   method: +7
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +6
+INFO     mem_observer:mem_observer.py:42   type: +6
+INFO     mem_observer:mem_observer.py:42   MagicMock: +5
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +5
+
+tests/integration/scenarios/diagnosis/test_indicator_pipeline.py::test_indicator_aggregation
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_indicator_aggregation | Total Objects: 168937
+PASSED                                                                   [ 46%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_indicator_aggregation | Total Objects: 169904
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_indicator_aggregation -> POST_test_indicator_aggregation ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +642
+INFO     mem_observer:mem_observer.py:42   dict: +49
+INFO     mem_observer:mem_observer.py:42   tuple: +45
+INFO     mem_observer:mem_observer.py:42   _CallList: +45
+INFO     mem_observer:mem_observer.py:42   list: +42
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +15
+INFO     mem_observer:mem_observer.py:42   type: +15
+INFO     mem_observer:mem_observer.py:42   method: +15
+INFO     mem_observer:mem_observer.py:42   partial: +14
+INFO     mem_observer:mem_observer.py:42   _Call: +13
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +11
+
+tests/integration/test_reporting_pennies.py::TestReportingPennies::test_household_expenditure_tracking
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_household_expenditure_tracking | Total Objects: 168981
+PASSED                                                                   [ 53%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_household_expenditure_tracking | Total Objects: 171326
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_household_expenditure_tracking -> POST_test_household_expenditure_tracking ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +1697
+INFO     mem_observer:mem_observer.py:42   Parameter: +107
+INFO     mem_observer:mem_observer.py:42   tuple: +83
+INFO     mem_observer:mem_observer.py:42   dict: +82
+INFO     mem_observer:mem_observer.py:42   _CallList: +72
+INFO     mem_observer:mem_observer.py:42   _Call: +67
+INFO     mem_observer:mem_observer.py:42   list: +54
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +26
+INFO     mem_observer:mem_observer.py:42   type: +26
+INFO     mem_observer:mem_observer.py:42   MagicMock: +23
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +23
+
+tests/integration/test_reporting_pennies.py::TestReportingPennies::test_household_income_tracking
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_household_income_tracking | Total Objects: 169083
+PASSED                                                                   [ 61%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_household_income_tracking | Total Objects: 171340
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_household_income_tracking -> POST_test_household_income_tracking ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +1697
+INFO     mem_observer:mem_observer.py:42   Parameter: +107
+INFO     mem_observer:mem_observer.py:42   _CallList: +72
+INFO     mem_observer:mem_observer.py:42   dict: +69
+INFO     mem_observer:mem_observer.py:42   tuple: +67
+INFO     mem_observer:mem_observer.py:42   _Call: +67
+INFO     mem_observer:mem_observer.py:42   list: +45
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +24
+INFO     mem_observer:mem_observer.py:42   type: +24
+INFO     mem_observer:mem_observer.py:42   MagicMock: +23
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +23
+
+tests/integration/test_reporting_pennies.py::TestReportingPennies::test_goods_handler_calls_tracker
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_goods_handler_calls_tracker | Total Objects: 169097
+PASSED                                                                   [ 69%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_goods_handler_calls_tracker | Total Objects: 171370
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_goods_handler_calls_tracker -> POST_test_goods_handler_calls_tracker ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +1697
+INFO     mem_observer:mem_observer.py:42   Parameter: +107
+INFO     mem_observer:mem_observer.py:42   _CallList: +72
+INFO     mem_observer:mem_observer.py:42   tuple: +70
+INFO     mem_observer:mem_observer.py:42   dict: +69
+INFO     mem_observer:mem_observer.py:42   _Call: +61
+INFO     mem_observer:mem_observer.py:42   list: +44
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +33
+INFO     mem_observer:mem_observer.py:42   type: +24
+INFO     mem_observer:mem_observer.py:42   MagicMock: +23
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +23
+
+tests/integration/test_reporting_pennies.py::TestReportingPennies::test_labor_handler_calls_tracker
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_labor_handler_calls_tracker | Total Objects: 169135
+PASSED                                                                   [ 76%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_labor_handler_calls_tracker | Total Objects: 171567
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_labor_handler_calls_tracker -> POST_test_labor_handler_calls_tracker ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +1851
+INFO     mem_observer:mem_observer.py:42   Parameter: +107
+INFO     mem_observer:mem_observer.py:42   _CallList: +78
+INFO     mem_observer:mem_observer.py:42   dict: +72
+INFO     mem_observer:mem_observer.py:42   tuple: +71
+INFO     mem_observer:mem_observer.py:42   _Call: +61
+INFO     mem_observer:mem_observer.py:42   list: +46
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +30
+INFO     mem_observer:mem_observer.py:42   type: +26
+INFO     mem_observer:mem_observer.py:42   MagicMock: +25
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +25
+
+tests/integration/test_reporting_pennies.py::TestReportingPennies::test_economic_tracker_aggregation
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_economic_tracker_aggregation | Total Objects: 169153
+PASSED                                                                   [ 84%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_economic_tracker_aggregation | Total Objects: 171401
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_economic_tracker_aggregation -> POST_test_economic_tracker_aggregation ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +1697
+INFO     mem_observer:mem_observer.py:42   Parameter: +107
+INFO     mem_observer:mem_observer.py:42   _CallList: +72
+INFO     mem_observer:mem_observer.py:42   dict: +67
+INFO     mem_observer:mem_observer.py:42   tuple: +67
+INFO     mem_observer:mem_observer.py:42   _Call: +61
+INFO     mem_observer:mem_observer.py:42   list: +44
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +24
+INFO     mem_observer:mem_observer.py:42   type: +24
+INFO     mem_observer:mem_observer.py:42   MagicMock: +23
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +23
+
+tests/integration/test_wo058_production.py::test_bootstrapper_injection
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_bootstrapper_injection | Total Objects: 169164
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.bootstrapper:bootstrapper.py:119 BOOTSTRAPPER | Injected 50.0 units to Firm 100 (Genesis)
+INFO     simulation.systems.bootstrapper:bootstrapper.py:135 BOOTSTRAPPER | Injected 9999500 capital to Firm 100 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:119 BOOTSTRAPPER | Injected 50.0 units to Firm 101 (Genesis)
+INFO     simulation.systems.bootstrapper:bootstrapper.py:135 BOOTSTRAPPER | Injected 9997500 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:151 BOOTSTRAPPER | Injected resources into 2 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:75 BOOTSTRAPPER | Force-assigned 1 workers to Firm 100
+INFO     simulation.systems.bootstrapper:bootstrapper.py:75 BOOTSTRAPPER | Force-assigned 0 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:77 BOOTSTRAPPER | Total force-assigned workers: 1
+PASSED                                                                   [ 92%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_bootstrapper_injection | Total Objects: 170184
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_bootstrapper_injection -> POST_test_bootstrapper_injection ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +538
+INFO     mem_observer:mem_observer.py:42   dict: +107
+INFO     mem_observer:mem_observer.py:42   list: +45
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +45
+INFO     mem_observer:mem_observer.py:42   set: +45
+INFO     mem_observer:mem_observer.py:42   _CallList: +45
+INFO     mem_observer:mem_observer.py:42   tuple: +42
+INFO     mem_observer:mem_observer.py:42   RegistryValueDTO: +32
+INFO     mem_observer:mem_observer.py:42   type: +15
+INFO     mem_observer:mem_observer.py:42   builtin_function_or_method: +15
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +7
+
+tests/integration/test_wo058_production.py::test_production_kickstart
+-------------------------------- live log setup --------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: PRE_test_production_kickstart | Total Objects: 169395
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.bootstrapper:bootstrapper.py:119 BOOTSTRAPPER | Injected 50.0 units to Firm 100 (Genesis)
+INFO     simulation.systems.bootstrapper:bootstrapper.py:135 BOOTSTRAPPER | Injected 9997000 capital to Firm 100 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:151 BOOTSTRAPPER | Injected resources into 1 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:75 BOOTSTRAPPER | Force-assigned 1 workers to Firm 100
+INFO     simulation.systems.bootstrapper:bootstrapper.py:77 BOOTSTRAPPER | Total force-assigned workers: 1
+PASSED                                                                   [100%]
+------------------------------ live log teardown -------------------------------
+INFO     mem_observer:mem_observer.py:22 MEMORY_SNAPSHOT | Stage: POST_test_production_kickstart | Total Objects: 170194
+INFO     mem_observer:mem_observer.py:40 --- MEMORY GROWTH REPORT: PRE_test_production_kickstart -> POST_test_production_kickstart ---
+INFO     mem_observer:mem_observer.py:42   MagicProxy: +538
+INFO     mem_observer:mem_observer.py:42   _CallList: +45
+INFO     mem_observer:mem_observer.py:42   dict: +41
+INFO     mem_observer:mem_observer.py:42   tuple: +39
+INFO     mem_observer:mem_observer.py:42   list: +27
+INFO     mem_observer:mem_observer.py:42   ReferenceType: +15
+INFO     mem_observer:mem_observer.py:42   type: +15
+INFO     mem_observer:mem_observer.py:42   partial: +13
+INFO     mem_observer:mem_observer.py:42   method: +11
+INFO     mem_observer:mem_observer.py:42   _Call: +11
+WARNING  mem_observer:mem_observer.py:47 CRITICAL | MagicMock growth detected: +7
+
+
+============================= 13 passed in 10.40s ==============================
