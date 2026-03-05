@@ -2,5 +2,46 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {}
+  "missions": {
+    "WO-SPEC-DTO-DEMOGRAPHICS": {
+      "key": "WO-SPEC-DTO-DEMOGRAPHICS",
+      "title": "Decouple Demographics from WorldState",
+      "type": "gemini",
+      "instruction_raw": "Refine MISSION_spec_dto_demographics.md. Focus on DemographicManager and AgentLifecycleManager. Propose interface-based registry injection.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "simulation/world_state.py",
+        "simulation/systems/demographic_manager.py",
+        "simulation/systems/lifecycle_manager.py"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null,
+      "no_inject": false
+    },
+    "WO-SPEC-DTO-VITAL-STATS": {
+      "key": "WO-SPEC-DTO-VITAL-STATS",
+      "title": "Decouple Vital Stats from WorldState",
+      "type": "gemini",
+      "instruction_raw": "Refine MISSION_spec_dto_vital_stats.md. Focus on DemographicManager and BirthSystem. Propose registry injection.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "simulation/world_state.py",
+        "simulation/systems/demographic_manager.py",
+        "simulation/systems/immigration_manager.py"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null,
+      "no_inject": false
+    }
+  }
 }

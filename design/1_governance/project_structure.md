@@ -27,18 +27,28 @@
 ├── simulation/             # 🌍 시뮬레이션 엔진 및 공통 프레임워크
 │   ├── core_agents.py      # 에이전트 베이스 클래스
 │   ├── systems/            # 월드 시스템 (Settlement, Sensory 등)
-│   └── components/         # 에이전트 부품 (Lifecycle, Demographics)
+│   ├── components/         # 에이전트 부품 (Lifecycle, Demographics)
+│   └── data/               # 💾 로컬 데이터베이스 및 상태 파일 (.db, .lock)
 │
 ├── communications/         # 💬 팀 소통 및 로그 기록
 │   ├── insights/           # 주요 의사결정 기록 (AID)
 │   └── jules_logs/         # Jules 실행 상세 로그
 │
 ├── tests/                  # ✅ 품질 검증 (Unit, Integration)
+│   └── benchmarks/         # 성능 벤치마킹 테스트
 │
 ├── README.md               # 🗂️ 프로젝트 개요 및 운영 철학
 ├── main.py                 # 🚀 시뮬레이션 서버 진입점
+├── launcher.py             # 🛠️ 통합 앱 런처 (scripts/ 통합 포인트)
 └── *-go.bat                # ⚡ Antigravity 운영 런처 (gemini-go, jules-go 등)
 ```
+
+---
+
+### 🏮 1.5. 특수 디렉토리 가이드
+- **`design/3_work_artifacts/reports/`**: 모든 분석 결과(Analysis, Results, Reports)의 통합 저장소.
+- **`_internal/scripts/verification/`**: 루트에 방치된 개별 검증 스크립트(`check_*.py`, `verify_*.py`)의 통합지.
+- **`modules/common/config/`**: 전체 시뮬레이션 설정 파일(.yaml, .json) 보관소.
 
 ---
 

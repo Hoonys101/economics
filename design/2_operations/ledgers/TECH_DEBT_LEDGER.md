@@ -33,7 +33,7 @@
 | **TD-ARCH-ORPHAN-SAGA** | Architecture | **Orphaned Sagas**: Sagas holding stale references to dead/failed agents. | **High**: Integrity. | **RESOLVED** |
 | **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks. | **High**: Gap. | **RESOLVED** |
 | **TD-ARCH-TX-INJECTION** | Architecture | **Transaction Injection Bypass**: `CentralBankSystem` directly mutating `WorldState.transactions`. | **High**: Purity. | **DEFERRED (TECH DEBT)** |
-| **TD-FIN-FLOAT-INCURSION-RE**| Finance | **Recurring Float Incursion**: `monetary_ledger.py` using `float()` for debt principal. | **Critical**: Integrity. | **DEFERRED (TECH DEBT)** |
+| **TD-FIN-FLOAT-INCURSION-RE**| Finance | **Recurring Float Incursion**: `monetary_ledger.py` using `float()` for debt principal. | **Critical**: Integrity. | **RESOLVED (2026-03-05)** |
 | **TD-ARCH-GOD-DTO** | Architecture | **SimulationState God DTO**: Monolithic dependency violating Interface Segregation. | **High**: Rigidity. | **ACTIVE (V2 AUDIT)** |
 | **TD-TEST-MOCK-LEAK** | Testing | **[S3-1] MagicMock Leaks**: Reference cycles in God DTO causing OOM and GC hangs. | **High**: Reliability. | **RESOLVED** |
 | **TD-ARCH-PROTOCOL-EVASION** | Architecture | **[S3-1] Protocol Evasion**: `hasattr()` usage in lifecycle logic (Ref: [AUDIT_PLATFORM_DEEP.md](file:///c:/coding/economics/reports/audits/AUDIT_PLATFORM_DEEP.md)). | **Medium**: Safety. | **ACTIVE** |

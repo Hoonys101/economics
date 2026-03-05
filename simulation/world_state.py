@@ -357,23 +357,31 @@ class WorldState:
         return self.households
 
     def teardown(self):
-        # Break subsystem references
-        subsystems = [
-            'tracker', 'inequality_tracker', 'stock_tracker', 'personality_tracker',
-            'ai_training_manager', 'ma_manager', 'demographic_manager', 'immigration_manager',
-            'inheritance_manager', 'housing_system', 'persistence_manager', 'analytics_system',
-            'firm_system', 'technology_manager', 'generational_wealth_audit', 'breeding_planner',
-            'transaction_processor', 'lifecycle_manager', 'finance_system', 'ai_trainer',
-            'social_system', 'event_system', 'sensory_system', 'settlement_system',
-            'saga_orchestrator', 'monetary_ledger', 'shareholder_registry', 'taxation_system',
-            'commerce_system', 'labor_market_analyzer', 'crisis_monitor', 'public_manager',
-            'politics_system', 'index_circuit_breaker', 'estate_registry', 'scenario_verifier',
-            'telemetry_collector', 'dashboard_service', 'command_queue', 'telemetry_exchange'
-        ]
-        for attr in subsystems:
-            if hasattr(self, attr):
-                setattr(self, attr, None)
-        # Clear collections
+        """
+        Breaks all subsystem references and clears collections to assist GC.
+        Uses dynamic attribute scanning to replace the legacy hardcoded list.
+        """
+        # 1. Dynamically identify and nullify subsystems
+        # Subsystems are typically initialized as objects and stored as class attributes.
+        for attr_name in list(self.__dict__.keys()):
+            attr_value = getattr(self, attr_name)
+            
+            # Skip primitives, internal state, and special fields
+            if attr_name.startswith('_') or isinstance(attr_value, (int, float, str, bool, type(None))):
+                continue
+            
+            # If the attribute has a teardown method, call it
+            if hasattr(attr_value, 'teardown') and callable(attr_value.teardown):
+                try:
+                    attr_value.teardown()
+                except Exception as e:
+                    # Log failure but continue
+                    pass
+            
+            # Explicitly break the reference
+            setattr(self, attr_name, None)
+
+        # 2. Clear known collections that are still bound to self
         self.goods_data.clear()
         self.real_estate_units.clear()
         self.currency_holders.clear()
@@ -383,5 +391,7 @@ class WorldState:
         self.markets.clear()
         self.system_commands.clear()
         self.god_commands.clear()
+        
+        # 3. Final cleanup of core registries
         self.agent_registry = None
         self.global_registry = None

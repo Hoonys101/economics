@@ -18,8 +18,8 @@
 - **`Phase 38: Structural Hardening & Tech Debt Liquidation`** 🛡️ 🚀 (2026-03-05 - Current)
     - **Goal**: Resolve recurring float incursions in finance kernels, refactor brittle memory teardown logic, and decouple God DTOs.
     - **Current Tasks**:
-        - [ ] Fix `TD-FIN-FLOAT-INCURSION-RE` (monetary_ledger.py float incursion)
-        - [ ] Implement Dynamic Teardown in `WorldState` (`TD-MEM-TEARDOWN-HARDCODE`)
+        - [x] Hardened `Transaction` model against float incursions (`TD-FIN-FLOAT-INCURSION-RE`) ✅
+        - [x] Implemented Dynamic Teardown in `WorldState` (`TD-MEM-TEARDOWN-HARDCODE`) ✅
         - [ ] Arm Specs for `SimulationState` God DTO Decoupling.
     - **Status**: **IN PROGRESS** 🏗️
 

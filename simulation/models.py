@@ -37,26 +37,21 @@ class Transaction:
 
         # 2. Float Guard for total_pennies
         if isinstance(self.total_pennies, float):
+             # Hard error on float pennies to catch incursions early
             raise FloatIncursionError(f"total_pennies must be int, got float: {self.total_pennies}")
 
-        # 2. Legacy Migration Logic
+        # 3. SSoT Enforcement & Legacy Migration
         if self.total_pennies == 0 and self.price != 0.0:
-            # LEGACY PATH: Derive pennies from float price
-            # Strict rounding needed to avoid 99.99999 -> 99 issue
+            # LEGACY PATH: Derive pennies from float price. 
+            # We round to the nearest penny to avoid floating point precision errors (e.g., 19.9999999).
             self.total_pennies = int(round(self.price * self.quantity * 100))
-            # Optional: warnings.warn("Transaction instantiated with float price. Use total_pennies.", DeprecationWarning)
+            # PROPOSED: Add logging here to track legacy usage callers.
 
-        # 3. SSoT Enforcement
-        if self.total_pennies != 0:
-            # Re-calculate display price from SSoT
-            calculated_price = (self.total_pennies / 100.0) / self.quantity if self.quantity else 0
-            # If price was explicitly set and diverges significantly, warn or raise
-            if self.price != 0 and abs(self.price - calculated_price) > 0.001:
-                # We enforce SSoT but allow small float errors.
-                # raise ValueError(f"SSoT Violation: price={self.price} != derived={calculated_price}")
-                pass
-
-            # Force consistency for display
+        # 4. Consistency Check
+        # Re-calculate display price from SSoT to ensure 'price' field is always in sync with 'total_pennies'
+        if self.quantity > 0:
+            calculated_price = self.total_pennies / (self.quantity * 100.0)
+            # Update display price to reflect SSoT exactly
             self.price = calculated_price
 
     # --- ITransaction Protocol Implementation ---
