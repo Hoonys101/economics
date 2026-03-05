@@ -7,6 +7,7 @@ from simulation.dtos.api import SimulationState, AIDecisionData
 from simulation.orchestration.utils import prepare_market_data
 from simulation.systems.api import LearningUpdateContext
 from modules.system.api import DEFAULT_CURRENCY
+from modules.housing.api import HousingContextDTO
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -20,8 +21,18 @@ class Phase5_PostSequence(IPhaseStrategy):
     def execute(self, state: SimulationState) -> SimulationState:
         # Housing
         if self.world_state.housing_system:
-             self.world_state.housing_system.process_housing(state)
-             self.world_state.housing_system.apply_homeless_penalty(state)
+             housing_context = HousingContextDTO(
+                 tick=state.time,
+                 real_estate_units=getattr(state, 'real_estate_units', []),
+                 agent_registry=state.agents,
+                 bank=getattr(state, 'bank', None),
+                 settlement_system=getattr(state, 'settlement_system', None),
+                 government=getattr(state, 'government', None),
+                 saga_orchestrator=getattr(state, 'saga_orchestrator', None),
+                 housing_market=state.markets.get('housing') if hasattr(state, 'markets') else None
+             )
+             self.world_state.housing_system.process_housing(housing_context)
+             self.world_state.housing_system.apply_homeless_penalty(state.households, self.world_state.housing_system.config)
 
         # Final Burial Pass (Atomic Stabilization)
         # Catches starvation deaths from Phase_Consumption before Tick Metrics/Audit
