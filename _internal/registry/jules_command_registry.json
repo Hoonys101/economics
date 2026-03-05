@@ -18,22 +18,6 @@
       "model": null,
       "audit_requirements": null,
       "no_inject": false
-    },
-    "WO-IMPL-MEM-SINGLETON-DECISION": {
-      "key": "WO-IMPL-MEM-SINGLETON-DECISION",
-      "title": "IMPL: DecisionEngine 3 Managers \u2192 \ud074\ub798\uc2a4 \ubcc0\uc218 \uc2f1\uae00\ud1a4 \uc804\ud658",
-      "type": "jules",
-      "instruction_raw": "## \ud575\uc2ec \ubcc0\uacbd\n\n\ud30c\uc77c: simulation/decisions/ai_driven_household_engine.py\n\n### \ubcc0\uacbd: 3\uac1c \ub9e4\ub2c8\uc800\ub97c \ud074\ub798\uc2a4 \ubcc0\uc218\ub85c \uc774\ub3d9\nL38-41\uc758 3\uc904\uc744 __init__ \ubc16, \ud074\ub798\uc2a4 body\ub85c \uc774\ub3d9\ud569\ub2c8\ub2e4:\n```python\nclass AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):\n    consumption_manager = ConsumptionManager()\n    labor_manager = LaborManager()\n    asset_manager = AssetManager()\n\n    def __init__(self, ai_engine, config_module, logger=None):\n        self.ai_engine = ai_engine\n        self.config_module = config_module\n        self.logger = logger if logger else logging.getLogger(__name__)\n        # [DELETED] self.consumption_manager \ub4f1 3\uc904\n```\n\n### Firm CorporateManager\ub294 \uac74\ub4dc\ub9ac\uc9c0 \ub9c8\uc138\uc694\nCorporateManager\ub294 config_module\uc744 \uc0dd\uc131\uc790\uc5d0\uc11c \ubc1b\uc73c\ubbc0\ub85c \uc774\ubc88 \ubbf8\uc158\uc5d0\uc11c \uc81c\uc678.\n\n### \uac80\uc99d\n- pytest tests/ -x --timeout=60",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_MEM_SINGLETON_DECISION.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null,
-      "no_inject": false
     }
   }
 }
