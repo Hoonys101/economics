@@ -19,22 +19,6 @@
       "audit_requirements": null,
       "no_inject": false
     },
-    "WO-IMPL-MEM-WALLET-LOG-FIX": {
-      "key": "WO-IMPL-MEM-WALLET-LOG-FIX",
-      "title": "IMPL: GLOBAL_WALLET_LOG \uba54\ubaa8\ub9ac \ub204\uc218 \uc218\uc815",
-      "type": "jules",
-      "instruction_raw": "## \ud575\uc2ec \ubb38\uc81c\nmodules/finance/wallet/audit.py:L5\uc5d0\uc11c \uc815\uc758\ub41c GLOBAL_WALLET_LOG\ub294\n\ubaa8\ub4e0 Wallet \uc5f0\uc0b0\uc758 WalletOpLogDTO\ub97c \ubb34\ud55c \ucd95\uc801\ud558\ub294 \uae00\ub85c\ubc8c \ub9ac\uc2a4\ud2b8\uc785\ub2c8\ub2e4.\n\uc774 \ub9ac\uc2a4\ud2b8\ub294 \uc808\ub300 clear\ub418\uc9c0 \uc54a\uc544, \uc2dc\ubbac\ub808\uc774\uc158 \uc2e4\ud589 \uc2dc O(N*T) \uba54\ubaa8\ub9ac \uc99d\uac00\ub97c \ucd08\ub798\ud569\ub2c8\ub2e4.\n\n## \ubcc0\uacbd \uc0ac\ud56d\n\n### \ubcc0\uacbd 1: Wallet \uae30\ubcf8 \uac10\uc0ac \ub85c\uadf8 \ube44\ud65c\uc131\ud654\n\ud30c\uc77c: modules/finance/wallet/wallet.py\nL34\uc758 \uae30\ubcf8\uac12\uc744 \uae00\ub85c\ubc8c \ub9ac\uc2a4\ud2b8\uac00 \uc544\ub2cc \ube48 \ub85c\uceec \ub9ac\uc2a4\ud2b8\ub85c \ubcc0\uacbd:\n```python\n# BEFORE\nself._audit_log = audit_log if audit_log is not None else GLOBAL_WALLET_LOG\n# AFTER\nself._audit_log = audit_log if audit_log is not None else []\n```\n\n### \ubcc0\uacbd 2: conftest.py \uccad\uc18c\n\ud30c\uc77c: tests/conftest.py\n\uc138\uc158 \ub610\ub294 \ud568\uc218 \ub808\ubca8 fixture\uc5d0\uc11c GLOBAL_WALLET_LOG.clear()\ub97c \ud638\ucd9c\ud558\uc138\uc694:\n```python\n@pytest.fixture(autouse=True)\ndef clear_global_wallet_log():\n    from modules.finance.wallet.audit import GLOBAL_WALLET_LOG\n    GLOBAL_WALLET_LOG.clear()\n    yield\n    GLOBAL_WALLET_LOG.clear()\n```\n\n### \ubcc0\uacbd 3: \uc804\uc218\uc870\uc0ac\n\ucf54\ub4dc\ubca0\uc774\uc2a4\uc5d0\uc11c `GLOBAL_WALLET_LOG`\ub97c import\ud558\ub294 \uacf3\uc744 \uc804\uc218\uc870\uc0ac\ud558\uc138\uc694.\n\uc9c4\ub2e8 \ubaa9\uc801\uc73c\ub85c\ub9cc \uc0ac\uc6a9\ub41c\ub2e4\uba74 \uc704 \ubcc0\uacbd\uc73c\ub85c \ucda9\ubd84\ud569\ub2c8\ub2e4.\n\n### \uac80\uc99d\n- pytest tests/ -x --timeout=60",
-      "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null,
-      "no_inject": false
-    },
     "WO-IMPL-MEM-SINGLETON-DECISION": {
       "key": "WO-IMPL-MEM-SINGLETON-DECISION",
       "title": "IMPL: DecisionEngine 3 Managers \u2192 \ud074\ub798\uc2a4 \ubcc0\uc218 \uc2f1\uae00\ud1a4 \uc804\ud658",
