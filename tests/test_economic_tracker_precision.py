@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, PropertyMock
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
+from modules.analytics.api import EconomyAnalyticsSnapshotDTO, HouseholdAnalyticsDTO, FirmAnalyticsDTO, MarketAnalyticsDTO
+
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.core_markets import Market
@@ -55,16 +57,50 @@ class TestEconomicTrackerPrecision(unittest.TestCase):
         m1.get_daily_volume.return_value = 10.0
         markets = {"goods": m1, "labor": MagicMock(), "loan_market": MagicMock(), "stock_market": MagicMock()}
 
-        # Run track
-        self.tracker.track(
-            time=1,
-            households=[h1],
-            firms=[f1],
-            markets=markets,
-            money_supply=100000.0,
-            m2_leak=0.0,
-            monetary_base=50000.0
+        # Construct DTOs
+        h1_dto = HouseholdAnalyticsDTO(
+            agent_id=1,
+            is_active=True,
+            total_cash_pennies=10000,
+            portfolio_value_pennies=0,
+            is_employed=True,
+            trust_score=0.5,
+            survival_need=0.5,
+            consumption_expenditure_pennies=5000,
+            food_expenditure_pennies=2000,
+            labor_income_pennies=3000,
+            education_level=1.0,
+            aptitude=0.5
         )
+
+        f1_dto = FirmAnalyticsDTO(
+            agent_id=1,
+            is_active=True,
+            total_assets_pennies=20000,
+            cash_balance_pennies=20000,
+            current_production=10.0,
+            inventory_volume=10.0,
+            sales_volume=5.0
+        )
+
+        m1_dto = MarketAnalyticsDTO(
+            market_id="goods",
+            avg_price=100.0,
+            volume=10.0,
+            current_price=100.0
+        )
+
+        snapshot = EconomyAnalyticsSnapshotDTO(
+            tick=1,
+            households=[h1_dto],
+            firms=[f1_dto],
+            markets=[m1_dto],
+            money_supply_pennies=10000000,
+            m2_leak_pennies=0,
+            monetary_base_pennies=5000000
+        )
+
+        self.tracker.track_tick(snapshot)
 
         latest = self.tracker.get_latest_indicators()
 
