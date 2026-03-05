@@ -3,6 +3,8 @@ from simulation.dtos.api import SimulationState
 from modules.simulation.api import (
     IAgingContext, IBirthContext, IDeathContext, AgentID
 )
+from modules.lifecycle.api import ISuccessionContext, DebtStatusDTO
+from simulation.models import Transaction
 
 class BaseLifecycleContextAdapter:
     def __init__(self, state: SimulationState):
@@ -170,7 +172,52 @@ class BirthContextAdapter(BaseLifecycleContextAdapter, IBirthContext):
     def next_agent_id(self, val: int):
         self._state.next_agent_id = val
 
-class DeathContextAdapter(BaseLifecycleContextAdapter, IDeathContext):
+class DeathContextAdapter(BaseLifecycleContextAdapter, IDeathContext, ISuccessionContext):
+    @property
+    def current_tick(self) -> int:
+        return self._state.time
+
+    @property
+    def government_id(self) -> AgentID:
+        if self._state.primary_government:
+            return self._state.primary_government.id
+        return -1 # Fallback or ID_SYSTEM
+
+    @property
+    def bank_id(self) -> AgentID:
+        if getattr(self._state, 'bank', None):
+            return self._state.bank.id
+        return -1 # Fallback or ID_SYSTEM
+
+    def get_real_estate_units(self, owner_id: AgentID) -> List[Any]:
+        return [u for u in getattr(self._state, 'real_estate_units', []) if getattr(u, 'owner_id', None) == owner_id]
+
+    def get_stock_price(self, firm_id: AgentID) -> float:
+        market = self.markets.get("stock")
+        if market:
+            return market.get_daily_avg_price(firm_id)
+        return 0.0
+
+    def get_debt_status(self, agent_id: AgentID) -> DebtStatusDTO:
+        bank = getattr(self._state, 'bank', None)
+        if bank and hasattr(bank, 'get_debt_status'):
+            return bank.get_debt_status(agent_id)
+        return DebtStatusDTO(0, [])
+
+    def get_active_heirs(self, children_ids: List[AgentID]) -> List[Any]:
+        heirs = []
+        for cid in children_ids:
+            child = self._state.agents.get(cid)
+            if child and hasattr(child, '_bio_state') and getattr(child._bio_state, 'is_active', False):
+                heirs.append(child)
+        return heirs
+
+    def execute_transactions(self, transactions: List[Transaction]) -> List[Any]:
+        processor = getattr(self._state, 'transaction_processor', None)
+        if processor:
+            return processor.execute(self._state, transactions)
+        return []
+
     @property
     def households(self) -> List[Any]:
         return self._state.households
