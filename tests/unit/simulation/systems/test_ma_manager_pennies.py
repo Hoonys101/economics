@@ -64,7 +64,7 @@ class TestMAManagerPennies:
         manager.settlement_system.transfer = MagicMock()
 
         # Run
-        manager.process_market_exits_and_entries(current_tick=100)
+        manager.process_market_exits_and_entries(current_tick=100, markets_state={})
 
         # Verify Transfer Amount is int
         # Offer = Valuation * Premium (1.1)
@@ -121,7 +121,7 @@ class TestMAManagerPennies:
 
         manager.settlement_system.transfer = MagicMock()
 
-        manager.process_market_exits_and_entries(current_tick=100)
+        manager.process_market_exits_and_entries(current_tick=100, markets_state={})
 
         assert manager.settlement_system.transfer.called
         args, kwargs = manager.settlement_system.transfer.call_args

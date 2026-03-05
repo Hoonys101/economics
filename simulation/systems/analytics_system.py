@@ -1,4 +1,4 @@
-from typing import List, Tuple, TYPE_CHECKING, Dict, Any
+from typing import List, Tuple, TYPE_CHECKING, Dict, Any, Optional
 import logging
 from simulation.dtos import AgentStateData, TransactionData, EconomicIndicatorData, MarketHistoryData
 from simulation.core_agents import Household

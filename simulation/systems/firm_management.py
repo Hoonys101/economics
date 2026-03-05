@@ -7,6 +7,8 @@ from modules.simulation.dtos.api import FirmConfigDTO
 from simulation.utils.config_factory import create_config_dto
 from modules.system.api import DEFAULT_CURRENCY
 from modules.simulation.api import IAgent
+from modules.common.dtos.skeletons import MarketStateDTO
+from modules.finance.utils.currency_math import round_to_pennies
 
 if TYPE_CHECKING:
     from simulation.engine import Simulation
@@ -26,10 +28,21 @@ class FirmSystem:
         self.strategy = strategy
         self.world_state = context
 
-    def spawn_firm(self, simulation: "Simulation", founder_household: "Household") -> Optional["Firm"]:
+    def spawn_firm(self, simulation: "Simulation", founder_household: "Household", markets_state: Dict[str, MarketStateDTO] = None) -> Optional["Firm"]:
         """
         Wealthy households found new firms.
         """
+        if markets_state is None:
+            markets_state = {}
+            if getattr(simulation, "markets", None):
+                for m_id, m in simulation.markets.items():
+                    avg_p = getattr(m, "avg_price", 0.0)
+                    avg_p_pennies = round_to_pennies(avg_p * 100) if isinstance(avg_p, float) else avg_p
+                    markets_state[m_id] = MarketStateDTO(
+                        market_id=m_id, price_history={}, volume_history={},
+                        current_bids=0, current_asks=0, is_halted=False, avg_price=int(avg_p_pennies)
+                    )
+
         base_startup_cost = getattr(self.config, "STARTUP_COST", 30000.0)
 
         # 1. Choose Specialization First to calculate REAL cost
@@ -120,7 +133,7 @@ class FirmSystem:
             memory_interface=None
         )
 
-        loan_market = simulation.markets.get("loan_market")
+        loan_market_state = markets_state.get("loan_market")
 
         # Atomic Creation & Injection
         new_firm = FirmFactory.create_and_register_firm(
@@ -131,7 +144,7 @@ class FirmSystem:
             engine=firm_decision_engine,
             specialization=specialization,
             productivity_factor=random.uniform(8.0, 12.0),
-            loan_market=loan_market,
+            loan_market_state=loan_market_state,
             sector=sector,
             founder=founder_household,
             startup_cost=final_startup_cost

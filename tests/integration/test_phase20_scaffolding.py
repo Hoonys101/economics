@@ -33,7 +33,7 @@ class TestPhase20Scaffolding(unittest.TestCase):
             goods_data=[],
             personality=Personality.CONSERVATIVE,
             config_dto=create_household_config_dto(),
-            loan_market=self.mock_loan_market
+            loan_market_state=None
         )
         h._deposit(int(initial_assets * 100))
         return h

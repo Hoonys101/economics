@@ -100,7 +100,7 @@ def create_real_household_from_golden(mock_h, golden_config):
         goods_data=goods_data,
         personality=personality,
         config_dto=hh_config_dto,
-        loan_market=None,
+        loan_market_state=None,
         initial_age=float(initial_age),
         gender="M",
         initial_assets_record=float(initial_assets)

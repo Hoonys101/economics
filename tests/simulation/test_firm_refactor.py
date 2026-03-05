@@ -55,7 +55,7 @@ def core_config():
 
 @pytest.fixture
 def firm(mock_decision_engine, firm_config, core_config):
-    f = Firm(core_config=core_config, engine=mock_decision_engine, specialization='FOOD', productivity_factor=1.0, config_dto=firm_config, initial_inventory=None, loan_market=None, sector='FOOD', personality=None)
+    f = Firm(core_config=core_config, engine=mock_decision_engine, specialization='FOOD', productivity_factor=1.0, config_dto=firm_config, initial_inventory=None, loan_market_state=None, sector='FOOD', personality=None)
     f.wallet.load_balances({DEFAULT_CURRENCY: 1000.0})
     f.settlement_system = MagicMock()
     f.settlement_system.transfer.return_value = True

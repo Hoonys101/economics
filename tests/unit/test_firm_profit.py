@@ -33,7 +33,7 @@ def mock_firm():
         productivity_factor=1.0,
         config_dto=config_dto,
         initial_inventory=None,
-        loan_market=None,
+        loan_market_state=None,
         sector="FOOD_PROD",
         personality=None
     )

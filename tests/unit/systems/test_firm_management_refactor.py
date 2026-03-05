@@ -44,7 +44,7 @@ class TestFirmManagementRefactor(unittest.TestCase):
              patch('simulation.ai.firm_ai.FirmAI'), \
              patch('simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine'):
 
-            result = self.firm_system.spawn_firm(self.mock_simulation, household)
+            result = self.firm_system.spawn_firm(self.mock_simulation, household, markets_state={})
             self.assertIsNone(result)
 
     def test_spawn_firm_transfer_failure(self):
@@ -64,7 +64,7 @@ class TestFirmManagementRefactor(unittest.TestCase):
              patch('simulation.ai.firm_ai.FirmAI'), \
              patch('simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine'):
 
-            result = self.firm_system.spawn_firm(self.mock_simulation, household)
+            result = self.firm_system.spawn_firm(self.mock_simulation, household, markets_state={})
             self.assertIsNone(result)
 
 if __name__ == '__main__':

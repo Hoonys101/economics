@@ -4,6 +4,7 @@ import random
 from modules.finance.api import IMonetaryAuthority
 from modules.system.api import DEFAULT_CURRENCY
 from modules.finance.utils.currency_math import round_to_pennies
+from modules.common.dtos.skeletons import MarketStateDTO
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -36,7 +37,7 @@ class MAManager:
     def _get_balance(self, firm: "Firm") -> float:
         return firm.wallet.get_balance(DEFAULT_CURRENCY)
 
-    def process_market_exits_and_entries(self, current_tick: int):
+    def process_market_exits_and_entries(self, current_tick: int, markets_state: Dict[str, MarketStateDTO] = None):
         """
         Main entry point.
         1. Identify M&A (Predator vs Prey).
@@ -44,6 +45,17 @@ class MAManager:
         """
         if not self.ma_enabled:
             return
+
+        if markets_state is None:
+            markets_state = {}
+            if getattr(self.simulation, "markets", None):
+                for m_id, m in self.simulation.markets.items():
+                    avg_p = getattr(m, "avg_price", 0.0)
+                    avg_p_pennies = round_to_pennies(avg_p * 100) if isinstance(avg_p, float) else avg_p
+                    markets_state[m_id] = MarketStateDTO(
+                        market_id=m_id, price_history={}, volume_history={},
+                        current_bids=0, current_asks=0, is_halted=False, avg_price=int(avg_p_pennies)
+                    )
 
         # 1. Identify Predators and Preys
         firms = self.simulation.firms
@@ -151,7 +163,7 @@ class MAManager:
         # 3. Process Bankruptcies (Liquidation)
         for firm in bankrupts:
             if firm.is_active:
-                self._execute_bankruptcy(firm, current_tick)
+                self._execute_bankruptcy(firm, current_tick, markets_state)
 
     def _attempt_hostile_takeover(self, predator: "Firm", target: "Firm", market_cap: float, tick: int) -> bool:
         """
@@ -230,19 +242,21 @@ class MAManager:
         # 3. Deactivate Prey
         prey.is_active = False 
 
-    def _execute_bankruptcy(self, firm: "Firm", tick: int):
+    def _execute_bankruptcy(self, firm: "Firm", tick: int, markets_state: Dict[str, MarketStateDTO] = None):
         # 1. Calculate values of real assets before they are wiped
         inv_value_pennies = 0
         # Simple estimation: default price if no market data, or look up market
-        default_price = 10.0
-        if self.simulation.markets:
-             for item, qty in firm.get_all_items().items():
-                 price = default_price
-                 if item in self.simulation.markets:
-                     m = self.simulation.markets[item]
-                     if hasattr(m, "avg_price"): price = m.avg_price
-                 # Convert to pennies
-                 inv_value_pennies += round_to_pennies(qty * price * 100) # Assuming price is dollars
+        default_price_pennies = 1000 # Default $10.00 in pennies
+
+        for item, qty in firm.get_all_items().items():
+            price_pennies = default_price_pennies
+            if markets_state and item in markets_state:
+                market_dto = markets_state[item]
+                if market_dto.avg_price > 0:
+                    price_pennies = market_dto.avg_price
+
+            # Convert qty * price_pennies safely
+            inv_value_pennies += int(qty * price_pennies)
 
         capital_value_pennies = round_to_pennies(firm.capital_stock * 100) # Assuming 1 unit of capital = $1 ? Or verify?
         # Typically capital_stock is value in dollars or units.

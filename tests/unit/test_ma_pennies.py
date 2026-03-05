@@ -83,7 +83,7 @@ class TestMAManagerPennies:
         mock_simulation.firms = [predator, prey]
 
         # Execute
-        manager.process_market_exits_and_entries(current_tick=100)
+        manager.process_market_exits_and_entries(current_tick=100, markets_state={})
 
         # Assertions
         transfer_calls = mock_settlement.transfer.call_args_list
@@ -156,7 +156,7 @@ class TestMAManagerPennies:
         mock_simulation.firms = [predator, target]
 
         # Execute
-        manager.process_market_exits_and_entries(current_tick=100)
+        manager.process_market_exits_and_entries(current_tick=100, markets_state={})
 
         # Assertions
         transfer_calls = mock_settlement.transfer.call_args_list
@@ -206,8 +206,16 @@ class TestMAManagerPennies:
         # Update firms list
         mock_simulation.firms = [bankrupt]
 
+        from modules.common.dtos.skeletons import MarketStateDTO
+        markets_state_mock = {
+            'apple': MarketStateDTO(
+                market_id='apple', price_history={}, volume_history={},
+                current_bids=0, current_asks=0, is_halted=False, avg_price=int(20.5 * 100)
+            )
+        }
+
         # Execute
-        manager.process_market_exits_and_entries(current_tick=100)
+        manager.process_market_exits_and_entries(current_tick=100, markets_state=markets_state_mock)
 
         # Assertions
         # verify record_liquidation call

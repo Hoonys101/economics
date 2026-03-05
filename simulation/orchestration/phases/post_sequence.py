@@ -107,7 +107,17 @@ class Phase5_PostSequence(IPhaseStrategy):
                      self.world_state.repository.analytics.save_ai_decision(decision_data)
 
         if self.world_state.ma_manager:
-            self.world_state.ma_manager.process_market_exits_and_entries(state.time)
+            from modules.common.dtos.skeletons import MarketStateDTO
+            from modules.finance.utils.currency_math import round_to_pennies
+            markets_state = {}
+            for m_id, m in state.markets.items():
+                avg_p = getattr(m, "avg_price", 0.0)
+                avg_p_pennies = round_to_pennies(avg_p * 100) if isinstance(avg_p, float) else avg_p
+                markets_state[m_id] = MarketStateDTO(
+                    market_id=m_id, price_history={}, volume_history={},
+                    current_bids=0, current_asks=0, is_halted=False, avg_price=int(avg_p_pennies)
+                )
+            self.world_state.ma_manager.process_market_exits_and_entries(state.time, markets_state)
 
         # Cleanup firms
         active_firms_before = len(state.firms)

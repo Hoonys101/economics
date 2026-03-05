@@ -50,7 +50,14 @@ class TestMAManager(unittest.TestCase):
 
         # 3. Execute
         current_tick = 123
-        self.ma_manager._execute_bankruptcy(mock_firm, current_tick)
+        from modules.common.dtos.skeletons import MarketStateDTO
+        mock_markets_state = {
+            "some_item": MarketStateDTO(
+                market_id="some_item", price_history={}, volume_history={},
+                current_bids=0, current_asks=0, is_halted=False, avg_price=1000
+            )
+        }
+        self.ma_manager._execute_bankruptcy(mock_firm, current_tick, mock_markets_state)
 
         # 4. Assert
         # Assert liquidation was called

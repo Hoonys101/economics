@@ -16,6 +16,7 @@ from simulation.ai.enums import Personality
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO, ICurrencyHolder
 from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, IConfigurable, LiquidationConfigDTO, InventorySlot, ItemDTO, InventorySlotDTO, AgentID
 from dataclasses import replace
+from modules.common.dtos.skeletons import MarketStateDTO
 
 # Orchestrator-Engine Refactor
 from simulation.components.state.firm_state_models import HRState, FinanceState, ProductionState, SalesState
@@ -108,9 +109,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         productivity_factor: float,
         config_dto: FirmConfigDTO,
         initial_inventory: Optional[Dict[str, float]] = None,
-        loan_market: Optional[LoanMarket] = None,
+        loan_market_state: Optional[MarketStateDTO] = None,
         sector: str = "FOOD",
         personality: Optional[Personality] = None,
+        **kwargs # Accept arbitrary unused kwargs like loan_market gracefully for legacy tests
     ) -> None:
         # Composition: Initialize Core Attributes manually (No BaseAgent)
         self._core_config = core_config
@@ -199,7 +201,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         self.real_estate_utilization_component = RealEstateUtilizationComponent()
 
         # Loan Market
-        self.decision_engine.loan_market = loan_market
+        if hasattr(self.decision_engine, "loan_market_state"):
+            self.decision_engine.loan_market_state = loan_market_state
+        else:
+            self.decision_engine.loan_market = kwargs.get("loan_market", loan_market_state) # fallback
         
         # Tracking variables
         self.age = 0

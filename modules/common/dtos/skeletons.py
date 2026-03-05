@@ -10,6 +10,7 @@ class MarketStateDTO:
     current_bids: int
     current_asks: int
     is_halted: bool = False
+    avg_price: int = 0
 
 @dataclass(frozen=True)
 class AgentContextDTO:
