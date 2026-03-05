@@ -76,6 +76,8 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         {"id": good_name, **good_attrs}
         for good_name, good_attrs in config.GOODS.items()
     ]
+    shared_goods_info_map = {g["id"]: g for g in goods_data}
+
     households = []
     initial_balances: Dict[int, float] = {}  # WO-124: Collect intended initial balances
 
@@ -191,6 +193,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             engine=household_decision_engine,
             talent=Talent(max(0.5, random.gauss(1.0, 0.2)), {}), # WO-023-B: The Lottery of Birth
             goods_data=goods_data,
+            shared_goods_info_map=shared_goods_info_map,
             personality=personality,
             config_dto=hh_config_dto,
             risk_aversion=risk_aversion,

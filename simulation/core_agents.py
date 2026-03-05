@@ -89,6 +89,16 @@ class Household(
     State is held in internal DTOs.
     """
 
+    # --- Class-Level Stateless Engines (O(1) Memory) ---
+    lifecycle_engine = LifecycleEngine()
+    needs_engine = NeedsEngine()
+    social_engine = SocialEngine()
+    budget_engine = BudgetEngine()
+    consumption_engine = ConsumptionEngine()
+    belief_engine = BeliefEngine()
+    crisis_engine = CrisisEngine()
+    housing_connector = HousingConnector()
+
     def __init__(
         self,
         core_config: AgentCoreConfigDTO,
@@ -107,22 +117,13 @@ class Household(
         initial_assets_record: Optional[int] = None,  # MIGRATION: int pennies
         demographic_manager: Optional[Any] = None,
         major: Optional[str] = None,
+        shared_goods_info_map: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> None:
         self.config = config_dto
         self.logger = core_config.logger
         self.demographic_manager = demographic_manager
         self.last_labor_allocation = 0.0
-
-        # --- Initialize Engines (Stateless) ---
-        self.lifecycle_engine = LifecycleEngine()
-        self.needs_engine = NeedsEngine()
-        self.social_engine = SocialEngine()
-        self.budget_engine = BudgetEngine()
-        self.consumption_engine = ConsumptionEngine()
-        self.belief_engine = BeliefEngine()
-        self.crisis_engine = CrisisEngine()
-        self.housing_connector = HousingConnector()
 
         # --- Initialize Internal State DTOs ---
 
@@ -296,7 +297,10 @@ class Household(
         self._social_state.economic_vision = max(0.0, min(1.0, base_v + random.uniform(-0.15, 0.15)))
         self._social_state.trust_score = 0.5
 
-        self.goods_info_map = {g["id"]: g for g in goods_data}
+        if shared_goods_info_map is not None:
+            self.goods_info_map = shared_goods_info_map
+        else:
+            self.goods_info_map = {g["id"]: g for g in goods_data} if goods_data else {}
         self.goods_data = goods_data
         self.risk_aversion = risk_aversion
 
