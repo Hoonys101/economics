@@ -17,8 +17,8 @@ class AnalyticsSystem:
     TD-272: Decouples aggregation logic from PersistenceManager.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, context: Optional["IAnalyticsContext"] = None):
+        self.world_state = context
 
     def aggregate_tick_data(self, world_state: "WorldState") -> Tuple[List[AgentStateData], List[TransactionData], EconomicIndicatorData, List[MarketHistoryData]]:
         """

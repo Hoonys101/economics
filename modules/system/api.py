@@ -91,6 +91,52 @@ class IWorldState(IWorldStateMetricsProvider, Protocol):
         """
         ...
 
+# --- Domain-Specific Context Protocols (Phase 38 Decoupling) ---
+
+@runtime_checkable
+class IAnalyticsContext(Protocol):
+    """View of WorldState required by AnalyticsSystem."""
+    time: int
+    households: Sequence[Any]
+    firms: Sequence[Any]
+    markets: Dict[str, Any]
+    monetary_ledger: Optional[Any]
+
+@runtime_checkable
+class IPopulationContext(Protocol):
+    """View of WorldState required by Population/Lifecycle systems."""
+    time: int
+    households: List[Any]
+    agent_registry: IAgentRegistry
+    global_registry: Optional[IGlobalRegistry]
+    next_agent_id: int
+
+@runtime_checkable
+class IFirmContext(Protocol):
+    """View of WorldState required by FirmManagement systems."""
+    time: int
+    firms: List[Any]
+    agent_registry: IAgentRegistry
+    global_registry: Optional[IGlobalRegistry]
+
+@runtime_checkable
+class IFinanceContext(Protocol):
+    """View of WorldState required by Finance/Monetary systems."""
+    time: int
+    bank: Optional[Any]
+    government: Optional[Any]
+    central_bank: Optional[Any]
+    monetary_ledger: Optional[Any]
+    settlement_system: Optional[Any]
+
+@runtime_checkable
+class IHousingContext(Protocol):
+    """View of WorldState required by HousingSystem."""
+    time: int
+    real_estate_units: List[Any]
+    households: List[Any]
+    settlement_system: Optional[Any]
+
 @runtime_checkable
 class IGovernmentRegistry(Protocol):
     """Module B: Protocol for specialized government lifecycle management."""

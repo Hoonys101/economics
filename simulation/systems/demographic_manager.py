@@ -29,8 +29,17 @@ class DemographicManager(IDemographicManager):
             cls._instance = super(DemographicManager, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, config_module: Any = None, strategy: Optional["ScenarioStrategy"] = None, household_factory: Optional[IHouseholdFactory] = None):
+    def __init__(
+        self,
+        config_module: Any = None,
+        strategy: Optional["ScenarioStrategy"] = None,
+        household_factory: Optional[IHouseholdFactory] = None,
+        context: Optional["IPopulationContext"] = None
+    ):
         if hasattr(self, "initialized") and self.initialized:
+            # Re-injection check
+            if context:
+                self.world_state = context
             return
 
         self.config_module = config_module
@@ -38,6 +47,7 @@ class DemographicManager(IDemographicManager):
         self.logger = logging.getLogger("simulation.systems.demographic_manager")
         self.settlement_system: Optional[Any] = None 
         self.household_factory = household_factory
+        self.world_state = context
         
         # O(1) Stats Cache
         self._stats_cache = {

@@ -19,9 +19,10 @@ class InheritanceManager:
     Handles Death, Valuation, Taxation (Liquidation), and Transfer.
     Ensures 'Zero Leak' and atomic settlement via SettlementSystem.
     """
-    def __init__(self, config_module: Any):
+    def __init__(self, config_module: Any, context: Optional["IPopulationContext"] = None):
         self.config_module = config_module
         self.logger = logging.getLogger("simulation.systems.inheritance_manager")
+        self.world_state = context
 
     def process_death(self, deceased: "Household", government: "Government", simulation: "SimulationState") -> List[Transaction]:
         """

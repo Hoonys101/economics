@@ -28,8 +28,9 @@ class HousingSystem:
     Refactored for strict protocol enforcement (Wave 1.1).
     """
 
-    def __init__(self, config_module: Any):
+    def __init__(self, config_module: Any, context: Optional["IHousingContext"] = None):
         self.config = config_module
+        self.world_state = context
         self.pending_sagas: List[Dict[str, Any]] = []
 
     def process_housing(self, simulation: 'Simulation'):

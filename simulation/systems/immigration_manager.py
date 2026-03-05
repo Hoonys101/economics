@@ -20,9 +20,10 @@ class ImmigrationManager:
     Responsible for injecting new households based on labor and population metrics.
     """
 
-    def __init__(self, config_module: Any, settlement_system: ISettlementSystem):
+    def __init__(self, config_module: Any, settlement_system: ISettlementSystem, context: Optional["IPopulationContext"] = None):
         self.config = config_module
         self.settlement_system = settlement_system
+        self.world_state = context
 
     def process_immigration(self, engine: Any) -> List[Household]:
         """

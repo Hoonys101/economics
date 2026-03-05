@@ -416,17 +416,42 @@ class SimulationInitializer(SimulationInitializerInterface):
         hh_config_dto = create_config_dto(self.config, HouseholdConfigDTO)
         hh_factory_context = HouseholdFactoryContext(core_config_module=self.config, household_config_dto=hh_config_dto, goods_data=self.goods_data, loan_market=sim.markets.get('loan_market'), ai_training_manager=sim.ai_training_manager, settlement_system=sim.settlement_system, markets=sim.markets, memory_system=sim.persistence_manager, central_bank=sim.central_bank)
         household_factory = HouseholdFactory(hh_factory_context)
-        sim.demographic_manager = DemographicManager(config_module=self.config, strategy=sim.strategy, household_factory=household_factory)
+        sim.demographic_manager = DemographicManager(
+            config_module=self.config,
+            strategy=sim.strategy,
+            household_factory=household_factory,
+            context=sim.world_state # IPopulationContext
+        )
         sim.demographic_manager.settlement_system = sim.settlement_system
         household_factory.context.demographic_manager = sim.demographic_manager
 
         sim.world_state.global_registry.set('demographics', sim.demographic_manager, origin=OriginType.SYSTEM)
-        sim.immigration_manager = ImmigrationManager(config_module=self.config, settlement_system=sim.settlement_system)
-        sim.inheritance_manager = InheritanceManager(config_module=self.config)
-        sim.housing_system = HousingSystem(config_module=self.config)
-        sim.analytics_system = AnalyticsSystem()
-        sim.firm_system = FirmSystem(config_module=self.config, strategy=sim.strategy)
-        sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger, strategy=sim.strategy)
+        sim.immigration_manager = ImmigrationManager(
+            config_module=self.config,
+            settlement_system=sim.settlement_system,
+            context=sim.world_state # IPopulationContext
+        )
+        sim.inheritance_manager = InheritanceManager(
+            config_module=self.config,
+            context=sim.world_state # IPopulationContext
+        )
+        sim.housing_system = HousingSystem(
+            config_module=self.config,
+            context=sim.world_state # IHousingContext
+        )
+        sim.analytics_system = AnalyticsSystem(
+            context=sim.world_state # IAnalyticsContext
+        )
+        sim.firm_system = FirmSystem(
+            config_module=self.config,
+            strategy=sim.strategy,
+            context=sim.world_state # IFirmContext
+        )
+        sim.technology_manager = TechnologyManager(
+            config_module=self.config,
+            logger=self.logger,
+            strategy=sim.strategy
+        )
         sim.generational_wealth_audit = GenerationalWealthAudit(config_module=self.config)
         sim.breeding_planner = VectorizedHouseholdPlanner(self.config)
         sim.housing_service = HousingService(logger=self.logger)
@@ -553,12 +578,11 @@ class SimulationInitializer(SimulationInitializerInterface):
             int_keys = [k for k in agents_local.keys() if isinstance(k, int)]
             max_user_id = max(int_keys) if int_keys else 0
         sim.next_agent_id = max(100, max_user_id + 1)
-
         # In previous logic, sim.demographic_manager was required. Maintain required semantics.
         # Fallback to direct attribute lookup to throw normal AttributeError if missing when expected
         dm_to_use = demographic_manager_local if demographic_manager_local else sim.demographic_manager
         dm_to_use.sync_stats(sim.households)
-        dm_to_use.set_world_state(sim.world_state)
+        # sim.demographic_manager.set_world_state(sim.world_state)  # REMOVED: Injected via constructor
 
         # Distribute Real Estate
         top_20_count = len(sim.households) // 5

@@ -21,9 +21,10 @@ class FirmSystem:
     Handles firm creation (entrepreneurship) and lifecycle management.
     """
 
-    def __init__(self, config_module: Any, strategy: Optional["ScenarioStrategy"] = None):
+    def __init__(self, config_module: Any, strategy: Optional["ScenarioStrategy"] = None, context: Optional["IFirmContext"] = None):
         self.config = config_module
         self.strategy = strategy
+        self.world_state = context
 
     def spawn_firm(self, simulation: "Simulation", founder_household: "Household") -> Optional["Firm"]:
         """

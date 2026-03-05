@@ -43,7 +43,10 @@ if TYPE_CHECKING:
     from modules.common.config_manager.api import ConfigManager
     from simulation.dtos.scenario import StressScenarioConfig
     from modules.government.politics_system import PoliticsSystem
-from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry, DEFAULT_CURRENCY # Added for Phase 33
+from modules.system.api import (
+    IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry, DEFAULT_CURRENCY,
+    IAnalyticsContext, IPopulationContext, IFirmContext, IFinanceContext, IHousingContext
+)
 from modules.market.api import IIndexCircuitBreaker
 from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM, ID_ESCROW
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
@@ -55,11 +58,10 @@ from modules.simulation.dtos.api import MoneySupplyDTO
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 from simulation.orchestration.dashboard_service import DashboardService
 
-
-class WorldState:
+class WorldState(IAnalyticsContext, IPopulationContext, IFirmContext, IFinanceContext, IHousingContext):
     """
     Holds the entire state of the simulation world.
-    Decomposed from Simulation engine.
+    Implements multiple domain-specific context protocols for decoupling (Phase 38).
     """
 
     def __init__(
