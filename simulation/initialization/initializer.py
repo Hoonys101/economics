@@ -513,37 +513,46 @@ class SimulationInitializer(SimulationInitializerInterface):
         if not sim.agents:
             sim.agents = {}
 
+        # --- NEW: Cache frequently accessed attributes as local variables ---
+        # This prevents 10,000+ Simulation.__getattr__ proxy calls
+        agents_local = sim.agents
+        agent_registry_local = sim.agent_registry
+        settlement_system_local = sim.settlement_system
+        bank_id_local = sim.bank.id
+        demographic_manager_local = getattr(sim, 'demographic_manager', None)
+
         # 1. Household Atomic Registration
         for hh in sim.households:
-            sim.agents[hh.id] = hh
-            sim.agent_registry.register(hh)
+            agents_local[hh.id] = hh
+            agent_registry_local.register(hh)
 
             # Guarantee Settlement Account Existence
-            sim.settlement_system.register_account(sim.bank.id, hh.id)
-            hh.settlement_system = sim.settlement_system
+            settlement_system_local.register_account(bank_id_local, hh.id)
+            hh.settlement_system = settlement_system_local
 
-            if hasattr(hh, 'demographic_manager'):
-                hh.demographic_manager = sim.demographic_manager
+            if demographic_manager_local and hasattr(hh, 'demographic_manager'):
+                hh.demographic_manager = demographic_manager_local
 
         # 2. Firm Atomic Registration
         for firm in sim.firms:
-            sim.agents[firm.id] = firm
-            sim.agent_registry.register(firm)
+            agents_local[firm.id] = firm
+            agent_registry_local.register(firm)
 
             # Guarantee Settlement Account Existence BEFORE Bootstrapper
-            sim.settlement_system.register_account(sim.bank.id, firm.id)
-            firm.settlement_system = sim.settlement_system
+            settlement_system_local.register_account(bank_id_local, firm.id)
+            firm.settlement_system = settlement_system_local
 
         # Determine next available ID (assuming user agents start > 100)
         # TD-INIT-MOCK-LEAK: Filter for integer keys to avoid TypeError during Mock testing.
         max_user_id = 0
-        if sim.agents:
-            int_keys = [k for k in sim.agents.keys() if isinstance(k, int)]
+        if agents_local:
+            int_keys = [k for k in agents_local.keys() if isinstance(k, int)]
             max_user_id = max(int_keys) if int_keys else 0
         sim.next_agent_id = max(100, max_user_id + 1)
 
-        sim.demographic_manager.sync_stats(sim.households)
-        sim.demographic_manager.set_world_state(sim.world_state)
+        if demographic_manager_local:
+            demographic_manager_local.sync_stats(sim.households)
+            demographic_manager_local.set_world_state(sim.world_state)
 
         # Distribute Real Estate
         top_20_count = len(sim.households) // 5
