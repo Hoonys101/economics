@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-IMPL-HANG-FIX-REGISTRY-LOCK": {
-      "key": "WO-IMPL-HANG-FIX-REGISTRY-LOCK",
-      "title": "IMPL: Phase B - AccountRegistry Thread Safety",
-      "type": "jules",
-      "instruction_raw": "Implement RLock in `AccountRegistry` to ensure thread safety during multi-threaded initialization as specified in the MISSION_SPEC.",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_HANG_FIX_REGISTRY_LOCK.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-IMPL-HANG-FIX-BATCH-NOTIFY": {
       "key": "WO-IMPL-HANG-FIX-BATCH-NOTIFY",
       "title": "IMPL: Phase C - GlobalRegistry Batch Mode",
