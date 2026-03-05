@@ -420,7 +420,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             config_module=self.config,
             strategy=sim.strategy,
             household_factory=household_factory,
-            context=sim.world_state # IPopulationContext
+            agent_registry=sim.world_state
         )
         sim.demographic_manager.settlement_system = sim.settlement_system
         household_factory.context.demographic_manager = sim.demographic_manager

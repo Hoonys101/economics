@@ -88,6 +88,7 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         print(f"DEBUG: config.REPRODUCTION_AGE_START={self.config.REPRODUCTION_AGE_START}, type={type(self.config.REPRODUCTION_AGE_START)}")
 
         # Execute
+        simulation.config = self.config
         dm.process_births(simulation, birth_requests)
 
         # Verify that create_newborn was called with correct initial_assets (integer)

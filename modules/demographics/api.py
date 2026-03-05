@@ -73,3 +73,12 @@ class IDemographicManager(Protocol):
         Processes aging for a list of agents.
         """
         ...
+
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class VitalStatsObservationDTO:
+    unemployment_rate: float
+    job_vacancies: int
+    total_population: int
+    current_time: int

@@ -1,8 +1,10 @@
 from __future__ import annotations
 import random
 import logging
-from typing import List, Any
+from typing import List, Any, Optional
 from simulation.core_agents import Household, Talent
+from modules.demographics.api import VitalStatsObservationDTO
+from simulation.systems.lifecycle.api import IBirthContext
 from simulation.ai.api import Personality
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
@@ -25,7 +27,7 @@ class ImmigrationManager:
         self.settlement_system = settlement_system
         self.world_state = context
 
-    def process_immigration(self, engine: Any) -> List[Household]:
+    def process_immigration(self, observation: VitalStatsObservationDTO, context: IBirthContext) -> List[Household]:
         """
         Checks immigration conditions and generates new households if met.
 
@@ -35,15 +37,10 @@ class ImmigrationManager:
           3. Total Population < Threshold (Demographic Crisis)
         """
         # 1. Gather Metrics
-        indicators = engine.tracker.get_latest_indicators()
-        unemployment_rate = indicators.get("unemployment_rate", 1.0)
+        unemployment_rate = observation.unemployment_rate
+        job_vacancies = observation.job_vacancies
+        total_population = observation.total_population
 
-        # Refactor: Use market directly instead of private _prepare_market_data
-        job_vacancies = 0
-        if "labor" in engine.markets:
-            job_vacancies = engine.markets["labor"].get_total_demand()
-
-        total_population = len([h for h in engine.households if h._bio_state.is_active])
         pop_threshold = getattr(self.config, "POPULATION_IMMIGRATION_THRESHOLD", 80)
 
         # 2. Check Conditions
@@ -55,15 +52,15 @@ class ImmigrationManager:
             batch_size = getattr(self.config, "IMMIGRATION_BATCH_SIZE", 5)
             logger.info(
                 f"IMMIGRATION_TRIGGERED | Pop: {total_population}, Unemp: {unemployment_rate:.2%}, Vacancies: {job_vacancies}. Influx: {batch_size}",
-                extra={"tick": engine.time, "tags": ["immigration"]}
+                extra={"tick": observation.current_time, "tags": ["immigration"]}
             )
 
-            new_immigrants = self._create_immigrants(engine, batch_size)
+            new_immigrants = self._create_immigrants(context, count=batch_size, current_time=observation.current_time)
             return new_immigrants
 
         return []
 
-    def _create_immigrants(self, engine: Any, count: int) -> List[Household]:
+    def _create_immigrants(self, context: IBirthContext, count: int, current_time: int) -> List[Household]:
         """Generates a batch of new immigrant households."""
         new_households = []
 
@@ -76,11 +73,11 @@ class ImmigrationManager:
             "needs_and_social_status",
         ]
 
-        goods_data = engine.goods_data # Reuse from engine
+        goods_data = context.goods_data
 
         for _ in range(count):
-            agent_id = engine.next_agent_id
-            engine.next_agent_id += 1
+            agent_id = context.next_agent_id
+            context.next_agent_id += 1
 
             # Random Attributes
             initial_assets = random.uniform(3000.0, 5000.0)
@@ -94,7 +91,8 @@ class ImmigrationManager:
 
             # Setup AI Engine
             # Note: We need the ai_trainer from engine to get the shared engine instance
-            ai_decision_engine_instance = engine.ai_trainer.get_engine(value_orientation)
+            ai_trainer = context.ai_trainer
+            ai_decision_engine_instance = ai_trainer.get_engine(value_orientation) if ai_trainer else None
             household_ai_instance = HouseholdAI(agent_id=agent_id, ai_decision_engine=ai_decision_engine_instance)
 
             household_decision_engine = AIDrivenHouseholdDecisionEngine(
@@ -149,18 +147,20 @@ class ImmigrationManager:
             household._econ_state.inventory["basic_food"] = 5.0
 
             # WO-106: Immigration Funding from Government
-            if hasattr(engine, "government") and engine.government:
+            government = context.government
+
+            if government:
                 tx = self.settlement_system.create_and_transfer(
-                    source_authority=engine.government,
+                    source_authority=government,
                     destination=household,
                     amount=initial_assets,
                     reason="immigration_grant",
-                    tick=engine.time
+                    tick=current_time
                 )
                 if not tx:
                     logger.warning(
                         f"IMMIGRATION_RESTRICTED | Government lacks funds or settlement failed for immigrant grant {initial_assets:.2f}",
-                        extra={"tick": engine.time, "tags": ["immigration", "funding_fail"]}
+                        extra={"tick": current_time, "tags": ["immigration", "funding_fail"]}
                     )
                     break # Stop creating immigrants
 
