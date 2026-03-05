@@ -25,6 +25,11 @@ logger = logging.getLogger(__name__)
 class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
     """가계의 AI 기반 의사결정을 담당하는 엔진 (Refactored to Coordinator Pattern)."""
 
+    # --- Class-Level Stateless Managers (Singleton per Class) ---
+    consumption_manager = ConsumptionManager()
+    labor_manager = LaborManager()
+    asset_manager = AssetManager()
+
     def __init__(
         self,
         ai_engine: HouseholdAI,
@@ -34,11 +39,6 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         self.ai_engine = ai_engine
         self.config_module = config_module
         self.logger = logger if logger else logging.getLogger(__name__)
-
-        # Initialize Managers
-        self.consumption_manager = ConsumptionManager()
-        self.labor_manager = LaborManager()
-        self.asset_manager = AssetManager()
 
         self.logger.info(
             "AIDrivenHouseholdDecisionEngine initialized (Modularized).",
