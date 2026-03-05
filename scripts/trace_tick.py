@@ -90,8 +90,18 @@ def trace_tick():
     report("Post-Execution")
     
     # Housing System
-    state.housing_system.process_housing(state)
-    state.housing_system.apply_homeless_penalty(state)
+    housing_context = HousingContextDTO(
+        tick=state.time,
+        real_estate_units=getattr(state, 'real_estate_units', []),
+        agent_registry=state.agents,
+        bank=getattr(state, 'bank', None),
+        settlement_system=getattr(state, 'settlement_system', None),
+        government=getattr(state, 'government', None),
+        saga_orchestrator=getattr(state, 'saga_orchestrator', None),
+        housing_market=getattr(state, 'markets', {}).get('housing')
+    )
+    state.housing_system.process_housing(housing_context)
+    state.housing_system.apply_homeless_penalty(state.households, state.housing_system.config)
     report("Post-Housing")
     
     # Lifecycle

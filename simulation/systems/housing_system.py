@@ -7,6 +7,7 @@ from dataclasses import asdict, is_dataclass
 from simulation.models import Order
 from modules.market.housing_planner_api import HousingDecisionDTO as HousingPurchaseDecisionDTO
 from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, HousingSagaAgentContext
+from modules.housing.api import HousingContextDTO
 from modules.simulation.api import HouseholdSnapshotDTO
 from modules.finance.api import (
     MortgageApplicationDTO, IFinancialAgent, IBank, ISettlementSystem, LienDTO, IFinancialEntity
@@ -33,7 +34,7 @@ class HousingSystem:
         self.world_state = context
         self.pending_sagas: List[Dict[str, Any]] = []
 
-    def process_housing(self, simulation: 'Simulation'):
+    def process_housing(self, context: HousingContextDTO):
         """
         Processes mortgage payments, maintenance costs, rent collection, and eviction/foreclosure checks.
         Consolidated from Simulation._process_housing (Line 1221 in engine.py).
@@ -41,19 +42,19 @@ class HousingSystem:
         """
         if self.pending_sagas:
             for req in self.pending_sagas:
-                self._submit_saga_to_settlement(simulation, req['decision'], req['buyer_id'])
+                self._submit_saga_to_settlement(context, req['decision'], req['buyer_id'])
             self.pending_sagas.clear()
 
         # Iterate over copy to allow modification
-        for unit in list(simulation.real_estate_units):
+        for unit in list(context.real_estate_units):
             # Resolve Mortgage ID safely via property (handles LienDTO iteration)
             mortgage_id = unit.mortgage_id
 
             if mortgage_id:
                 # Resolve Bank safely
                 bank: Optional[IBank] = None
-                if hasattr(simulation, 'bank') and isinstance(simulation.bank, IBank):
-                    bank = simulation.bank
+                if context.bank:
+                    bank = context.bank
 
                 # Retrieve Loan
                 loan = None
@@ -85,7 +86,7 @@ class HousingSystem:
 
                         if unit.occupant_id == old_owner_id:
                             unit.occupant_id = None
-                            old_owner_agent = simulation.agents.get(old_owner_id)
+                            old_owner_agent = context.agent_registry.get_agent(old_owner_id)
                             if old_owner_agent:
                                 # Protocol Safe Property Removal
                                 if isinstance(old_owner_agent, IPropertyOwner) and unit.id in old_owner_agent.owned_properties:
@@ -102,8 +103,7 @@ class HousingSystem:
                             term_tx = bank.terminate_loan(loan.id)
 
                         # Logging transaction manually (Legacy support)
-                        if term_tx and hasattr(simulation, 'world_state'):
-                             simulation.world_state.transactions.append(term_tx)
+
 
                         fire_sale_discount = getattr(self.config, 'FORECLOSURE_FIRE_SALE_DISCOUNT', 0.8)
                         fire_sale_price = unit.estimated_value * fire_sale_discount
@@ -116,23 +116,23 @@ class HousingSystem:
                             price_limit=fire_sale_price / 100.0,
                             market_id='housing'
                         )
-                        if 'housing' in simulation.markets:
-                            simulation.markets['housing'].place_order(sell_order, simulation.time)
+                        if context.housing_market:
+                            context.housing_market.place_order(sell_order, context.tick)
 
         # Resolve Settlement System
         settlement: Optional[ISettlementSystem] = None
-        if hasattr(simulation, 'settlement_system') and isinstance(simulation.settlement_system, ISettlementSystem):
-            settlement = simulation.settlement_system
+        if context.settlement_system:
+            settlement = context.settlement_system
 
         # Resolve Government
         government: Optional[IFinancialAgent] = None
-        if hasattr(simulation, 'government') and isinstance(simulation.government, IFinancialAgent):
-            government = simulation.government
+        if context.government:
+            government = context.government
 
         # Maintenance Costs
-        for unit in simulation.real_estate_units:
+        for unit in context.real_estate_units:
             if unit.owner_id is not None and unit.owner_id != -1:
-                owner = simulation.agents.get(unit.owner_id)
+                owner = context.agent_registry.get_agent(unit.owner_id)
                 # DEBUG PRINT
                 # print(f"DEBUG: Owner {unit.owner_id}, Exists: {bool(owner)}, IsFinAgent: {isinstance(owner, IFinancialAgent)}")
 
@@ -144,14 +144,14 @@ class HousingSystem:
 
                     payable = min(cost, owner_assets)
                     if payable > 0 and settlement and government:
-                        settlement.transfer(owner, government, int(payable), 'housing_maintenance', tick=simulation.time, currency=DEFAULT_CURRENCY)
+                        settlement.transfer(owner, government, int(payable), 'housing_maintenance', tick=context.tick, currency=DEFAULT_CURRENCY)
 
             # Rent Collection
             if unit.occupant_id is not None and unit.owner_id is not None:
                 if unit.occupant_id == unit.owner_id:
                     continue
-                tenant = simulation.agents.get(unit.occupant_id)
-                owner = simulation.agents.get(unit.owner_id)
+                tenant = context.agent_registry.get_agent(unit.occupant_id)
+                owner = context.agent_registry.get_agent(unit.owner_id)
 
                 # DEBUG PRINT
                 # print(f"DEBUG: Rent Check. Tenant {unit.occupant_id}: {bool(tenant)} (IsFin: {isinstance(tenant, IFinancialAgent)}). Owner {unit.owner_id}: {bool(owner)} (IsFin: {isinstance(owner, IFinancialAgent)})")
@@ -164,7 +164,7 @@ class HousingSystem:
 
                         if tenant_assets >= rent:
                             if settlement:
-                                settlement.transfer(tenant, owner, int(rent), 'rent_payment', tick=simulation.time, currency=DEFAULT_CURRENCY)
+                                settlement.transfer(tenant, owner, int(rent), 'rent_payment', tick=context.tick, currency=DEFAULT_CURRENCY)
                         else:
                             logger.info(f'EVICTION | Household {tenant.id} evicted from Unit {unit.id} due to non-payment.', extra={'agent_id': tenant.id, 'unit_id': unit.id})
                             unit.occupant_id = None
@@ -223,7 +223,7 @@ class HousingSystem:
 
         return existing_debt_payments
 
-    def _submit_saga_to_settlement(self, simulation: 'Simulation', decision: HousingPurchaseDecisionDTO, buyer_id: int):
+    def _submit_saga_to_settlement(self, context: HousingContextDTO, decision: HousingPurchaseDecisionDTO, buyer_id: int):
         saga_id = uuid4()
 
         # Access dataclass fields
@@ -239,7 +239,7 @@ class HousingSystem:
 
         principal = offer_price - down_payment
 
-        household = simulation.agents.get(buyer_id)
+        household = context.agent_registry.get_agent(buyer_id)
         annual_income = 0.0
         cash_balance = 0.0
         credit_score = 0.0
@@ -262,7 +262,7 @@ class HousingSystem:
             if hasattr(household, 'credit_score'):
                 credit_score = getattr(household, 'credit_score')
 
-        existing_debt_payments = self._calculate_total_monthly_debt_payments(buyer_id, simulation.bank)
+        existing_debt_payments = self._calculate_total_monthly_debt_payments(buyer_id, context.bank)
 
         buyer_snapshot = HouseholdSnapshotDTO(
             household_id=str(buyer_id),
@@ -274,7 +274,7 @@ class HousingSystem:
         )
 
         seller_id = -1
-        units = getattr(simulation, 'real_estate_units', [])
+        units = context.real_estate_units
         unit = next((u for u in units if u.id == prop_id), None)
         if unit:
             seller_id = unit.owner_id
@@ -320,16 +320,16 @@ class HousingSystem:
             logs=[]
         )
 
-        if hasattr(simulation, 'saga_orchestrator') and simulation.saga_orchestrator:
-            simulation.saga_orchestrator.submit_saga(saga)
+        if context.saga_orchestrator:
+            context.saga_orchestrator.submit_saga(saga)
         else:
             logger.error('No Saga Orchestrator available to submit housing saga.')
 
-    def apply_homeless_penalty(self, simulation: 'Simulation'):
+    def apply_homeless_penalty(self, households: List[Any], config: Any):
         """
         Applies survival penalties to homeless agents.
         """
-        for hh in simulation.households:
+        for hh in households:
             if hh.is_active:
                 if isinstance(hh, IResident):
                     if hh.residing_property_id is None:
@@ -346,5 +346,5 @@ class HousingSystem:
                     if 'survival' not in hh.needs:
                         logger.error(f"CRITICAL: Household {hh.id} missing 'survival' need! Needs: {hh.needs.keys()}")
                         hh.needs['survival'] = 50.0
-                    hh.needs['survival'] += self.config.HOMELESS_PENALTY_PER_TICK
+                    hh.needs['survival'] += config.HOMELESS_PENALTY_PER_TICK
                     logger.debug(f'HOMELESS_PENALTY | Household {hh.id} survival need increased.', extra={'agent_id': hh.id})

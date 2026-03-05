@@ -5,6 +5,7 @@ from typing import Set, Dict, Optional, Any
 import pytest
 
 from simulation.systems.housing_system import HousingSystem
+from modules.housing.api import HousingContextDTO
 from simulation.agents.government import Government
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.api import IFinancialAgent, IBank, ISettlementSystem
@@ -81,14 +82,14 @@ class TestHousingSystemRefactor(unittest.TestCase):
         self.owner.owned_properties = {101}
 
         self.simulation.agents = MagicMock()
-        self.simulation.agents.get.side_effect = lambda x: {
+        self.simulation.agents.get_agent.side_effect = lambda x: {
             1: self.tenant,
             2: self.owner,
             999: self.simulation.government,
             "GOVERNMENT": self.simulation.government
         }.get(x)
 
-        self.simulation.government = self.simulation.agents.get(999)
+        self.simulation.government = self.simulation.agents.get_agent(999)
 
         # Setup Units
         self.unit = MagicMock()
@@ -109,7 +110,17 @@ class TestHousingSystemRefactor(unittest.TestCase):
         self.unit.occupant_id = 1
 
         # Act
-        self.housing_system.process_housing(self.simulation)
+        context = HousingContextDTO(
+            tick=self.simulation.time,
+            real_estate_units=self.simulation.real_estate_units,
+            agent_registry=self.simulation.agents,
+            bank=self.simulation.bank,
+            settlement_system=self.simulation.settlement_system,
+            government=self.simulation.government,
+            saga_orchestrator=None,
+            housing_market=None
+        )
+        self.housing_system.process_housing(context)
 
         # Assert
         # Verify transfer was called for rent
@@ -123,7 +134,17 @@ class TestHousingSystemRefactor(unittest.TestCase):
         cost = int(10000.0 * 0.01) # 100
 
         # Act
-        self.housing_system.process_housing(self.simulation)
+        context = HousingContextDTO(
+            tick=self.simulation.time,
+            real_estate_units=self.simulation.real_estate_units,
+            agent_registry=self.simulation.agents,
+            bank=self.simulation.bank,
+            settlement_system=self.simulation.settlement_system,
+            government=self.simulation.government,
+            saga_orchestrator=None,
+            housing_market=None
+        )
+        self.housing_system.process_housing(context)
 
         # Assert
         self.simulation.settlement_system.transfer.assert_any_call(

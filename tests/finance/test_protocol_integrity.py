@@ -5,6 +5,7 @@ from typing import List, Dict, Optional, Set, Any
 
 from simulation.systems.settlement_system import SettlementSystem
 from simulation.systems.housing_system import HousingSystem
+from modules.housing.api import HousingContextDTO
 from simulation.models import RealEstateUnit
 from modules.finance.api import IFinancialAgent, IBank, IFinancialEntity, LienDTO, ICentralBank
 from modules.common.interfaces import IPropertyOwner, IResident
@@ -191,7 +192,7 @@ class TestProtocolIntegrity:
         simulation.real_estate_units = [unit]
         # Use MagicMock for agents dict behavior
         agents_mock = MagicMock()
-        agents_mock.get.side_effect = lambda id: {1: owner, 99: gov}.get(id)
+        agents_mock.get_agent.side_effect = lambda id: {1: owner, 99: gov}.get(id)
         simulation.agents = agents_mock
 
         simulation.settlement_system = settlement_system
@@ -202,7 +203,17 @@ class TestProtocolIntegrity:
         initial_total = owner.balance_pennies + gov.balance_pennies
 
         # Run process
-        housing_system.process_housing(simulation)
+        context = HousingContextDTO(
+            tick=simulation.time,
+            real_estate_units=simulation.real_estate_units,
+            agent_registry=simulation.agents,
+            bank=simulation.bank,
+            settlement_system=simulation.settlement_system,
+            government=simulation.government,
+            saga_orchestrator=getattr(simulation, 'saga_orchestrator', None),
+            housing_market=getattr(simulation, 'markets', {}).get('housing')
+        )
+        housing_system.process_housing(context)
 
         # Expected Cost: 10000 * 0.01 = 100
         expected_cost = 100
@@ -229,7 +240,7 @@ class TestProtocolIntegrity:
         simulation.real_estate_units = [unit]
 
         agents_mock = MagicMock()
-        agents_mock.get.side_effect = lambda id: {1: landlord, 2: tenant}.get(id)
+        agents_mock.get_agent.side_effect = lambda id: {1: landlord, 2: tenant}.get(id)
         simulation.agents = agents_mock
 
         simulation.settlement_system = settlement_system
@@ -238,7 +249,17 @@ class TestProtocolIntegrity:
 
         initial_total = landlord.balance_pennies + tenant.balance_pennies
 
-        housing_system.process_housing(simulation)
+        context = HousingContextDTO(
+            tick=simulation.time,
+            real_estate_units=simulation.real_estate_units,
+            agent_registry=simulation.agents,
+            bank=simulation.bank,
+            settlement_system=simulation.settlement_system,
+            government=simulation.government,
+            saga_orchestrator=getattr(simulation, 'saga_orchestrator', None),
+            housing_market=getattr(simulation, 'markets', {}).get('housing')
+        )
+        housing_system.process_housing(context)
 
         assert tenant.balance_pennies == 500
         assert landlord.balance_pennies == 500

@@ -1,5 +1,6 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING, List, Any
+from typing import Optional, TYPE_CHECKING, List, Any, Dict, Protocol, runtime_checkable
 from uuid import UUID
 
 from modules.finance.api import LienDTO
@@ -85,4 +86,53 @@ class IHousingService(ABC):
     @abstractmethod
     def transfer_ownership(self, property_id: int, new_owner_id: int) -> bool:
         """Transfers ownership of a property."""
+        ...
+
+
+from dataclasses import dataclass
+from modules.simulation.api import AgentID
+from modules.finance.api import IFinancialAgent, ISettlementSystem, IBank
+from modules.finance.kernel.api import ISagaOrchestrator
+from modules.system.api import IAgentRegistry
+from simulation.models import RealEstateUnit, Order
+
+@dataclass
+class HousingContextDTO:
+    """
+    Decoupled context for processing housing logic.
+    Replaces the God Class `Simulation` dependency.
+    """
+    tick: int
+    real_estate_units: List[RealEstateUnit]
+    agent_registry: IAgentRegistry
+    bank: Optional[IBank]
+    settlement_system: Optional[ISettlementSystem]
+    government: Optional[IFinancialAgent]
+    saga_orchestrator: Optional[ISagaOrchestrator]
+    housing_market: Any  # Generic reference pending IMarket protocol
+
+@dataclass
+class EstateContextDTO:
+    """
+    Decoupled context for processing estate and escheatment logic.
+    """
+    tick: int
+    settlement_system: ISettlementSystem
+    agent_registry: IAgentRegistry
+    public_manager_id: AgentID
+
+@runtime_checkable
+class IHousingSystem(Protocol):
+    def process_housing(self, context: HousingContextDTO) -> None:
+        """Processes mortgage payments, maintenance costs, rent, and foreclosures."""
+        ...
+
+    def apply_homeless_penalty(self, households: List[Any], config: Any) -> None:
+        """Applies survival penalties to homeless agents."""
+        ...
+
+@runtime_checkable
+class IEstateRegistryService(Protocol):
+    def process_estate_distribution(self, agent: Any, context: EstateContextDTO) -> List[Any]:
+        """Distributes assets of the dead agent to heirs or escheatment."""
         ...
