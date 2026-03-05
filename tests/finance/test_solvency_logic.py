@@ -37,36 +37,68 @@ class TestSolvencyLogic:
 
     def test_solvency_grace_period_solvent(self, finance_system, mock_firm):
         """Test solvency check during grace period (solvent)."""
-        mock_firm.age = 10
-        mock_firm.monthly_wage_bill_pennies = 1000  # 10.00
-        mock_firm.balance_pennies = 3000        # 30.00 (Runway = 3 months)
+        mock_firm.id = "FIRM_1"
+        finance_system.settlement_system = MagicMock()
+        finance_system.settlement_system.get_balance.return_value = 3000
+
+        from modules.finance.api import FirmFinancialSnapshotDTO
+        snapshot = FirmFinancialSnapshotDTO(
+            firm_id=mock_firm.id,
+            age=10,
+            monthly_wage_bill_pennies=1000,
+            inventory_value_pennies=0,
+            capital_stock_units=0.0,
+            retained_earnings_pennies=0,
+            average_profit_pennies=0,
+            total_debt_pennies=0
+        )
 
         # Should be solvent (Assets >= 3 * Monthly Wages)
-        assert finance_system.evaluate_solvency(mock_firm, current_tick=10) is True
+        report = finance_system.evaluate_solvency(snapshot, current_tick=10)
+        assert report.is_solvent is True
 
     def test_solvency_grace_period_insolvent(self, finance_system, mock_firm):
         """Test solvency check during grace period (insolvent)."""
-        mock_firm.age = 10
-        mock_firm.monthly_wage_bill_pennies = 1000
-        mock_firm.balance_pennies = 2999        # < 3000
+        mock_firm.id = "FIRM_1"
+        finance_system.settlement_system = MagicMock()
+        finance_system.settlement_system.get_balance.return_value = 2999
 
-        assert finance_system.evaluate_solvency(mock_firm, current_tick=10) is False
+        from modules.finance.api import FirmFinancialSnapshotDTO
+        snapshot = FirmFinancialSnapshotDTO(
+            firm_id=mock_firm.id,
+            age=10,
+            monthly_wage_bill_pennies=1000,
+            inventory_value_pennies=0,
+            capital_stock_units=0.0,
+            retained_earnings_pennies=0,
+            average_profit_pennies=0,
+            total_debt_pennies=0
+        )
+
+        report = finance_system.evaluate_solvency(snapshot, current_tick=10)
+        assert report.is_solvent is False
 
     def test_solvency_established_firm(self, finance_system, mock_firm):
         """Test solvency check for established firm using Z-Score."""
-        mock_firm.age = 100
+        mock_firm.id = "FIRM_1"
+        finance_system.settlement_system = MagicMock()
+        finance_system.settlement_system.get_balance.return_value = 10000
 
-        # Set up financial data for Z-Score calculation
-        mock_firm.balance_pennies = 10000      # Cash
-        mock_firm.inventory_value_pennies = 5000
-        mock_firm.capital_stock_units = 200 # 200 units * 100 = 20000 pennies
-        mock_firm.total_debt_pennies = 8000
-        mock_firm.retained_earnings_pennies = 2000
-        mock_firm.average_profit_pennies = 1000
+        from modules.finance.api import FirmFinancialSnapshotDTO
+        snapshot = FirmFinancialSnapshotDTO(
+            firm_id=mock_firm.id,
+            age=100,
+            monthly_wage_bill_pennies=1000,
+            inventory_value_pennies=5000,
+            capital_stock_units=200.0,
+            retained_earnings_pennies=2000,
+            average_profit_pennies=1000,
+            total_debt_pennies=8000
+        )
 
-        # Verify it runs without error and returns a bool
-        result = finance_system.evaluate_solvency(mock_firm, current_tick=100)
-        assert isinstance(result, bool)
+        # Verify it runs without error and returns a SolvencyReportDTO
+        result = finance_system.evaluate_solvency(snapshot, current_tick=100)
+        assert hasattr(result, "is_solvent")
 
     def test_firm_implementation(self):
         """Verify Firm class implements IFinancialFirm correctly."""
@@ -121,3 +153,33 @@ class TestSolvencyLogic:
         assert firm.average_profit_pennies == 0
 
         assert isinstance(firm.age, int)
+
+    def test_evaluate_solvency_ssot_balance(self, finance_system, mock_firm):
+        """Verify that evaluate_solvency uses ISettlementSystem.get_balance exclusively."""
+        from modules.finance.api import FirmFinancialSnapshotDTO
+
+        mock_firm.id = "FIRM_SSOT"
+        finance_system.settlement_system = MagicMock()
+        finance_system.settlement_system.get_balance.return_value = 5000
+
+        snapshot = FirmFinancialSnapshotDTO(
+            firm_id=mock_firm.id,
+            age=100,
+            monthly_wage_bill_pennies=1000,
+            inventory_value_pennies=1000,
+            capital_stock_units=50.0,
+            retained_earnings_pennies=500,
+            average_profit_pennies=200,
+            total_debt_pennies=1000
+        )
+
+        report = finance_system.evaluate_solvency(snapshot, current_tick=100)
+
+        # Verify get_balance was called with the correct firm_id
+        finance_system.settlement_system.get_balance.assert_called_once_with("FIRM_SSOT")
+
+        # Total assets should be SSoT Balance (5000) + Inventory (1000) + Capital Stock (50 * 100 = 5000) = 11000
+        assert report.total_assets_pennies == 11000
+
+        # Working Capital should be (SSoT Balance (5000) + Inventory (1000)) - Debt (1000) = 5000
+        assert report.working_capital_pennies == 5000

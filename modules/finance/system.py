@@ -4,7 +4,8 @@ import uuid
 from modules.finance.api import (
     IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialAgent, IFinancialFirm,
     InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanDTO,
-    IConfig, IBank, IGovernmentFinance, IMonetaryAuthority, IBankRegistry, IMonetaryLedger
+    IConfig, IBank, IGovernmentFinance, IMonetaryAuthority, IBankRegistry, IMonetaryLedger,
+    FirmFinancialSnapshotDTO, SolvencyReportDTO
 )
 from modules.finance.domain import AltmanZScoreCalculator
 from modules.analysis.fiscal_monitor import FiscalMonitor
@@ -284,32 +285,34 @@ class FinanceSystem(IFinanceSystem):
 
     # --- IFinanceSystem Implementation ---
 
-    def evaluate_solvency(self, firm: IFinancialFirm, current_tick: int) -> bool:
-        """Evaluates a firm's solvency to determine bailout eligibility."""
+    def evaluate_solvency(self, snapshot: FirmFinancialSnapshotDTO, current_tick: int) -> SolvencyReportDTO:
+        """Evaluates a firm's solvency to determine bailout eligibility based on SSoT balances."""
         startup_grace_period = self.config_module.get("economy_params.STARTUP_GRACE_PERIOD_TICKS", 24)
         z_score_threshold = self.config_module.get("economy_params.ALTMAN_Z_SCORE_THRESHOLD", 1.81)
 
-        if firm.age < startup_grace_period:
-            monthly_wage_bill = firm.monthly_wage_bill_pennies
+        actual_balance = 0
+        if self.settlement_system:
+            actual_balance = self.settlement_system.get_balance(snapshot.firm_id)
+
+        if snapshot.age < startup_grace_period:
+            monthly_wage_bill = snapshot.monthly_wage_bill_pennies
             required_runway = monthly_wage_bill * 3
-            return firm.balance_pennies >= required_runway
+            is_solvent = actual_balance >= required_runway
+            return SolvencyReportDTO(
+                is_solvent=is_solvent,
+                z_score=0.0,
+                total_assets_pennies=actual_balance + snapshot.inventory_value_pennies + int(snapshot.capital_stock_units * 100),
+                working_capital_pennies=(actual_balance + snapshot.inventory_value_pennies) - snapshot.total_debt_pennies
+            )
         else:
             # Altman Z-Score for established firms
-            # All inputs should be int pennies. Ratios will be same.
+            inventory_value_pennies = snapshot.inventory_value_pennies
+            capital_stock_value = int(snapshot.capital_stock_units * 100)
 
-            inventory_value_pennies = firm.inventory_value_pennies
-            # Capital Stock Value (Estimate: 1 unit = 100 pennies)
-            capital_stock_value = firm.capital_stock_units * 100
-
-            # Total Assets = Cash + Inventory + Capital
-            total_assets = firm.balance_pennies + capital_stock_value + inventory_value_pennies
-
-            # Working Capital = Current Assets - Current Liabilities
-            # Simplified: Cash + Inventory - Debt
-            working_capital = (firm.balance_pennies + inventory_value_pennies) - firm.total_debt_pennies
-
-            retained_earnings = firm.retained_earnings_pennies
-            average_profit = firm.average_profit_pennies
+            total_assets = actual_balance + capital_stock_value + inventory_value_pennies
+            working_capital = (actual_balance + inventory_value_pennies) - snapshot.total_debt_pennies
+            retained_earnings = snapshot.retained_earnings_pennies
+            average_profit = snapshot.average_profit_pennies
 
             z_score = AltmanZScoreCalculator.calculate(
                 total_assets=float(total_assets),
@@ -317,7 +320,13 @@ class FinanceSystem(IFinanceSystem):
                 retained_earnings=float(retained_earnings),
                 average_profit=float(average_profit)
             )
-            return z_score > z_score_threshold
+
+            return SolvencyReportDTO(
+                is_solvent=z_score > z_score_threshold,
+                z_score=z_score,
+                total_assets_pennies=total_assets,
+                working_capital_pennies=working_capital
+            )
 
     def register_bond(self, bond: BondDTO, owner_id: AgentID) -> None:
         """
