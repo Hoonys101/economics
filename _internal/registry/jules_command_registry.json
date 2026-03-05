@@ -35,22 +35,6 @@
       "audit_requirements": null,
       "no_inject": false
     },
-    "WO-IMPL-INIT-HANG": {
-      "key": "WO-IMPL-INIT-HANG",
-      "title": "IMPL: Resolve Initialization Proxy Overhead",
-      "type": "jules",
-      "instruction_raw": "Implement the refactoring specified in WO-SPEC-INIT-HANG.md. Perform Local Reference Caching in `SimulationInitializer` (_init_phase4_population) by extracting static references for `bank_id` and `settlement_system` from `WorldState` before looping. Apply thread-safe RLock to `AccountRegistry` and implement explicit proxy bypass markers (`is_financial_agent`) on relevant base classes. Ensure no existing tests fail. Follow `mission-doc-restructure` principles strictly.",
-      "command": "create",
-      "file_path": "communications/insights/WO-SPEC-INIT-HANG.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null,
-      "no_inject": false
-    },
     "WO-IMPL-MEM-LEAK": {
       "key": "WO-IMPL-MEM-LEAK",
       "title": "IMPL: Resolve Global Audit Leaks and Agent Bloat",

@@ -28,9 +28,6 @@
 | **TD-REBIRTH-TIMELINE-OPS** | Configuration | **Dynamic Shift Handling**: Config DTOs are immutable; re-generation needed during events. | **High**: Logic Complexity. | **RESOLVED** |
 | **TD-BANK-RESERVE-CRUNCH** | Finance | **Bank Reserve Structural Constraint**: Bank 2 lacks reserves for bond issuance. | **High**: Macro. | Identified |
 | **TD-ECON-ZOMBIE-FIRM** | Agent | **Zombie Firms**: Rapid extinction of basic_food firms. | **High**: Economy. | **RESOLVED** |
-| **TD-FIN-NEGATIVE-M2** | Finance | **M2 Black Hole**: Aggregate M2 sums raw balances including overdrafts (Negative M2). | **CRITICAL**: Accounting. | **RESOLVED** |
-| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firms**: Race condition; capital injection attempted before registration. | **CRITICAL**: Reliability. | **RESOLVED** |
-| **TD-ARCH-ORPHAN-SAGA** | Architecture | **Orphaned Sagas**: Sagas holding stale references to dead/failed agents. | **High**: Integrity. | **RESOLVED** |
 | **TD-TEST-MOCK-REGRESSION** | Testing | **Cockpit Stale Attr**: `system_command_queue` used in mocks. | **High**: Gap. | **RESOLVED** |
 | **TD-ARCH-TX-INJECTION** | Architecture | **Transaction Injection Bypass**: `CentralBankSystem` directly mutating `WorldState.transactions`. | **High**: Purity. | **DEFERRED (TECH DEBT)** |
 | **TD-FIN-FLOAT-INCURSION-RE**| Finance | **Recurring Float Incursion**: `monetary_ledger.py` using `float()` for debt principal. | **Critical**: Integrity. | **RESOLVED (2026-03-05)** |
@@ -85,14 +82,6 @@
 - **Solution**: Periodic checkpointing of simulation state.
 - **Status**: NEW (PH34)
 
-### ID: TD-ARCH-ORPHAN-SAGA
-- **Title**: Orphaned Saga References
-- **Symptom**: `SAGA_SKIP | Saga ... missing participant IDs`.
-- **Risk**: Sagas consume compute cycles for dead agents; memory leaks; state corruption in subsequent ticks.
-- **Audit Update (PH21)**: Confirmed `SAGA_SKIP | Saga ... missing participant IDs`. Sagas become "Orphaned Processes" consuming cycles without effect.
-- **Solution**: Implement `SagaCaretaker` to purge dead references or use weak references for participants.
-- **Status**: **RESOLVED** (Phase 35 Stabilization - Ref: `design/3_work_artifacts/reports/inbound/feat-audit-structural-2883268932289924915__forensic_audit_ph21_report.md`)
-
 ### ID: TD-ARCH-GOD-DTO
 - **Title**: SimulationState God DTO
 - **Symptom**: `SimulationState` aggregates 40+ unrelated fields, forcing systems to depend on the entire simulation engine.
@@ -145,14 +134,6 @@
 - **Risk**: Precision accuracy.
 - **Solution**: Allocate remainder to the government or estate registry.
 - **Status**: SPECCED (PH33)
-
-### ID: TD-FIN-NEGATIVE-M2
-- **Title**: M2 Money Supply "Black Hole"
-- **Symptom**: `MONEY_SUPPLY_CHECK` reaches large negative values (e.g. -99,096,426 by Tick 55).
-- **Risk**: Economic calculations (GDP, inflation) become meaningless; accounting violation of Zero-Sum Integrity.
-- **Audit Update (PH21)**: Debt (overdrafts) masks liquidity. M2 should equal `Sum(max(0, balance_i))`.
-- **Solution**: Modify `calculate_total_money` to sum `max(0, balance)` and track negative balances as `SystemDebt`.
-- **Status**: **RESOLVED** (Phase 35 Stabilization - Ref: `design/3_work_artifacts/reports/inbound/feat-audit-structural-2883268932289924915__forensic_audit_ph21_report.md`)
 
 ### ID: TD-FIN-FLOAT-RESIDUE
 - **Title**: Float Price Residue in Transaction model
@@ -207,14 +188,6 @@
 - **Risk**: Destruction of the simulation economy early in the run.
 - **Solution**: Re-tune pricing constraints, initial reserves, or labor cost expectations specifically for essential goods.
 - **Status**: NEW
-
-### ID: TD-LIFECYCLE-GHOST-FIRM
-- **Title**: Ghost Firm Atomic Startup Failure
-- **Symptom**: `SETTLEMENT_FAIL | Engine Error: Destination account does not exist: [120, 123, 124]`.
-- **Risk**: Investor funds debited without firm capitalization; "Zombie" firms with 0 capital.
-- **Audit Update (PH21)**: Race condition where Capital Injection is attempted *before* Firm Agent registration in Bank/WorldState.
-- **Solution**: Implement atomic `FirmFactory` ensuring registration and bank account opening before injection.
-- **Status**: **RESOLVED** (Phase 35 Stabilization - Ref: `design/3_work_artifacts/reports/inbound/feat-audit-structural-2883268932289924915__forensic_audit_ph21_report.md`)
 
 ---
 

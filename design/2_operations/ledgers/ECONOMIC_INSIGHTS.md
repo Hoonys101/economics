@@ -79,6 +79,11 @@
 - **[2026-02-14] Zero-Sum Bank Runs**
     - Validated that `FORCE_WITHDRAW_ALL` events must strictly follow a two-step process: 1) Liability Reduction (Deposit write-down), 2) Asset Transfer (Cash payout). This prevents "Magic Money" creation where agent cash increases without a corresponding bank liability decrease.
     - [Insight Report](../_archive/insights/2026-02-14_Macro_Shock_Stress_Test.md)
+- **[2026-03-06] Phase 21 Structural Logic Recovery**
+    - **M2 Zero-Sum Invariance**: Negative balances represent liabilities (SystemDebt) and must not deduct from gross M2 (Liquidity). Calculation strictly enforces `M2 = Sum(max(0, balance))`.
+    - **Atomic Instantiation**: Economic agents (Firms) must complete registration and bank initialization synchronously before any capital injection or transaction execution to prevent Ghost State and invariant leaks.
+    - [Insight Report](../../design/_archive/insights/2026-02-21_Forensic_Audit_PH21_M2_Leak.md)
+
 - **Lesson Learned**: During systemic distress, Asset Recovery Systems must act as Liquidity Providers of Last Resort. By explicitly coupling asset recovery to scoped M2 expansion ("Mint-to-Buy"), we prevent unintended systemic liquidity contraction while maintaining transparent SSoT records via the `MonetaryLedger`.
 
 - **[2026-02-28] M2 Leakage and "Ghost Money" (Transaction Injection Pattern)**
