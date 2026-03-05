@@ -46,6 +46,10 @@ class ISuccessionContext(Protocol):
     def government_id(self) -> AgentID:
         ...
 
+    @property
+    def bank_id(self) -> AgentID:
+        ...
+
     def get_real_estate_units(self, owner_id: AgentID) -> List[Any]:
         ...
 

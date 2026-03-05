@@ -104,7 +104,7 @@ class InheritanceManager:
                         # Create Repayment Transaction
                         tx = Transaction(
                             buyer_id=deceased.id,
-                            seller_id=ID_SYSTEM, # Simplified for mock resilience, properly the Bank
+                            seller_id=context.bank_id,
                             item_id=loan_id,
                             quantity=1,
                             price=repay_amount,
@@ -137,21 +137,14 @@ class InheritanceManager:
                 for firm_id, share in list(portfolio_holdings.items()):
                     price = current_prices.get(firm_id, 0.0)
 
-                    # Portfolio holdings could be integers/floats directly in some mock setups
-                    # Let's ensure we extract quantity correctly even if share isn't a complex object
-                    if hasattr(share, 'quantity'):
-                        qty = share.quantity
-                    else:
-                        qty = float(share) if isinstance(share, (int, float)) else 0.0
-
-                    proceeds = round(qty * price, 2)
+                    proceeds = round(getattr(share, 'quantity', 0.0) * price, 2)
 
                     # TD-232: Use TransactionProcessor for atomic execution + side effects
                     tx = Transaction(
-                        buyer_id=government.id,
+                        buyer_id=gov_id,
                         seller_id=deceased.id,
                         item_id=f"stock_{firm_id}",
-                        quantity=share.quantity,
+                        quantity=getattr(share, 'quantity', 0.0),
                         price=price,
                         total_pennies=int(proceeds * 100),
                         market_id="stock_market",
@@ -160,15 +153,16 @@ class InheritanceManager:
                         metadata=TransactionMetadataDTO(original_metadata={"executed": False})
                     )
 
-                    results = simulation.transaction_processor.execute(simulation, [tx])
+                    results = context.execute_transactions([tx])
 
-                    if results and results[0].success:
+                    if results and getattr(results[0], 'success', False):
                         # Success - proceeds have been transferred and assets moved by Handler
                         if firm_id in portfolio_holdings:
                              del portfolio_holdings[firm_id] # Keep local copy in sync
 
                         # Mark as executed for reporting
-                        tx.metadata["executed"] = True
+                        if hasattr(tx, 'metadata') and hasattr(tx.metadata, 'original_metadata'):
+                            tx.metadata.original_metadata["executed"] = True
                         transactions.append(tx)
 
                         cash += proceeds
@@ -184,9 +178,9 @@ class InheritanceManager:
 
                     # TD-232: Use TransactionProcessor
                     tx = Transaction(
-                        buyer_id=government.id,
+                        buyer_id=gov_id,
                         seller_id=deceased.id,
-                        item_id=f"real_estate_{unit.id}",
+                        item_id=f"real_estate_{getattr(unit, 'id', 'unknown')}",
                         quantity=1.0,
                         price=sale_price,
                         total_pennies=int(sale_price * 100),
@@ -196,11 +190,12 @@ class InheritanceManager:
                         metadata=TransactionMetadataDTO(original_metadata={"executed": False})
                     )
 
-                    results = simulation.transaction_processor.execute(simulation, [tx])
+                    results = context.execute_transactions([tx])
 
-                    if results and results[0].success:
+                    if results and getattr(results[0], 'success', False):
                         deceased_units.remove(unit)
-                        tx.metadata["executed"] = True
+                        if hasattr(tx, 'metadata') and hasattr(tx.metadata, 'original_metadata'):
+                            tx.metadata.original_metadata["executed"] = True
                         transactions.append(tx)
 
                         cash += sale_price

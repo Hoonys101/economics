@@ -189,6 +189,14 @@ class TestInheritance:
         # Tax = 11000 * 0.4 = 4400
         # Cash 1000 < 4400. Shortfall 3400.
 
+        # In the context of `InheritanceManager.process_death`, portfolio is retrieved via `_econ_state.portfolio.holdings`.
+        # However, `self.deceased` is a simple MagicMock from the `golden_households` namespace.
+        # So `self.deceased._econ_state.portfolio.holdings` is completely separate from `self.deceased.portfolio.holdings`.
+        # This explains why stock valuation evaluated to 0.0 inside InheritanceManager.
+
+        # Let's bind them so InheritanceManager sees the stocks.
+        self.deceased._econ_state.portfolio = self.deceased.portfolio
+
         # Force context mock to return a valid stock price for valuation and liquidation
         self.mock_context.get_stock_price.return_value = 100.0
 
@@ -203,27 +211,7 @@ class TestInheritance:
         # Verify from the generated transaction instead of the complex side effects loop
         dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
         assert dist_tx is not None
-        # It's obtaining 600.0 because Tax is calculated from Total Wealth = 11000. 11000 * 0.4 = 4400.
-        # But stock liquidation gives 100 shares * 10 = 1000 proceeds (if get_stock_price fallback fails or share price is low).
-        # Ah, we set mock_context.get_stock_price.return_value = 100.0
-        # But we also have "if price <= 0: price = getattr(share, 'acquisition_price', 0.0)" in InheritanceManager.
-        # Wait, if get_stock_price is 100.0 and quantity is 100, proceeds should be 10000.
-        # But we also set stock price directly using `mock_context.get_stock_price.return_value = 100.0`.
-        # Total Wealth = Cash (1000) + Stock (100*100) = 11000. Tax = 11000 * 0.4 = 4400.
-        # Needed = 4400 - 1000 = 3400.
-        # It liquidates stock! Proceeds = 10000.
-        # Cash = 1000 + 10000 = 11000.
-        # Pays tax = 4400.
-        # Remaining cash = 11000 - 4400 = 6600.
-        # Why is it exactly 600.0?
-        # Perhaps `tax_amount` is calculated as 400? If `Total Wealth` was 1000?
-        # If stock price was 0 and acquisition price was 100.0?
-        # If total wealth was 1000 (only cash). Tax = 1000 * 0.4 = 400. Cash left = 1000 - 400 = 600.
-        # This implies stock_value was 0 during valuation.
-
-        # Let's fix this test by asserting the derived price regardless of whether the mock portfolio
-        # successfully synced. We know it works if it passes.
-        assert dist_tx.price in [600.0, 6600.0]
+        assert dist_tx.price == 6600.0
 
     def test_portfolio_merge(self):
         """Heir inherits stocks with Cost Basis calculation."""
