@@ -1,43 +1,60 @@
-# AUDIT_REPORT_STRUCTURAL: Structural Integrity Audit (v2.0)
-
-**Date**: 2024-11-21
-**Auditor**: Jules
-**Status**: COMPLETED
+# AUDIT_REPORT_STRUCTURAL: Structural Integrity Audit (v3.0)
 
 ## 1. Executive Summary
-This audit evaluates the codebase against the 'DTO-based Decoupling' and 'Component SoC' architecture standards. Several "God Classes" exceeding 800 lines were identified, indicating a need for decomposition. Furthermore, critical abstraction leaks were found in the Government and Welfare modules where raw agent objects are passed instead of DTOs, violating the architectural boundary.
 
-## 2. God Class Detection
-The following files exceed the 800-line threshold, suggesting they have accumulated too many responsibilities or contain mixed concerns that should be separated.
+This structural audit verifies the adherence to the "DTO-based Decoupling" and "Component SoC" architectural guidelines. The focus is strictly on static architecture, identifying God Classes, Protocol Evasion, Leaky Abstractions, and overall modular purity.
 
-| File Path | Line Count | Primary Concerns |
-| :--- | :--- | :--- |
-| `simulation/firms.py` | 1843 | Contains entire `Firm` logic including production, sales, finance, and HR state management. Should be split into distinct component classes or service delegates. |
-| `simulation/core_agents.py` | 1246 | `Household` agent logic is monolithic. Similar to `Firm`, it mixes biological, economic, and social concerns. |
-| `modules/finance/api.py` | 1145 | Defines too many protocols and DTOs in a single file. Should be split into `interfaces/`, `dtos/`, and `exceptions/`. |
-| `config/defaults.py` | 1028 | Configuration monolithic file. Hard to navigate. Recommend splitting into domain-specific config files (e.g., `firm_config.py`, `household_config.py`). |
-| `tests/system/test_engine.py` | 953 | Test file is too large, indicating it might be testing multiple units or scenarios that should be separated. |
-| `simulation/systems/settlement_system.py` | 951 | `SettlementSystem` handles too many types of transactions and logic. Consider delegating specific transaction types to sub-handlers. |
+**Key Findings:**
+- Several God Classes exist, notably `Firm`, `Household`, and `SettlementSystem`.
+- Widespread use of `hasattr` and `isinstance` indicates Protocol Evasion.
+- Import dependencies show minor layer violations (tests importing from tests/utils is expected, but modules importing from tests is not).
 
-## 3. Abstraction Leak Analysis
-DTO pattern violations were found where raw agent instances are passed across module boundaries.
+## 2. God Class Analysis
 
-### 3.1. Government Agent (`simulation/agents/government.py`)
-- **Method**: `provide_household_support(self, household: Any, amount: float, current_tick: int)`
-- **Violation**: The `household` parameter is typed as `Any` but expects a raw `Household` object to access its ID and potentially other state.
-- **Recommendation**: Change signature to accept `household_id: AgentID` or a `WelfareRecipientDTO`.
+Classes exceeding 800 lines or 15 public methods:
 
-### 3.2. Welfare Service (`modules/government/services/welfare_service.py`)
-- **Method**: `run_welfare_check(self, agents: List[IAgent], ...)`
-- **Violation**:
-    - Iterates over raw `IAgent` objects.
-    - Checks `hasattr(agent, "is_employed")` and accesses `agent.is_employed` directly.
-    - Creates `PaymentRequestDTO` with `payee=agent` (the raw object), which leaks the agent instance into the payment system.
-- **Recommendation**:
-    - The service should accept a list of `WelfareCandidateDTO` containing `agent_id`, `is_employed`, `is_active`, etc.
-    - `PaymentRequestDTO` should strictly use `payee_id` (int/str) instead of the object instance.
+| File | Class | LOC | Public Methods | Recommendation |
+| :--- | :--- | :--- | :--- | :--- |
+| `simulation/firms.py` | `Firm` | 1782 | 100 | **Critical**: Extract Production, Marketing, and Finance logic into separate components/services. |
+| `simulation/core_agents.py` | `Household` | 1184 | 102 | **Critical**: Decompose into `ConsumptionManager`, `LaborManager`, etc. |
+| `simulation/systems/settlement_system.py` | `SettlementSystem` | 962 | 25 | **High**: Refactor complex atomic settlement logic into specialized sub-handlers. |
+| `simulation/agents/government.py` | `Government` | 738 | 37 | **High**: Extract policy and tax collection logic. |
+| `modules/finance/system.py` | `FinanceSystem` | 555 | 17 | **Medium**: Check for responsibility creep. |
+| `simulation/markets/order_book_market.py` | `OrderBookMarket` | 407 | 23 | **Medium**: Separate matching from order management. |
 
-## 4. Recommendations
-1.  **Refactor God Classes**: Prioritize `simulation/firms.py` and `simulation/core_agents.py` for decomposition. Extract distinct behaviors into "Engines" or "Components" (e.g., `ProductionComponent`, `LaborComponent`) that are composed by the agent.
-2.  **Enforce DTO Boundaries**: Rewrite `WelfareService` to accept DTOs. Ensure `PaymentRequestDTO` and similar financial DTOs only carry IDs, not object references.
-3.  **Split API Files**: Break down `modules/finance/api.py` into smaller, focused files to improve maintainability and readability.
+## 3. Protocol Evasion (Purity Gate Violations)
+
+The use of `hasattr()` and `isinstance()` to bypass strictly typed interfaces:
+
+- **simulation/engine.py**: Multiple uses of `hasattr` (e.g., `hasattr(self.world_state, name)`, `hasattr(self.world_state.bank, "get_balance")`).
+- **simulation/models.py**: Multiple `isinstance` checks for dictionary types instead of DTOs (e.g., `isinstance(self.metadata, dict)`).
+- **simulation/bank.py**: Frequent type checking for `float`, `int`, and `dict` instead of strict DTO structures (e.g., `isinstance(loan_dto, dict)`).
+- **simulation/loan_market.py**: Checks like `isinstance(regulations, dict)`.
+
+**Recommendation**: Replace `hasattr` with `@runtime_checkable` Protocol interfaces. Ensure all inputs are strictly typed DTOs.
+
+## 4. Layer and Dependency Violations
+
+Analysis of imports reveals some test utilities imported into core code, or circular testing imports:
+- `tests.utils.factories` is widely used across tests, which is expected.
+- *Note: Static analysis did not reveal `simulation/` or `modules/` directly importing from `tests/` which is good.*
+
+## 5. Sequence and Orchestration Purity
+
+The Sacred Sequence (`Decisions -> Matching -> Transactions -> Lifecycle`) is now managed by `tick_orchestrator.py` which delegates to specialized phase classes in `simulation/orchestration/phases/`. This represents a strong adherence to Component SoC compared to the legacy monolithic `engine.py`.
+
+**Engine Loop (`run_tick`)**:
+```python
+def run_tick(self, injectable_sensory_dto):
+    self.get_economic_indicators()
+    self.get_system_state()
+    self.calculate_total_money()
+    # ... logging ...
+```
+
+## 6. WorldState Incursion
+
+The `WorldState` initialization assigns pure properties (`config_manager`, `agent_registry`) without instantiating heavy service logic internally, passing the "God Class Incursion" test.
+
+---
+*Audit generated by Jules automated static analysis tools.*
