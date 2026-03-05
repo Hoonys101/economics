@@ -17,7 +17,7 @@ class FinancialEntityAdapter:
         self.entity.deposit(amount, currency)
 
     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "") -> None:
-        logger.info(f"ADAPTER_DEBUG | Entity {self.entity.id} Withdraw {amount}")
+        logger.debug(f"ADAPTER_DEBUG | Entity {self.entity.id} Withdraw {amount}")
         self.entity.withdraw(amount, currency)
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
@@ -42,7 +42,7 @@ class FinancialAgentAdapter:
         self.agent._deposit(amount, currency)
 
     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "") -> None:
-        logger.info(f"ADAPTER_DEBUG | Agent {self.agent.id} Withdraw {amount}")
+        logger.debug(f"ADAPTER_DEBUG | Agent {self.agent.id} Withdraw {amount}")
         self.agent._withdraw(amount, currency)
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
@@ -61,6 +61,8 @@ from modules.system.api import AgentID
 class RegistryAccountAccessor(IAccountAccessor):
     def __init__(self, registry: IAgentRegistry):
         self.registry = registry
+        # Dictionary to cache protocol check results: AgentClass -> ProtocolType (Agent/Entity/None)
+        self._protocol_cache: Dict[type, str] = {}
 
     def _get_agent(self, account_id: AgentID) -> Any:
         try:
@@ -76,12 +78,19 @@ class RegistryAccountAccessor(IAccountAccessor):
         if agent is None:
             raise InvalidAccountError(f"Account (Agent) not found: {account_id}")
 
-        # Check IFinancialAgent first as it supports multi-currency balance check better
-        if isinstance(agent, IFinancialAgent):
-            return FinancialAgentAdapter(agent)
-
-        if isinstance(agent, IFinancialEntity):
-            return FinancialEntityAdapter(agent)
+        agent_class = type(agent)
+        if agent_class in self._protocol_cache:
+            ptype = self._protocol_cache[agent_class]
+            if ptype == 'agent': return FinancialAgentAdapter(agent)
+            if ptype == 'entity': return FinancialEntityAdapter(agent)
+        else:
+            if isinstance(agent, IFinancialAgent):
+                self._protocol_cache[agent_class] = 'agent'
+                return FinancialAgentAdapter(agent)
+            if isinstance(agent, IFinancialEntity):
+                self._protocol_cache[agent_class] = 'entity'
+                return FinancialEntityAdapter(agent)
+            self._protocol_cache[agent_class] = 'none'
 
         raise InvalidAccountError(f"Agent {account_id} does not implement IFinancialAgent or IFinancialEntity.")
 
