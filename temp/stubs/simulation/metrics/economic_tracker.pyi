@@ -1,5 +1,6 @@
 from _typeshed import Incomplete
 from collections import deque
+from modules.analytics.api import EconomyAnalyticsSnapshotDTO as EconomyAnalyticsSnapshotDTO, FirmAnalyticsDTO as FirmAnalyticsDTO, HouseholdAnalyticsDTO as HouseholdAnalyticsDTO, MarketAnalyticsDTO as MarketAnalyticsDTO
 from modules.system.api import CurrencyCode as CurrencyCode
 from simulation.core_agents import Household as Household
 from simulation.core_markets import Market as Market
@@ -47,17 +48,17 @@ class EconomicIndicatorTracker:
         """
         TD-015: Calculate Gini coefficient.
         """
-    def calculate_social_cohesion(self, households: list[Household]) -> float:
+    def calculate_social_cohesion(self, households: list[HouseholdAnalyticsDTO]) -> float:
         """
         TD-015: Calculate Social Cohesion based on average Trust Score of active households.
         """
-    def calculate_population_metrics(self, households: list[Household], markets: dict[str, Market] | None = None) -> dict[str, Any]:
+    def calculate_population_metrics(self, households: list[HouseholdAnalyticsDTO], markets: list[MarketAnalyticsDTO] | None = None) -> dict[str, Any]:
         """
         TD-015: Calculate Population Metrics (Distribution, Active Count).
         Returns a dictionary with 'distribution' (quintiles) and 'active_count'.
         Now includes Stock Portfolio value in Total Assets.
         """
-    def track(self, time: int, households: list[Household], firms: list[Firm], markets: dict[str, Market], money_supply: float = 0.0, m2_leak: float = 0.0, monetary_base: float = 0.0) -> None:
+    def track_tick(self, snapshot: EconomyAnalyticsSnapshotDTO) -> None:
         """현재 시뮬레이션 틱의 경제 지표를 계산하고 기록합니다."""
     def get_smoothed_values(self) -> dict[str, float]:
         """

@@ -71,8 +71,10 @@ class GitReviewCommand(ICommand):
             instruction, 
             "-c", str(diff_file)
         ]
-        if final_context:
-            gemini_cmd.extend(final_context)
+        
+        # Disabled auto-context injection to prevent token limit errors
+        # if final_context:
+        #     gemini_cmd.extend(final_context)
         
         print("🧠 Running AI Code Review...")
         with open(review_output, "w", encoding="utf-8") as f:

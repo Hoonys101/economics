@@ -35,10 +35,6 @@ class Household(ILearningAgent, IEmployeeDataProvider, IEducated, IHousingTransa
     Delegates Bio/Econ/Social logic to specialized stateless Engines.
     State is held in internal DTOs.
     """
-    config: Incomplete
-    logger: Incomplete
-    demographic_manager: Incomplete
-    last_labor_allocation: float
     lifecycle_engine: Incomplete
     needs_engine: Incomplete
     social_engine: Incomplete
@@ -47,6 +43,10 @@ class Household(ILearningAgent, IEmployeeDataProvider, IEducated, IHousingTransa
     belief_engine: Incomplete
     crisis_engine: Incomplete
     housing_connector: Incomplete
+    config: Incomplete
+    logger: Incomplete
+    demographic_manager: Incomplete
+    last_labor_allocation: float
     decision_engine: Incomplete
     id: Incomplete
     name: Incomplete
@@ -60,7 +60,7 @@ class Household(ILearningAgent, IEmployeeDataProvider, IEducated, IHousingTransa
     goods_data: Incomplete
     risk_aversion: Incomplete
     distress_tick_counter: int
-    def __init__(self, core_config: AgentCoreConfigDTO, engine: IDecisionEngine, talent: Talent, goods_data: list[dict[str, Any]], personality: Personality, config_dto: HouseholdConfigDTO, loan_market: LoanMarket | None = None, risk_aversion: float = 1.0, initial_age: float | None = None, gender: str | None = None, parent_id: int | None = None, generation: int | None = None, initial_assets_record: int | None = None, demographic_manager: Any | None = None, major: str | None = None, **kwargs) -> None: ...
+    def __init__(self, core_config: AgentCoreConfigDTO, engine: IDecisionEngine, talent: Talent, goods_data: list[dict[str, Any]], personality: Personality, config_dto: HouseholdConfigDTO, loan_market: LoanMarket | None = None, risk_aversion: float = 1.0, initial_age: float | None = None, gender: str | None = None, parent_id: int | None = None, generation: int | None = None, initial_assets_record: int | None = None, demographic_manager: Any | None = None, major: str | None = None, shared_goods_info_map: dict[str, Any] | None = None, **kwargs) -> None: ...
     @property
     def state(self) -> HouseholdStateContainer: ...
     def get_core_config(self) -> AgentCoreConfigDTO: ...

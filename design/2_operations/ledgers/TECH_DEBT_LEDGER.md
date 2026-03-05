@@ -54,9 +54,11 @@
 | **TD-TEST-MOCK-BYPASS** | Testing | **Transaction Metadata Duct-tape**: Government tests bypass `TransactionMetadataDTO` using `getattr(metadata, "original_metadata")`. | **Low**: Stability. | **NEW** |
 | **TD-MEM-GLOBAL-WALLET-LEAK** | Memory | **Global Wallet Leak**: `GLOBAL_WALLET_LOG` unbounded growth over simulation ticks. | **CRITICAL**: Reliability. | **RESOLVED (2026-03-05)** |
 | **TD-MEM-AGENT-ENGINE-BLOAT** | Memory | **O(N) Engine Allocation**: Stateless engines created per household agent. | **High**: Scaling. | **RESOLVED (Household)** |
-| **TD-MEM-AI-EAGER-LOAD** | Memory | **AI Eager Loading**: Loading all VO models during builder phase. | **High**: Startup. | **RESOLVED (2026-03-05)** |
 | **TD-MEM-FIRM-SINGLETON-DEBT** | Memory | **Firm Engine Singletoning**: Firm `CorporateManager` still uses per-instance config, blocking singleton pattern. | **Medium**: Scaling. | **NEW (TD-20260305)** |
 | **TD-ARCH-HEAVY-FINANCE-API** | Architecture | **Heavy Finance API**: `modules.finance.api` (1200+ lines) causes Gemini OOM by pulling Gov/HR. | **High**: Rigidity. | **NEW (2026-03-05)** |
+| **TD-MEM-GLOBAL-AUDIT-LEAK** | Memory | **Global Audit Leaks**: `GLOBAL_WALLET_LOG` never clears, appending thousands of DTOs and causing `MemoryError` even at 20 agents. | **CRITICAL**: Memory. | **NEW (AUDIT)** |
+| **TD-ARCH-TEST-HANG-PROXY** | Architecture/Testing | **Init Hang via Proxy Overhead**: `Simulation.__getattr__` delegation combined with `isinstance` checks on protocols causes O(N) slowing "hang" during agent registration. | **High**: Runtime/Tests. | **NEW (AUDIT)** |
+| **TD-TEST-HEAVY-INFO-LOGS** | Testing | **Massive Test I/O Overhead**: `INFO` level logging captures every micro-transaction across 1000+ tests, causing 35% of tests to exceed 10mins. | **Medium**: Test Speed. | **NEW (AUDIT)** |
 
 ---
 

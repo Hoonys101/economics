@@ -42,6 +42,28 @@
       "model": null,
       "audit_requirements": null,
       "no_inject": false
+    },
+    "WO-SPEC-MEM-LEAK": {
+      "key": "WO-SPEC-MEM-LEAK",
+      "title": "SPEC: Resolve Global Audit Leaks and Agent Engine Bloat",
+      "type": "gemini",
+      "instruction_raw": "Analyze the provided audit reports regarding memory explosions (GLOBAL_WALLET_LOG unbounded growth and per-agent engine instantiation). Design a detailed MISSION_SPEC to implement a GC-safe logging mechanism and a Singleton Engine (SEO) pattern for household agents. Address TD-MEM-GLOBAL-AUDIT-LEAK and TD-MEM-AGENT-ENGINE-BLOAT. The specification must adhere to `mission-doc-restructure` logic.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "design/3_work_artifacts/reports/inbound/audit_init_additional.md",
+        "design/3_work_artifacts/reports/inbound/audit_mem_agent_bloat.md",
+        "modules/finance/wallet/audit.py",
+        "simulation/initialization/initializer.py",
+        "simulation/core_agents.py"
+      ],
+      "output_path": "communications/insights/WO-SPEC-MEM-LEAK.md",
+      "model": null,
+      "audit_requirements": null,
+      "no_inject": false
     }
   }
 }
