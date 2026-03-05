@@ -27,6 +27,45 @@ class AgentDeactivationEventDTO:
     tick: int
     unresolved_liabilities: int
 
+@dataclass(frozen=True)
+class DebtStatusDTO:
+    total_outstanding_pennies: int
+    loans: List[Any]
+
+@runtime_checkable
+class ISuccessionContext(Protocol):
+    """
+    Provides all necessary data and execution boundaries for processing death and inheritance,
+    fully abstracting away the SimulationState God Class.
+    """
+    @property
+    def current_tick(self) -> int:
+        ...
+
+    @property
+    def government_id(self) -> AgentID:
+        ...
+
+    def get_real_estate_units(self, owner_id: AgentID) -> List[Any]:
+        ...
+
+    def get_stock_price(self, firm_id: AgentID) -> float:
+        ...
+
+    def get_debt_status(self, agent_id: AgentID) -> DebtStatusDTO:
+        ...
+
+    def get_active_heirs(self, children_ids: List[AgentID]) -> List[Any]:
+        ...
+
+    def execute_transactions(self, transactions: List[Transaction]) -> List[Any]:
+        ...
+
+@runtime_checkable
+class IInheritanceManager(Protocol):
+    def process_death(self, deceased: Any, context: ISuccessionContext) -> List[Transaction]:
+        ...
+
 @runtime_checkable
 class IAgentLifecycleManager(Protocol):
     """

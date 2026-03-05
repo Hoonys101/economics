@@ -8,23 +8,20 @@ from simulation.models import Transaction
 from modules.system.api import DEFAULT_CURRENCY
 from modules.finance.api import IFinancialEntity, IFinancialAgent
 from simulation.dtos.api import SimulationState
+from modules.lifecycle.api import ISuccessionContext, DebtStatusDTO
 
 class TestSSoTCompliance:
 
     @pytest.fixture
-    def mock_simulation(self):
-        sim = MagicMock(spec=SimulationState)
-        sim.time = 100
-        sim.agents = {}
-        sim.real_estate_units = []
-        sim.stock_market = MagicMock()
-        sim.stock_market.get_daily_avg_price.return_value = 10.0
-
-        # Setup TransactionProcessor
-        sim.transaction_processor = MagicMock()
-        sim.transaction_processor.execute.return_value = [MagicMock(success=True)]
-
-        return sim
+    def mock_succession_context(self):
+        context = MagicMock(spec=ISuccessionContext)
+        context.current_tick = 100
+        context.government_id = 1
+        context.get_real_estate_units.return_value = []
+        context.get_stock_price.return_value = 10.0
+        context.get_debt_status.return_value = DebtStatusDTO(total_outstanding_pennies=0, loans=[])
+        context.get_active_heirs.return_value = []
+        return context
 
     @pytest.fixture
     def mock_household(self):
@@ -42,13 +39,7 @@ class TestSSoTCompliance:
         h._bio_state.is_active = False # Deceased
         return h
 
-    @pytest.fixture
-    def mock_government(self):
-        g = MagicMock(spec=Government)
-        g.id = 1
-        return g
-
-    def test_inheritance_transaction_pennies(self, mock_simulation, mock_household, mock_government):
+    def test_inheritance_transaction_pennies(self, mock_succession_context, mock_household):
         """
         Verifies that InheritanceManager creates transactions with total_pennies set.
         This test is expected to FAIL before the fix.
@@ -61,14 +52,14 @@ class TestSSoTCompliance:
 
         # Mock transaction processor to capture transactions
         captured_txs = []
-        def capture(sim, txs):
+        def capture(txs):
             captured_txs.extend(txs)
             return [MagicMock(success=True)]
 
-        mock_simulation.transaction_processor.execute.side_effect = capture
+        mock_succession_context.execute_transactions.side_effect = capture
 
         # Execute
-        manager.process_death(mock_household, mock_government, mock_simulation)
+        manager.process_death(mock_household, mock_succession_context)
 
         # Verify Transactions
         # We expect a tax transaction.
