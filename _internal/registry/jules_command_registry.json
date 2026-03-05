@@ -7,7 +7,7 @@
       "key": "WO-IMPL-MEM-AI-LAZY-LOAD",
       "title": "IMPL: AI Engine \uc120\uc81c \ub85c\ub529 \uc81c\uac70 (Lazy-Loading \ud65c\uc131\ud654)",
       "type": "jules",
-      "instruction_raw": "## \ud575\uc2ec \ubcc0\uacbd (Section 9 ANTIGRAVITY REVIEW \uae30\uc900)\n\nAIEngineRegistry.get_engine()\uc740 \uc774\ubbf8 lazy-caching\uc744 \uad6c\ud604\ud558\uace0 \uc788\uc73c\ubbc0\ub85c,\nLazyAIEngineProxy \ud328\ud134\uc740 \uad6c\ud604\ud558\uc9c0 \ub9c8\uc138\uc694.\n\n### \ubcc0\uacbd 1: \uc120\uc81c \ub85c\ub529 \ub8e8\ud504 \uc0ad\uc81c\n\ud30c\uc77c: modules/system/builders/simulation_builder.py\nL69-72\uc758 \uc544\ub798 \ucf54\ub4dc\ub97c \uc0ad\uc81c\ud569\ub2c8\ub2e4:\n```python\nall_value_orientations = [\"wealth_and_needs\", \"needs_and_growth\", \"needs_and_social_status\"]\nfor vo in all_value_orientations:\n    ai_trainer.get_engine(vo)\n```\n\ub2e8, `all_value_orientations` \ub9ac\uc2a4\ud2b8 \uc790\uccb4\ub294 L155\uc5d0\uc11c value_orientation \uc120\ud0dd\uc5d0 \uc0ac\uc6a9\ub418\ubbc0\ub85c \uc720\uc9c0\ud569\ub2c8\ub2e4.\n\n### \ubcc0\uacbd 2: RealEstateUnit\uc740 \uac74\ub4dc\ub9ac\uc9c0 \ub9c8\uc138\uc694\nSection 2.2\uc758 \ubd80\ub3d9\uc0b0 \ucd5c\uc801\ud654\ub294 \ud3ed\ubc1c \ubc18\uacbd\uc774 \ub192\uc544 \uc774\ubc88 \ubbf8\uc158 \ubc94\uc704\uc5d0\uc11c \uc81c\uc678\ud569\ub2c8\ub2e4.\n\n### \uac80\uc99d\n- \uae30\uc874 \ud14c\uc2a4\ud2b8\uac00 \uae68\uc9c0\uc9c0 \uc54a\ub294\uc9c0 \ud655\uc778: pytest tests/ -x --timeout=60\n- AIEngineRegistry.get_engine()\uc758 lazy-caching\uc774 \uc815\uc0c1 \uc791\ub3d9\ud558\ub294\uc9c0 \ud655\uc778",
+      "instruction_raw": "## \ud575\uc2ec \ubcc0\uacbd (Section 9 ANTIGRAVITY REVIEW \uae30\uc900)\n\nAIEngineRegistry.get_engine()\uc740 \uc774\ubbf8 lazy-caching\uc744 \uad6c\ud604\ud558\uace0 \uc788\uc73c\ubbc0\ub85c,\nLazyAIEngineProxy \ud328\ud134\uc740 \uad6c\ud604\ud558\uc9c0 \ub9c8\uc138\uc694.\n\n### \ubcc0\uacbd 1: \uc120\uc81c \ub85c\ub529 \ub8e8\ud504 \uc0ad\uc81c\n\ud30c\uc77c: modules/system/builders/simulation_builder.py\n\uc544\ub798 \ucf54\ub4dc\ub97c \uc0ad\uc81c\ud569\ub2c8\ub2e4:\n```python\nall_value_orientations = [\"wealth_and_needs\", \"needs_and_growth\", \"needs_and_social_status\"]\nfor vo in all_value_orientations:\n    ai_trainer.get_engine(vo)\n```\n\ub2e8, `all_value_orientations` \ub9ac\uc2a4\ud2b8 \uc790\uccb4\ub294 L155\uc5d0\uc11c value_orientation \uc120\ud0dd\uc5d0 \uc0ac\uc6a9\ub418\ubbc0\ub85c \uc720\uc9c0\ud569\ub2c8\ub2e4.\n\n### \ubcc0\uacbd 2: RealEstateUnit\uc740 \uac74\ub4dc\ub9ac\uc9c0 \ub9c8\uc138\uc694\nSection 2.2\uc758 \ubd80\ub3d9\uc0b0 \ucd5c\uc801\ud654\ub294 \uc774\ubc88 \ubbf8\uc158 \ubc94\uc704\uc5d0\uc11c \uc81c\uc678\ud569\ub2c8\ub2e4.\n\n### \uac80\uc99d\n- \uae30\uc874 \ud14c\uc2a4\ud2b8\uac00 \uae68\uc9c0\uc9c0 \uc54a\ub294\uc9c0 \ud655\uc778: pytest tests/ -x --timeout=60",
       "command": "create",
       "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_MEM_AI_LAZY_LOAD.md",
       "wait": false,
@@ -16,7 +16,56 @@
       "context_files": [],
       "output_path": null,
       "model": null,
-      "audit_requirements": null
+      "audit_requirements": null,
+      "no_inject": false
+    },
+    "WO-IMPL-MEM-SINGLETON-HOUSEHOLD": {
+      "key": "WO-IMPL-MEM-SINGLETON-HOUSEHOLD",
+      "title": "IMPL: Household 8 Engines \u2192 \ud074\ub798\uc2a4 \ubcc0\uc218 \uc2f1\uae00\ud1a4 \uc804\ud658",
+      "type": "jules",
+      "instruction_raw": "## \ud575\uc2ec \ubcc0\uacbd (ANTIGRAVITY REVIEW Section 6 \ucc38\uc870)\n\n### \ubcc0\uacbd 1: \uc5d4\uc9c4\uc744 \ud074\ub798\uc2a4 \ubcc0\uc218\ub85c \uc774\ub3d9\n\ud30c\uc77c: simulation/core_agents.py\nL118-125\uc758 8\uc904\uc744 __init__ \ubc16, \ud074\ub798\uc2a4 body\ub85c \uc774\ub3d9\ud569\ub2c8\ub2e4:\n```python\nclass Household(...):\n    # Class-level Stateless Engines\n    lifecycle_engine = LifecycleEngine()\n    needs_engine = NeedsEngine()\n    social_engine = SocialEngine()\n    budget_engine = BudgetEngine()\n    consumption_engine = ConsumptionEngine()\n    belief_engine = BeliefEngine()\n    crisis_engine = CrisisEngine()\n    housing_connector = HousingConnector()\n```\n\ubcc0\uc218\uba85\uc5d0 \uc5b8\ub354\uc2a4\ucf54\uc5b4 \uc811\ub450\uc0ac\ub97c \ubd99\uc774\uc9c0 \ub9c8\uc138\uc694 (\uae30\uc874 \ud638\ucd9c\ubd80 \ud638\ud658 \uc720\uc9c0).\nimport\ub294 \uc774\ubbf8 \ud30c\uc77c \uc0c1\ub2e8\uc5d0 \uc874\uc7ac\ud569\ub2c8\ub2e4 (\ucd94\uac00 import \ubd88\ud544\uc694).\n\n### \ubcc0\uacbd 2: goods_info_map \uacf5\uc720 \ucc38\uc870\n\ud30c\uc77c: modules/system/builders/simulation_builder.py\n- Household \uc0dd\uc131 \ub8e8\ud504 \uc804\uc5d0 `shared_goods_info_map = {g['id']: g for g in goods_data}` 1\ud68c \uc0dd\uc131\n- Household \uc0dd\uc131\uc790\uc5d0 `shared_goods_info_map=shared_goods_info_map` \uc804\ub2ec\n\n\ud30c\uc77c: simulation/core_agents.py\n- __init__ \uc2dc\uadf8\ub2c8\ucc98\uc5d0 `shared_goods_info_map: Optional[Dict[str, Any]] = None` \ucd94\uac00\n- `self.goods_info_map = shared_goods_info_map if shared_goods_info_map is not None else {g['id']: g for g in goods_data}`\n\n### \uac80\uc99d\n- pytest tests/ -x --timeout=60",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_MEM_SINGLETON_HOUSEHOLD.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null,
+      "no_inject": false
+    },
+    "WO-IMPL-MEM-WALLET-LOG-FIX": {
+      "key": "WO-IMPL-MEM-WALLET-LOG-FIX",
+      "title": "IMPL: GLOBAL_WALLET_LOG \uba54\ubaa8\ub9ac \ub204\uc218 \uc218\uc815",
+      "type": "jules",
+      "instruction_raw": "## \ud575\uc2ec \ubb38\uc81c\nmodules/finance/wallet/audit.py:L5\uc5d0\uc11c \uc815\uc758\ub41c GLOBAL_WALLET_LOG\ub294\n\ubaa8\ub4e0 Wallet \uc5f0\uc0b0\uc758 WalletOpLogDTO\ub97c \ubb34\ud55c \ucd95\uc801\ud558\ub294 \uae00\ub85c\ubc8c \ub9ac\uc2a4\ud2b8\uc785\ub2c8\ub2e4.\n\uc774 \ub9ac\uc2a4\ud2b8\ub294 \uc808\ub300 clear\ub418\uc9c0 \uc54a\uc544, \uc2dc\ubbac\ub808\uc774\uc158 \uc2e4\ud589 \uc2dc O(N*T) \uba54\ubaa8\ub9ac \uc99d\uac00\ub97c \ucd08\ub798\ud569\ub2c8\ub2e4.\n\n## \ubcc0\uacbd \uc0ac\ud56d\n\n### \ubcc0\uacbd 1: Wallet \uae30\ubcf8 \uac10\uc0ac \ub85c\uadf8 \ube44\ud65c\uc131\ud654\n\ud30c\uc77c: modules/finance/wallet/wallet.py\nL34\uc758 \uae30\ubcf8\uac12\uc744 \uae00\ub85c\ubc8c \ub9ac\uc2a4\ud2b8\uac00 \uc544\ub2cc \ube48 \ub85c\uceec \ub9ac\uc2a4\ud2b8\ub85c \ubcc0\uacbd:\n```python\n# BEFORE\nself._audit_log = audit_log if audit_log is not None else GLOBAL_WALLET_LOG\n# AFTER\nself._audit_log = audit_log if audit_log is not None else []\n```\n\n### \ubcc0\uacbd 2: conftest.py \uccad\uc18c\n\ud30c\uc77c: tests/conftest.py\n\uc138\uc158 \ub610\ub294 \ud568\uc218 \ub808\ubca8 fixture\uc5d0\uc11c GLOBAL_WALLET_LOG.clear()\ub97c \ud638\ucd9c\ud558\uc138\uc694:\n```python\n@pytest.fixture(autouse=True)\ndef clear_global_wallet_log():\n    from modules.finance.wallet.audit import GLOBAL_WALLET_LOG\n    GLOBAL_WALLET_LOG.clear()\n    yield\n    GLOBAL_WALLET_LOG.clear()\n```\n\n### \ubcc0\uacbd 3: \uc804\uc218\uc870\uc0ac\n\ucf54\ub4dc\ubca0\uc774\uc2a4\uc5d0\uc11c `GLOBAL_WALLET_LOG`\ub97c import\ud558\ub294 \uacf3\uc744 \uc804\uc218\uc870\uc0ac\ud558\uc138\uc694.\n\uc9c4\ub2e8 \ubaa9\uc801\uc73c\ub85c\ub9cc \uc0ac\uc6a9\ub41c\ub2e4\uba74 \uc704 \ubcc0\uacbd\uc73c\ub85c \ucda9\ubd84\ud569\ub2c8\ub2e4.\n\n### \uac80\uc99d\n- pytest tests/ -x --timeout=60",
+      "command": "create",
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null,
+      "no_inject": false
+    },
+    "WO-IMPL-MEM-SINGLETON-DECISION": {
+      "key": "WO-IMPL-MEM-SINGLETON-DECISION",
+      "title": "IMPL: DecisionEngine 3 Managers \u2192 \ud074\ub798\uc2a4 \ubcc0\uc218 \uc2f1\uae00\ud1a4 \uc804\ud658",
+      "type": "jules",
+      "instruction_raw": "## \ud575\uc2ec \ubcc0\uacbd\n\n\ud30c\uc77c: simulation/decisions/ai_driven_household_engine.py\n\n### \ubcc0\uacbd: 3\uac1c \ub9e4\ub2c8\uc800\ub97c \ud074\ub798\uc2a4 \ubcc0\uc218\ub85c \uc774\ub3d9\nL38-41\uc758 3\uc904\uc744 __init__ \ubc16, \ud074\ub798\uc2a4 body\ub85c \uc774\ub3d9\ud569\ub2c8\ub2e4:\n```python\nclass AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):\n    consumption_manager = ConsumptionManager()\n    labor_manager = LaborManager()\n    asset_manager = AssetManager()\n\n    def __init__(self, ai_engine, config_module, logger=None):\n        self.ai_engine = ai_engine\n        self.config_module = config_module\n        self.logger = logger if logger else logging.getLogger(__name__)\n        # [DELETED] self.consumption_manager \ub4f1 3\uc904\n```\n\n### Firm CorporateManager\ub294 \uac74\ub4dc\ub9ac\uc9c0 \ub9c8\uc138\uc694\nCorporateManager\ub294 config_module\uc744 \uc0dd\uc131\uc790\uc5d0\uc11c \ubc1b\uc73c\ubbc0\ub85c \uc774\ubc88 \ubbf8\uc158\uc5d0\uc11c \uc81c\uc678.\n\n### \uac80\uc99d\n- pytest tests/ -x --timeout=60",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_SPEC_MEM_SINGLETON_DECISION.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null,
+      "no_inject": false
     }
   }
 }

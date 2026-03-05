@@ -35,6 +35,7 @@ class MissionDTO:
     output_path: Optional[str] = None
     model: Optional[str] = None
     audit_requirements: Optional[Any] = None
+    no_inject: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert DTO to dictionary for legacy compatibility."""
