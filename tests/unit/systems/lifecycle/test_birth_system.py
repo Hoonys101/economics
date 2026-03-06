@@ -55,6 +55,8 @@ class TestBirthSystem:
         parent.id = 1
         parent.age = 25
         parent.is_active = True
+        parent._bio_state = MagicMock()
+        parent._bio_state.is_active = True
         parent.children_ids = []
         # Mock methods required by ICurrencyHolder
         parent.get_balance.return_value = 1000
@@ -74,6 +76,8 @@ class TestBirthSystem:
         context.shareholder_registry = None
         context.currency_holders = []
         context.currency_registry_handler = None
+        context.tracker = MagicMock()
+        context.tracker.get_latest_indicators.return_value = MagicMock()
 
         # Mock Planner
         birth_system.breeding_planner.decide_breeding_batch.return_value = [True]

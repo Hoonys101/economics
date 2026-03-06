@@ -88,8 +88,15 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
     # Phase 4.1: Labor Majors
     majors = config.LABOR_MARKET.get("majors", ["GENERAL"]) if hasattr(config, "LABOR_MARKET") else ["GENERAL"]
 
+
+    # --- Singleton Engines ---
+    # Rule-Based Engines are completely stateless and can be instantiated once globally.
+    singleton_rule_based_household_engine = RuleBasedHouseholdDecisionEngine(config_module=config_manager, logger=logger)
+    singleton_rule_based_firm_engine = RuleBasedFirmDecisionEngine(config_module=config_manager, logger=logger)
+
+
+
     for i in range(num_households):
-        agent_id = START_ID_HOUSEHOLDS + i
         agent_id = START_ID_HOUSEHOLDS + i
         initial_assets = config.INITIAL_HOUSEHOLD_ASSETS_MEAN * (
             1
@@ -161,10 +168,9 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         household_ai_instance = HouseholdAI(agent_id=agent_id, ai_decision_engine=ai_decision_engine_instance)
 
         # Instantiate HouseholdDecisionEngine with the HouseholdAI instance and config_module
-        # Check config for decision engine preference
         hh_engine_type = getattr(config, "HOUSEHOLD_DECISION_ENGINE", "AI_DRIVEN")
         if hh_engine_type == "RULE_BASED":
-             household_decision_engine = RuleBasedHouseholdDecisionEngine(config_module=config_manager, logger=logger)
+             household_decision_engine = singleton_rule_based_household_engine
         else:
              household_decision_engine = AIDrivenHouseholdDecisionEngine(
                 ai_engine=household_ai_instance, config_module=config_manager
@@ -241,7 +247,6 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         )  # Default to basic_food if not specified
 
         # Get the AIDecisionEngine for the firm's value orientation
-        # Assuming firms also have a value_orientation, for now hardcoding to "wealth_and_needs"
         firm_value_orientation = "wealth_and_needs"  # Or get from config/random choice
         ai_decision_engine_instance_firm = ai_trainer.get_engine(firm_value_orientation)
 
@@ -258,7 +263,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         # Check config for decision engine preference
         engine_type = getattr(config, "FIRM_DECISION_ENGINE", "AI_DRIVEN")
         if engine_type == "RULE_BASED":
-             firm_decision_engine = RuleBasedFirmDecisionEngine(config_module=config_manager, logger=logger)
+             firm_decision_engine = singleton_rule_based_firm_engine
         else:
              firm_decision_engine = AIDrivenFirmDecisionEngine(
                 ai_engine=firm_ai_instance, config_module=config_manager

@@ -3,7 +3,6 @@ import copy
 from collections import defaultdict
 from typing import Dict, List, Optional
 from .api import IWallet, WalletOpLogDTO, CurrencyCode, DEFAULT_CURRENCY
-from .audit import GLOBAL_WALLET_LOG
 from modules.finance.api import InsufficientFundsError, SystemicIntegrityError
 from modules.common.financial.dtos import MoneyDTO
 import logging
@@ -31,7 +30,7 @@ class Wallet(IWallet):
         for k, v in initial_balances.items():
             self._balances[k] = int(v)
 
-        self._audit_log = audit_log if audit_log is not None else []
+        self._audit_log = audit_log
         self.allow_negative_balance = allow_negative_balance
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
@@ -81,15 +80,16 @@ class Wallet(IWallet):
         self._log_operation(tick, currency, -amount, memo)
 
     def _log_operation(self, tick: int, currency: CurrencyCode, delta: int, memo: str):
-        log_entry = WalletOpLogDTO(
-            tick=tick,
-            agent_id=self.owner_id,
-            currency=currency,
-            delta=delta,
-            memo=memo,
-            resulting_balance=self._balances[currency]
-        )
-        self._audit_log.append(log_entry)
+        if self._audit_log is not None:
+            log_entry = WalletOpLogDTO(
+                tick=tick,
+                agent_id=self.owner_id,
+                currency=currency,
+                delta=delta,
+                memo=memo,
+                resulting_balance=self._balances[currency]
+            )
+            self._audit_log.append(log_entry)
 
     # --- Operator Overloading ---
     def __add__(self, other: IWallet) -> IWallet:

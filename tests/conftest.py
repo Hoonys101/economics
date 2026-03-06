@@ -107,12 +107,7 @@ from modules.finance.api import ISettlementSystem, IMonetaryAuthority, ILiquidit
 #     if file_path.suffix == ".py":
 #         print(f"DEBUG: [pytest] Collecting: {file_path}")
 
-@pytest.fixture(autouse=True)
-def clear_global_wallet_log():
-    from modules.finance.wallet.audit import GLOBAL_WALLET_LOG
-    GLOBAL_WALLET_LOG.clear()
-    yield
-    GLOBAL_WALLET_LOG.clear()
+
 
 @pytest.fixture(autouse=True)
 def mock_platform_lock_manager(request):
