@@ -1,43 +1,63 @@
-# AUDIT_REPORT_STRUCTURAL: Structural Integrity Audit (v2.0)
-
-**Date**: 2024-11-21
-**Auditor**: Jules
-**Status**: COMPLETED
+# AUDIT_REPORT_STRUCTURAL: Structural Integrity Audit (v3.0)
 
 ## 1. Executive Summary
-This audit evaluates the codebase against the 'DTO-based Decoupling' and 'Component SoC' architecture standards. Several "God Classes" exceeding 800 lines were identified, indicating a need for decomposition. Furthermore, critical abstraction leaks were found in the Government and Welfare modules where raw agent objects are passed instead of DTOs, violating the architectural boundary.
+This report validates adherence to the 'DTO-based Decoupling' and 'Component SoC' architecture using static analysis as specified in `AUDIT_SPEC_STRUCTURAL.md`.
 
-## 2. God Class Detection
-The following files exceed the 800-line threshold, suggesting they have accumulated too many responsibilities or contain mixed concerns that should be separated.
+## 2. God Classes
+The following classes exceed the 800-line threshold or have 15+ public methods, indicating a mix of responsibilities:
+- `simulation/bank.py` -> `Bank`: 396 lines, 28 public methods
+- `simulation/loan_market.py` -> `LoanMarket`: 409 lines, 15 public methods
+- `simulation/firms.py` -> `Firm`: 1783 lines, 100 public methods
+- `simulation/world_state.py` -> `WorldState`: 335 lines, 36 public methods
+- `simulation/core_agents.py` -> `Household`: 1185 lines, 102 public methods
+- `simulation/components/demographics_component.py` -> `DemographicsComponent`: 141 lines, 19 public methods
+- `simulation/markets/order_book_market.py` -> `OrderBookMarket`: 408 lines, 23 public methods
+- `simulation/markets/stock_market.py` -> `StockMarket`: 281 lines, 16 public methods
+- `simulation/systems/settlement_system.py` -> `SettlementSystem`: 963 lines, 25 public methods
+- `simulation/systems/lifecycle/adapters.py` -> `BirthContextAdapter`: 95 lines, 23 public methods
+- `simulation/systems/lifecycle/adapters.py` -> `DeathContextAdapter`: 106 lines, 23 public methods
+- `simulation/agents/government.py` -> `Government`: 739 lines, 37 public methods
+- `simulation/agents/central_bank.py` -> `CentralBank`: 397 lines, 20 public methods
+- `modules/labor/system.py` -> `LaborMarket`: 258 lines, 17 public methods
+- `modules/household/mixins/_properties.py` -> `HouseholdPropertiesMixin`: 231 lines, 47 public methods
+- `modules/finance/system.py` -> `FinanceSystem`: 556 lines, 17 public methods
+- `modules/finance/kernel/ledger.py` -> `MonetaryLedger`: 266 lines, 16 public methods
+- `modules/system/registry.py` -> `GlobalRegistry`: 276 lines, 15 public methods
+- `modules/system/execution/public_manager.py` -> `PublicManager`: 305 lines, 22 public methods
 
-| File Path | Line Count | Primary Concerns |
-| :--- | :--- | :--- |
-| `simulation/firms.py` | 1843 | Contains entire `Firm` logic including production, sales, finance, and HR state management. Should be split into distinct component classes or service delegates. |
-| `simulation/core_agents.py` | 1246 | `Household` agent logic is monolithic. Similar to `Firm`, it mixes biological, economic, and social concerns. |
-| `modules/finance/api.py` | 1145 | Defines too many protocols and DTOs in a single file. Should be split into `interfaces/`, `dtos/`, and `exceptions/`. |
-| `config/defaults.py` | 1028 | Configuration monolithic file. Hard to navigate. Recommend splitting into domain-specific config files (e.g., `firm_config.py`, `household_config.py`). |
-| `tests/system/test_engine.py` | 953 | Test file is too large, indicating it might be testing multiple units or scenarios that should be separated. |
-| `simulation/systems/settlement_system.py` | 951 | `SettlementSystem` handles too many types of transactions and logic. Consider delegating specific transaction types to sub-handlers. |
+## 3. Dependency Inversions (Static Coupling)
+Files improperly importing from `tests/`:
+- None detected.
 
-## 3. Abstraction Leak Analysis
-DTO pattern violations were found where raw agent instances are passed across module boundaries.
+## 4. Leaky Abstractions & DTO Pattern Violations
+Files passing raw agent instances (e.g., `self`) into Contexts instead of DTOs:
+- None detected (based on `DecisionContext` instantiation heuristics).
 
-### 3.1. Government Agent (`simulation/agents/government.py`)
-- **Method**: `provide_household_support(self, household: Any, amount: float, current_tick: int)`
-- **Violation**: The `household` parameter is typed as `Any` but expects a raw `Household` object to access its ID and potentially other state.
-- **Recommendation**: Change signature to accept `household_id: AgentID` or a `WelfareRecipientDTO`.
+## 5. Protocol Evasion
+The following files contain excessive dynamic type checking (`hasattr` / `isinstance`), bypassing type-safe Protocols:
+- `simulation/systems/settlement_system.py`: 33 occurrences
+- `simulation/systems/housing_system.py`: 24 occurrences
+- `simulation/systems/registry.py`: 21 occurrences
+- `simulation/systems/lifecycle/death_system.py`: 19 occurrences
+- `simulation/systems/handlers/goods_handler.py`: 18 occurrences
+- `simulation/firms.py`: 17 occurrences
+- `modules/system/services/command_service.py`: 16 occurrences
+- `simulation/ai/household_ai.py`: 15 occurrences
+- `simulation/agents/government.py`: 14 occurrences
+- `simulation/decisions/household/consumption_manager.py`: 13 occurrences
+- `simulation/systems/event_system.py`: 13 occurrences
+- `simulation/loan_market.py`: 12 occurrences
+- `simulation/decisions/ai_driven_firm_engine.py`: 12 occurrences
+- `simulation/orchestration/phases/decision.py`: 12 occurrences
+- `simulation/orchestration/phases/metrics.py`: 12 occurrences
+- `simulation/systems/handlers/stock_handler.py`: 12 occurrences
+- `modules/lifecycle/manager.py`: 11 occurrences
+- `modules/housing/service.py`: 11 occurrences
+- `simulation/orchestration/phases/post_sequence.py`: 10 occurrences
+- `simulation/systems/handlers/monetary_handler.py`: 10 occurrences
 
-### 3.2. Welfare Service (`modules/government/services/welfare_service.py`)
-- **Method**: `run_welfare_check(self, agents: List[IAgent], ...)`
-- **Violation**:
-    - Iterates over raw `IAgent` objects.
-    - Checks `hasattr(agent, "is_employed")` and accesses `agent.is_employed` directly.
-    - Creates `PaymentRequestDTO` with `payee=agent` (the raw object), which leaks the agent instance into the payment system.
-- **Recommendation**:
-    - The service should accept a list of `WelfareCandidateDTO` containing `agent_id`, `is_employed`, `is_active`, etc.
-    - `PaymentRequestDTO` should strictly use `payee_id` (int/str) instead of the object instance.
+## 6. WorldState Purity
+- `WorldState` appears pure. No obvious direct instantiation of Services detected.
 
-## 4. Recommendations
-1.  **Refactor God Classes**: Prioritize `simulation/firms.py` and `simulation/core_agents.py` for decomposition. Extract distinct behaviors into "Engines" or "Components" (e.g., `ProductionComponent`, `LaborComponent`) that are composed by the agent.
-2.  **Enforce DTO Boundaries**: Rewrite `WelfareService` to accept DTOs. Ensure `PaymentRequestDTO` and similar financial DTOs only carry IDs, not object references.
-3.  **Split API Files**: Break down `modules/finance/api.py` into smaller, focused files to improve maintainability and readability.
+## 7. Sacred Sequence Integrity
+- The execution sequence `Decisions -> Matching -> Transactions -> Lifecycle` appears intact.
