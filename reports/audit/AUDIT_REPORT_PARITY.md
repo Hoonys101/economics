@@ -1,63 +1,60 @@
-# AUDIT_REPORT_PARITY (v2.0)
+# AUDIT_REPORT_PARITY (v3.0)
 
-**Date**: 2026-02-26
+**Date**: 2026-03-05
 **Target Spec**: `design/3_work_artifacts/specs/AUDIT_SPEC_PARITY.md`
 **Project Status Reference**: `PROJECT_STATUS.md`
 
 ## 1. Executive Summary
-This audit validates the parity between the design specifications and the actual implementation state. The focus is on verifying "Completed" items in `PROJECT_STATUS.md`, base component usage, I/O data consistency, and structural integrity.
+This audit validates the parity between the design specifications (Promise) and the actual implementation state (Reality). The focus is on evaluating Design Drift, Ghost Implementation, Data Contracts, and Spec Rot across Base Components, I/O Data Integrity, and the Tech Debt Ledger.
 
-**Overall Status**: 95% Compliant.
-- **Critical Success**: `BioComponent`, `EconComponent`, and `SocialComponent` are fully integrated and actively used in `Household` logic (Delegation Pattern).
-- **Parity Verified**: `SettlementResultDTO` uses strict integer math. `EstateRegistry` is implemented and active. `HousingTransactionSagaHandler` uses `IAgentRegistry`.
-- **Minor Discrepancy**: `Transaction` model still retains a `price: float` field alongside `total_pennies: int`. While marked as deprecated/display, it creates a dual source of truth potential if not strictly guarded. (Note: `__post_init__` guards exist but usage in legacy code might still linger).
+**Overall Status**: ~80% Compliant (Major discrepancies found in Data Contracts and Spec Rot).
+- **Critical Success**: `BioComponent`, `EconComponent`, and `HREngine` are fully implemented and integrated within the Stateless Engine & Orchestrator (SEO) pattern, validating the claims in `PROJECT_STATUS.md` (e.g., "The Great Agent Decomposition").
+- **Parity Verified**: The Tech Debt Ledger accurately reflects recent memory optimizations (e.g., dynamic teardown in `WorldState`).
+- **Discrepancy (Medium)**: Significant Data Contract mismatch between current DTO definitions (`HouseholdStateDTO`, `FirmStateDTO`) and the JSON Golden Samples (`tests/goldens/`).
+- **Discrepancy (Low)**: Missing documentation files referenced in the spec (Spec Rot).
 
-## 2. Base Components Audit (Target Architecture)
+## 2. Base Components & Modules Audit
 
 | Component | Status | Location | Usage Verified |
 | :--- | :--- | :--- | :--- |
-| **BioComponent** | ✅ Implemented | `modules/household/bio_component.py` | `Household.update_needs` delegates to `lifecycle_engine` which uses logic migrated from BioComponent. Direct usage in `mixins` observed but migrated to Engines. |
-| **EconComponent** | ✅ Implemented | `modules/household/econ_component.py` | `Household.update_needs` & `make_decision` delegates to `budget_engine` / `consumption_engine` which encapsulate Econ logic. |
-| **SocialComponent** | ✅ Implemented | `modules/household/social_component.py` | `Household.update_needs` delegates to `social_engine`. |
-| **HRDepartment** | ✅ Implemented | `simulation/components/engines/hr_engine.py` | `HREngine` implements `IHRDepartment` and is used by `Firm`. |
+| **BioComponent** | ✅ Implemented | `modules/household/bio_component.py` | Exists and is part of the agent decomposition strategy. |
+| **EconComponent** | ✅ Implemented | `modules/household/econ_component.py` | Exists and handles household economic logic. |
+| **HRDepartment / Engine** | ✅ Implemented | `simulation/components/engines/hr_engine.py` | `HREngine` implements `IHRDepartment` and is actively used. |
 
-**Observation**: The project has moved beyond simple Components to an **Engine-based Architecture** (Stateless Engines + DTO State). `BioComponent` etc. logic has been largely migrated into `LifecycleEngine`, `NeedsEngine`, etc., or the components themselves are used as stateless logic providers. This aligns with "The Great Agent Decomposition" in `PROJECT_STATUS.md`.
+**Observation**: The implementation successfully transitioned to the Engine-based Architecture (Stateless Engines + DTO State) as specified in `PROJECT_STATUS.md` ("Phase 37: Memory Optimization & Agent Scaling" and "Phase 14: The Great Agent Decomposition").
 
-## 3. Ghost Implementation Verification
+**Spec Rot Alert (Low Severity)**:
+- The spec dictates auditing `design/structure.md`, but this file does **not exist** in the repository. This is a clear case of Spec Rot where the documentation structure diverged from reality.
 
-| Claimed Feature | Specification | Implementation Verification | Status |
+## 3. I/O Data 정합성 (Data Contract Audit)
+
+**Severity: Medium (Design Drift & Data Contract Violation)**
+
+A comparison between the explicit DTO fields in code and the `tests/goldens/` JSON fixtures reveals significant Design Drift and lack of strict synchronization.
+
+| Entity | DTO Implementation (`modules/simulation/dtos/api.py`, `modules/household/dtos.py`) | Golden Sample (`tests/goldens/initial_state.json`) | Status |
 | :--- | :--- | :--- | :--- |
-| **Settlement Precision** | `SettlementResultDTO.amount_settled: int` | Verified in `simulation/dtos/settlement_dtos.py`. Explicitly typed as `int`. | ✅ Parity |
-| **Estate Registry** | Formal Graveyard | Verified `simulation/registries/estate_registry.py`. `EstateRegistry` class exists, handles `add_to_estate` and `process_estate_distribution`. Used in `SettlementSystem`. | ✅ Parity |
-| **Housing Saga Registry** | `HousingTransactionSagaHandler` uses `IAgentRegistry` | Verified in `modules/finance/saga_handler.py`. Constructor accepts `agent_registry: IAgentRegistry`. | ✅ Parity |
-| **HR Engine Purity** | `HREngine` implements `IHRDepartment` | Verified `simulation/components/engines/hr_engine.py`. Class definition: `class HREngine(IHREngine, IHRDepartment)`. | ✅ Parity |
+| **HouseholdStateDTO** | Penny Standard (`assets` dict with `CurrencyCode: int`, `current_wage_pennies: int`), `education_xp` (float) | Float Standard (`assets: float`, `current_wage: float`), `age: float` | ⚠️ **Mismatch**: Golden samples have not been updated to reflect the 'Penny Standard' migration or the latest DTO structure. |
+| **FirmStateDTO** | Nested Component State (`finance`, `production`, `sales`, `hr` as sub-DTOs) | Flat Key-Value State (`total_debt`, `retained_earnings`, `productivity_factor`, `current_profit`) | ⚠️ **Mismatch**: The Firm JSON snapshot uses a flattened legacy format instead of the modular DTO structure defined in Phase 14 decomposition. |
 
-## 4. I/O Data & DTO Consistency
+**Actionable Insight**: The Golden Samples are severely outdated (Spec Rot / Data Contract breakage). They must be regenerated using the latest `create_state_dto` serialization methods to prevent `Ghost Implementations` in testing.
 
-- **Transaction Model**: `simulation/models.py`
-    - `total_pennies: int = 0` (SSoT) ✅
-    - `price: float` (Deprecated but present) ⚠️
-    - `__post_init__` enforces `total_pennies` from price if 0, and updates price from `total_pennies`. This "Two-Way Binding" is risky but currently functional for legacy support.
+## 4. TECH_DEBT_LEDGER 교차검증 (Cross-Validation)
 
-- **Household State**: `simulation/core_agents.py`
-    - `Household` initializes `BioStateDTO`, `EconStateDTO`, `SocialStateDTO` internally.
-    - `create_state_dto` maps internal state to `HouseholdStateDTO` correctly.
+| Debt ID | Ledger Status | Code Implementation Check | Parity Status |
+| :--- | :--- | :--- | :--- |
+| **TD-MEM-TEARDOWN-HARDCODE** | **NEW (2026-03-04)** (Note: Appears duplicated in Ledger) | Verified `simulation/world_state.py`: `WorldState.teardown()` uses dynamic `self.__dict__.keys()` scanning instead of a hardcoded list. | ✅ **Resolved in Code**: The code has already implemented the fix, but the ledger lists it as "NEW" and duplicates the entry. This requires a ledger update to "RESOLVED". |
+| **TD-PERF-GETATTR-LOOP** | **RESOLVED (2026-03-05)** | Local caching is aggressively used in core loops to bypass proxy resolution overhead. | ✅ **Parity** |
+| **TD-FIN-FLOAT-INCURSION-RE** | **RESOLVED (2026-03-05)** | Strict penny logic enforced in recent finance modules. | ✅ **Parity** |
 
-## 5. Structural Audit
+**Observation**:
+- **Duplication Detected**: `TD-MEM-TEARDOWN-HARDCODE` is listed twice sequentially in `TECH_DEBT_LEDGER.md`.
+- **Status Stale**: The codebase indicates that the `TD-MEM-TEARDOWN-HARDCODE` debt has actually been addressed (Dynamic scanning is present), yet the ledger claims it is "NEW".
 
-- **Directory Structure**:
-    - `simulation/systems` ✅ Exists
-    - `simulation/dtos` ✅ Exists
-    - `modules/common` ✅ Exists
-    - `modules/finance` ✅ Exists
-    - `modules/hr/engines` ❌ **Missing** (Empty or non-existent). `HREngine` is located in `simulation/components/engines/hr_engine.py`.
-        - *Correction*: `modules/hr` exists, but the engine implementation is in `simulation/components`. This is a known structural hybrid state during Phase 14-15 refactoring.
+## 5. Conclusion & Recommendations
 
-## 6. Recommendations
+The core architecture (SEO pattern, Component decomposition) shows strong fidelity to the Phase 34/37 specs. However, test fixtures and documentation are lagging behind the code.
 
-1.  **Strict Transaction Init**: Ideally, `Transaction` should forbid `price` in `__init__` and force `total_pennies`. Current `__post_init__` logic is a transitional shim.
-2.  **HR Module Unification**: Move `simulation/components/engines/hr_engine.py` to `modules/hr/engines/` to complete the modularization.
-3.  **Bio/Econ Component Deprecation**: If `LifecycleEngine` and others have fully subsumed the logic, explicitly mark `BioComponent.py` etc. as deprecated or delete them to avoid confusion with the new Engines. Currently, they seem to coexist or logic is duplicated/referenced.
-
-## 7. Conclusion
-The "Completed" items in `PROJECT_STATUS.md` regarding Foundation Hardening, Agent Decomposition, and Penny Precision are **legitimately implemented**. There are no "Ghost Implementations" detected for the audited items. The codebase reflects a high degree of fidelity to the Phase 33/34 specifications.
+1.  **Regenerate Golden Samples**: Write a script to instantiate agents, run them for 1 tick, and export their strictly-typed DTOs to `tests/goldens/` to fix the Data Contract mismatch.
+2.  **Ledger Cleanup**: Remove the duplicate `TD-MEM-TEARDOWN-HARDCODE` entry in `TECH_DEBT_LEDGER.md` and mark it as "RESOLVED".
+3.  **Deprecate Missing Specs**: Remove references to `design/structure.md` in audit specs or regenerate the file if it's strictly required for onboarding.
